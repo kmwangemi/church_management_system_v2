@@ -15,11 +15,22 @@ export interface IChurch extends Document {
     state?: string;
     zipCode?: string;
   };
-  foundingYear: string;
   description?: string;
+  isSuspended: boolean;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const AddressSchema = new Schema(
+  {
+    address: { type: String, required: true, trim: true, lowercase: true },
+    city: { type: String, required: true, trim: true, lowercase: true },
+    state: { type: String, trim: true, lowercase: true },
+    zipCode: { type: String, trim: true },
+  },
+  { _id: false }, // disables automatic _id for subdocument
+);
 
 const ChurchSchema = new Schema<IChurch>(
   {
@@ -39,12 +50,13 @@ const ChurchSchema = new Schema<IChurch>(
       trim: true,
     },
     country: { type: String, required: true, trim: true, lowercase: true },
-    address: { type: String, required: true, trim: true, lowercase: true },
+    address: { type: AddressSchema, required: true },
     establishedDate: { type: Date, required: true, trim: true },
     website: { type: String, trim: true },
     churchLogo: { type: String, trim: true },
-    foundingYear: { type: String, trim: true, required: true },
     description: { type: String, trim: true, lowercase: true },
+    isSuspended: { type: Boolean, trim: true, required: true, default: false },
+    isDeleted: { type: Boolean, trim: true, required: true, default: false },
   },
   {
     timestamps: true,

@@ -1,14 +1,15 @@
 import bcrypt from 'bcryptjs';
 import mongoose, { type Document, Schema } from 'mongoose';
+import './Role';
 
 export interface IUser extends Document {
-  churchId?: mongoose.Types.ObjectId; // Made optional for superadmin
-  branchId?: mongoose.Types.ObjectId; // Made optional for superadmin
+  churchId?: mongoose.Types.ObjectId; // Optional for superadmin
+  branchId?: mongoose.Types.ObjectId; // Optional for superadmin
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  role: 'member' | 'visitor' | 'pastor' | 'bishop' | 'admin' | 'superadmin';
+  role: mongoose.Types.ObjectId;
   phoneNumber: string;
   profilePictureUrl?: string;
   agreeToTerms: boolean;
@@ -33,23 +34,17 @@ export interface IUser extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema(
   {
     churchId: {
       type: Schema.Types.ObjectId,
       ref: 'Church',
-      required: function (this: IUser) {
-        // Only required if role is not superadmin
-        return this.role !== 'superadmin';
-      },
+      required: false, // Handle validation in application layer
     },
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
-      required: function (this: IUser) {
-        // Only required if role is not superadmin
-        return this.role !== 'superadmin';
-      },
+      required: false, // Handle validation in application layer
     },
     email: {
       type: String,
@@ -62,8 +57,8 @@ const UserSchema = new Schema<IUser>(
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
     role: {
-      type: String,
-      enum: ['member', 'visitor', 'pastor', 'bishop', 'admin', 'superadmin'],
+      type: Schema.Types.ObjectId,
+      ref: 'Role',
       required: true,
     },
     phoneNumber: {
@@ -95,9 +90,9 @@ const UserSchema = new Schema<IUser>(
     address: { type: String, trim: true },
     country: { type: String, trim: true },
     emergencyContact: {
-      name: { type: String, trim: true },
+      fullName: { type: String, trim: true },
       relationship: { type: String, trim: true },
-      phone: { type: String, trim: true },
+      phoneNumber: { type: String, trim: true },
     },
     notes: { type: String, trim: true },
   },
@@ -106,10 +101,35 @@ const UserSchema = new Schema<IUser>(
   },
 );
 
+// Pre-save middleware for password hashing
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
+});
+
+// Pre-save middleware for conditional validation
+UserSchema.pre('save', async function (next) {
+  try {
+    // Populate the role to check if it's superadmin
+    const populatedUser = await this.populate('role');
+    const userRole = populatedUser.role as any; // Type assertion needed
+    // Check if role is superadmin (adjust the condition based on your role structure)
+    const isSuperAdmin =
+      userRole.name === 'superadmin' || userRole.code === 'SUPERADMIN';
+    if (!isSuperAdmin) {
+      // If not superadmin, churchId and branchId are required
+      if (!this.churchId) {
+        throw new Error('churchId is required for non-superadmin users');
+      }
+      if (!this.branchId) {
+        throw new Error('branchId is required for non-superadmin users');
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 UserSchema.methods.comparePassword = async function (

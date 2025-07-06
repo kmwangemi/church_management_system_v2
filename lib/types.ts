@@ -20,6 +20,12 @@ export interface APIError {
   name?: string;
 }
 
+export interface ChurchRegistrationResponse {
+  message: string;
+  churchId: string;
+  userId: string;
+}
+
 export interface BranchAddResponse {
   churchId: string;
   branchName: string;
