@@ -1,58 +1,85 @@
+import { logger } from '@/lib/logger';
+import { withApiLogger } from '@/lib/middleware/apiLogger';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import jwt from 'jsonwebtoken';
 import { type NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+async function loginHandler(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    { requestId, endpoint: '/api/auth/login' },
+    'api',
+  );
   try {
     await dbConnect();
+    contextLogger.info('Database connection established');
     const { email, password } = await request.json();
-    // Find user and populate church data
-    const user = await User.findOne({ email });
-    if (!user) {
+    const existingUser = await User.findOne({ email }).populate('role', 'name');
+    if (!existingUser) {
+      contextLogger.warn('Login failed - Invalid credentials', {
+        email: email,
+      });
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 },
       );
     }
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
+    const isPasswordValid = await existingUser.comparePassword(password);
     if (!isPasswordValid) {
+      contextLogger.warn('Login failed - Invalid credentials', {
+        password: password,
+      });
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 },
       );
     }
     // Check if user is active
-    if (!user.isActive) {
+    if (!existingUser.isActive) {
+      contextLogger.warn('Login failed - Account is deactivated', {
+        email: email,
+      });
       return NextResponse.json(
         { error: 'Account is deactivated' },
         { status: 401 },
       );
     }
+    // Check if user is deleted
+    if (existingUser.isDeleted) {
+      contextLogger.warn('Login failed - Account is deleted', {
+        email: email,
+      });
+      return NextResponse.json(
+        { error: 'Account does not exist' },
+        { status: 401 },
+      );
+    }
     // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    existingUser.lastLogin = new Date();
+    await existingUser.save();
     // Generate JWT token
     const token = jwt.sign(
       {
-        userId: user._id,
-        churchId: user.churchId._id,
-        role: user.role,
+        userId: existingUser?._id,
+        churchId: existingUser?.churchId?._id ?? null,
+        role: existingUser?.role?.name,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' },
     );
+    contextLogger.info('Login successfully', {
+      email: email,
+    });
     const response = NextResponse.json({
       message: 'Login successful',
       user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        churchId: user.churchId._id,
-        churchName: user.churchId.name,
+        id: existingUser._id,
+        email: existingUser.email,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        role: existingUser.role.name,
       },
     });
     // Set HTTP-only cookie
@@ -65,9 +92,17 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
+    contextLogger.error('Login failed', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
     );
   }
 }
+
+// Export the handler wrapped with logging middleware
+export const POST = withApiLogger(loginHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});

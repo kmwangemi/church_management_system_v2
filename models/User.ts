@@ -14,6 +14,8 @@ export interface IUser extends Document {
   profilePictureUrl?: string;
   agreeToTerms: boolean;
   isActive: boolean;
+  isSuspended: boolean;
+  isDeleted: boolean;
   lastLogin?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -70,6 +72,8 @@ const UserSchema = new Schema(
     profilePictureUrl: { type: String, default: null },
     agreeToTerms: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },
+    isSuspended: { type: Boolean, trim: true, required: true, default: false },
+    isDeleted: { type: Boolean, trim: true, required: true, default: false },
     lastLogin: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },

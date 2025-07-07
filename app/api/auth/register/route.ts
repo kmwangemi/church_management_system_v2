@@ -1,18 +1,17 @@
+import { logger } from '@/lib/logger';
+import { withApiLogger } from '@/lib/middleware/apiLogger';
 import dbConnect from '@/lib/mongodb';
 import Church from '@/models/Church';
 import User from '@/models/User';
-import { Role } from '@/models/Role';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
-import { withApiLogger } from '@/lib/middleware/apiLogger';
 
 async function registerHandler(request: NextRequest) {
   let session: mongoose.ClientSession | null = null;
   let transactionCommitted = false;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: '/api/churches/register' },
+    { requestId, endpoint: '/api/auth/register' },
     'api',
   );
   try {
@@ -120,7 +119,7 @@ async function registerHandler(request: NextRequest) {
       password: adminData.password,
       firstName: adminData.firstName,
       lastName: adminData.lastName,
-      role: '6869451cd2c5336aef1196e8', // superadmin id
+      role: '6869451cd2c5336aef1196eb', // admin id
       phoneNumber: adminData.phoneNumber,
     });
     await admin.save({ session });

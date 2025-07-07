@@ -3,9 +3,10 @@ import * as z from 'zod';
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
+  // rememberMe: z.boolean().default(false),
 });
 
-export type LoginFormValues = z.infer<typeof loginSchema>;
+export type LoginPayload = z.infer<typeof loginSchema>;
 
 // Church data schema
 export const churchDataSchema = z.object({
@@ -83,7 +84,7 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
 });
 
-export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+export type ForgotPasswordPayload = z.infer<typeof forgotPasswordSchema>;
 
 export const verificationSchema = z.object({
   code: z.string().min(4, 'Verification code must be at least 4 characters'),
@@ -109,4 +110,4 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordPayload = z.infer<typeof resetPasswordSchema>;

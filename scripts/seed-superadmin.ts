@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import promptSync from 'prompt-sync';

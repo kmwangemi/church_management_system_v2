@@ -1,12 +1,15 @@
 import apiClient from '@/lib/api-client';
-import type { LoginFormValues } from '@/lib/validations/auth';
+import { LoginResponse } from '@/lib/types';
+import type { LoginPayload } from '@/lib/validations/auth';
 import { useMutation } from '@tanstack/react-query';
 
-export function useLogin() {
+const login = async (payload: LoginPayload): Promise<LoginResponse> => {
+  const { data } = await apiClient.post('/auth/login', payload);
+  return data;
+};
+
+export const useLogin = () => {
   return useMutation({
-    mutationFn: async (payload: LoginFormValues) => {
-      const { data } = await apiClient.post('/auth/login', payload, {});
-      return data;
-    },
+    mutationFn: login,
   });
-}
+};
