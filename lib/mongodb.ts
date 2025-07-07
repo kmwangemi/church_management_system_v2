@@ -1,11 +1,5 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
-
 interface CachedConnection {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -25,6 +19,11 @@ if (!globalThis.mongoose) {
 }
 
 async function dbConnect(): Promise<typeof mongoose> {
+  // Check for MONGODB_URI at connection time, not at module load time
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable');
+  }
   if (cached.conn) {
     console.log('Using existing MongoDB connection');
     return cached.conn;
@@ -33,7 +32,7 @@ async function dbConnect(): Promise<typeof mongoose> {
     console.log('Creating new MongoDB connection...');
     console.log(
       'Connection URI (masked):',
-      (MONGODB_URI ?? '').replace(/\/\/[^:]+:[^@]+@/, '//***:***@'),
+      MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'),
     );
     const opts = {
       bufferCommands: false,
@@ -43,7 +42,7 @@ async function dbConnect(): Promise<typeof mongoose> {
       connectTimeoutMS: 10000,
     };
     cached.promise = mongoose
-      .connect(MONGODB_URI!, opts)
+      .connect(MONGODB_URI, opts)
       .then(mongoose => {
         console.log('MongoDB connected successfully');
         return mongoose;
