@@ -3,9 +3,10 @@ import * as z from 'zod';
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
+  // rememberMe: z.boolean().default(false),
 });
 
-export type LoginFormValues = z.infer<typeof loginSchema>;
+export type LoginPayload = z.infer<typeof loginSchema>;
 
 // Church data schema
 export const churchDataSchema = z.object({
@@ -38,7 +39,6 @@ export const churchDataSchema = z.object({
     'standard',
     'premium',
     'enterprise',
-    'freetrial',
   ]),
   // expectedMembers: z.coerce.number().min(1, 'Please enter expected number of members'),
   // numberOfBranches: z.coerce.number().min(1, 'Please enter number of branches'),
@@ -65,29 +65,26 @@ export const adminDataSchema = z
       ),
     confirmPassword: z.string(),
     role: z.enum(['admin', 'superadmin']),
-    agreeToTerms: z.boolean().refine(val => val === true, {
-      message: 'You must agree to the terms and conditions',
-    }),
   })
   .refine(data => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
 
-export const churchAdminRegistrationSchema = z.object({
+export const churchRegistrationSchema = z.object({
   churchData: churchDataSchema,
   adminData: adminDataSchema,
 });
 
-export type ChurchAdminRegistrationFormData = z.infer<
-  typeof churchAdminRegistrationSchema
+export type ChurchRegistrationPayload = z.infer<
+  typeof churchRegistrationSchema
 >;
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
 });
 
-export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+export type ForgotPasswordPayload = z.infer<typeof forgotPasswordSchema>;
 
 export const verificationSchema = z.object({
   code: z.string().min(4, 'Verification code must be at least 4 characters'),
@@ -113,4 +110,4 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordPayload = z.infer<typeof resetPasswordSchema>;

@@ -1,7 +1,7 @@
 import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IRole extends Document {
-  name: string;
+  name: 'member' | 'visitor' | 'pastor' | 'bishop' | 'admin' | 'superadmin';
   description: string;
   permissions: mongoose.Types.ObjectId[];
   isSystemRole: boolean; // True for built-in roles like 'member', 'pastor', etc.

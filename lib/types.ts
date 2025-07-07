@@ -20,6 +20,23 @@ export interface APIError {
   name?: string;
 }
 
+export interface LoginResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
+}
+
+export interface ChurchRegistrationResponse {
+  message: string;
+  churchId: string;
+  userId: string;
+}
+
 export interface BranchAddResponse {
   churchId: string;
   branchName: string;

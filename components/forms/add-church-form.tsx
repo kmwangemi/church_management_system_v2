@@ -1,5 +1,6 @@
 'use client';
 
+import RenderApiError from '@/components/ApiError';
 import { CountrySelect } from '@/components/country-list-input';
 import { DatePicker } from '@/components/date-picker';
 import { PasswordInput } from '@/components/password-input';
@@ -32,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useRegisterChurch } from '@/lib/hooks/auth/use-register';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   NUMBER_OF_CHURCH_BRANCHES_OPTIONS,
@@ -39,8 +41,8 @@ import {
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
 import {
-  ChurchAdminRegistrationFormData,
-  churchAdminRegistrationSchema,
+  ChurchRegistrationPayload,
+  churchRegistrationSchema,
 } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, Church, MapPin, Upload, User } from 'lucide-react';
@@ -50,8 +52,17 @@ import { useForm } from 'react-hook-form';
 export function AddChurchForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTab, setCurrentTab] = useState('basic');
-  const form = useForm<ChurchAdminRegistrationFormData>({
-    resolver: zodResolver(churchAdminRegistrationSchema),
+  const [tabValidationState, setTabValidationState] = useState({
+    basic: false,
+    contact: false,
+    admin: false,
+    subscription: false,
+  });
+  const form = useForm<ChurchRegistrationPayload>({
+    resolver: zodResolver(churchRegistrationSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    shouldFocusError: true,
     defaultValues: {
       churchData: {
         churchName: '',
@@ -83,33 +94,142 @@ export function AddChurchForm() {
       },
     },
   });
+  const {
+    mutateAsync: registerChurchMutation,
+    isPending: isPending,
+    isError: isError,
+    error: error,
+  } = useRegisterChurch();
   const { reset, watch } = form;
   console.log('watch payload--->', watch());
-  // const handleNextButtonClick = async (payload: ChurchFormValues) => {
-  //   const isValid = await form.trigger();
-  //   if (isValid) {
-  //     setChurchData(payload);
-  //     setStep(2);
-  //   }
-  // };
-  // Handle form submission
-  const onSubmit = async (payload: ChurchAdminRegistrationFormData) => {
-    // await registerMutation(payload);
-    console.log('payload--->', payload);
-    reset();
+  // Validate current tab fields
+  const validateCurrentTabFields = async (tabName: string) => {
+    let isValid = true;
+    switch (tabName) {
+      case 'basic':
+        isValid = await form.trigger([
+          'churchData.churchName',
+          'churchData.denomination',
+          'churchData.establishedDate',
+        ]);
+        break;
+      case 'contact':
+        isValid = await form.trigger([
+          'churchData.email',
+          'churchData.phoneNumber',
+          'churchData.address.address',
+          'churchData.address.city',
+          'churchData.country',
+        ]);
+        break;
+      case 'admin':
+        isValid = await form.trigger([
+          'adminData.firstName',
+          'adminData.lastName',
+          'adminData.email',
+          'adminData.phoneNumber',
+          'adminData.password',
+          'adminData.confirmPassword',
+        ]);
+        break;
+      case 'subscription':
+        isValid = await form.trigger([
+          'churchData.subscriptionPlan',
+          'churchData.churchSize',
+          'churchData.numberOfBranches',
+        ]);
+        break;
+    }
+    // Update validation state
+    setTabValidationState(prev => ({
+      ...prev,
+      [tabName]: isValid,
+    }));
+    return isValid;
   };
-  // const handleBackToStep1 = () => {
-  //   setStep(1);
-  // };
+  // Handle next tab navigation
+  const handleNextTab = async () => {
+    const tabs = ['basic', 'contact', 'admin', 'subscription'];
+    const currentIndex = tabs.indexOf(currentTab);
+    // Validate current tab before proceeding
+    const isCurrentTabValid = await validateCurrentTabFields(currentTab);
+    if (!isCurrentTabValid) {
+      console.log('Please fix the errors before proceeding');
+      return;
+    }
+    if (currentIndex < tabs.length - 1) {
+      setCurrentTab(tabs[currentIndex + 1]);
+    }
+  };
+  // Handle previous tab navigation
+  const handlePreviousTab = () => {
+    const tabs = ['basic', 'contact', 'admin', 'subscription'];
+    const currentIndex = tabs.indexOf(currentTab);
+    if (currentIndex > 0) {
+      setCurrentTab(tabs[currentIndex - 1]);
+    }
+  };
+  // Handle form submission
+  const onSubmit = async (payload: ChurchRegistrationPayload) => {
+    console.log('Form submitted with payload:', payload);
+    // Validate all fields before submission
+    const validation = churchRegistrationSchema.safeParse(payload);
+    if (!validation.success) {
+      console.log('Validation errors:', validation.error.issues);
+      return;
+    }
+    try {
+      await registerChurchMutation(payload);
+      console.log('Registration successful');
+      reset();
+    } catch (error) {
+      console.error('Registration failed:', error);
+    }
+  };
   return (
     <Form {...form}>
+      {isError && <RenderApiError error={error} />}
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 mt-6'>
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList className='grid w-full grid-cols-4'>
-            <TabsTrigger value='basic'>Basic Info</TabsTrigger>
-            <TabsTrigger value='contact'>Contact</TabsTrigger>
-            <TabsTrigger value='admin'>Admin Info</TabsTrigger>
-            <TabsTrigger value='subscription'>Plan</TabsTrigger>
+            <TabsTrigger
+              value='basic'
+              className={tabValidationState.basic ? 'border-green-500' : ''}
+            >
+              Basic Info
+              {tabValidationState.basic && (
+                <span className='ml-1 text-green-500'>✓</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value='contact'
+              className={tabValidationState.contact ? 'border-green-500' : ''}
+            >
+              Contact
+              {tabValidationState.contact && (
+                <span className='ml-1 text-green-500'>✓</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value='admin'
+              className={tabValidationState.admin ? 'border-green-500' : ''}
+            >
+              Admin Info
+              {tabValidationState.admin && (
+                <span className='ml-1 text-green-500'>✓</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value='subscription'
+              className={
+                tabValidationState.subscription ? 'border-green-500' : ''
+              }
+            >
+              Plan
+              {tabValidationState.subscription && (
+                <span className='ml-1 text-green-500'>✓</span>
+              )}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value='basic' className='space-y-6'>
             <Card>
@@ -673,7 +793,7 @@ export function AddChurchForm() {
                   </h4>
                   <ul className='text-sm text-green-700 space-y-1'>
                     <li>• Church account will be created and activated</li>
-                    <li>• Pastor will receive login credentials via email</li>
+                    <li>• Admin will receive login credentials via email</li>
                     <li>• 30-day free trial will begin automatically</li>
                     <li>• Our support team will help with initial setup</li>
                   </ul>
@@ -686,33 +806,18 @@ export function AddChurchForm() {
           <Button
             type='button'
             variant='outline'
-            onClick={() => {
-              const tabs = ['basic', 'contact', 'admin', 'subscription'];
-              const currentIndex = tabs.indexOf(currentTab);
-              if (currentIndex > 0) {
-                setCurrentTab(tabs[currentIndex - 1]);
-              }
-            }}
+            onClick={handlePreviousTab}
             disabled={currentTab === 'basic'}
           >
             Previous
           </Button>
           {currentTab !== 'subscription' ? (
-            <Button
-              type='button'
-              onClick={() => {
-                const tabs = ['basic', 'contact', 'admin', 'subscription'];
-                const currentIndex = tabs.indexOf(currentTab);
-                if (currentIndex < tabs.length - 1) {
-                  setCurrentTab(tabs[currentIndex + 1]);
-                }
-              }}
-            >
+            <Button type='button' onClick={handleNextTab}>
               Next
             </Button>
           ) : (
-            <Button type='submit' disabled={isLoading}>
-              {isLoading ? 'Registering...' : 'Register Church'}
+            <Button type='submit' disabled={isPending}>
+              {isPending ? 'Registering...' : 'Register Church'}
             </Button>
           )}
         </div>

@@ -1,15 +1,24 @@
 import apiClient from '@/lib/api-client';
-import type { ChurchFormValues, UserFormValues } from '@/lib/validations/auth';
+import { successToastStyle } from '@/lib/toast-styles';
+import { ChurchRegistrationResponse } from '@/lib/types';
+import { ChurchRegistrationPayload } from '@/lib/validations/auth';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
-export function useRegister() {
+const registerChurch = async (
+  payload: ChurchRegistrationPayload,
+): Promise<ChurchRegistrationResponse> => {
+  const { data } = await apiClient.post('/auth/register', payload);
+  return data;
+};
+
+export const useRegisterChurch = () => {
   return useMutation({
-    mutationFn: async (payload: {
-      churchData: ChurchFormValues['churchData']; // Inner church data
-      adminData: UserFormValues['adminData']; // Inner admin data
-    }) => {
-      const { data } = await apiClient.post('/auth/register', payload, {});
-      return data;
+    mutationFn: registerChurch,
+    onSuccess: () => {
+      toast.success('Church has been created successfully.', {
+        style: successToastStyle,
+      });
     },
   });
-}
+};
