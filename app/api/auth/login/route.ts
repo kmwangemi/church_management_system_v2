@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/apiLogger';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
 
 async function loginHandler(request: NextRequest) {
@@ -59,16 +59,18 @@ async function loginHandler(request: NextRequest) {
     // Update last login
     existingUser.lastLogin = new Date();
     await existingUser.save();
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: existingUser?._id,
-        churchId: existingUser?.churchId?._id ?? null,
-        role: existingUser?.role?.name,
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' },
-    );
+    // Generate JWT token using JOSE
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    const token = await new SignJWT({
+      sub: existingUser?._id,
+      churchId: existingUser?.churchId ?? null,
+      branchId: existingUser?.branchId ?? null,
+      role: existingUser?.role?.name,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('7d')
+      .sign(secret);
     contextLogger.info('Login successfully', {
       email: email,
     });

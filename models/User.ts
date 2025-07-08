@@ -1,6 +1,6 @@
+import '@/models/Role';
 import bcrypt from 'bcryptjs';
-import mongoose, { type Document, Schema } from 'mongoose';
-import './Role';
+import mongoose, { Schema, type CallbackError, type Document } from 'mongoose';
 
 export interface IUser extends Document {
   churchId?: mongoose.Types.ObjectId; // Optional for superadmin
@@ -132,7 +132,10 @@ UserSchema.pre('save', async function (next) {
     }
     next();
   } catch (error) {
-    next(error);
+    // Type guard to ensure error is properly typed
+    const callbackError =
+      error instanceof Error ? error : new Error(String(error));
+    next(callbackError as CallbackError);
   }
 });
 

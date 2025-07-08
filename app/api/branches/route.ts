@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth';
+import { getUserFromHeaders, requireAuth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { AddBranchFormValues } from '@/lib/validations/branch';
 import Branch from '@/models/Branch';
@@ -6,14 +6,14 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication and authorization
-    const authResult = await requireAuth(['superadmin', 'admin'])(request);
-    // If authResult is a Response object, it means authentication/authorization failed
-    if (authResult instanceof Response) {
-      return authResult;
+    // Get user from headers set by middleware
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // authResult is now the authenticated user
-    const user = authResult;
+    if (user.role !== 'admin' && user.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const page = Number.parseInt(searchParams.get('page') || '1');
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const branchData: AddBranchFormValues = await request.json();
     const existingChurchBranch = await Branch.findOne({
       branchName: branchData.branchName,
-      churchId: user.churchId,
+      churchId: user.user?.churchId,
     });
     if (existingChurchBranch) {
       return NextResponse.json(
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
     const branch = new Branch({
       ...branchData,
-      churchId: user.churchId,
+      churchId: user.user?.churchId,
     });
     await branch.save();
     return NextResponse.json(branch, { status: 201 });
