@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/apiLogger';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
 
 async function logoutHandler(request: NextRequest) {
@@ -15,10 +15,11 @@ async function logoutHandler(request: NextRequest) {
     let userInfo = null;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+        const { payload } = await jwtVerify(token, secret);
         userInfo = {
-          userId: decoded.userId,
-          role: decoded.role,
+          userId: payload.sub,
+          role: payload.role,
         };
       } catch (error) {
         // Token might be invalid or expired, but we'll still proceed with logout

@@ -1,6 +1,7 @@
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/apiLogger';
 import dbConnect from '@/lib/mongodb';
+import { getUserId } from '@/lib/utils';
 import User from '@/models/User';
 import { SignJWT } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -62,9 +63,9 @@ async function loginHandler(request: NextRequest) {
     // Generate JWT token using JOSE
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const token = await new SignJWT({
-      sub: existingUser?._id,
-      churchId: existingUser?.churchId ?? null,
-      branchId: existingUser?.branchId ?? null,
+      sub: getUserId(existingUser._id),
+      churchId: existingUser?.churchId ? getUserId(existingUser.churchId) : null,
+      branchId: existingUser?.branchId ? getUserId(existingUser.branchId) : null,
       role: existingUser?.role?.name,
     })
       .setProtectedHeader({ alg: 'HS256' })

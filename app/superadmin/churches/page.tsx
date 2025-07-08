@@ -1,6 +1,7 @@
 'use client';
 
 import { AddChurchForm } from '@/components/forms/add-church-form';
+import { useAuthProvider } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useRole } from '@/lib/use-role';
 import {
   Building2,
   DollarSign,
@@ -193,6 +195,14 @@ export default function ChurchesPage() {
         return <Badge variant='secondary'>{plan}</Badge>;
     }
   };
+
+  const { isSuperAdmin, isAdmin, hasRole } = useRole();
+
+  const { user, isLoading, isAuthenticated } = useAuthProvider();
+
+  console.log({ isSuperAdmin, isAdmin, hasRole });
+
+  console.log({ user, isLoading, isAuthenticated });
 
   return (
     <div className='space-y-6'>

@@ -1,17 +1,26 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function UnauthorizedPage() {
   const router = useRouter();
+  const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
-    // Optional: Auto-redirect after a delay
-    const timer = setTimeout(() => {
-      router.push('/auth/login');
-    }, 10000); // Redirect after 10 seconds
-    return () => clearTimeout(timer);
+    // Countdown timer that updates every second
+    const countdownTimer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          router.push('/auth/login');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Cleanup timer on component unmount
+    return () => clearInterval(countdownTimer);
   }, [router]);
 
   const handleGoBack = () => {
@@ -79,9 +88,11 @@ export default function UnauthorizedPage() {
               Go Back
             </button>
           </div>
-          {/* Auto-redirect notice */}
+          {/* Auto-redirect notice with countdown */}
           <div className='mt-6 text-center text-xs text-gray-500'>
-            You will be automatically redirected to the login page in 10 seconds
+            You will be automatically redirected to the login page in{' '}
+            <span className='font-medium text-blue-600'>{countdown}</span>
+            {countdown === 1 ? ' second' : ' seconds'}
           </div>
         </div>
       </div>

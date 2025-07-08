@@ -234,3 +234,14 @@ export const SUBSCRIPTION_PLANS = [
     description: 'Custom solution for large churches',
   },
 ];
+
+export const getUserId = (userId: any): string => {
+  if (typeof userId === 'string') return userId;
+  if (userId && typeof userId === 'object' && userId.toString) {
+    return userId.toString();
+  }
+  if (Buffer.isBuffer(userId)) {
+    return userId.toString('hex');
+  }
+  return 'unknown';
+};
