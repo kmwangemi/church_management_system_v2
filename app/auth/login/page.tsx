@@ -1,8 +1,5 @@
-'use client';
-
-import RenderApiError from '@/components/ApiError';
-import { PasswordInput } from '@/components/password-input';
-import { Button } from '@/components/ui/button';
+import LoginForm from '@/components/forms/login-form';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import {
   Card,
   CardContent,
@@ -10,62 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { useLogin } from '@/lib/hooks/auth/use-login';
-import { errorToastStyle } from '@/lib/toast-styles';
-import { LoginPayload, loginSchema } from '@/lib/validations/auth';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Church, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import { Church } from 'lucide-react';
+import { Suspense } from 'react';
 
 export default function LoginPage() {
-  const searchParams = useSearchParams();
-  const reason = searchParams.get('reason');
-  const router = useRouter();
-  const form = useForm<LoginPayload>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-  const {
-    mutateAsync: loginMutation,
-    isPending: isPending,
-    isError: isError,
-    error: error,
-  } = useLogin();
-  const { reset } = form;
-  const onSubmit = async (payload: LoginPayload) => {
-    const result = await loginMutation(payload);
-    if (result && result.user.role === 'superadmin') {
-      router.push('/superadmin');
-    } else if (result && result.user.role === 'member') {
-      router.push('/member');
-    } else {
-      router.push('/dashboard');
-    }
-    reset();
-  };
-  useEffect(() => {
-    if (reason === 'expired') {
-      toast.error('Your session has expired. Please log in again.', {
-        style: errorToastStyle,
-      });
-    }
-  }, [reason]);
   return (
     <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4'>
       <div className='w-full max-w-md'>
@@ -87,72 +32,9 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isError && <RenderApiError error={error} />}
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className='space-y-6'
-              >
-                <FormField
-                  control={form.control}
-                  name='email'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-gray-700'>
-                        Email Address
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type='email'
-                          placeholder='Enter your email'
-                          className='h-11'
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name='password'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <PasswordInput
-                          placeholder='Enter your password'
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type='submit'
-                  className='w-full h-11'
-                  disabled={!form.formState.isValid || isPending}
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
-                </Button>
-              </form>
-            </Form>
-            <div className='mt-4 text-center'>
-              <Link
-                href='/auth/forgot-password'
-                className='text-sm text-blue-600 hover:text-blue-500 font-medium'
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <Suspense fallback={<SpinnerLoader />}>
+              <LoginForm />
+            </Suspense>
           </CardContent>
         </Card>
       </div>
