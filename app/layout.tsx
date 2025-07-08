@@ -1,4 +1,5 @@
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { AuthProvider } from '@/components/providers/auth-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
@@ -31,7 +32,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            <ErrorBoundary>{children}</ErrorBoundary>
+            <ErrorBoundary>
+              <AuthProvider>{children}</AuthProvider>
+            </ErrorBoundary>
           </QueryProvider>
           <Toaster
             position='bottom-right'

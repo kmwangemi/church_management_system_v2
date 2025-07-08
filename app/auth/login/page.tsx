@@ -20,14 +20,19 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useLogin } from '@/lib/hooks/auth/use-login';
+import { errorToastStyle } from '@/lib/toast-styles';
 import { LoginPayload, loginSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const reason = searchParams.get('reason');
   const router = useRouter();
   const form = useForm<LoginPayload>({
     resolver: zodResolver(loginSchema),
@@ -54,6 +59,13 @@ export default function LoginPage() {
     }
     reset();
   };
+  useEffect(() => {
+    if (reason === 'expired') {
+      toast.error('Your session has expired. Please log in again.', {
+        style: errorToastStyle,
+      });
+    }
+  }, [reason]);
   return (
     <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4'>
       <div className='w-full max-w-md'>

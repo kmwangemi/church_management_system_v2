@@ -20,6 +20,21 @@ export interface APIError {
   name?: string;
 }
 
+export interface AuthUser {
+  sub: string;
+  churchId: string;
+  branchId: string;
+  role: string;
+  email?: string;
+  name?: string;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
 export interface LoginResponse {
   message: string;
   user: {
@@ -120,4 +135,3 @@ export interface DepartmentListResponse {
   departments: Department[];
   pagination: Pagination;
 }
-
