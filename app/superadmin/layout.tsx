@@ -38,6 +38,8 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useAuthProvider } from '@/components/providers/auth-provider';
+import { getFirstLetter } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/superadmin', icon: BarChart3 },
@@ -56,6 +58,7 @@ export default function SuperAdminLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, isLoading, isAuthenticated } = useAuthProvider();
   const NavItems = () => (
     <>
       {navigation.map(item => {
@@ -78,7 +81,6 @@ export default function SuperAdminLayout({
       })}
     </>
   );
-
   return (
     <div className='min-h-screen bg-gray-50'>
       {/* Mobile sidebar */}
@@ -174,7 +176,7 @@ export default function SuperAdminLayout({
             <div className='flex items-center gap-x-4 lg:gap-x-6'>
               <Button variant='ghost' size='sm' className='relative'>
                 <Bell className='h-5 w-5' />
-                <Badge className='absolute -right-1 -top-1 h-4 w-4 p-0 text-xs bg-red-500'>
+                <Badge className='-right-1 -top-1 absolute flex size-5 items-center justify-center rounded-full bg-red-500 text-white text-xs'>
                   3
                 </Badge>
               </Button>
@@ -186,10 +188,14 @@ export default function SuperAdminLayout({
                   >
                     <Avatar className='h-8 w-8'>
                       <AvatarImage
-                        src='/placeholder.svg?height=32&width=32'
-                        alt='Admin'
+                        src={user?.profilePictureUrl || ''}
+                        alt={user?.firstName || 'Admin'}
                       />
-                      <AvatarFallback>SA</AvatarFallback>
+                      <AvatarFallback>{`${getFirstLetter(
+                        user?.firstName || '',
+                      )}${getFirstLetter(
+                        user?.lastName || '',
+                      )}`}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -200,7 +206,7 @@ export default function SuperAdminLayout({
                         Super Admin
                       </p>
                       <p className='text-xs leading-none text-muted-foreground'>
-                        admin@churchflow.com
+                        {user?.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>

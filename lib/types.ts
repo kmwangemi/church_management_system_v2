@@ -27,6 +27,10 @@ export interface AuthUser {
   role: string;
   email?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
+  profilePictureUrl?: string;
+  fullName?: string;
 }
 
 export interface AuthState {
