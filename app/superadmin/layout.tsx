@@ -2,6 +2,7 @@
 
 import type React from 'react';
 
+import { useAuthProvider } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { getFirstLetter } from '@/lib/utils';
 import {
   Activity,
   BarChart3,
@@ -38,8 +40,6 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { useAuthProvider } from '@/components/providers/auth-provider';
-import { getFirstLetter } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/superadmin', icon: BarChart3 },
@@ -58,7 +58,13 @@ export default function SuperAdminLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, isLoading, isAuthenticated } = useAuthProvider();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { user, isLoading, isAuthenticated, logout } = useAuthProvider();
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await logout();
+    setIsLoggingOut(false);
+  };
   const NavItems = () => (
     <>
       {navigation.map(item => {
@@ -220,9 +226,12 @@ export default function SuperAdminLayout({
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                  >
                     <LogOut className='mr-2 h-4 w-4' />
-                    <span>Log out</span>
+                    <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
