@@ -245,3 +245,38 @@ export const getUserId = (userId: any): string => {
   }
   return 'unknown';
 };
+
+// File type configurations
+export const FILE_CONFIGS = {
+  image: {
+    allowedTypes: /jpeg|jpg|png|gif|webp/i,
+    allowedMimeTypes: [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ],
+    maxSize: 5 * 1024 * 1024, // 5MB
+    folder: 'uploads/images',
+    resourceType: 'image' as const,
+  },
+  document: {
+    allowedTypes: /pdf|doc|docx/i,
+    allowedMimeTypes: [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+    maxSize: 10 * 1024 * 1024, // 10MB
+    folder: 'uploads/documents',
+    resourceType: 'raw' as const,
+  },
+  logo: {
+    allowedTypes: /jpeg|jpg|png|svg/i,
+    allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'],
+    maxSize: 2 * 1024 * 1024, // 2MB
+    folder: 'uploads/logos',
+    resourceType: 'image' as const,
+  },
+};
