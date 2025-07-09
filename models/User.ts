@@ -41,12 +41,10 @@ const UserSchema = new Schema(
     churchId: {
       type: Schema.Types.ObjectId,
       ref: 'Church',
-      required: false, // Handle validation in application layer
     },
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
-      required: false, // Handle validation in application layer
     },
     email: {
       type: String,
@@ -72,8 +70,8 @@ const UserSchema = new Schema(
     profilePictureUrl: { type: String, default: null },
     agreeToTerms: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },
-    isSuspended: { type: Boolean, trim: true, required: true, default: false },
-    isDeleted: { type: Boolean, trim: true, required: true, default: false },
+    isSuspended: { type: Boolean, required: true, default: false },
+    isDeleted: { type: Boolean, required: true, default: false },
     lastLogin: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
@@ -121,14 +119,25 @@ UserSchema.pre('save', async function (next) {
     // Check if role is superadmin (adjust the condition based on your role structure)
     const isSuperAdmin =
       userRole.name === 'superadmin' || userRole.code === 'SUPERADMIN';
-    if (!isSuperAdmin) {
-      // If not superadmin, churchId and branchId are required
+    const isAdmin = userRole.name === 'admin' || userRole.code === 'ADMIN';
+    // Validate churchId and branchId based on user role
+    if (isSuperAdmin) {
+      // superadmin: churchId and branchId are not required
+      return next();
+    }
+    if (isAdmin) {
+      // admin: churchId required, branchId not required
       if (!this.churchId) {
-        throw new Error('churchId is required for non-superadmin users');
+        return next(new Error('churchId is required for admin users'));
       }
-      if (!this.branchId) {
-        throw new Error('branchId is required for non-superadmin users');
-      }
+      return next();
+    }
+    // all other roles: both churchId and branchId required
+    if (!this.churchId) {
+      return next(new Error('churchId is required for this role'));
+    }
+    if (!this.branchId) {
+      return next(new Error('branchId is required for this role'));
     }
     next();
   } catch (error) {

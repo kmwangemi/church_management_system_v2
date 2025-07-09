@@ -34,6 +34,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterChurch } from '@/lib/hooks/auth/use-register';
+import { useLogoUpload } from '@/lib/hooks/upload/use-file-upload';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   NUMBER_OF_CHURCH_BRANCHES_OPTIONS,
@@ -45,19 +46,38 @@ import {
   churchRegistrationSchema,
 } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, Church, MapPin, Upload, User } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Building2,
+  Church,
+  Loader2,
+  MapPin,
+  Upload,
+  User,
+  X,
+} from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export function AddChurchForm() {
-  const [isLoading, setIsLoading] = useState(false);
   const [currentTab, setCurrentTab] = useState('basic');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [tabValidationState, setTabValidationState] = useState({
     basic: false,
     contact: false,
     admin: false,
     subscription: false,
   });
+  const {
+    upload,
+    isUploading,
+    uploadProgress,
+    error: uploadError,
+    clearError,
+  } = useLogoUpload();
   const form = useForm<ChurchRegistrationPayload>({
     resolver: zodResolver(churchRegistrationSchema),
     mode: 'onTouched',
@@ -73,6 +93,7 @@ export function AddChurchForm() {
         phoneNumber: '',
         country: '',
         website: '',
+        churchLogoUrl: '',
         address: {
           address: '',
           city: '',
@@ -96,12 +117,58 @@ export function AddChurchForm() {
   });
   const {
     mutateAsync: registerChurchMutation,
-    isPending: isPending,
-    isError: isError,
-    error: error,
+    isPending,
+    isError,
+    error,
   } = useRegisterChurch();
-  const { reset, watch } = form;
-  console.log('watch payload--->', watch());
+  const { reset, watch, setValue } = form;
+  // Handle logo file selection
+  const handleLogoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    // Clear any previous errors
+    clearError();
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    // Validate file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB');
+      return;
+    }
+    setLogoFile(file);
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = e => {
+      setLogoPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  // Handle logo upload using the hook
+  const handleLogoUpload = async () => {
+    if (!logoFile) return;
+    try {
+      // Use the upload function from the hook
+      const uploadResponse = await upload(logoFile);
+      setValue('churchData.churchLogoUrl', uploadResponse || '');
+      toast.success('Logo uploaded successfully');
+    } catch (error) {
+      toast.error('Failed to upload logo');
+      console.error('Logo upload error:', error);
+    }
+  };
+  // Handle logo removal
+  const handleLogoRemove = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setValue('churchData.churchLogoUrl', '');
+    clearError(); // Clear any upload errors
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   // Validate current tab fields
   const validateCurrentTabFields = async (tabName: string) => {
     let isValid = true;
@@ -140,7 +207,6 @@ export function AddChurchForm() {
         ]);
         break;
     }
-    // Update validation state
     setTabValidationState(prev => ({
       ...prev,
       [tabName]: isValid,
@@ -151,10 +217,9 @@ export function AddChurchForm() {
   const handleNextTab = async () => {
     const tabs = ['basic', 'contact', 'admin', 'subscription'];
     const currentIndex = tabs.indexOf(currentTab);
-    // Validate current tab before proceeding
     const isCurrentTabValid = await validateCurrentTabFields(currentTab);
     if (!isCurrentTabValid) {
-      console.log('Please fix the errors before proceeding');
+      toast.error('Please fix the errors before proceeding');
       return;
     }
     if (currentIndex < tabs.length - 1) {
@@ -171,19 +236,35 @@ export function AddChurchForm() {
   };
   // Handle form submission
   const onSubmit = async (payload: ChurchRegistrationPayload) => {
-    console.log('Form submitted with payload:', payload);
-    // Validate all fields before submission
+    // Upload logo if selected but not uploaded yet
+    if (logoFile && !payload.churchData.churchLogoUrl) {
+      try {
+        setLogoUploading(true);
+        const churchLogoUrl = await upload(logoFile);
+        payload.churchData.churchLogoUrl = churchLogoUrl || '';
+      } catch (error) {
+        toast.error('Failed to upload logo');
+        return;
+      } finally {
+        setLogoUploading(false);
+      }
+    }
     const validation = churchRegistrationSchema.safeParse(payload);
     if (!validation.success) {
       console.log('Validation errors:', validation.error.issues);
+      toast.error('Please fix all validation errors');
       return;
     }
     try {
       await registerChurchMutation(payload);
-      console.log('Registration successful');
+      toast.success('Church registered successfully!');
       reset();
+      setLogoFile(null);
+      setLogoPreview(null);
+      setCurrentTab('basic');
     } catch (error) {
       console.error('Registration failed:', error);
+      toast.error('Registration failed. Please try again.');
     }
   };
   return (
@@ -344,30 +425,103 @@ export function AddChurchForm() {
                       </FormItem>
                     )}
                   />
-                  <div className='flex items-center space-x-4'>
-                    <Avatar className='h-16 w-16'>
-                      <AvatarImage
-                        src='/placeholder.svg?height=64&width=64'
-                        alt='Church Logo'
-                      />
-                      <AvatarFallback className='bg-blue-100 text-blue-600'>
-                        <Church className='h-8 w-8' />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <Button type='button' variant='outline' size='sm'>
-                        <Upload className='mr-2 h-4 w-4' />
-                        Upload Logo
-                      </Button>
-                      <p className='text-xs text-gray-500 mt-1'>
-                        PNG, JPG up to 2MB
-                      </p>
+                  {/* Logo Upload Section */}
+                  <div className='space-y-4'>
+                    <FormLabel>Church Logo (Optional)</FormLabel>
+                    <div className='flex items-center space-x-4'>
+                      <Avatar className='h-16 w-16'>
+                        <AvatarImage
+                          src={
+                            logoPreview ||
+                            watch('churchData.churchLogoUrl') ||
+                            ''
+                          }
+                          alt='Church Logo'
+                        />
+                        <AvatarFallback className='bg-blue-100 text-blue-600'>
+                          <Church className='h-8 w-8' />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className='flex-1'>
+                        <input
+                          ref={fileInputRef}
+                          type='file'
+                          accept='image/*'
+                          onChange={handleLogoSelect}
+                          className='hidden'
+                        />
+                        <div className='flex space-x-2'>
+                          {!logoFile ? (
+                            <Button
+                              type='button'
+                              variant='outline'
+                              size='sm'
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Upload className='mr-2 h-4 w-4' />
+                              Select Logo
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={handleLogoUpload}
+                                disabled={logoUploading}
+                              >
+                                {logoUploading ? (
+                                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                ) : (
+                                  <Upload className='mr-2 h-4 w-4' />
+                                )}
+                                {logoUploading ? 'Uploading...' : 'Upload'}
+                              </Button>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={handleLogoRemove}
+                              >
+                                <X className='mr-2 h-4 w-4' />
+                                Remove
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                        {/* Show upload progress */}
+                        {isUploading && (
+                          <div className='mt-2'>
+                            <div className='w-full bg-gray-200 rounded-full h-2'>
+                              <div
+                                className='bg-blue-600 h-2 rounded-full transition-all duration-300'
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
+                            <p className='text-xs text-gray-500 mt-1'>
+                              Uploading... {uploadProgress}%
+                            </p>
+                          </div>
+                        )}
+                        {/* Show error if any */}
+                        {uploadError && (
+                          <p className='text-xs text-red-500 mt-1'>
+                            {uploadError}
+                          </p>
+                        )}
+                        {!isUploading && !error && (
+                          <p className='text-xs text-gray-500 mt-1'>
+                            PNG, JPG up to 2MB
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Contact Tab - Same as original */}
           <TabsContent value='contact' className='space-y-6'>
             <Card>
               <CardHeader>
@@ -506,18 +660,13 @@ export function AddChurchForm() {
                       <FormLabel>
                         Country <span className='text-red-500'>*</span>
                       </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <CountrySelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder='Select your country'
-                          />
-                        </FormControl>
-                      </Select>
+                      <FormControl>
+                        <CountrySelect
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder='Select your country'
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -525,6 +674,7 @@ export function AddChurchForm() {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Admin Tab - Same as original */}
           <TabsContent value='admin' className='space-y-6'>
             <Card>
               <CardHeader>
@@ -662,6 +812,7 @@ export function AddChurchForm() {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Subscription Tab - Same as original */}
           <TabsContent value='subscription' className='space-y-6'>
             <Card>
               <CardHeader>
@@ -729,7 +880,7 @@ export function AddChurchForm() {
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className='cursor-pointer'>
@@ -763,7 +914,7 @@ export function AddChurchForm() {
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className='cursor-pointer'>
@@ -816,7 +967,7 @@ export function AddChurchForm() {
               Next
             </Button>
           ) : (
-            <Button type='submit' disabled={isPending}>
+            <Button type='submit' disabled={isPending || logoUploading}>
               {isPending ? 'Registering...' : 'Register Church'}
             </Button>
           )}

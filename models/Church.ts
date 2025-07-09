@@ -7,7 +7,7 @@ export interface IChurch extends Document {
   phoneNumber: string;
   website?: string;
   establishedDate: Date;
-  churchLogo?: string;
+  churchLogoUrl?: string;
   country: string;
   address: {
     city: string;
@@ -53,10 +53,10 @@ const ChurchSchema = new Schema<IChurch>(
     address: { type: AddressSchema, required: true },
     establishedDate: { type: Date, required: true, trim: true },
     website: { type: String, trim: true },
-    churchLogo: { type: String, trim: true },
+    churchLogoUrl: { type: String, trim: true },
     description: { type: String, trim: true, lowercase: true },
-    isSuspended: { type: Boolean, trim: true, required: true, default: false },
-    isDeleted: { type: Boolean, trim: true, required: true, default: false },
+    isSuspended: { type: Boolean, required: true, default: false },
+    isDeleted: { type: Boolean, required: true, default: false },
   },
   {
     timestamps: true,

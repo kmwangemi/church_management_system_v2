@@ -12,7 +12,7 @@ export const churchDataSchema = z.object({
   churchName: z.string().min(2, 'Church name must be at least 2 characters'),
   denomination: z.string().min(1, 'Please select a denomination'),
   description: z.string().optional(),
-  // establishedDate: z.string().min(1, 'Please enter establishment date'),
+  churchLogoUrl: z.string().optional().or(z.literal('')),
   establishedDate: z
     .string()
     .min(1, 'Please enter establishment date')
@@ -39,7 +39,6 @@ export const churchDataSchema = z.object({
     'premium',
     'enterprise',
   ]),
-  // expectedMembers: z.coerce.number().min(1, 'Please enter expected number of members'),
   // numberOfBranches: z.coerce.number().min(1, 'Please enter number of branches'),
   churchSize: z.string().min(1, 'Please select number of members'),
   numberOfBranches: z.string().min(1, 'Please enter number of branches'),

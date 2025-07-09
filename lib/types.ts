@@ -20,6 +20,24 @@ export interface APIError {
   name?: string;
 }
 
+export interface UploadResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    url: string;
+    secure_url: string;
+    public_id: string;
+    resource_type: string;
+    format: string;
+    bytes: number;
+    width?: number;
+    height?: number;
+    created_at: string;
+  };
+}
+
+export type FileType = 'image' | 'document' | 'logo';
+
 export interface AuthUser {
   sub: string;
   churchId: string;
