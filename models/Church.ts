@@ -9,9 +9,13 @@ export interface IChurch extends Document {
   establishedDate: Date;
   churchLogoUrl?: string;
   country: string;
+  churchSize: string;
+  numberOfBranches: string;
+  subscriptionPlan: 'basic' | 'standard' | 'premium' | 'enterprise';
+  createdBy: string | mongoose.Types.ObjectId;
   address: {
-    city: string;
     address: string;
+    city: string;
     state?: string;
     zipCode?: string;
   };
@@ -53,6 +57,29 @@ const ChurchSchema = new Schema<IChurch>(
     address: { type: AddressSchema, required: true },
     establishedDate: { type: Date, required: true, trim: true },
     website: { type: String, trim: true },
+    subscriptionPlan: {
+      type: String,
+      required: true,
+      enum: ['basic', 'standard', 'premium', 'enterprise'],
+      default: 'basic',
+    },
+    churchSize: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    numberOfBranches: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     churchLogoUrl: { type: String, trim: true },
     description: { type: String, trim: true, lowercase: true },
     isSuspended: { type: Boolean, required: true, default: false },

@@ -10,7 +10,6 @@ dotenv.config({ path: '.env' });
 
 // Import your models with proper paths
 import dbConnect from '@/lib/mongodb';
-import { Role } from '@/models/Role';
 import SuperAdmin from '@/models/SuperAdmin';
 import User from '@/models/User';
 
@@ -100,32 +99,46 @@ const superadminData: SuperadminData = {
   },
 };
 
-async function findSuperadminRole() {
-  console.log('🔍 Looking for superadmin role...');
-  // Try different ways to find the superadmin role
-  let superadminRole = await Role.findOne({ code: 'SUPERADMIN' });
-  if (!superadminRole) {
-    superadminRole = await Role.findOne({ name: 'superadmin' });
-  }
-  if (!superadminRole) {
-    superadminRole = await Role.findOne({
-      name: { $regex: /superadmin/i },
+async function createSystemUser() {
+  console.log('🔍 Looking for system user for createdBy field...');
+  // Try to find an existing system user or create one
+  let systemUser = await User.findOne({
+    email: 'system@internal.local',
+    role: 'superadmin',
+  });
+  if (!systemUser) {
+    console.log('🔧 Creating system user for createdBy references...');
+    systemUser = new User({
+      email: 'system@internal.local',
+      password: 'SystemUser123!', // This will be hashed automatically
+      firstName: 'System',
+      lastName: 'User',
+      phoneNumber: '+0000000000',
+      role: 'superadmin',
+      // churchId and branchId are optional for superadmin
+      agreeToTerms: true,
+      isActive: true,
+      isSuspended: false,
+      isDeleted: false,
+      createdBy: null, // Will be set after creation
     });
+    // Save without createdBy first
+    await systemUser.save();
+    // Update createdBy to reference itself
+    systemUser.createdBy = systemUser._id;
+    await systemUser.save();
+    console.log('✅ System user created successfully');
+  } else {
+    console.log('✅ System user already exists');
   }
-  if (!superadminRole) {
-    throw new Error(
-      '❌ Superadmin role not found. Please run your roles seeding script first.',
-    );
-  }
-  console.log(`✅ Found superadmin role: ${superadminRole.name}`);
-  return superadminRole;
+  return systemUser;
 }
 
 async function seedSuperAdmin() {
   console.log('🌱 Seeding superadmin user...');
   try {
-    // Find the superadmin role
-    const superadminRole = await findSuperadminRole();
+    // First, ensure we have a system user for createdBy
+    const systemUser = await createSystemUser();
     // Check if superadmin user already exists
     const existingUser = await User.findOne({ email: superadminData.email });
     if (existingUser) {
@@ -150,19 +163,23 @@ async function seedSuperAdmin() {
       console.log('✅ SuperAdmin record created successfully');
       return;
     }
-    // Hash the password
-    // const hashedPassword = await bcrypt.hash(superadminData.password, 12);
-    // Create superadmin user
+    // Create superadmin user with new model structure
     const superadmin = new User({
       email: superadminData.email,
-      password: superadminData.password,
+      password: superadminData.password, // Will be hashed automatically by pre-save middleware
       firstName: superadminData.firstName,
       lastName: superadminData.lastName,
       phoneNumber: superadminData.phoneNumber,
-      role: superadminRole._id,
-      // Note: churchId and branchId are intentionally omitted for superadmin
+      role: 'superadmin', // Direct string value instead of ObjectId reference
+      // churchId and branchId are intentionally omitted for superadmin (optional)
+      createdBy: systemUser._id, // Reference to system user
       agreeToTerms: true,
       isActive: true,
+      isSuspended: false,
+      isDeleted: false,
+      // Rate limiting fields will be set to default values
+      loginAttempts: 0,
+      // lockUntil is optional and will be undefined initially
     });
     await superadmin.save();
     console.log('✅ Successfully created superadmin user');
@@ -177,6 +194,7 @@ async function seedSuperAdmin() {
     console.log(`📧 Email: ${superadminData.email}`);
     console.log(`🔑 Password: ${superadminData.password}`);
     console.log(`🆔 SuperAdmin ID: ${superadminData.superAdminId}`);
+    console.log(`👤 Created By: ${systemUser.email}`);
     console.log('⚠️  Please change the default password after first login');
   } catch (error) {
     console.error('❌ Failed to create superadmin user:', error);

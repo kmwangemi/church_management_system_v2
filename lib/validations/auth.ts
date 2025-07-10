@@ -74,6 +74,8 @@ export const churchRegistrationSchema = z.object({
   adminData: adminDataSchema,
 });
 
+export type ChurchPayload = z.infer<typeof churchDataSchema>;
+export type AdminPayload = z.infer<typeof adminDataSchema>;
 export type ChurchRegistrationPayload = z.infer<
   typeof churchRegistrationSchema
 >;

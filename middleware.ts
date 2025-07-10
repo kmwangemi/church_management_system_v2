@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
   }
   // Optional: Add user data to headers for use in your app
   const response = NextResponse.next();
-  response.headers.set('x-user-id', user.user.userId);
+  response.headers.set('x-user-id', user.user.sub);
   response.headers.set('x-church-id', user.user.churchId);
   response.headers.set('x-branch-id', user.user.branchId);
   response.headers.set('x-user-role', user.user.role);

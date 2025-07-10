@@ -8,6 +8,9 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isError: boolean;
+  error: Error | null;
+  // Methods
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
 }
