@@ -2,13 +2,22 @@
 
 import { AuthUser } from '@/lib/types';
 import { useAuth } from '@/lib/use-auth';
-import { createContext, ReactNode, useContext } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  logout: () => Promise<void>;
+  isError: boolean;
+  error: Error | null;
+  isInitialized: boolean; // Add this to track if auth has been checked
+  logout: () => void;
   checkAuthStatus: () => Promise<void>;
 }
 
@@ -16,10 +25,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Track when the initial auth check is complete
+  useEffect(() => {
+    if (!auth.isLoading && !isInitialized) {
+      setIsInitialized(true);
+    }
+  }, [auth.isLoading, isInitialized]);
+
+  return (
+    <AuthContext.Provider value={{ ...auth, isInitialized }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-export function useAuthProvider() {
+export function useAuthContext() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuthContext must be used within an AuthProvider');

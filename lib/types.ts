@@ -54,6 +54,8 @@ export interface AuthUser {
 export interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
+  isError: boolean;
+  error?: APIError;
   isAuthenticated: boolean;
 }
 

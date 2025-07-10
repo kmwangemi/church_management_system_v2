@@ -1,8 +1,9 @@
+import { AppInitializer } from '@/components/AppInitializer';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { AuthProvider } from '@/components/providers/auth-provider';
-import { QueryProvider } from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { QueryProvider } from '@/providers/query-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -33,16 +34,18 @@ export default function RootLayout({
         >
           <QueryProvider>
             <ErrorBoundary>
-              <AuthProvider>{children}</AuthProvider>
+              <AuthProvider>
+                <AppInitializer>{children}</AppInitializer>
+              </AuthProvider>
             </ErrorBoundary>
           </QueryProvider>
           <Toaster
             position='bottom-right'
             toastOptions={{
               style: {
-                backgroundColor: '#f9fafb', // Tailwind gray-50
-                color: '#111827', // Tailwind gray-900
-                border: '1px solid #e5e7eb', // Tailwind gray-200
+                backgroundColor: '#f9fafb',
+                color: '#111827',
+                border: '1px solid #e5e7eb',
               },
             }}
           />

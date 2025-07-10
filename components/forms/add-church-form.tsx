@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterChurch } from '@/lib/hooks/auth/use-register';
+import { useRegisterChurch } from '@/lib/hooks/auth/use-register-queries';
 import { useLogoUpload } from '@/lib/hooks/upload/use-file-upload';
 import {
   CHURCH_DENOMINATION_OPTIONS,
@@ -257,7 +257,6 @@ export function AddChurchForm() {
     }
     try {
       await registerChurchMutation(payload);
-      toast.success('Church registered successfully!');
       reset();
       setLogoFile(null);
       setLogoPreview(null);

@@ -1,6 +1,12 @@
+import { verifyToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/apiLogger';
 import dbConnect from '@/lib/mongodb';
+import {
+  createValidationErrorResponse,
+  validateWithZod,
+} from '@/lib/validation';
+import { churchRegistrationSchema } from '@/lib/validations/auth';
 import Church from '@/models/Church';
 import User from '@/models/User';
 import mongoose from 'mongoose';
@@ -14,35 +20,39 @@ async function registerHandler(request: NextRequest) {
     { requestId, endpoint: '/api/auth/register' },
     'api',
   );
+  const { user } = await verifyToken(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (user.role !== 'superadmin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     // FIRST: Connect to database
     await dbConnect();
     contextLogger.info('Database connection established');
-    // THEN: Start a session for the transaction
-    session = await mongoose.startSession();
+    // Parse and validate request body
     const body = await request.json();
-    const { churchData, adminData } = body;
+    // Validate the entire request body with Zod
+    const validation = validateWithZod(churchRegistrationSchema, body);
+    if (!validation.success) {
+      contextLogger.warn('Validation failed during registration', {
+        errors: validation.errors,
+        requestBody: body,
+      });
+
+      return createValidationErrorResponse(validation.errors);
+    }
+    // Extract validated data
+    const { churchData, adminData } = validation.data;
+    // Start a session for the transaction
+    session = await mongoose.startSession();
     contextLogger.info('Starting church registration transaction', {
       churchEmail: churchData.email,
       adminEmail: adminData.email,
     });
     // Start the transaction
     await session.startTransaction();
-    // Validate that the role exists
-    // const roleExists = await Role.findById(adminData.role).session(session);
-    // const roleExists = await Role.findOne({
-    //   email: churchData.email,
-    // }).session(session);
-    // if (!roleExists) {
-    //   contextLogger.warn('Invalid role specified during registration', {
-    //     providedRoleId: adminData.role,
-    //   });
-    //   await session.abortTransaction();
-    //   return NextResponse.json(
-    //     { error: 'Invalid role specified' },
-    //     { status: 400 },
-    //   );
-    // }
     // Check if church email already exists
     const existingChurchEmail = await Church.findOne({
       email: churchData.email,
@@ -106,7 +116,22 @@ async function registerHandler(request: NextRequest) {
       );
     }
     // Create church within the transaction
-    const church = new Church(churchData);
+    const church = new Church({
+      churchName: churchData.churchName,
+      denomination: churchData.denomination,
+      description: churchData.description,
+      churchLogoUrl: churchData.churchLogoUrl,
+      establishedDate: new Date(churchData.establishedDate),
+      email: churchData.email,
+      phoneNumber: churchData.phoneNumber,
+      country: churchData.country,
+      website: churchData.website,
+      address: churchData.address,
+      subscriptionPlan: churchData.subscriptionPlan,
+      churchSize: churchData.churchSize,
+      numberOfBranches: churchData.numberOfBranches,
+      createdBy: user.sub,
+    });
     await church.save({ session });
     contextLogger.info('Church created successfully', {
       churchId: church._id.toString(),
@@ -119,8 +144,14 @@ async function registerHandler(request: NextRequest) {
       password: adminData.password,
       firstName: adminData.firstName,
       lastName: adminData.lastName,
-      role: '6869451cd2c5336aef1196eb', // admin id
+      role: 'admin',
       phoneNumber: adminData.phoneNumber,
+      agreeToTerms: true,
+      isActive: true,
+      isSuspended: false,
+      isDeleted: false,
+      loginAttempts: 0,
+      createdBy: user.sub,
     });
     await admin.save({ session });
     contextLogger.info('Admin user created successfully', {
@@ -137,8 +168,18 @@ async function registerHandler(request: NextRequest) {
     return NextResponse.json(
       {
         message: 'Church and admin user created successfully',
-        churchId: church._id,
-        userId: admin._id,
+        church: {
+          id: church._id,
+          name: church.name,
+          email: church.email,
+        },
+        admin: {
+          id: admin._id,
+          email: admin.email,
+          firstName: admin.firstName,
+          lastName: admin.lastName,
+          role: admin.role,
+        },
       },
       { status: 201 },
     );

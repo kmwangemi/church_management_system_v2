@@ -17,6 +17,15 @@ const RoleSchema = new Schema<IRole>(
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
+      enum: [
+        'member',
+        'visitor',
+        'pastor',
+        'bishop',
+        'admin',
+        'superadmin',
+      ],
     },
     description: {
       type: String,

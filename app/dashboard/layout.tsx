@@ -20,7 +20,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
 import {
   BarChart3,
   Bell,
@@ -42,8 +43,8 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, badge: null },
@@ -103,34 +104,20 @@ const navigation = [
   },
 ];
 
-interface User {
-  email: string;
-  role: string;
-  name: string;
-  churchName?: string;
-}
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
-  useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      router.push('/auth/login');
-    }
-  }, [router]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { user, isLoading, isAuthenticated, isError, logout } =
+    useAuthContext();
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    router.push('/auth/login');
+    setIsLoggingOut(true);
+    logout();
+    setIsLoggingOut(false);
   };
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
@@ -164,17 +151,14 @@ export default function DashboardLayout({
       {user && (
         <div className='p-4 border-b bg-gray-50'>
           <div className='flex items-center space-x-3'>
-            <Avatar className='h-10 w-10'>
+            <Avatar className='h-8 w-8'>
               <AvatarImage
-                src='/placeholder.svg?height=40&width=40'
-                alt={user.name}
+                src={user?.profilePictureUrl || ''}
+                alt={user?.firstName || 'Admin'}
               />
-              <AvatarFallback className='bg-blue-100 text-blue-600'>
-                {user.name
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')}
-              </AvatarFallback>
+              <AvatarFallback>{`${getFirstLetter(
+                user?.firstName || '',
+              )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
             </Avatar>
             <div className='flex-1 min-w-0'>
               <p className='text-sm font-medium text-gray-900 truncate'>
@@ -185,14 +169,14 @@ export default function DashboardLayout({
                   variant='secondary'
                   className={cn('text-xs', getRoleColor(user.role))}
                 >
-                  {user.role}
+                  {capitalizeFirstLetter(user.role)}
                 </Badge>
               </div>
             </div>
           </div>
-          {user.churchName && (
+          {'churchName' in user && (user as any).churchName && (
             <p className='text-xs text-gray-500 mt-2 truncate'>
-              {user.churchName}
+              {(user as any).churchName}
             </p>
           )}
         </div>
@@ -307,7 +291,9 @@ export default function DashboardLayout({
                   'Dashboard'}
               </h1>
               <p className='text-sm text-gray-500 hidden sm:block'>
-                {user.churchName || 'Church Management System'}
+                {'churchName' in user && (user as any).churchName
+                  ? (user as any).churchName
+                  : 'Church Management System'}
               </p>
             </div>
           </div>
@@ -326,15 +312,12 @@ export default function DashboardLayout({
                 >
                   <Avatar className='h-8 w-8'>
                     <AvatarImage
-                      src='/placeholder.svg?height=32&width=32'
-                      alt={user.name}
+                      src={user?.profilePictureUrl || ''}
+                      alt={user?.firstName || 'Admin'}
                     />
-                    <AvatarFallback className='bg-blue-100 text-blue-600'>
-                      {user.name
-                        .split(' ')
-                        .map(n => n[0])
-                        .join('')}
-                    </AvatarFallback>
+                    <AvatarFallback>{`${getFirstLetter(
+                      user?.firstName || '',
+                    )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -342,7 +325,7 @@ export default function DashboardLayout({
                 <DropdownMenuLabel className='font-normal'>
                   <div className='flex flex-col space-y-1'>
                     <p className='text-sm font-medium leading-none'>
-                      {user.name}
+                      {capitalizeFirstLetter(user.role)}
                     </p>
                     <p className='text-xs leading-none text-muted-foreground'>
                       {user.email}
@@ -363,9 +346,12 @@ export default function DashboardLayout({
                   <span>Help & Support</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                >
                   <LogOut className='mr-2 h-4 w-4' />
-                  <span>Log out</span>
+                  <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
