@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStatus, useLogout } from '@/lib/hooks/auth/use-auth';
+import { useAuthStatus, useLogout } from '@/lib/hooks/auth/use-auth-queries';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function useAuth() {
@@ -10,8 +10,7 @@ export function useAuth() {
   return {
     user: data?.user ?? null,
     isLoading: isPending,
-    // isAuthenticated: !!data?.user,
-    isAuthenticated: isSuccess,
+    isAuthenticated: isSuccess && !!data?.user,
     isError,
     error: error ?? null,
     logout: logoutMutation.mutate,

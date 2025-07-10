@@ -3,22 +3,28 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
 // -------------
-// Check auth status
+// Types
 // -------------
 
-export interface VerifyResponse {
-  user: {
-    sub: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    profilePictureUrl: string;
-    churchId: string;
-    branchId: string;
-    role: string;
-    fullName: string;
-  };
+export interface AuthUser {
+  sub: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profilePictureUrl: string;
+  churchId: string;
+  branchId: string;
+  role: string;
+  fullName: string;
 }
+
+export interface VerifyResponse {
+  user: AuthUser;
+}
+
+// -------------
+// Check auth status
+// -------------
 
 const checkAuthStatus = async (): Promise<VerifyResponse> => {
   const { data } = await apiClient.get('/auth/verify');
@@ -29,6 +35,12 @@ export const useAuthStatus = () => {
   return useQuery({
     queryKey: ['authStatus'],
     queryFn: checkAuthStatus,
+    retry: false, // Don't retry auth checks
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    refetchOnWindowFocus: false,
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnReconnect: true,
   });
 };
 
@@ -46,11 +58,14 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: logoutRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['authStatus'] });
+      queryClient.clear(); // Clear all queries
       router.push('/auth/login');
     },
     onError: error => {
       console.error('Logout failed:', error);
+      // Still redirect on error as the intent is to logout
+      queryClient.clear();
+      router.push('/auth/login');
     },
   });
 };

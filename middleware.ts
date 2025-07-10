@@ -3,10 +3,9 @@ import { verifyToken } from './lib/auth';
 
 // Define protected routes and their required roles
 const protectedRoutes = {
-  '/superadmin': ['superadmin'],
-  '/admin': ['admin', 'superadmin'],
   '/member': ['member', 'admin', 'superadmin'],
   '/dashboard': ['member', 'admin', 'superadmin'],
+  '/superadmin': ['superadmin'],
 };
 
 export async function middleware(request: NextRequest) {
@@ -49,9 +48,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/superadmin/:path*',
     '/member/:path*',
+    '/dashboard/:path*',
+    '/superadmin/:path*',
   ],
 };

@@ -1,4 +1,4 @@
-import { getUserFromHeaders } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/apiLogger';
 import dbConnect from '@/lib/mongodb';
@@ -20,8 +20,7 @@ async function registerHandler(request: NextRequest) {
     { requestId, endpoint: '/api/auth/register' },
     'api',
   );
-  // Get user from headers set by middleware
-  const user = getUserFromHeaders(request);
+  const { user } = await verifyToken(request);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -145,7 +144,7 @@ async function registerHandler(request: NextRequest) {
       password: adminData.password,
       firstName: adminData.firstName,
       lastName: adminData.lastName,
-      role: 'superadmin',
+      role: 'admin',
       phoneNumber: adminData.phoneNumber,
       agreeToTerms: true,
       isActive: true,

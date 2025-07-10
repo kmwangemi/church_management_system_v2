@@ -2,7 +2,6 @@
 
 import type React from 'react';
 
-import { useAuthProvider } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { getFirstLetter } from '@/lib/utils';
 import {
   Activity,
@@ -59,10 +59,10 @@ export default function SuperAdminLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { user, isLoading, isAuthenticated, logout } = useAuthProvider();
-  const handleLogout = async () => {
+  const { user, isLoading, isAuthenticated, isError, logout } = useAuthContext();
+  const handleLogout = () => {
     setIsLoggingOut(true);
-    await logout();
+    logout();
     setIsLoggingOut(false);
   };
   const NavItems = () => (

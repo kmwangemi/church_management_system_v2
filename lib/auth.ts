@@ -84,6 +84,7 @@ export function requireAuth(roles?: string[]) {
 
 // For API routes - extract user from headers set by middleware
 export function getUserFromHeaders(request: NextRequest): AuthUser | null {
+  console.log('Extracting user from headers', request.headers);
   const userId = request.headers.get('x-user-id');
   const churchId = request.headers.get('x-church-id');
   const branchId = request.headers.get('x-branch-id');

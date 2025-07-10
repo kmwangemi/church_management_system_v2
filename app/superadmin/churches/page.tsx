@@ -1,7 +1,6 @@
 'use client';
 
 import { AddChurchForm } from '@/components/forms/add-church-form';
-import { useAuthProvider } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useRole } from '@/lib/use-role';
 import {
   Building2,
@@ -198,7 +198,7 @@ export default function ChurchesPage() {
 
   const { isSuperAdmin, isAdmin, hasRole } = useRole();
 
-  const { user, isLoading, isAuthenticated } = useAuthProvider();
+  const { user, isLoading, isAuthenticated } = useAuthContext();
 
   console.log({ isSuperAdmin, isAdmin, hasRole });
 

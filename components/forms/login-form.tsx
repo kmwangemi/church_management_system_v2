@@ -12,7 +12,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useLogin } from '@/lib/hooks/auth/use-login';
+import { useLogin } from '@/lib/hooks/auth/use-login-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
 import { LoginPayload, loginSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -45,12 +45,16 @@ export default function LoginForm() {
     const result = await loginMutation(payload);
     if (result && result.user.role === 'superadmin') {
       router.push('/superadmin');
-    } else if (result && result.user.role === 'member') {
-      router.push('/member');
-    } else {
+    } else if (result && result.user.role === 'admin') {
       router.push('/dashboard');
+    } else {
+      router.push('/member');
     }
     reset();
+    // Add reload after a short delay (2 seconds)
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
   };
   useEffect(() => {
     if (reason === 'expired') {
