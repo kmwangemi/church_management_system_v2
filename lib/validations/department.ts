@@ -9,4 +9,4 @@ export const addDepartmentSchema = z.object({
   description: z.string().optional(),
 });
 
-export type AddDepartmentFormValues = z.infer<typeof addDepartmentSchema>;
+export type AddDepartmentPayload = z.infer<typeof addDepartmentSchema>;

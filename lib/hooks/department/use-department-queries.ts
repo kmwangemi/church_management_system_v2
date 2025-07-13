@@ -1,12 +1,12 @@
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
 import { DepartmentAddResponse, DepartmentListResponse } from '@/lib/types';
-import { AddDepartmentFormValues } from '@/lib/validations/department';
+import { AddDepartmentPayload } from '@/lib/validations/department';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const registerDepartment = async (
-  payload: AddDepartmentFormValues,
+  payload: AddDepartmentPayload,
 ): Promise<DepartmentAddResponse> => {
   const { data } = await apiClient.post('/departments', payload);
   return data;

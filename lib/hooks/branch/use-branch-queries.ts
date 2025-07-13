@@ -1,12 +1,12 @@
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
 import { BranchAddResponse, BranchListResponse } from '@/lib/types';
-import { AddBranchFormValues } from '@/lib/validations/branch';
+import { AddBranchPayload } from '@/lib/validations/branch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const registerBranch = async (
-  payload: AddBranchFormValues,
+  payload: AddBranchPayload,
 ): Promise<BranchAddResponse> => {
   const { data } = await apiClient.post('/branches', payload);
   return data;

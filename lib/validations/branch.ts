@@ -12,4 +12,4 @@ export const addBranchSchema = z.object({
   establishedDate: z.string().min(1, 'Established date is required'),
 });
 
-export type AddBranchFormValues = z.infer<typeof addBranchSchema>;
+export type AddBranchPayload = z.infer<typeof addBranchSchema>;
