@@ -1,7 +1,5 @@
 // MultiSelect Component Implementation
 
-import { Check, ChevronDown, X } from 'lucide-react';
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +14,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Check, ChevronDown, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface MultiSelectOption {
   value: string;
@@ -80,7 +80,7 @@ export function MultiSelect({
               ))
             ) : (
               <Badge className="text-xs" variant="secondary">
-                {selected.length} departments selected
+                {selected.length} items selected
               </Badge>
             )}
           </div>
@@ -89,8 +89,8 @@ export function MultiSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-full p-0">
         <Command>
-          <CommandInput placeholder="Search departments..." />
-          <CommandEmpty>No department found.</CommandEmpty>
+          <CommandInput placeholder="Search items..." />
+          <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
             {options.map((option) => (
               <CommandItem

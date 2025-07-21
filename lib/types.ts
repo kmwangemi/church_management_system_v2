@@ -144,6 +144,9 @@ export interface Branch {
   branchName: string;
   address: string;
   country: string;
+  capacity: number;
+  pastorId?: string; // Optional, if not always present
+  members?: number; // Optional, if not always present
   establishedDate: string; // ISO string; use `Date` if you parse it
   isActive: boolean;
   createdAt: string;

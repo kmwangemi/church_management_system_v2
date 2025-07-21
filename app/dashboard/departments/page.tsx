@@ -1,8 +1,6 @@
-/** biome-ignore-all assist/source/organizeImports: ignore import sorting */
 'use client';
 
 import RenderApiError from '@/components/api-error';
-import { CustomSelect } from '@/components/custom-select';
 import { MultiSelect } from '@/components/multi-select';
 import SearchInput from '@/components/search-input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,6 +32,8 @@ import {
   YAxis,
 } from 'recharts';
 // import { Badge } from '@/components/ui/badge';
+import { TimeInput } from '@/components/time-input';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -73,12 +73,12 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
 import {
   useFetchDepartments,
   useRegisterDepartment,
 } from '@/lib/hooks/department/use-department-queries';
 import {
+  capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
   MEETING_DAY_OPTIONS,
 } from '@/lib/utils';
@@ -230,7 +230,6 @@ export default function DepartmentsPage() {
   // const router = useRouter();
   const searchParams = useSearchParams();
   // const pathname = usePathname();
-  // const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
@@ -245,18 +244,11 @@ export default function DepartmentsPage() {
     },
   });
   const {
-    data: branches,
-    // isLoading: isLoadingBranches,
-    // isError: isErrorBranches,
-    // error: errorBranches,
-  } = useFetchBranches(page, searchQuery);
-  const {
     data: departments,
     // isLoading: isLoadingDepartments,
     // isError: isErrorDepartments,
     // error: errorDepartments,
   } = useFetchDepartments(page, searchQuery);
-  // console.log('departments--->', JSON.stringify(departments));
   const {
     mutateAsync: registerDepartmentMutation,
     isPending: isPendingDepartment,
@@ -267,10 +259,9 @@ export default function DepartmentsPage() {
     resolver: zodResolver(addDepartmentSchema),
     defaultValues: {
       departmentName: '',
-      branchId: '',
       // leaderId: '',
       meetingDay: [],
-      meetingTime: '',
+      meetingTime: [],
       description: '',
     },
   });
@@ -352,42 +343,6 @@ export default function DepartmentsPage() {
                   )}
                 />
                 {/* <FormField
-                    control={departmentForm.control}
-                    name='branchId'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Church Branch
-                          <span className='text-red-500'>*</span>
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className='cursor-pointer'>
-                              <SelectValue placeholder='Select church branch' />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className='max-h-[400px] overflow-y-auto'>
-                            {branches?.branches?.map(option => (
-                              <SelectItem
-                                key={option._id}
-                                value={option._id}
-                                className='cursor-pointer'
-                              >
-                                {capitalizeFirstLetterOfEachWord(
-                                  option.branchName,
-                                )}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  /> */}
-                <FormField
                   control={departmentForm.control}
                   name="branchId"
                   render={({ field }) => (
@@ -415,7 +370,7 @@ export default function DepartmentsPage() {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
                 <FormField
                   control={departmentForm.control}
                   name="meetingDay"
@@ -442,10 +397,15 @@ export default function DepartmentsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Meeting Time <span className="text-red-500">*</span>
+                        Meeting Time(s) <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <TimeInput
+                          multiSelect
+                          onChange={field.onChange}
+                          placeholder="Select meeting times"
+                          value={field.value}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -719,22 +679,11 @@ export default function DepartmentsPage() {
         <TabsContent className="space-y-6" value="management">
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="mb-4">
-              <SearchInput
-                handleSubmit={handleSubmit}
-                placeholder="Search departments..."
-                register={register}
-              />
-            </div>
-            {/* <div className='relative flex-1'>
-              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4' />
-              <Input
-                placeholder='Search departments...'
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className='pl-10'
-              />
-            </div> */}
+            <SearchInput
+              handleSubmit={handleSubmit}
+              placeholder="Search departments..."
+              register={register}
+            />
             <Select onValueChange={setSelectedStatus} value={selectedStatus}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
@@ -762,23 +711,19 @@ export default function DepartmentsPage() {
                       </div>
                       <div>
                         <CardTitle className="text-lg">
-                          {dept.departmentName}
+                          {capitalizeFirstLetterOfEachWord(dept.departmentName)}
                         </CardTitle>
                         {/* <CardDescription>{dept.head}</CardDescription> */}
                       </div>
                     </div>
-                    {/* <Badge
-                      variant={
-                        dept.status === 'Active' ? 'default' : 'secondary'
-                      }
-                    >
-                      {dept.status}
-                    </Badge> */}
+                    <Badge variant={dept?.isActive ? 'default' : 'secondary'}>
+                      {dept?.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="mb-4 text-gray-600 text-sm">
-                    {dept.description}
+                    {capitalizeFirstLetter(dept.description)}
                   </p>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>

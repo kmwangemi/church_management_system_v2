@@ -2,12 +2,11 @@ import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IDepartment extends Document {
   churchId: mongoose.Types.ObjectId;
-  branchId: mongoose.Types.ObjectId;
   leaderId?: mongoose.Types.ObjectId;
   departmentName: string;
   description?: string;
   meetingDay: string[];
-  meetingTime: string;
+  meetingTime: string[];
   isActive: boolean;
   budget?: number;
   createdAt: Date;
@@ -30,12 +29,6 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
       ref: 'Church',
       required: true,
       trim: true,
-    },
-    branchId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Branch',
-      trim: true,
-      required: true,
     },
     leaderId: { type: Schema.Types.ObjectId, ref: 'User', trim: true },
     departmentName: {
@@ -77,10 +70,9 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
       },
     },
     meetingTime: {
-      type: String,
+      type: [String],
       required: true,
       trim: true,
-      lowercase: true,
     },
     description: { type: String, trim: true, lowercase: true },
     isActive: { type: Boolean, default: true },

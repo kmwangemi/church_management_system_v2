@@ -19,7 +19,7 @@ export const churchDataSchema = z.object({
     .refine((val) => !Number.isNaN(Date.parse(val)), {
       message: 'Please enter a valid date',
     }),
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email('Please enter a valid email address'),
   phoneNumber: z.string().min(8, 'Please enter a valid phone number'),
   country: z.string().min(2, 'Please enter country'),
   website: z

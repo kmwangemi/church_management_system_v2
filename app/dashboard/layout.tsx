@@ -1,5 +1,6 @@
-/** biome-ignore-all assist/source/organizeImports: ignore sorting imports */
 'use client';
+
+import type React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +44,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type React from 'react';
 import { useState } from 'react';
 
 const navigation = [
@@ -112,9 +112,9 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { user, logout } = useAuthContext();
   // const { user, isLoading, isAuthenticated, isError, logout } =
   //   useAuthContext();
-  const { user, logout } = useAuthContext();
   const handleLogout = () => {
     setIsLoggingOut(true);
     logout();
@@ -175,11 +175,11 @@ export default function DashboardLayout({
               </div>
             </div>
           </div>
-          {/* {'churchName' in user && (user as any).churchName && (
+          {'churchName' in user && (user as any).churchName && (
             <p className="mt-2 truncate text-gray-500 text-xs">
               {(user as any).churchName}
             </p>
-          )} */}
+          )}
         </div>
       )}
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">
@@ -291,11 +291,11 @@ export default function DashboardLayout({
                 {navigation.find((item) => item.href === pathname)?.name ||
                   'Dashboard'}
               </h1>
-              {/* <p className="hidden text-gray-500 text-sm sm:block">
+              <p className="hidden text-gray-500 text-sm sm:block">
                 {'churchName' in user && (user as any).churchName
                   ? (user as any).churchName
                   : 'Church Management System'}
-              </p> */}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">

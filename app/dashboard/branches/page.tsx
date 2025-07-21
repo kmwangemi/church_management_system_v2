@@ -18,24 +18,9 @@ import {
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
 import { DatePicker } from '@/components/date-picker';
+import { NumberInput } from '@/components/number-input';
 import SearchInput from '@/components/search-input';
-import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
-// import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -86,10 +71,27 @@ import {
   useFetchBranches,
   useRegisterBranch,
 } from '@/lib/hooks/branch/use-branch-queries';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   type AddBranchPayload,
   addBranchSchema,
 } from '@/lib/validations/branch';
+import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 // Mock data
 // const branches = [
@@ -201,7 +203,6 @@ export default function BranchesPage() {
       country: '',
       capacity: '',
       address: '',
-      // pastorId: '',
       establishedDate: '',
     },
   });
@@ -252,9 +253,7 @@ export default function BranchesPage() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Branch</DialogTitle>
-              <DialogDescription>
-                Create a new church branch location
-              </DialogDescription>
+              <DialogDescription>Create a new church branch</DialogDescription>
             </DialogHeader>
             {isErrorBranch && <RenderApiError error={errorBranch} />}
             <Form {...branchForm}>
@@ -302,45 +301,11 @@ export default function BranchesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Capacity <span className="text-red-500">*</span>
+                        Capacity (1-100,000 Members){' '}
+                        <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        {/* <Input type='number' placeholder='300' {...field} /> */}
-                        <Input
-                          inputMode="numeric"
-                          placeholder="Enter capacity number"
-                          type="text"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(
-                              /[^0-9.]/g,
-                              ''
-                            );
-                            field.onChange(value);
-                          }}
-                          onKeyDown={(e) => {
-                            // Disable arrow keys
-                            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                              e.preventDefault();
-                            }
-                            // Allow only numbers, backspace, delete, etc.
-                            // const allowedKeys = [
-                            //   'Backspace',
-                            //   'Delete',
-                            //   'Tab',
-                            //   'ArrowLeft',
-                            //   'ArrowRight',
-                            // ];
-                            // if (
-                            //   !(
-                            //     allowedKeys.includes(e.key) ||
-                            //     /[0-9.]/.test(e.key)
-                            //   )
-                            // ) {
-                            //   e.preventDefault();
-                            // }
-                          }}
-                        />
+                        <NumberInput placeholder="300" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -636,22 +601,11 @@ export default function BranchesPage() {
         <TabsContent className="space-y-6" value="management">
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="mb-4">
-              <SearchInput
-                handleSubmit={handleSubmit}
-                placeholder="Search branches..."
-                register={register}
-              />
-            </div>
-            {/* <div className='relative flex-1'>
-              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4' />
-              <Input
-                placeholder='Search branches...'
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className='pl-10'
-              />
-            </div> */}
+            <SearchInput
+              handleSubmit={handleSubmit}
+              placeholder="Search branches..."
+              register={register}
+            />
             <Select onValueChange={setSelectedStatus} value={selectedStatus}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
@@ -677,10 +631,10 @@ export default function BranchesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Branch</TableHead>
-                    <TableHead>Pastor</TableHead>
-                    <TableHead>Members</TableHead>
+                    {/* <TableHead>Pastor</TableHead> */}
+                    {/* <TableHead>Members</TableHead> */}
                     <TableHead>Capacity</TableHead>
-                    <TableHead>Growth</TableHead>
+                    {/* <TableHead>Growth</TableHead> */}
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -690,25 +644,27 @@ export default function BranchesPage() {
                     <TableRow key={branch._id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{branch.branchName}</div>
+                          <div className="font-medium">
+                            {capitalizeFirstLetterOfEachWord(branch.branchName)}
+                          </div>
                           <div className="flex items-center text-gray-500 text-sm">
                             <MapPin className="mr-1 h-3 w-3" />
-                            {branch.address}
+                            {capitalizeFirstLetterOfEachWord(branch.address)}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {/* <div>
+                      {/* <TableCell>
+                        <div>
                           <div className="font-medium">{branch?.pastor}</div>
                           <div className="flex items-center text-gray-500 text-sm">
                             <Phone className="mr-1 h-3 w-3" />
                             {branch?.phone}
                           </div>
-                        </div> */}
-                      </TableCell>
-                      {/* <TableCell>{branch?.members}</TableCell>
+                        </div>
+                      </TableCell> */}
+                      {/* <TableCell>{branch?.members}</TableCell> */}
                       <TableCell>{branch?.capacity}</TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <div
                           className={`flex items-center ${
                             branch.growth >= 0
@@ -726,13 +682,11 @@ export default function BranchesPage() {
                         </div>
                       </TableCell> */}
                       <TableCell>
-                        {/* <Badge
-                          variant={
-                            branch.status === 'Active' ? 'default' : 'secondary'
-                          }
+                        <Badge
+                          variant={branch?.isActive ? 'default' : 'secondary'}
                         >
-                          {branch.status}
-                        </Badge> */}
+                          {branch?.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
