@@ -69,7 +69,7 @@ const LogSchema = new Schema<ILog>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Compound indexes for efficient queries

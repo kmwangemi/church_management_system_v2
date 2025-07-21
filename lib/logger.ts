@@ -1,5 +1,10 @@
+/** biome-ignore-all lint/suspicious/noConsole: ignore lint issue */
+/** biome-ignore-all lint/style/noNestedTernary: ignore lint issue */
+/** biome-ignore-all lint/suspicious/useAwait: ignore lint issue */
+/** biome-ignore-all lint/style/useConsistentMemberAccessibility: ignore lint issue */
+/** biome-ignore-all lint/suspicious/noExplicitAny: ignore lint issue */
 import dbConnect from '@/lib/mongodb';
-import { Log } from '@/models/Log';
+import { Log } from '@/models/log';
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -79,10 +84,10 @@ class Logger {
       options.level === 'error'
         ? console.error
         : options.level === 'warn'
-        ? console.warn
-        : options.level === 'debug'
-        ? console.debug
-        : console.log;
+          ? console.warn
+          : options.level === 'debug'
+            ? console.debug
+            : console.log;
 
     if (options.error) {
       logMethod(`${prefix} ${options.message}`, options.error);
@@ -102,7 +107,7 @@ class Logger {
     }
 
     // Log to database (async, non-blocking)
-    this.logToDatabase(options).catch(error => {
+    this.logToDatabase(options).catch((error) => {
       console.error('Logger: Failed to log to database:', error);
     });
   }
@@ -111,7 +116,7 @@ class Logger {
     message: string,
     error?: Error | any,
     metadata?: LogContext,
-    source?: string,
+    source?: string
   ): Promise<void> {
     await this.log({
       level: 'error',
@@ -125,7 +130,7 @@ class Logger {
   public async warn(
     message: string,
     metadata?: LogContext,
-    source?: string,
+    source?: string
   ): Promise<void> {
     await this.log({
       level: 'warn',
@@ -138,7 +143,7 @@ class Logger {
   public async info(
     message: string,
     metadata?: LogContext,
-    source?: string,
+    source?: string
   ): Promise<void> {
     await this.log({
       level: 'info',
@@ -151,7 +156,7 @@ class Logger {
   public async debug(
     message: string,
     metadata?: LogContext,
-    source?: string,
+    source?: string
   ): Promise<void> {
     // Only log debug in development
     if (!this.isProduction) {
@@ -167,37 +172,37 @@ class Logger {
   // Utility method to create a logger with context
   public createContextLogger(
     defaultMetadata: LogContext,
-    defaultSource?: string,
+    defaultSource?: string
   ) {
     return {
       error: (
         message: string,
         error?: Error | any,
-        additionalMetadata?: LogContext,
+        additionalMetadata?: LogContext
       ) =>
         this.error(
           message,
           error,
           { ...defaultMetadata, ...additionalMetadata },
-          defaultSource,
+          defaultSource
         ),
       warn: (message: string, additionalMetadata?: LogContext) =>
         this.warn(
           message,
           { ...defaultMetadata, ...additionalMetadata },
-          defaultSource,
+          defaultSource
         ),
       info: (message: string, additionalMetadata?: LogContext) =>
         this.info(
           message,
           { ...defaultMetadata, ...additionalMetadata },
-          defaultSource,
+          defaultSource
         ),
       debug: (message: string, additionalMetadata?: LogContext) =>
         this.debug(
           message,
           { ...defaultMetadata, ...additionalMetadata },
-          defaultSource,
+          defaultSource
         ),
     };
   }
@@ -211,23 +216,23 @@ export const logError = (
   message: string,
   error?: Error | any,
   metadata?: LogContext,
-  source?: string,
+  source?: string
 ) => logger.error(message, error, metadata, source);
 
 export const logWarn = (
   message: string,
   metadata?: LogContext,
-  source?: string,
+  source?: string
 ) => logger.warn(message, metadata, source);
 
 export const logInfo = (
   message: string,
   metadata?: LogContext,
-  source?: string,
+  source?: string
 ) => logger.info(message, metadata, source);
 
 export const logDebug = (
   message: string,
   metadata?: LogContext,
-  source?: string,
+  source?: string
 ) => logger.debug(message, metadata, source);

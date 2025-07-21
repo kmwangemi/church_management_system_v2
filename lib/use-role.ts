@@ -1,23 +1,23 @@
 'use client';
 
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/auth-context';
 
 export function useRole() {
   const { user, isAuthenticated } = useAuthContext();
   const hasRole = (role: string | string[]) => {
-    if (!isAuthenticated || !user) return false;
+    if (!(isAuthenticated && user)) return false;
     if (Array.isArray(role)) {
       return role.includes(user.role);
     }
     return user.role === role;
   };
   const hasAnyRole = (roles: string[]) => {
-    if (!isAuthenticated || !user) return false;
+    if (!(isAuthenticated && user)) return false;
     return roles.includes(user.role);
   };
   const hasAllRoles = (roles: string[]) => {
-    if (!isAuthenticated || !user) return false;
-    return roles.every(role => user.role === role);
+    if (!(isAuthenticated && user)) return false;
+    return roles.every((role) => user.role === role);
   };
   return {
     hasRole,

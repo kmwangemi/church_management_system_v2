@@ -35,7 +35,7 @@ const StaffSchema = new Schema<IStaff>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Staff ||

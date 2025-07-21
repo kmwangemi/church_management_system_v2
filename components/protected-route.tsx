@@ -1,8 +1,8 @@
 'use client';
 
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -27,8 +27,8 @@ export function ProtectedRoute({
   if (!isInitialized || isLoading) {
     return (
       fallback || (
-        <div className='min-h-screen flex items-center justify-center'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-blue-600 border-b-2" />
         </div>
       )
     );
@@ -40,12 +40,12 @@ export function ProtectedRoute({
   // Check role requirements
   if (requiredRoles.length > 0 && user && !requiredRoles.includes(user.role)) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <div className='text-center'>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-2 font-bold text-2xl text-gray-900">
             Access Denied
           </h1>
-          <p className='text-gray-600'>
+          <p className="text-gray-600">
             You don't have permission to access this page.
           </p>
         </div>
@@ -54,11 +54,6 @@ export function ProtectedRoute({
   }
   return <>{children}</>;
 }
-
-
-
-
-
 
 // # 1. Basic Usage - Protect any authenticated route
 // # app/dashboard/page.tsx
@@ -119,7 +114,7 @@ export function ProtectedRoute({
 
 // export default function ProfilePage() {
 //   return (
-//     <ProtectedRoute 
+//     <ProtectedRoute
 //       fallback={
 //         <div className="min-h-screen flex items-center justify-center bg-blue-50">
 //           <div className="text-center">
@@ -173,7 +168,7 @@ export function ProtectedRoute({
 
 // export function AdminPanel() {
 //   return (
-//     <ProtectedRoute 
+//     <ProtectedRoute
 //       requiredRoles={['admin', 'superadmin']}
 //       fallback={
 //         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -251,17 +246,17 @@ export function ProtectedRoute({
 //   branchId?: string;
 // }
 
-// export function ConditionalProtection({ 
-//   children, 
-//   churchId, 
-//   branchId 
+// export function ConditionalProtection({
+//   children,
+//   churchId,
+//   branchId
 // }: ConditionalProtectionProps) {
 //   const { user } = useAuthContext();
 
 //   return (
 //     <ProtectedRoute>
 //       {/* Additional checks based on user's church/branch */}
-//       {(!churchId || user?.churchId === churchId) && 
+//       {(!churchId || user?.churchId === churchId) &&
 //        (!branchId || user?.branchId === branchId) ? (
 //         <>{children}</>
 //       ) : (
@@ -292,7 +287,7 @@ export function ProtectedRoute({
 //       const response = await fetch('/api/protected-data', {
 //         credentials: 'include', // Include cookies
 //       });
-      
+
 //       if (response.ok) {
 //         const result = await response.json();
 //         setData(result);
@@ -306,7 +301,7 @@ export function ProtectedRoute({
 //     <ProtectedRoute requiredRoles={['admin', 'superadmin']}>
 //       <div className="p-6">
 //         <h2 className="text-xl font-bold mb-4">Protected Data</h2>
-//         <button 
+//         <button
 //           onClick={fetchProtectedData}
 //           className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
 //         >
@@ -369,7 +364,7 @@ export function ProtectedRoute({
 //     <ProtectedRoute>
 //       <div className="p-6">
 //         <h1 className="text-2xl font-bold mb-4">Role-Based Content</h1>
-        
+
 //         {/* Content for all authenticated users */}
 //         <div className="mb-4">
 //           <p>This content is visible to all authenticated users.</p>

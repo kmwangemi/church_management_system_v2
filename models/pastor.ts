@@ -51,7 +51,7 @@ const PastorSchema = new Schema<IPastor>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Pastor ||

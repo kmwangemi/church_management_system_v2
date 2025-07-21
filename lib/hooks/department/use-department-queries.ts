@@ -1,12 +1,15 @@
-import apiClient from '@/lib/api-client';
-import { successToastStyle } from '@/lib/toast-styles';
-import { DepartmentAddResponse, DepartmentListResponse } from '@/lib/types';
-import { AddDepartmentPayload } from '@/lib/validations/department';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import apiClient from '@/lib/api-client';
+import { successToastStyle } from '@/lib/toast-styles';
+import type {
+  DepartmentAddResponse,
+  DepartmentListResponse,
+} from '@/lib/types';
+import type { AddDepartmentPayload } from '@/lib/validations/department';
 
 const registerDepartment = async (
-  payload: AddDepartmentPayload,
+  payload: AddDepartmentPayload
 ): Promise<DepartmentAddResponse> => {
   const { data } = await apiClient.post('/departments', payload);
   return data;
@@ -27,10 +30,10 @@ export const useRegisterDepartment = () => {
 
 const fetchDepartments = async (
   page = 1,
-  search = '',
+  search = ''
 ): Promise<DepartmentListResponse> => {
   const { data } = await apiClient.get(
-    `/departments?page=${page}&search=${search}`,
+    `/departments?page=${page}&search=${search}`
   );
   return data;
 };

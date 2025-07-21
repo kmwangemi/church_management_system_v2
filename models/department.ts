@@ -49,13 +49,13 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
       required: true,
       validate: [
         {
-          validator: function (arr: string[]): boolean {
+          validator(arr: string[]): boolean {
             return arr && arr.length > 0;
           },
           message: 'At least one meeting day is required',
         } as MeetingDayValidator,
         {
-          validator: function (arr: string[]): boolean {
+          validator(arr: string[]): boolean {
             const validDays = [
               'monday',
               'tuesday',
@@ -66,13 +66,13 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
               'sunday',
             ];
             return (arr as string[]).every((day: string) =>
-              validDays.includes(day.toLowerCase()),
+              validDays.includes(day.toLowerCase())
             );
           },
           message: 'Invalid meeting day provided',
         } as MeetingDayValidator,
       ],
-      set: function (arr: string[]): string[] {
+      set(arr: string[]): string[] {
         return arr.map((day: string) => day.toLowerCase().trim());
       },
     },
@@ -88,7 +88,7 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Department ||

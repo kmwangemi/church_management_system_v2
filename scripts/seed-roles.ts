@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noConsole: ignore consoles */
+/** biome-ignore-all lint/complexity/noForEach: ignore forEach Fxn */
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import promptSync from 'prompt-sync';
@@ -9,8 +11,8 @@ dotenv.config();
 dotenv.config({ path: '.env' });
 
 import dbConnect from '../lib/mongodb';
-import { Permission } from '../models/Permission';
-import { Role } from '../models/Role';
+import { Permission } from '../models/permission';
+import { Role } from '../models/role';
 
 // Initialize prompt
 const prompt = promptSync({ sigint: true });
@@ -197,10 +199,10 @@ const permissions = [
 // Validate required environment variables
 const validateEnvVars = () => {
   const requiredVars = ['SEEDER_SECURITY_CODE', 'NODE_ENV'];
-  const missing = requiredVars.filter(varName => !process.env[varName]);
+  const missing = requiredVars.filter((varName) => !process.env[varName]);
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`,
+      `Missing required environment variables: ${missing.join(', ')}`
     );
   }
 };
@@ -210,19 +212,17 @@ const verifySecurityCode = (): boolean => {
   const maxAttempts = 3;
   const expectedCode = process.env.SEEDER_SECURITY_CODE;
   if (!expectedCode) {
-    throw new Error(
-      'SEEDER_SECURITY_CODE environment variable is not set',
-    );
+    throw new Error('SEEDER_SECURITY_CODE environment variable is not set');
   }
   console.log('🔒 Security verification required for roles seeding...');
   console.log(
-    '⚠️  Note: Your input will be visible on screen for security reasons',
+    '⚠️  Note: Your input will be visible on screen for security reasons'
   );
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       console.log(`\nAttempt ${attempt} of ${maxAttempts}`);
       const inputCode = prompt(
-        '🔐 Enter security passcode to proceed with roles seeding: ',
+        '🔐 Enter security passcode to proceed with roles seeding: '
       );
       if (!inputCode) {
         console.log('❌ No input provided');
@@ -231,17 +231,16 @@ const verifySecurityCode = (): boolean => {
       if (inputCode.trim() === expectedCode) {
         console.log('✅ Security code verified successfully!\n');
         return true;
-      } else {
-        const remainingAttempts = maxAttempts - attempt;
-        if (remainingAttempts > 0) {
-          console.log(
-            `❌ Invalid security code. ${remainingAttempts} attempt(s) remaining.`,
-          );
-        } else {
-          console.log('❌ Invalid security code. Maximum attempts reached.');
-        }
       }
-    } catch (error) {
+      const remainingAttempts = maxAttempts - attempt;
+      if (remainingAttempts > 0) {
+        console.log(
+          `❌ Invalid security code. ${remainingAttempts} attempt(s) remaining.`
+        );
+      } else {
+        console.log('❌ Invalid security code. Maximum attempts reached.');
+      }
+    } catch (_error) {
       console.error('❌ Script interrupted by user');
       return false;
     }
@@ -255,10 +254,10 @@ const checkEnvironment = () => {
   if (env === 'production') {
     console.log('⚠️  WARNING: Running in PRODUCTION environment!');
     console.log(
-      '🚨 This will modify production database roles and permissions',
+      '🚨 This will modify production database roles and permissions'
     );
     const confirm = prompt(
-      '⚠️  Type "CONFIRM_PRODUCTION" to proceed in production: ',
+      '⚠️  Type "CONFIRM_PRODUCTION" to proceed in production: '
     );
     if (confirm !== 'CONFIRM_PRODUCTION') {
       console.log('❌ Production confirmation failed. Script terminated.');
@@ -271,10 +270,10 @@ const checkEnvironment = () => {
 // Additional safety check for destructive operations
 const confirmDestructiveOperation = (): boolean => {
   console.log(
-    '\n🚨 IMPORTANT: This script will create/update system roles and permissions',
+    '\n🚨 IMPORTANT: This script will create/update system roles and permissions'
   );
   console.log(
-    '📋 This includes roles like: superadmin, admin, pastor, bishop, member, visitor',
+    '📋 This includes roles like: superadmin, admin, pastor, bishop, member, visitor'
   );
   console.log('⚠️  Existing roles with the same names will be updated');
   const confirm = prompt('⚠️  Type "YES" to confirm you want to proceed: ');
@@ -284,27 +283,36 @@ const confirmDestructiveOperation = (): boolean => {
 async function seedPermissions() {
   console.log('🌱 Seeding permissions...');
   const createdPermissions = new Map();
-  for (const permissionData of permissions) {
+  // Process all permissions concurrently using Promise.all
+  const permissionPromises = permissions.map(async (permissionData) => {
     try {
       const existingPermission = await Permission.findOne({
         name: permissionData.name,
       });
       if (existingPermission) {
         console.log(`📝 Permission ${permissionData.name} already exists`);
-        createdPermissions.set(permissionData.name, existingPermission._id);
-      } else {
-        const permission = new Permission(permissionData);
-        await permission.save();
-        console.log(`✅ Created permission: ${permissionData.name}`);
-        createdPermissions.set(permissionData.name, permission._id);
+        return { name: permissionData.name, id: existingPermission._id };
       }
+      const permission = new Permission(permissionData);
+      await permission.save();
+      console.log(`✅ Created permission: ${permissionData.name}`);
+      return { name: permissionData.name, id: permission._id };
     } catch (error) {
       console.error(
         `❌ Error creating permission ${permissionData.name}:`,
-        error,
+        error
       );
+      return null;
     }
-  }
+  });
+  // Wait for all permissions to be processed
+  const results = await Promise.all(permissionPromises);
+  // Build the map from results
+  results.forEach((result) => {
+    if (result) {
+      createdPermissions.set(result.name, result.id);
+    }
+  });
   return createdPermissions;
 }
 
@@ -380,7 +388,8 @@ async function seedRoles(permissionMap: Map<string, mongoose.Types.ObjectId>) {
     },
   ];
   const createdRoles = new Map();
-  for (const roleData of rolesData) {
+  // Process all roles concurrently using Promise.all
+  const rolePromises = rolesData.map(async (roleData) => {
     try {
       const existingRole = await Role.findOne({
         name: roleData.name,
@@ -388,7 +397,7 @@ async function seedRoles(permissionMap: Map<string, mongoose.Types.ObjectId>) {
       });
       if (existingRole) {
         console.log(
-          `📝 Role ${roleData.name} already exists - updating permissions`,
+          `📝 Role ${roleData.name} already exists - updating permissions`
         );
         // Update permissions and code if needed
         existingRole.permissions =
@@ -397,17 +406,25 @@ async function seedRoles(permissionMap: Map<string, mongoose.Types.ObjectId>) {
           existingRole.code = roleData.code;
         }
         await existingRole.save();
-        createdRoles.set(roleData.name, existingRole._id);
-      } else {
-        const role = new Role(roleData);
-        await role.save();
-        console.log(`✅ Created role: ${roleData.name}`);
-        createdRoles.set(roleData.name, role._id);
+        return { name: roleData.name, id: existingRole._id };
       }
+      const role = new Role(roleData);
+      await role.save();
+      console.log(`✅ Created role: ${roleData.name}`);
+      return { name: roleData.name, id: role._id };
     } catch (error) {
       console.error(`❌ Error creating role ${roleData.name}:`, error);
+      return null;
     }
-  }
+  });
+  // Wait for all roles to be processed
+  const results = await Promise.all(rolePromises);
+  // Build the map from results
+  results.forEach((result) => {
+    if (result) {
+      createdRoles.set(result.name, result.id);
+    }
+  });
   return createdRoles;
 }
 
@@ -450,7 +467,7 @@ async function main() {
       console.log(`  - ${roleName}: ${roleId}`);
     }
     console.log(
-      '\n⚠️  Important: Make sure to run the superadmin seeding script next if needed',
+      '\n⚠️  Important: Make sure to run the superadmin seeding script next if needed'
     );
   } catch (error) {
     console.error('❌ Error seeding roles:', error);

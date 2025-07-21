@@ -37,7 +37,7 @@ const BishopSchema = new Schema<IBishop>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Bishop ||

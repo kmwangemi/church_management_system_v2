@@ -1,14 +1,14 @@
 'use client';
 
-import { AuthUser } from '@/lib/types';
-import { useAuth } from '@/lib/use-auth';
 import {
   createContext,
-  ReactNode,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
 } from 'react';
+import type { AuthUser } from '@/lib/types';
+import { useAuth } from '@/lib/use-auth';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Track when the initial auth check is complete
   useEffect(() => {
-    if (!auth.isLoading && !isInitialized) {
+    if (!(auth.isLoading || isInitialized)) {
       setIsInitialized(true);
     }
   }, [auth.isLoading, isInitialized]);

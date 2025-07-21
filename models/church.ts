@@ -33,7 +33,7 @@ const AddressSchema = new Schema(
     state: { type: String, trim: true, lowercase: true },
     zipCode: { type: String, trim: true },
   },
-  { _id: false }, // disables automatic _id for subdocument
+  { _id: false } // disables automatic _id for subdocument
 );
 
 const ChurchSchema = new Schema<IChurch>(
@@ -87,7 +87,7 @@ const ChurchSchema = new Schema<IChurch>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Church ||

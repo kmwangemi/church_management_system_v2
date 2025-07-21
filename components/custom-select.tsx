@@ -1,4 +1,5 @@
 // Custom Select search Component Implementation
+
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -40,32 +41,38 @@ export function CustomSelect({
     onChange(value === selected ? '' : value);
     setOpen(false);
   };
-  const selectedOption = options.find(option => option.value === selected);
+  const selectedOption = options.find((option) => option.value === selected);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
+        {/** biome-ignore lint/a11y/useSemanticElements: ignore */}
         <Button
-          variant='outline'
-          role='combobox'
           aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label={
+            selectedOption ? `Selected: ${selectedOption.label}` : placeholder
+          }
           className={`w-full justify-between ${className}`}
+          role="combobox"
+          type="button"
+          variant="outline"
         >
           <span className={selectedOption ? '' : 'text-muted-foreground'}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
-          <ChevronDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-full p-0' align='start'>
+      <PopoverContent align="start" className="w-full p-0">
         <Command>
-          <CommandInput placeholder='Search...' />
+          <CommandInput placeholder="Search..." />
           <CommandEmpty>No item found.</CommandEmpty>
-          <CommandGroup className='max-h-64 overflow-auto'>
-            {options.map(option => (
+          <CommandGroup className="max-h-64 overflow-auto">
+            {options.map((option) => (
               <CommandItem
+                className="cursor-pointer"
                 key={option.value}
                 onSelect={() => handleSelect(option.value)}
-                className='cursor-pointer'
               >
                 <Check
                   className={`mr-2 h-4 w-4 ${

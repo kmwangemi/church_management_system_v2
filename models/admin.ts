@@ -29,7 +29,7 @@ const AdminSchema = new Schema<IAdmin>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Admin ||

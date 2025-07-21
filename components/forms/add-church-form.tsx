@@ -1,6 +1,6 @@
 'use client';
 
-import RenderApiError from '@/components/ApiError';
+import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
 import { DatePicker } from '@/components/date-picker';
 import { PasswordInput } from '@/components/password-input';
@@ -42,7 +42,7 @@ import {
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
 import {
-  ChurchRegistrationPayload,
+  type ChurchRegistrationPayload,
   churchRegistrationSchema,
 } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,6 +59,7 @@ import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore complexity
 export function AddChurchForm() {
   const [currentTab, setCurrentTab] = useState('basic');
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -141,7 +142,7 @@ export function AddChurchForm() {
     setLogoFile(file);
     // Create preview
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = (e) => {
       setLogoPreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
@@ -156,6 +157,7 @@ export function AddChurchForm() {
       toast.success('Logo uploaded successfully');
     } catch (error) {
       toast.error('Failed to upload logo');
+      // biome-ignore lint/suspicious/noConsole: ignore console
       console.error('Logo upload error:', error);
     }
   };
@@ -206,8 +208,11 @@ export function AddChurchForm() {
           'churchData.numberOfBranches',
         ]);
         break;
+      default:
+        // biome-ignore lint/suspicious/noConsole: ignore here
+        console.log('defaulted here');
     }
-    setTabValidationState(prev => ({
+    setTabValidationState((prev) => ({
       ...prev,
       [tabName]: isValid,
     }));
@@ -242,7 +247,7 @@ export function AddChurchForm() {
         setLogoUploading(true);
         const churchLogoUrl = await upload(logoFile);
         payload.churchData.churchLogoUrl = churchLogoUrl || '';
-      } catch (error) {
+      } catch (_error) {
         toast.error('Failed to upload logo');
         return;
       } finally {
@@ -251,6 +256,7 @@ export function AddChurchForm() {
     }
     const validation = churchRegistrationSchema.safeParse(payload);
     if (!validation.success) {
+      // biome-ignore lint/suspicious/noConsole: ignore console
       console.log('Validation errors:', validation.error.issues);
       toast.error('Please fix all validation errors');
       return;
@@ -262,6 +268,7 @@ export function AddChurchForm() {
       setLogoPreview(null);
       setCurrentTab('basic');
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: ignore console
       console.error('Registration failed:', error);
       toast.error('Registration failed. Please try again.');
     }
@@ -269,72 +276,72 @@ export function AddChurchForm() {
   return (
     <Form {...form}>
       {isError && <RenderApiError error={error} />}
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 mt-6'>
-        <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className='grid w-full grid-cols-4'>
+      <form className="mt-6 space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+        <Tabs onValueChange={setCurrentTab} value={currentTab}>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger
-              value='basic'
               className={tabValidationState.basic ? 'border-green-500' : ''}
+              value="basic"
             >
               Basic Info
               {tabValidationState.basic && (
-                <span className='ml-1 text-green-500'>✓</span>
+                <span className="ml-1 text-green-500">✓</span>
               )}
             </TabsTrigger>
             <TabsTrigger
-              value='contact'
               className={tabValidationState.contact ? 'border-green-500' : ''}
+              value="contact"
             >
               Contact
               {tabValidationState.contact && (
-                <span className='ml-1 text-green-500'>✓</span>
+                <span className="ml-1 text-green-500">✓</span>
               )}
             </TabsTrigger>
             <TabsTrigger
-              value='admin'
               className={tabValidationState.admin ? 'border-green-500' : ''}
+              value="admin"
             >
               Admin Info
               {tabValidationState.admin && (
-                <span className='ml-1 text-green-500'>✓</span>
+                <span className="ml-1 text-green-500">✓</span>
               )}
             </TabsTrigger>
             <TabsTrigger
-              value='subscription'
               className={
                 tabValidationState.subscription ? 'border-green-500' : ''
               }
+              value="subscription"
             >
               Plan
               {tabValidationState.subscription && (
-                <span className='ml-1 text-green-500'>✓</span>
+                <span className="ml-1 text-green-500">✓</span>
               )}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value='basic' className='space-y-6'>
+          <TabsContent className="space-y-6" value="basic">
             <Card>
               <CardHeader>
-                <CardTitle className='flex items-center space-x-2'>
-                  <Church className='h-5 w-5' />
+                <CardTitle className="flex items-center space-x-2">
+                  <Church className="h-5 w-5" />
                   <span>Basic Church Information</span>
                 </CardTitle>
                 <CardDescription>
                   Enter the basic details about the church
                 </CardDescription>
               </CardHeader>
-              <CardContent className='space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='churchData.churchName'
+                    name="churchData.churchName"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Church Name <span className='text-red-500'>*</span>
+                          Church Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder='Grace Community Church'
+                            placeholder="Grace Community Church"
                             {...field}
                           />
                         </FormControl>
@@ -344,27 +351,27 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='churchData.denomination'
+                    name="churchData.denomination"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Denomination <span className='text-red-500'>*</span>
+                          Denomination <span className="text-red-500">*</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className='cursor-pointer'>
-                              <SelectValue placeholder='Select denomination' />
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select denomination" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className='max-h-[400px] overflow-y-auto'>
-                            {CHURCH_DENOMINATION_OPTIONS.map(option => (
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {CHURCH_DENOMINATION_OPTIONS.map((option) => (
                               <SelectItem
+                                className="cursor-pointer"
                                 key={option.value}
                                 value={option.value}
-                                className='cursor-pointer'
                               >
                                 {option.label}
                               </SelectItem>
@@ -378,14 +385,14 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
-                  name='churchData.description'
+                  name="churchData.description"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Description (Optional)</FormLabel>
                       <FormControl>
                         <Textarea
+                          className="min-h-[100px]"
                           placeholder="Brief description of the church's mission and vision..."
-                          className='min-h-[100px]'
                           {...field}
                         />
                       </FormControl>
@@ -397,27 +404,27 @@ export function AddChurchForm() {
                     </FormItem>
                   )}
                 />
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='churchData.establishedDate'
+                    name="churchData.establishedDate"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
                           Established Date{' '}
-                          <span className='text-red-500'>*</span>
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <DatePicker
+                            format="long"
+                            maxDate={new Date()}
+                            onChange={(date) =>
+                              field.onChange(date ? date.toISOString() : '')
+                            }
+                            placeholder="Select established date"
                             value={
                               field.value ? new Date(field.value) : undefined
                             }
-                            onChange={date =>
-                              field.onChange(date ? date.toISOString() : '')
-                            }
-                            placeholder='Select established date'
-                            format='long'
-                            maxDate={new Date()}
                           />
                         </FormControl>
                         <FormMessage />
@@ -425,91 +432,91 @@ export function AddChurchForm() {
                     )}
                   />
                   {/* Logo Upload Section */}
-                  <div className='space-y-4'>
+                  <div className="space-y-4">
                     <FormLabel>Church Logo (Optional)</FormLabel>
-                    <div className='flex items-center space-x-4'>
-                      <Avatar className='h-16 w-16'>
+                    <div className="flex items-center space-x-4">
+                      <Avatar className="h-16 w-16">
                         <AvatarImage
+                          alt="Church Logo"
                           src={
                             logoPreview ||
                             watch('churchData.churchLogoUrl') ||
                             ''
                           }
-                          alt='Church Logo'
                         />
-                        <AvatarFallback className='bg-blue-100 text-blue-600'>
-                          <Church className='h-8 w-8' />
+                        <AvatarFallback className="bg-blue-100 text-blue-600">
+                          <Church className="h-8 w-8" />
                         </AvatarFallback>
                       </Avatar>
-                      <div className='flex-1'>
+                      <div className="flex-1">
                         <input
-                          ref={fileInputRef}
-                          type='file'
-                          accept='image/*'
+                          accept="image/*"
+                          className="hidden"
                           onChange={handleLogoSelect}
-                          className='hidden'
+                          ref={fileInputRef}
+                          type="file"
                         />
-                        <div className='flex space-x-2'>
-                          {!logoFile ? (
-                            <Button
-                              type='button'
-                              variant='outline'
-                              size='sm'
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <Upload className='mr-2 h-4 w-4' />
-                              Select Logo
-                            </Button>
-                          ) : (
+                        <div className="flex space-x-2">
+                          {logoFile ? (
                             <>
                               <Button
-                                type='button'
-                                variant='outline'
-                                size='sm'
-                                onClick={handleLogoUpload}
                                 disabled={logoUploading}
+                                onClick={handleLogoUpload}
+                                size="sm"
+                                type="button"
+                                variant="outline"
                               >
                                 {logoUploading ? (
-                                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
-                                  <Upload className='mr-2 h-4 w-4' />
+                                  <Upload className="mr-2 h-4 w-4" />
                                 )}
                                 {logoUploading ? 'Uploading...' : 'Upload'}
                               </Button>
                               <Button
-                                type='button'
-                                variant='outline'
-                                size='sm'
                                 onClick={handleLogoRemove}
+                                size="sm"
+                                type="button"
+                                variant="outline"
                               >
-                                <X className='mr-2 h-4 w-4' />
+                                <X className="mr-2 h-4 w-4" />
                                 Remove
                               </Button>
                             </>
+                          ) : (
+                            <Button
+                              onClick={() => fileInputRef.current?.click()}
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                            >
+                              <Upload className="mr-2 h-4 w-4" />
+                              Select Logo
+                            </Button>
                           )}
                         </div>
                         {/* Show upload progress */}
                         {isUploading && (
-                          <div className='mt-2'>
-                            <div className='w-full bg-gray-200 rounded-full h-2'>
+                          <div className="mt-2">
+                            <div className="h-2 w-full rounded-full bg-gray-200">
                               <div
-                                className='bg-blue-600 h-2 rounded-full transition-all duration-300'
+                                className="h-2 rounded-full bg-blue-600 transition-all duration-300"
                                 style={{ width: `${uploadProgress}%` }}
                               />
                             </div>
-                            <p className='text-xs text-gray-500 mt-1'>
+                            <p className="mt-1 text-gray-500 text-xs">
                               Uploading... {uploadProgress}%
                             </p>
                           </div>
                         )}
                         {/* Show error if any */}
                         {uploadError && (
-                          <p className='text-xs text-red-500 mt-1'>
+                          <p className="mt-1 text-red-500 text-xs">
                             {uploadError}
                           </p>
                         )}
-                        {!isUploading && !error && (
-                          <p className='text-xs text-gray-500 mt-1'>
+                        {!(isUploading || error) && (
+                          <p className="mt-1 text-gray-500 text-xs">
                             PNG, JPG up to 2MB
                           </p>
                         )}
@@ -521,31 +528,31 @@ export function AddChurchForm() {
             </Card>
           </TabsContent>
           {/* Contact Tab - Same as original */}
-          <TabsContent value='contact' className='space-y-6'>
+          <TabsContent className="space-y-6" value="contact">
             <Card>
               <CardHeader>
-                <CardTitle className='flex items-center space-x-2'>
-                  <MapPin className='h-5 w-5' />
+                <CardTitle className="flex items-center space-x-2">
+                  <MapPin className="h-5 w-5" />
                   <span>Contact Information</span>
                 </CardTitle>
                 <CardDescription>
                   Church contact details and address information
                 </CardDescription>
               </CardHeader>
-              <CardContent className='space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='churchData.email'
+                    name="churchData.email"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Email <span className='text-red-500'>*</span>
+                          Email <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
-                            type='email'
-                            placeholder='info@church.com'
+                            placeholder="info@church.com"
+                            type="email"
                             {...field}
                           />
                         </FormControl>
@@ -555,18 +562,18 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='churchData.phoneNumber'
+                    name="churchData.phoneNumber"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Phone Number <span className='text-red-500'>*</span>
+                          Phone Number <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <PhoneInput
-                            value={field.value}
+                            defaultCountry="KE"
                             onChange={field.onChange}
-                            defaultCountry='KE'
-                            placeholder='Enter phone number'
+                            placeholder="Enter phone number"
+                            value={field.value}
                           />
                         </FormControl>
                         <FormMessage />
@@ -576,13 +583,13 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
-                  name='churchData.website'
+                  name="churchData.website"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Website (Optional)</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder='https://www.church.com'
+                          placeholder="https://www.church.com"
                           {...field}
                         />
                       </FormControl>
@@ -595,30 +602,30 @@ export function AddChurchForm() {
                 />
                 <FormField
                   control={form.control}
-                  name='churchData.address.address'
+                  name="churchData.address.address"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Physical Address <span className='text-red-500'>*</span>
+                        Physical Address <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder='123 Church Street' {...field} />
+                        <Input placeholder="123 Church Street" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <FormField
                     control={form.control}
-                    name='churchData.address.city'
+                    name="churchData.address.city"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          City <span className='text-red-500'>*</span>
+                          City <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder='Nairobi' {...field} />
+                          <Input placeholder="Nairobi" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -626,12 +633,12 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='churchData.address.state'
+                    name="churchData.address.state"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>State (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder='NY' {...field} />
+                          <Input placeholder="NY" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -639,12 +646,12 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='churchData.address.zipCode'
+                    name="churchData.address.zipCode"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Zip Code (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder='10001' {...field} />
+                          <Input placeholder="10001" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -653,17 +660,17 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
-                  name='churchData.country'
+                  name="churchData.country"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Country <span className='text-red-500'>*</span>
+                        Country <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <CountrySelect
-                          value={field.value}
                           onChange={field.onChange}
-                          placeholder='Select your country'
+                          placeholder="Select your country"
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -674,29 +681,29 @@ export function AddChurchForm() {
             </Card>
           </TabsContent>
           {/* Admin Tab - Same as original */}
-          <TabsContent value='admin' className='space-y-6'>
+          <TabsContent className="space-y-6" value="admin">
             <Card>
               <CardHeader>
-                <CardTitle className='flex items-center space-x-2'>
-                  <User className='h-5 w-5' />
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
                   <span>Admin Information</span>
                 </CardTitle>
                 <CardDescription>
                   Details about the church administrator
                 </CardDescription>
               </CardHeader>
-              <CardContent className='space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='adminData.firstName'
+                    name="adminData.firstName"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          First Name <span className='text-red-500'>*</span>
+                          First Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder='John' {...field} />
+                          <Input placeholder="John" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -704,33 +711,33 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='adminData.lastName'
+                    name="adminData.lastName"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Last Name <span className='text-red-500'>*</span>
+                          Last Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder='Smith' {...field} />
+                          <Input placeholder="Smith" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='adminData.email'
+                    name="adminData.email"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Email <span className='text-red-500'>*</span>
+                          Email <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
-                            type='email'
-                            placeholder='admin@church.com'
+                            placeholder="admin@church.com"
+                            type="email"
                             {...field}
                           />
                         </FormControl>
@@ -740,18 +747,18 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='adminData.phoneNumber'
+                    name="adminData.phoneNumber"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Phone Number <span className='text-red-500'>*</span>
+                          Phone Number <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <PhoneInput
-                            value={field.value}
+                            defaultCountry="KE"
                             onChange={field.onChange}
-                            defaultCountry='KE'
-                            placeholder='Enter phone number'
+                            placeholder="Enter phone number"
+                            value={field.value}
                           />
                         </FormControl>
                         <FormMessage />
@@ -759,18 +766,18 @@ export function AddChurchForm() {
                     )}
                   />
                 </div>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='adminData.password'
+                    name="adminData.password"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Password <span className='text-red-500'>*</span>
+                          Password <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <PasswordInput
-                            placeholder='Create a strong password'
+                            placeholder="Create a strong password"
                             {...field}
                           />
                         </FormControl>
@@ -780,16 +787,16 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='adminData.confirmPassword'
+                    name="adminData.confirmPassword"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
                           Confirm Password{' '}
-                          <span className='text-red-500'>*</span>
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <PasswordInput
-                            placeholder='Confirm your password'
+                            placeholder="Confirm your password"
                             {...field}
                           />
                         </FormControl>
@@ -798,11 +805,11 @@ export function AddChurchForm() {
                     )}
                   />
                 </div>
-                <div className='bg-blue-50 p-4 rounded-lg'>
-                  <h4 className='font-medium text-blue-900 mb-2'>
+                <div className="rounded-lg bg-blue-50 p-4">
+                  <h4 className="mb-2 font-medium text-blue-900">
                     Administrator Account
                   </h4>
-                  <p className='text-sm text-blue-700'>
+                  <p className="text-blue-700 text-sm">
                     The admin will be set up as the primary administrator with
                     full access to the church management system. They can add
                     additional users and assign roles as needed.
@@ -812,11 +819,11 @@ export function AddChurchForm() {
             </Card>
           </TabsContent>
           {/* Subscription Tab - Same as original */}
-          <TabsContent value='subscription' className='space-y-6'>
+          <TabsContent className="space-y-6" value="subscription">
             <Card>
               <CardHeader>
-                <CardTitle className='flex items-center space-x-2'>
-                  <Building2 className='h-5 w-5' />
+                <CardTitle className="flex items-center space-x-2">
+                  <Building2 className="h-5 w-5" />
                   <span>Subscription Plan & Setup</span>
                 </CardTitle>
                 <CardDescription>
@@ -824,40 +831,43 @@ export function AddChurchForm() {
                   setup information
                 </CardDescription>
               </CardHeader>
-              <CardContent className='space-y-6'>
+              <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name='churchData.subscriptionPlan'
+                  name="churchData.subscriptionPlan"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Subscription Plan{' '}
-                        <span className='text-red-500'>*</span>
+                        <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                          {SUBSCRIPTION_PLANS.map(plan => (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {SUBSCRIPTION_PLANS.map((plan) => (
+                            // biome-ignore lint/nursery/noNoninteractiveElementInteractions: ignore
+                            // biome-ignore lint/a11y/noStaticElementInteractions: ignore
+                            // biome-ignore lint/a11y/useKeyWithClickEvents: ignore
                             <div
-                              key={plan.value}
-                              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                              className={`cursor-pointer rounded-lg border p-4 transition-colors ${
                                 field.value === plan.value
                                   ? 'border-blue-500 bg-blue-50'
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
+                              key={plan.value}
                               onClick={() => field.onChange(plan.value)}
                             >
-                              <div className='flex items-center space-x-2 mb-2'>
+                              <div className="mb-2 flex items-center space-x-2">
                                 <input
-                                  type='radio'
                                   checked={field.value === plan.value}
+                                  className="text-blue-600"
                                   onChange={() => field.onChange(plan.value)}
-                                  className='text-blue-600'
+                                  type="radio"
                                 />
-                                <span className='font-medium'>
+                                <span className="font-medium">
                                   {plan.label}
                                 </span>
                               </div>
-                              <p className='text-sm text-gray-600'>
+                              <p className="text-gray-600 text-sm">
                                 {plan.description}
                               </p>
                             </div>
@@ -868,30 +878,30 @@ export function AddChurchForm() {
                     </FormItem>
                   )}
                 />
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name='churchData.churchSize'
+                    name="churchData.churchSize"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Church Size <span className='text-red-500'>*</span>
+                          Church Size <span className="text-red-500">*</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className='cursor-pointer'>
-                              <SelectValue placeholder='Select church size' />
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select church size" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className='max-h-[400px] overflow-y-auto'>
-                            {NUMBER_OF_CHURCH_MEMBERS_OPTIONS.map(option => (
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {NUMBER_OF_CHURCH_MEMBERS_OPTIONS.map((option) => (
                               <SelectItem
+                                className="cursor-pointer"
                                 key={option.value}
                                 value={option.value}
-                                className='cursor-pointer'
                               >
                                 {option.label}
                               </SelectItem>
@@ -904,28 +914,28 @@ export function AddChurchForm() {
                   />
                   <FormField
                     control={form.control}
-                    name='churchData.numberOfBranches'
+                    name="churchData.numberOfBranches"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
                           Number of Branches{' '}
-                          <span className='text-red-500'>*</span>
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className='cursor-pointer'>
-                              <SelectValue placeholder='Select number' />
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select number" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className='max-h-[400px] overflow-y-auto'>
-                            {NUMBER_OF_CHURCH_BRANCHES_OPTIONS.map(option => (
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {NUMBER_OF_CHURCH_BRANCHES_OPTIONS.map((option) => (
                               <SelectItem
+                                className="cursor-pointer"
                                 key={option.value}
                                 value={option.value}
-                                className='cursor-pointer'
                               >
                                 {option.label}
                               </SelectItem>
@@ -937,11 +947,11 @@ export function AddChurchForm() {
                     )}
                   />
                 </div>
-                <div className='bg-green-50 p-4 rounded-lg'>
-                  <h4 className='font-medium text-green-900 mb-2'>
+                <div className="rounded-lg bg-green-50 p-4">
+                  <h4 className="mb-2 font-medium text-green-900">
                     What happens next?
                   </h4>
-                  <ul className='text-sm text-green-700 space-y-1'>
+                  <ul className="space-y-1 text-green-700 text-sm">
                     <li>• Church account will be created and activated</li>
                     <li>• Admin will receive login credentials via email</li>
                     <li>• 30-day free trial will begin automatically</li>
@@ -952,21 +962,21 @@ export function AddChurchForm() {
             </Card>
           </TabsContent>
         </Tabs>
-        <div className='flex justify-between pt-6 border-t'>
+        <div className="flex justify-between border-t pt-6">
           <Button
-            type='button'
-            variant='outline'
-            onClick={handlePreviousTab}
             disabled={currentTab === 'basic'}
+            onClick={handlePreviousTab}
+            type="button"
+            variant="outline"
           >
             Previous
           </Button>
           {currentTab !== 'subscription' ? (
-            <Button type='button' onClick={handleNextTab}>
+            <Button onClick={handleNextTab} type="button">
               Next
             </Button>
           ) : (
-            <Button type='submit' disabled={isPending || logoUploading}>
+            <Button disabled={isPending || logoUploading} type="submit">
               {isPending ? 'Registering...' : 'Register Church'}
             </Button>
           )}

@@ -1,8 +1,8 @@
+import { type NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { seedPermissions, seedRoles } from '@/scripts/seed-roles';
-import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Optional: Add authentication check here
     // const session = await getServerSession(authOptions);
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { error: 'Seeding is not allowed in production' },
-        { status: 403 },
+        { status: 403 }
       );
     }
     await dbConnect();
@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
       permissions: permissionMap.size,
       roles: 'Seeded', // or provide another appropriate value
     });
-  } catch (error) {
-    console.error('Seeding error:', error);
+  } catch (_error) {
+    // console.error('Seeding error:', error);
     return NextResponse.json(
       { error: 'Internal server error during seeding' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -42,25 +42,25 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     await dbConnect();
-    const { Role } = await import('@/models/Role');
-    const { Permission } = await import('@/models/Permission');
+    const { Role } = await import('@/models/role');
+    const { Permission } = await import('@/models/permission');
     const roles = await Role.find({ isSystemRole: true }).populate(
-      'permissions',
+      'permissions'
     );
     const permissions = await Permission.find();
     return NextResponse.json({
-      roles: roles.map(role => ({
+      roles: roles.map((role) => ({
         name: role.name,
         description: role.description,
         permissionCount: role.permissions.length,
       })),
       totalPermissions: permissions.length,
     });
-  } catch (error) {
-    console.error('Error fetching roles:', error);
+  } catch (_error) {
+    // console.error('Error fetching roles:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

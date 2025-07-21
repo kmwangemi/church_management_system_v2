@@ -1,10 +1,10 @@
 'use client';
 
-import { generatePagination } from '@/lib/utils';
 import clsx from 'clsx';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { generatePagination } from '@/lib/utils';
 
 interface PaginationNumberProps {
   page: number | string;
@@ -20,19 +20,19 @@ function PaginationNumber({
   position = 'first',
 }: PaginationNumberProps) {
   const className = clsx(
-    'flex h-10 w-10 items-center justify-center text-sm border',
+    'flex h-10 w-10 items-center justify-center border text-sm',
     {
       'rounded-l-md': position === 'first' || position === 'single',
       'rounded-r-md': position === 'last' || position === 'single',
-      'z-10 bg-blue-600 border-blue-600 text-white': isActive,
+      'z-10 border-blue-600 bg-blue-600 text-white': isActive,
       'hover:bg-gray-100': !isActive && position !== 'middle',
       'text-gray-300': position === 'middle',
-    },
+    }
   );
   return isActive || position === 'middle' ? (
     <div className={className}>{page}</div>
   ) : (
-    <Link href={href} className={className}>
+    <Link className={className} href={href}>
       {page}
     </Link>
   );
@@ -56,13 +56,13 @@ function PaginationArrow({
       'hover:bg-gray-100': !isDisabled,
       'mr-2 md:mr-4': direction === 'left',
       'ml-2 md:ml-4': direction === 'right',
-    },
+    }
   );
   const icon =
     direction === 'left' ? (
-      <ArrowLeft className='w-4' />
+      <ArrowLeft className="w-4" />
     ) : (
-      <ArrowRight className='w-4' />
+      <ArrowRight className="w-4" />
     );
   return isDisabled ? (
     <div className={className}>{icon}</div>
@@ -86,18 +86,18 @@ function Pagination({ totalPages }: { totalPages: number }) {
   };
 
   return (
-    <div className='flex justify-between mt-4 mb-2'>
-      <p className='hidden text-xs text-gray-900 uppercase md:block'>
+    <div className="mt-4 mb-2 flex justify-between">
+      <p className="hidden text-gray-900 text-xs uppercase md:block">
         Current Page:
-        <span className='font-bold'> {currentPage}</span>
+        <span className="font-bold"> {currentPage}</span>
       </p>
-      <div className='inline-flex'>
+      <div className="inline-flex">
         <PaginationArrow
-          direction='left'
+          direction="left"
           href={createPageURL(currentPage - 1)}
           isDisabled={currentPage <= 1}
         />
-        <div className='flex -space-x-px'>
+        <div className="-space-x-px flex">
           {allPages.map((page: number | string, index: number) => {
             let position: 'first' | 'last' | 'middle' | 'single' | undefined;
             if (index === 0) position = 'first';
@@ -106,17 +106,17 @@ function Pagination({ totalPages }: { totalPages: number }) {
             if (page === '...') position = 'middle';
             return (
               <PaginationNumber
-                key={page}
                 href={createPageURL(page)}
+                isActive={currentPage === page}
+                key={page}
                 page={page}
                 position={position}
-                isActive={currentPage === page}
               />
             );
           })}
         </div>
         <PaginationArrow
-          direction='right'
+          direction="right"
           href={createPageURL(currentPage + 1)}
           isDisabled={currentPage >= totalPages}
         />

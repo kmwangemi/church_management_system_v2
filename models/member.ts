@@ -39,7 +39,7 @@ const MemberSchema = new Schema<IMember>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Member ||

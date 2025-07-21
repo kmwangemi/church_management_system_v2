@@ -1,7 +1,7 @@
+import { type NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
-import { NextRequest, NextResponse } from 'next/server';
+import User from '@/models/user';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID not found in token' },
-        { status: 401 },
+        { status: 401 }
       );
     }
     // Connect to MongoDB
     await dbConnect();
     // Fetch additional user data from your database
     const userProfile = await User.findById(userId).select(
-      'firstName lastName email profilePictureUrl churchId branchId role',
+      'firstName lastName email profilePictureUrl churchId branchId role'
     );
     if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -38,13 +38,13 @@ export async function GET(request: NextRequest) {
         fullName: `${userProfile.firstName} ${userProfile.lastName}`,
       },
     });
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
+  } catch (_error) {
+    // console.error('Error fetching user profile:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

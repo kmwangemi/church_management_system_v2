@@ -36,7 +36,7 @@ const PaymentSchema = new Schema<IPayment>(
     },
     transactionId: { type: String, trim: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export default mongoose.models.Payment ||

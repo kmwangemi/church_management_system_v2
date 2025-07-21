@@ -18,14 +18,7 @@ const RoleSchema = new Schema<IRole>(
       required: true,
       trim: true,
       lowercase: true,
-      enum: [
-        'member',
-        'visitor',
-        'pastor',
-        'bishop',
-        'admin',
-        'superadmin',
-      ],
+      enum: ['member', 'visitor', 'pastor', 'bishop', 'admin', 'superadmin'],
     },
     description: {
       type: String,
@@ -53,7 +46,7 @@ const RoleSchema = new Schema<IRole>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Compound index to ensure unique role names per church (or globally for system roles)

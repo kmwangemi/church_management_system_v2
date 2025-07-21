@@ -1,80 +1,101 @@
-"use client"
+'use client';
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
-import { User, Church, Shield, Loader2 } from "lucide-react"
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Church, Loader2, Shield, User } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const memberSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  address: z.string().min(5, "Please enter a valid address"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  gender: z.string().min(1, "Please select a gender"),
-  maritalStatus: z.string().min(1, "Please select marital status"),
-  role: z.string().min(1, "Please select a role"),
-  department: z.string().min(1, "Please select a department"),
-  joinDate: z.string().min(1, "Join date is required"),
-  emergencyContact: z.string().min(2, "Emergency contact is required"),
-  emergencyPhone: z.string().min(10, "Emergency phone is required"),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  phone: z.string().min(10, 'Please enter a valid phone number'),
+  address: z.string().min(5, 'Please enter a valid address'),
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  gender: z.string().min(1, 'Please select a gender'),
+  maritalStatus: z.string().min(1, 'Please select marital status'),
+  role: z.string().min(1, 'Please select a role'),
+  department: z.string().min(1, 'Please select a department'),
+  joinDate: z.string().min(1, 'Join date is required'),
+  emergencyContact: z.string().min(2, 'Emergency contact is required'),
+  emergencyPhone: z.string().min(10, 'Emergency phone is required'),
   notes: z.string().optional(),
-})
+});
 
-type MemberForm = z.infer<typeof memberSchema>
+type MemberForm = z.infer<typeof memberSchema>;
 
 interface AddMemberFormProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<MemberForm>({
     resolver: zodResolver(memberSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      address: "",
-      dateOfBirth: "",
-      gender: "",
-      maritalStatus: "",
-      role: "",
-      department: "",
-      joinDate: new Date().toISOString().split("T")[0],
-      emergencyContact: "",
-      emergencyPhone: "",
-      notes: "",
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      address: '',
+      dateOfBirth: '',
+      gender: '',
+      maritalStatus: '',
+      role: '',
+      department: '',
+      joinDate: new Date().toISOString().split('T')[0],
+      emergencyContact: '',
+      emergencyPhone: '',
+      notes: '',
     },
-  })
+  });
 
   const onSubmit = async (data: MemberForm) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Member data:", data)
-      onSuccess()
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.log('Member data:', data);
+      onSuccess();
     } catch (error) {
-      console.error("Error adding member:", error)
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.error('Error adding member:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
         {/* Personal Information */}
         <Card>
           <CardHeader>
@@ -82,10 +103,12 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
               <User className="h-5 w-5" />
               <span>Personal Information</span>
             </CardTitle>
-            <CardDescription>Basic member details and contact information</CardDescription>
+            <CardDescription>
+              Basic member details and contact information
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="firstName"
@@ -114,7 +137,7 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="email"
@@ -122,7 +145,11 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} />
+                      <Input
+                        placeholder="Enter email address"
+                        type="email"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -135,7 +162,11 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Enter phone number" {...field} />
+                      <Input
+                        placeholder="Enter phone number"
+                        type="tel"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,14 +181,18 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Enter full address" rows={3} {...field} />
+                    <Textarea
+                      placeholder="Enter full address"
+                      rows={3}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="dateOfBirth"
@@ -177,7 +212,10 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
@@ -199,7 +237,10 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Marital Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -230,14 +271,17 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
             <CardDescription>Role and department assignments</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select role" />
@@ -264,7 +308,10 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select department" />
@@ -276,7 +323,9 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                         <SelectItem value="youth">Youth</SelectItem>
                         <SelectItem value="children">Children</SelectItem>
                         <SelectItem value="media">Media</SelectItem>
-                        <SelectItem value="administration">Administration</SelectItem>
+                        <SelectItem value="administration">
+                          Administration
+                        </SelectItem>
                         <SelectItem value="leadership">Leadership</SelectItem>
                         <SelectItem value="finance">Finance</SelectItem>
                         <SelectItem value="security">Security</SelectItem>
@@ -314,7 +363,7 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
             <CardDescription>Emergency contact information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="emergencyContact"
@@ -335,7 +384,11 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                   <FormItem>
                     <FormLabel>Emergency Contact Phone</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Emergency contact phone" {...field} />
+                      <Input
+                        placeholder="Emergency contact phone"
+                        type="tel"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -350,7 +403,11 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
                 <FormItem>
                   <FormLabel>Additional Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Additional notes about the member" rows={3} {...field} />
+                    <Textarea
+                      placeholder="Additional notes about the member"
+                      rows={3}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -360,21 +417,21 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
         </Card>
 
         <div className="flex justify-end space-x-4 pt-6">
-          <Button type="button" variant="outline" onClick={onSuccess}>
+          <Button onClick={onSuccess} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button disabled={isLoading} type="submit">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Adding Member...
               </>
             ) : (
-              "Add Member"
+              'Add Member'
             )}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }

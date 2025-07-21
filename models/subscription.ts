@@ -28,7 +28,7 @@ const SubscriptionSchema = new Schema<ISubscription>(
     endDate: { type: Date, required: true },
     isAutoRenew: { type: Boolean, default: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export default mongoose.models.Subscription ||

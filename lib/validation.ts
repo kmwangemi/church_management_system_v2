@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 /**
  * Formats Zod validation errors into a user-friendly format
  */
 export function formatZodErrors(errors: z.ZodError['errors']) {
-  return errors.map(err => ({
+  return errors.map((err) => ({
     field: err.path.join('.'),
     message: err.message,
     code: err.code,
@@ -17,7 +17,7 @@ export function formatZodErrors(errors: z.ZodError['errors']) {
  */
 export function validateWithZod<T>(
   schema: z.ZodSchema<T>,
-  data: unknown,
+  data: unknown
 ):
   | { success: true; data: T }
   | { success: false; errors: ReturnType<typeof formatZodErrors> } {
@@ -36,14 +36,14 @@ export function validateWithZod<T>(
  */
 export function createValidationErrorResponse(
   errors: ReturnType<typeof formatZodErrors>,
-  message: string = 'Validation failed',
+  message = 'Validation failed'
 ) {
   return NextResponse.json(
     {
       error: message,
       details: errors,
     },
-    { status: 400 },
+    { status: 400 }
   );
 }
 

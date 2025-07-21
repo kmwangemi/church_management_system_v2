@@ -67,7 +67,7 @@ const SuperAdminSchema = new Schema<ISuperAdmin>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.SuperAdmin ||

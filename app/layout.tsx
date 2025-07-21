@@ -1,8 +1,9 @@
-import { AppInitializer } from '@/components/AppInitializer';
-import ErrorBoundary from '@/components/ErrorBoundary';
+/** biome-ignore-all assist/source/organizeImports: ignore sorting imports */
+import { AppInitializer } from '@/components/app-initializer';
+import ErrorBoundary from '@/components/error-boundary';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/auth-context';
 import { QueryProvider } from '@/providers/query-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -24,13 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en' suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider
-          attribute='class'
-          defaultTheme='system'
-          enableSystem
+          attribute="class"
+          defaultTheme="system"
           disableTransitionOnChange
+          enableSystem
         >
           <QueryProvider>
             <ErrorBoundary>
@@ -40,7 +41,7 @@ export default function RootLayout({
             </ErrorBoundary>
           </QueryProvider>
           <Toaster
-            position='bottom-right'
+            position="bottom-right"
             toastOptions={{
               style: {
                 backgroundColor: '#f9fafb',
