@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: ignore consoles */
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import promptSync from 'prompt-sync';
@@ -10,8 +11,8 @@ dotenv.config({ path: '.env' });
 
 // Import your models with proper paths
 import dbConnect from '@/lib/mongodb';
-import SuperAdmin from '@/models/SuperAdmin';
-import User from '@/models/User';
+import SuperAdmin from '@/models/superadmin';
+import User from '@/models/user';
 
 // Initialize prompt
 const prompt = promptSync({ sigint: true });
@@ -37,10 +38,10 @@ const validateEnvVars = () => {
     'SUPERADMIN_PASSWORD',
     'SEEDER_SECURITY_CODE',
   ];
-  const missing = requiredVars.filter(varName => !process.env[varName]);
+  const missing = requiredVars.filter((varName) => !process.env[varName]);
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`,
+      `Missing required environment variables: ${missing.join(', ')}`
     );
   }
 };
@@ -54,7 +55,7 @@ const verifySecurityCode = (): boolean => {
   }
   console.log('🔒 Security verification required before proceeding...');
   console.log(
-    '⚠️  Note: Your input will be visible on screen for security reasons',
+    '⚠️  Note: Your input will be visible on screen for security reasons'
   );
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -67,17 +68,16 @@ const verifySecurityCode = (): boolean => {
       if (inputCode.trim() === expectedCode) {
         console.log('✅ Security code verified successfully!\n');
         return true;
-      } else {
-        const remainingAttempts = maxAttempts - attempt;
-        if (remainingAttempts > 0) {
-          console.log(
-            `❌ Invalid security code. ${remainingAttempts} attempt(s) remaining.`,
-          );
-        } else {
-          console.log('❌ Invalid security code. Maximum attempts reached.');
-        }
       }
-    } catch (error) {
+      const remainingAttempts = maxAttempts - attempt;
+      if (remainingAttempts > 0) {
+        console.log(
+          `❌ Invalid security code. ${remainingAttempts} attempt(s) remaining.`
+        );
+      } else {
+        console.log('❌ Invalid security code. Maximum attempts reached.');
+      }
+    } catch (_error) {
       console.error('❌ Script interrupted by user');
       return false;
     }
@@ -106,7 +106,9 @@ async function createSystemUser() {
     email: 'system@internal.local',
     role: 'superadmin',
   });
-  if (!systemUser) {
+  if (systemUser) {
+    console.log('✅ System user already exists');
+  } else {
     console.log('🔧 Creating system user for createdBy references...');
     systemUser = new User({
       email: 'system@internal.local',
@@ -128,8 +130,6 @@ async function createSystemUser() {
     systemUser.createdBy = systemUser._id;
     await systemUser.save();
     console.log('✅ System user created successfully');
-  } else {
-    console.log('✅ System user already exists');
   }
   return systemUser;
 }

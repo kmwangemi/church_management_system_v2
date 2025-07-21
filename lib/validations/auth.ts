@@ -1,7 +1,7 @@
-import * as z from 'zod';
+import z from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -16,14 +16,13 @@ export const churchDataSchema = z.object({
   establishedDate: z
     .string()
     .min(1, 'Please enter establishment date')
-    .refine(val => !isNaN(Date.parse(val)), {
+    .refine((val) => !Number.isNaN(Date.parse(val)), {
       message: 'Please enter a valid date',
     }),
   email: z.string().email('Please enter a valid email address'),
   phoneNumber: z.string().min(8, 'Please enter a valid phone number'),
   country: z.string().min(2, 'Please enter country'),
   website: z
-    .string()
     .url('Please enter a valid website URL')
     .optional()
     .or(z.literal('')),
@@ -33,12 +32,7 @@ export const churchDataSchema = z.object({
     state: z.string().optional(),
     zipCode: z.string().optional(),
   }),
-  subscriptionPlan: z.enum([
-    'basic',
-    'standard',
-    'premium',
-    'enterprise',
-  ]),
+  subscriptionPlan: z.enum(['basic', 'standard', 'premium', 'enterprise']),
   // numberOfBranches: z.coerce.number().min(1, 'Please enter number of branches'),
   churchSize: z.string().min(1, 'Please select number of members'),
   numberOfBranches: z.string().min(1, 'Please enter number of branches'),
@@ -49,7 +43,7 @@ export const adminDataSchema = z
   .object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
-    email: z.string().email('Please enter a valid email address'),
+    email: z.email('Please enter a valid email address'),
     phoneNumber: z.string().min(1, 'Phone number is required'),
     password: z
       .string()
@@ -59,12 +53,12 @@ export const adminDataSchema = z
       .regex(/\d/, 'Password must contain at least one number')
       .regex(
         /[!@#$%^&*(),.?":{}|<>]/,
-        'Password must contain at least one special character',
+        'Password must contain at least one special character'
       ),
     confirmPassword: z.string(),
     role: z.enum(['admin', 'superadmin']),
   })
-  .refine(data => data.password === data.confirmPassword, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
@@ -81,7 +75,7 @@ export type ChurchRegistrationPayload = z.infer<
 >;
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email('Please enter a valid email address'),
 });
 
 export type ForgotPasswordPayload = z.infer<typeof forgotPasswordSchema>;
@@ -101,11 +95,11 @@ export const resetPasswordSchema = z
       .regex(/\d/, 'Password must contain at least one number')
       .regex(
         /[!@#$%^&*(),.?":{}|<>]/,
-        'Password must contain at least one special character',
+        'Password must contain at least one special character'
       ),
     confirmPassword: z.string(),
   })
-  .refine(data => data.password === data.confirmPassword, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword'],
   });

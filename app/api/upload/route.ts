@@ -1,7 +1,9 @@
-import { FILE_CONFIGS } from '@/lib/utils';
+/** biome-ignore-all lint/suspicious/noExplicitAny: ignore any */
+
+import path from 'node:path';
 import { v2 as cloudinary } from 'cloudinary';
-import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
+import { type NextRequest, NextResponse } from 'next/server';
+import { FILE_CONFIGS } from '@/lib/utils';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -18,7 +20,7 @@ const uploadToCloudinary = (
     folder: string;
     resourceType: 'image' | 'raw';
     originalName?: string;
-  },
+  }
 ): Promise<any> => {
   return new Promise((resolve, reject) => {
     const uploadOptions: any = {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'No file uploaded',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
     // Validate file type
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'Invalid file type. Supported types: image, document, logo',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
     // Validate file size
@@ -71,19 +73,19 @@ export async function POST(request: NextRequest) {
         {
           error: `File size exceeds the limit. Maximum allowed size is ${maxSizeMB}MB.`,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
     // Validate file type
     if (!config.allowedMimeTypes.includes(file.type)) {
       const allowedTypes = config.allowedMimeTypes
-        .map(type => type.split('/')[1].toUpperCase())
+        .map((type) => type.split('/')[1].toUpperCase())
         .join(', ');
       return NextResponse.json(
         {
           error: `File format not supported. Please upload ${allowedTypes} files only.`,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
     // Convert file to buffer
@@ -95,7 +97,6 @@ export async function POST(request: NextRequest) {
       resourceType: config.resourceType,
       originalName: file.name,
     });
-    console.log('Cloudinary upload result:', result);
     // Return success response
     return NextResponse.json({
       success: true,
@@ -113,31 +114,30 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Upload error:', error);
     // Handle specific errors
     if (error.message?.includes('File format not supported')) {
       return NextResponse.json(
         {
           error: error.message,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
     return NextResponse.json(
       {
         error: `Upload failed: ${error.message || 'Unknown error'}`,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 // Optional: Add other HTTP methods if needed
-export async function GET() {
+export function GET() {
   return NextResponse.json(
     {
       message: 'Upload endpoint - use POST method',
     },
-    { status: 405 },
+    { status: 405 }
   );
 }

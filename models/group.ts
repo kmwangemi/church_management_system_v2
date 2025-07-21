@@ -59,7 +59,7 @@ const GroupSchema = new Schema<IGroup>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Group ||

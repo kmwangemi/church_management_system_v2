@@ -1,12 +1,12 @@
-import apiClient from '@/lib/api-client';
-import { successToastStyle } from '@/lib/toast-styles';
-import { BranchAddResponse, BranchListResponse } from '@/lib/types';
-import { AddBranchPayload } from '@/lib/validations/branch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import apiClient from '@/lib/api-client';
+import { successToastStyle } from '@/lib/toast-styles';
+import type { BranchAddResponse, BranchListResponse } from '@/lib/types';
+import type { AddBranchPayload } from '@/lib/validations/branch';
 
 const registerBranch = async (
-  payload: AddBranchPayload,
+  payload: AddBranchPayload
 ): Promise<BranchAddResponse> => {
   const { data } = await apiClient.post('/branches', payload);
   return data;
@@ -27,10 +27,10 @@ export const useRegisterBranch = () => {
 
 const fetchBranches = async (
   page = 1,
-  search = '',
+  search = ''
 ): Promise<BranchListResponse> => {
   const { data } = await apiClient.get(
-    `/branches?page=${page}&search=${search}`,
+    `/branches?page=${page}&search=${search}`
   );
   return data;
 };

@@ -1,14 +1,14 @@
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import { countries } from 'countries-list';
 import { ChevronDown } from 'lucide-react';
 import React from 'react';
 import PhoneInputComponent, {
-  Country,
+  type Country,
   getCountryCallingCode,
   isValidPhoneNumber,
   parsePhoneNumber,
 } from 'react-phone-number-input';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import 'react-phone-number-input/style.css';
 
 // Custom input component that matches your UI
@@ -20,7 +20,7 @@ const CustomPhoneInput = React.forwardRef<
     <Input
       className={cn(
         'border-0 focus-visible:ring-0 focus-visible:ring-offset-0',
-        className,
+        className
       )}
       ref={ref}
       {...props}
@@ -46,40 +46,40 @@ const CountrySelect = ({
   //   ? countries[value as keyof typeof countries]
   //   : null;
   return (
-    <div className='relative'>
+    <div className="relative">
       <button
-        type='button'
-        className='flex items-center gap-1 px-3 py-2 border rounded-l-md bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring'
+        className="flex items-center gap-1 rounded-l-md border bg-background px-3 py-2 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
         onClick={() => setIsOpen(!isOpen)}
+        type="button"
         {...rest}
       >
-        <span className='text-sm'>
+        <span className="text-sm">
           {value
             ? `${getCountryFlag(value)} +${getCountryCallingCode(value)}`
             : '🌍'}
         </span>
-        <ChevronDown className='size-3' />
+        <ChevronDown className="size-3" />
       </button>
       {isOpen && (
-        <div className='absolute top-full left-0 z-50 mt-1 w-64 max-h-60 overflow-auto border rounded-md bg-popover shadow-lg'>
-          {options.map(option => {
+        <div className="absolute top-full left-0 z-50 mt-1 max-h-60 w-64 overflow-auto rounded-md border bg-popover shadow-lg">
+          {options.map((option) => {
             const countryCode = option.value;
             const country = countryCode
               ? countries[countryCode as keyof typeof countries]
               : null;
             return (
               <button
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
                 key={option.value || 'none'}
-                type='button'
-                className='w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 text-sm'
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
+                type="button"
               >
                 <span>{countryCode ? getCountryFlag(countryCode) : '🌍'}</span>
                 <span>{country?.name || 'Unknown'}</span>
-                <span className='ml-auto text-muted-foreground'>
+                <span className="ml-auto text-muted-foreground">
                   {countryCode ? `+${getCountryCallingCode(countryCode)}` : ''}
                 </span>
               </button>
@@ -97,7 +97,9 @@ const getCountryFlag = (countryCode: Country): string => {
   // Convert country code to regional indicator symbols
   return countryCode
     .toUpperCase()
-    .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+    .replace(/./g, (char) =>
+      String.fromCodePoint(127_397 + char.charCodeAt(0))
+    );
 };
 
 // Main PhoneInput component
@@ -118,28 +120,29 @@ const PhoneInput = React.forwardRef<HTMLDivElement, PhoneInputProps>(
       defaultCountry = 'KE',
       ...props
     },
-    ref,
+    ref
   ) => {
     return (
       <div
-        ref={ref}
         className={cn(
-          'flex border rounded-md focus-within:ring-2 focus-within:ring-ring',
-          className,
+          'flex rounded-md border focus-within:ring-2 focus-within:ring-ring',
+          className
         )}
+        ref={ref}
       >
         <PhoneInputComponent
           {...props}
-          onChange={props.onChange ?? (() => {})}
-          defaultCountry={defaultCountry}
-          placeholder={placeholder}
-          inputComponent={CustomPhoneInput}
+          className="flex w-full"
           countrySelectComponent={CountrySelect}
-          className='flex w-full'
+          defaultCountry={defaultCountry}
+          inputComponent={CustomPhoneInput}
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: ignore empty {}
+          onChange={props.onChange ?? (() => {})}
+          placeholder={placeholder}
         />
       </div>
     );
-  },
+  }
 );
 
 PhoneInput.displayName = 'PhoneInput';

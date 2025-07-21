@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './lib/auth';
 
 // Define protected routes and their required roles
@@ -11,8 +11,8 @@ const protectedRoutes = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Check if the current path is protected
-  const matchedRoute = Object.keys(protectedRoutes).find(route =>
-    pathname.startsWith(route),
+  const matchedRoute = Object.keys(protectedRoutes).find((route) =>
+    pathname.startsWith(route)
   );
   if (!matchedRoute) {
     return NextResponse.next();
@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
   // Check if user has required role
-  if (!user.user || !requiredRoles.includes(user.user.role)) {
+  if (!(user.user && requiredRoles.includes(user.user.role))) {
     return NextResponse.redirect(new URL('/auth/unauthorized', request.url));
   }
   // Optional: Add user data to headers for use in your app
@@ -47,9 +47,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/member/:path*',
-    '/dashboard/:path*',
-    '/superadmin/:path*',
-  ],
+  matcher: ['/member/:path*', '/dashboard/:path*', '/superadmin/:path*'],
 };

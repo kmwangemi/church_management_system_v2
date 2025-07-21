@@ -1,9 +1,9 @@
-import { FileType, UploadResponse } from '@/lib/types';
+import type { FileType, UploadResponse } from '@/lib/types';
 
 // Generic upload function
 export const uploadFile = async (
   file: File,
-  type: FileType,
+  type: FileType
 ): Promise<UploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);

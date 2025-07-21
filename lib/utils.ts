@@ -1,17 +1,15 @@
-import { APIError, FastAPIValidationError } from '@/lib/types';
-import { clsx, type ClassValue } from 'clsx';
+import { type ClassValue, clsx } from 'clsx';
 import { formatDate, formatDistanceToNowStrict } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
+import type { APIError, FastAPIValidationError } from '@/lib/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export interface FormatToNewDate {
-  (date: Date | number): string;
-}
+export type FormatToNewDate = (date: Date | number) => string;
 
-export const formatToNewDate: FormatToNewDate = date => {
+export const formatToNewDate: FormatToNewDate = (date) => {
   return formatDate(date, 'dd/MM/yyyy');
 };
 
@@ -85,9 +83,9 @@ export const getError = (err: APIError | any): string => {
     }
     // Final fallback
     return 'An unexpected error occurred. Please try again.';
-  } catch (parseError) {
+  } catch (_parseError) {
     // If error parsing fails, return a safe fallback
-    console.error('Error parsing error object:', parseError);
+    // console.error('Error parsing error object:', parseError);
     return 'An unexpected error occurred. Please try again.';
   }
 };
@@ -117,7 +115,7 @@ export function capitalizeFirstLetterOfEachWord(str: string) {
 export const addCommasToNumber = (input: string | number): string => {
   // Convert the input to a number if it's a string
   const number: number =
-    typeof input === 'string' ? parseFloat(input) : Number(input);
+    typeof input === 'string' ? Number.parseFloat(input) : Number(input);
   // Check if the conversion was successful
   if (Number.isNaN(number)) {
     return '0';

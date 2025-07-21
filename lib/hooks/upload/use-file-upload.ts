@@ -1,5 +1,5 @@
-import { uploadLogo } from '@/components/upload-helpers';
 import { useCallback, useState } from 'react';
+import { uploadLogo } from '@/components/upload-helpers';
 
 export const useLogoUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -12,7 +12,7 @@ export const useLogoUpload = () => {
     try {
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 100);
       const result = await uploadLogo(file);
       clearInterval(progressInterval);

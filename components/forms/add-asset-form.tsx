@@ -1,78 +1,99 @@
-"use client"
+'use client';
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
-import { Building, DollarSign, Calendar, Loader2 } from "lucide-react"
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Building, Calendar, DollarSign, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const assetSchema = z.object({
-  name: z.string().min(2, "Asset name must be at least 2 characters"),
-  type: z.string().min(1, "Please select an asset type"),
-  category: z.string().min(1, "Please select a category"),
-  value: z.string().min(1, "Please enter the asset value"),
-  purchaseDate: z.string().min(1, "Purchase date is required"),
-  condition: z.string().min(1, "Please select the condition"),
-  location: z.string().min(2, "Location is required"),
-  status: z.string().min(1, "Please select the status"),
+  name: z.string().min(2, 'Asset name must be at least 2 characters'),
+  type: z.string().min(1, 'Please select an asset type'),
+  category: z.string().min(1, 'Please select a category'),
+  value: z.string().min(1, 'Please enter the asset value'),
+  purchaseDate: z.string().min(1, 'Purchase date is required'),
+  condition: z.string().min(1, 'Please select the condition'),
+  location: z.string().min(2, 'Location is required'),
+  status: z.string().min(1, 'Please select the status'),
   serialNumber: z.string().optional(),
   warranty: z.string().optional(),
   supplier: z.string().optional(),
   maintenanceSchedule: z.string().optional(),
   notes: z.string().optional(),
-})
+});
 
-type AssetForm = z.infer<typeof assetSchema>
+type AssetForm = z.infer<typeof assetSchema>;
 
 interface AddAssetFormProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<AssetForm>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
-      name: "",
-      type: "",
-      category: "",
-      value: "",
-      purchaseDate: new Date().toISOString().split("T")[0],
-      condition: "",
-      location: "",
-      status: "active",
-      serialNumber: "",
-      warranty: "",
-      supplier: "",
-      maintenanceSchedule: "",
-      notes: "",
+      name: '',
+      type: '',
+      category: '',
+      value: '',
+      purchaseDate: new Date().toISOString().split('T')[0],
+      condition: '',
+      location: '',
+      status: 'active',
+      serialNumber: '',
+      warranty: '',
+      supplier: '',
+      maintenanceSchedule: '',
+      notes: '',
     },
-  })
+  });
 
   const onSubmit = async (data: AssetForm) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Asset data:", data)
-      onSuccess()
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.log('Asset data:', data);
+      onSuccess();
     } catch (error) {
-      console.error("Error adding asset:", error)
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.error('Error adding asset:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -80,10 +101,12 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
               <Building className="h-5 w-5" />
               <span>Basic Information</span>
             </CardTitle>
-            <CardDescription>Essential asset details and identification</CardDescription>
+            <CardDescription>
+              Essential asset details and identification
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -103,7 +126,10 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Asset Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -115,7 +141,9 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                         <SelectItem value="equipment">Equipment</SelectItem>
                         <SelectItem value="furniture">Furniture</SelectItem>
                         <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="musical">Musical Instruments</SelectItem>
+                        <SelectItem value="musical">
+                          Musical Instruments
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -124,7 +152,7 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="category"
@@ -132,7 +160,10 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter category (e.g., Transportation, Audio/Visual)" {...field} />
+                      <Input
+                        placeholder="Enter category (e.g., Transportation, Audio/Visual)"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -153,7 +184,7 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="serialNumber"
@@ -194,7 +225,7 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
             <CardDescription>Purchase details and valuation</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="value"
@@ -202,7 +233,11 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                   <FormItem>
                     <FormLabel>Asset Value ($)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Enter value" {...field} />
+                      <Input
+                        placeholder="Enter value"
+                        type="number"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -230,7 +265,10 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                 <FormItem>
                   <FormLabel>Warranty Information (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 3 years, Expires 2025-12-31" {...field} />
+                    <Input
+                      placeholder="e.g., 3 years, Expires 2025-12-31"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -246,17 +284,22 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
               <Calendar className="h-5 w-5" />
               <span>Status & Maintenance</span>
             </CardTitle>
-            <CardDescription>Current condition and maintenance schedule</CardDescription>
+            <CardDescription>
+              Current condition and maintenance schedule
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="condition"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Condition</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select condition" />
@@ -279,7 +322,10 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -318,7 +364,11 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                 <FormItem>
                   <FormLabel>Additional Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Additional notes about the asset" rows={3} {...field} />
+                    <Textarea
+                      placeholder="Additional notes about the asset"
+                      rows={3}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -328,21 +378,21 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
         </Card>
 
         <div className="flex justify-end space-x-4 pt-6">
-          <Button type="button" variant="outline" onClick={onSuccess}>
+          <Button onClick={onSuccess} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button disabled={isLoading} type="submit">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Adding Asset...
               </>
             ) : (
-              "Add Asset"
+              'Add Asset'
             )}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }

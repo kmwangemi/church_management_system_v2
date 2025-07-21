@@ -1,5 +1,8 @@
 'use client';
 
+import { CalendarIcon } from 'lucide-react';
+import * as React from 'react';
+import DatePicker from 'react-datepicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,15 +11,12 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon } from 'lucide-react';
-import * as React from 'react';
-import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 // Date formatting utility
 function formatDate(
   date: Date | undefined,
-  format: 'long' | 'short' | 'iso' = 'long',
+  format: 'long' | 'short' | 'iso' = 'long'
 ) {
   if (!date) {
     return '';
@@ -44,12 +44,12 @@ function isValidDate(date: Date | undefined) {
   if (!date) {
     return false;
   }
-  return !isNaN(date.getTime());
+  return !Number.isNaN(date.getTime());
 }
 
 // Parse date from string
 function parseDate(value: string): Date | undefined {
-  if (!value) return undefined;
+  if (!value) return;
   const date = new Date(value);
   return isValidDate(date) ? date : undefined;
 }
@@ -67,27 +67,27 @@ const CustomInput = React.forwardRef<HTMLInputElement, CustomInputProps>(
   ({ value, onClick, placeholder, disabled, className, ...props }, ref) => (
     <div className={cn('relative', className)}>
       <Input
+        className="cursor-pointer pr-10"
+        disabled={disabled}
+        onClick={onClick}
+        placeholder={placeholder}
+        readOnly
         ref={ref}
         value={value}
-        placeholder={placeholder}
-        disabled={disabled}
-        readOnly
-        className='pr-10 cursor-pointer'
-        onClick={onClick}
         {...props}
       />
       <Button
-        type='button'
-        variant='ghost'
+        className="-translate-y-1/2 absolute top-1/2 right-2 size-6 hover:bg-accent"
         disabled={disabled}
-        className='absolute top-1/2 right-2 size-6 -translate-y-1/2 hover:bg-accent'
         onClick={onClick}
+        type="button"
+        variant="ghost"
       >
-        <CalendarIcon className='size-3.5' />
-        <span className='sr-only'>Select date</span>
+        <CalendarIcon className="size-3.5" />
+        <span className="sr-only">Select date</span>
       </Button>
     </div>
-  ),
+  )
 );
 
 CustomInput.displayName = 'CustomInput';
@@ -131,7 +131,7 @@ const DatePickerComponent = React.forwardRef<
       dateFormat,
       ...props
     },
-    ref,
+    ref
   ) => {
     const [open, setOpen] = React.useState(false);
     // Determine date format based on format prop
@@ -151,39 +151,39 @@ const DatePickerComponent = React.forwardRef<
       setOpen(false);
     };
     return (
-      <div ref={ref} className={cn('relative', className)} {...props}>
-        <Popover open={open} onOpenChange={setOpen}>
+      <div className={cn('relative', className)} ref={ref} {...props}>
+        <Popover onOpenChange={setOpen} open={open}>
           <PopoverTrigger asChild>
             <div>
               <CustomInput
-                value={value ? formatDate(value, format) : ''}
+                className="w-full"
+                disabled={disabled}
                 onClick={() => !disabled && setOpen(true)}
                 placeholder={placeholder}
-                disabled={disabled}
-                className='w-full'
+                value={value ? formatDate(value, format) : ''}
               />
             </div>
           </PopoverTrigger>
-          <PopoverContent className='w-auto p-0' align='start' sideOffset={4}>
+          <PopoverContent align="start" className="w-auto p-0" sideOffset={4}>
             <DatePicker
-              selected={value}
-              onChange={handleDateChange}
-              minDate={minDate}
-              maxDate={maxDate}
-              showYearDropdown={showYearDropdown}
-              showMonthDropdown={showMonthDropdown}
-              scrollableYearDropdown={scrollableYearDropdown}
-              yearDropdownItemNumber={yearDropdownItemNumber}
-              showWeekNumbers={showWeekNumbers}
+              calendarClassName="react-datepicker-custom"
               dateFormat={getDateFormat()}
               inline
-              calendarClassName='react-datepicker-custom'
+              maxDate={maxDate}
+              minDate={minDate}
+              onChange={handleDateChange}
+              scrollableYearDropdown={scrollableYearDropdown}
+              selected={value}
+              showMonthDropdown={showMonthDropdown}
+              showWeekNumbers={showWeekNumbers}
+              showYearDropdown={showYearDropdown}
+              yearDropdownItemNumber={yearDropdownItemNumber}
             />
           </PopoverContent>
         </Popover>
       </div>
     );
-  },
+  }
 );
 
 DatePickerComponent.displayName = 'DatePickerComponent';
@@ -225,7 +225,7 @@ const DateRangePicker = React.forwardRef<HTMLDivElement, DateRangePickerProps>(
       selectsRange = false,
       ...props
     },
-    ref,
+    ref
   ) => {
     const [open, setOpen] = React.useState(false);
     // Determine date format
@@ -250,44 +250,44 @@ const DateRangePicker = React.forwardRef<HTMLDivElement, DateRangePickerProps>(
         }
       };
       return (
-        <div ref={ref} className={cn('relative', className)} {...props}>
-          <Popover open={open} onOpenChange={setOpen}>
+        <div className={cn('relative', className)} ref={ref} {...props}>
+          <Popover onOpenChange={setOpen} open={open}>
             <PopoverTrigger asChild>
               <div>
                 <CustomInput
+                  className="w-full"
+                  disabled={disabled}
+                  onClick={() => !disabled && setOpen(true)}
+                  placeholder="Select date range"
                   value={
                     startDate && endDate
                       ? `${formatDate(startDate, format)} - ${formatDate(
                           endDate,
-                          format,
+                          format
                         )}`
                       : startDate
-                      ? formatDate(startDate, format)
-                      : ''
+                        ? formatDate(startDate, format)
+                        : ''
                   }
-                  onClick={() => !disabled && setOpen(true)}
-                  placeholder='Select date range'
-                  disabled={disabled}
-                  className='w-full'
                 />
               </div>
             </PopoverTrigger>
-            <PopoverContent className='w-auto p-0' align='start' sideOffset={4}>
+            <PopoverContent align="start" className="w-auto p-0" sideOffset={4}>
               <DatePicker
-                selected={startDate}
-                onChange={handleRangeChange}
-                startDate={startDate}
-                endDate={endDate}
-                selectsRange
-                minDate={minDate}
-                maxDate={maxDate}
-                showYearDropdown={showYearDropdown}
-                showMonthDropdown={showMonthDropdown}
-                scrollableYearDropdown={scrollableYearDropdown}
-                yearDropdownItemNumber={yearDropdownItemNumber}
+                calendarClassName="react-datepicker-custom"
                 dateFormat={getDateFormat()}
+                endDate={endDate}
                 inline
-                calendarClassName='react-datepicker-custom'
+                maxDate={maxDate}
+                minDate={minDate}
+                onChange={handleRangeChange}
+                scrollableYearDropdown={scrollableYearDropdown}
+                selected={startDate}
+                selectsRange
+                showMonthDropdown={showMonthDropdown}
+                showYearDropdown={showYearDropdown}
+                startDate={startDate}
+                yearDropdownItemNumber={yearDropdownItemNumber}
               />
             </PopoverContent>
           </Popover>
@@ -296,38 +296,38 @@ const DateRangePicker = React.forwardRef<HTMLDivElement, DateRangePickerProps>(
     }
     // Separate DatePickers for start and end dates
     return (
-      <div ref={ref} className={cn('flex gap-2', className)} {...props}>
+      <div className={cn('flex gap-2', className)} ref={ref} {...props}>
         <DatePickerComponent
-          value={startDate}
-          onChange={onStartDateChange}
-          placeholder='Start date'
+          className="flex-1"
           disabled={disabled}
           format={format}
-          minDate={minDate}
           maxDate={endDate || maxDate}
-          showYearDropdown={showYearDropdown}
-          showMonthDropdown={showMonthDropdown}
+          minDate={minDate}
+          onChange={onStartDateChange}
+          placeholder="Start date"
           scrollableYearDropdown={scrollableYearDropdown}
+          showMonthDropdown={showMonthDropdown}
+          showYearDropdown={showYearDropdown}
+          value={startDate}
           yearDropdownItemNumber={yearDropdownItemNumber}
-          className='flex-1'
         />
         <DatePickerComponent
-          value={endDate}
-          onChange={onEndDateChange}
-          placeholder='End date'
+          className="flex-1"
           disabled={disabled}
           format={format}
-          minDate={startDate || minDate}
           maxDate={maxDate}
-          showYearDropdown={showYearDropdown}
-          showMonthDropdown={showMonthDropdown}
+          minDate={startDate || minDate}
+          onChange={onEndDateChange}
+          placeholder="End date"
           scrollableYearDropdown={scrollableYearDropdown}
+          showMonthDropdown={showMonthDropdown}
+          showYearDropdown={showYearDropdown}
+          value={endDate}
           yearDropdownItemNumber={yearDropdownItemNumber}
-          className='flex-1'
         />
       </div>
     );
-  },
+  }
 );
 
 DateRangePicker.displayName = 'DateRangePicker';

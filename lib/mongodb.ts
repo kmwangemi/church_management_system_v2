@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noConsole: ignore */
+// biome-ignore lint/style/useImportType: ignore import type
 import mongoose from 'mongoose';
 
 interface CachedConnection {
@@ -6,10 +8,11 @@ interface CachedConnection {
 }
 
 declare global {
+  // biome-ignore lint/suspicious/noRedeclare: ignore
   var mongoose: CachedConnection | undefined;
 }
 
-let cached: CachedConnection = globalThis.mongoose || {
+const cached: CachedConnection = globalThis.mongoose || {
   conn: null,
   promise: null,
 };
@@ -32,22 +35,23 @@ async function dbConnect(): Promise<typeof mongoose> {
     console.log('Creating new MongoDB connection...');
     console.log(
       'Connection URI (masked):',
-      MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'),
+      // biome-ignore lint/performance/useTopLevelRegex: ignore masking sensitive data
+      MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')
     );
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000, // Increased timeout
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 10_000, // Increased timeout
+      socketTimeoutMS: 45_000,
+      connectTimeoutMS: 10_000,
     };
     cached.promise = mongoose
       .connect(MONGODB_URI, opts)
-      .then(mongoose => {
+      .then((mongoose) => {
         console.log('MongoDB connected successfully');
         return mongoose;
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('MongoDB connection error:', error);
         cached.promise = null; // Reset promise on error
         throw error;

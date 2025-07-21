@@ -1,59 +1,74 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
-  Globe,
-  Shield,
-  Mail,
-  Database,
-  Server,
-  CreditCard,
-  Bell,
-  Save,
-  RefreshCw,
   AlertTriangle,
+  Bell,
   CheckCircle,
-} from "lucide-react"
+  CreditCard,
+  Database,
+  Globe,
+  Mail,
+  RefreshCw,
+  Save,
+  Server,
+  Shield,
+} from 'lucide-react';
+import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function GlobalSettingsPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle');
 
+  // biome-ignore lint/suspicious/useAwait: ignore asynchronous operation
   const handleSave = async () => {
-    setIsLoading(true)
-    setSaveStatus("saving")
+    setIsLoading(true);
+    setSaveStatus('saving');
 
     // Simulate API call
     setTimeout(() => {
-      setSaveStatus("saved")
-      setIsLoading(false)
-      setTimeout(() => setSaveStatus("idle"), 3000)
-    }, 2000)
-  }
+      setSaveStatus('saved');
+      setIsLoading(false);
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }, 2000);
+  };
 
   const systemSettings = {
-    siteName: "ChurchFlow Global",
-    siteUrl: "https://churchflow.com",
-    adminEmail: "admin@churchflow.com",
-    timezone: "America/New_York",
-    language: "en",
+    siteName: 'ChurchFlow Global',
+    siteUrl: 'https://churchflow.com',
+    adminEmail: 'admin@churchflow.com',
+    timezone: 'America/New_York',
+    language: 'en',
     maintenanceMode: false,
     registrationEnabled: true,
     emailVerificationRequired: true,
     maxChurchesPerUser: 5,
     sessionTimeout: 30,
-    backupFrequency: "daily",
-  }
+    backupFrequency: 'daily',
+  };
 
   const securitySettings = {
     twoFactorRequired: true,
@@ -61,68 +76,87 @@ export default function GlobalSettingsPage() {
     passwordComplexity: true,
     loginAttempts: 5,
     lockoutDuration: 15,
-    sessionSecurity: "high",
+    sessionSecurity: 'high',
     ipWhitelisting: false,
     auditLogging: true,
-  }
+  };
 
   const emailSettings = {
-    smtpHost: "smtp.churchflow.com",
+    smtpHost: 'smtp.churchflow.com',
     smtpPort: 587,
-    smtpUsername: "noreply@churchflow.com",
-    smtpSecurity: "tls",
-    fromName: "ChurchFlow System",
-    fromEmail: "noreply@churchflow.com",
-    replyToEmail: "support@churchflow.com",
-  }
+    smtpUsername: 'noreply@churchflow.com',
+    smtpSecurity: 'tls',
+    fromName: 'ChurchFlow System',
+    fromEmail: 'noreply@churchflow.com',
+    replyToEmail: 'support@churchflow.com',
+  };
 
   const subscriptionPlans = [
     {
-      id: "basic",
-      name: "Basic Plan",
+      id: 'basic',
+      name: 'Basic Plan',
       price: 29,
-      features: ["Up to 100 members", "Basic reporting", "Email support"],
+      features: ['Up to 100 members', 'Basic reporting', 'Email support'],
       active: true,
     },
     {
-      id: "standard",
-      name: "Standard Plan",
+      id: 'standard',
+      name: 'Standard Plan',
       price: 59,
-      features: ["Up to 500 members", "Advanced reporting", "Priority support", "Multiple branches"],
+      features: [
+        'Up to 500 members',
+        'Advanced reporting',
+        'Priority support',
+        'Multiple branches',
+      ],
       active: true,
     },
     {
-      id: "premium",
-      name: "Premium Plan",
+      id: 'premium',
+      name: 'Premium Plan',
       price: 99,
-      features: ["Unlimited members", "Custom reporting", "24/7 support", "API access", "White-label"],
+      features: [
+        'Unlimited members',
+        'Custom reporting',
+        '24/7 support',
+        'API access',
+        'White-label',
+      ],
       active: true,
     },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Global Settings</h1>
-          <p className="text-muted-foreground">Configure system-wide settings and preferences</p>
+          <h1 className="font-bold text-3xl tracking-tight">Global Settings</h1>
+          <p className="text-muted-foreground">
+            Configure system-wide settings and preferences
+          </p>
         </div>
         <div className="flex items-center space-x-2">
-          {saveStatus === "saved" && (
+          {saveStatus === 'saved' && (
             <Alert className="w-auto border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700">Settings saved successfully</AlertDescription>
+              <AlertDescription className="text-green-700">
+                Settings saved successfully
+              </AlertDescription>
             </Alert>
           )}
-          <Button onClick={handleSave} disabled={isLoading}>
-            {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isLoading ? "Saving..." : "Save Changes"}
+          <Button disabled={isLoading} onClick={handleSave}>
+            {isLoading ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {isLoading ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs className="space-y-6" defaultValue="general">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -133,24 +167,34 @@ export default function GlobalSettingsPage() {
         </TabsList>
 
         {/* General Settings */}
-        <TabsContent value="general" className="space-y-6">
+        <TabsContent className="space-y-6" value="general">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Globe className="mr-2 h-5 w-5" />
                 System Configuration
               </CardTitle>
-              <CardDescription>Basic system settings and configuration</CardDescription>
+              <CardDescription>
+                Basic system settings and configuration
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="siteName">Site Name</Label>
-                  <Input id="siteName" defaultValue={systemSettings.siteName} placeholder="Enter site name" />
+                  <Input
+                    defaultValue={systemSettings.siteName}
+                    id="siteName"
+                    placeholder="Enter site name"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="siteUrl">Site URL</Label>
-                  <Input id="siteUrl" defaultValue={systemSettings.siteUrl} placeholder="https://example.com" />
+                  <Input
+                    defaultValue={systemSettings.siteUrl}
+                    id="siteUrl"
+                    placeholder="https://example.com"
+                  />
                 </div>
               </div>
 
@@ -158,10 +202,10 @@ export default function GlobalSettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="adminEmail">Admin Email</Label>
                   <Input
-                    id="adminEmail"
-                    type="email"
                     defaultValue={systemSettings.adminEmail}
+                    id="adminEmail"
                     placeholder="admin@example.com"
+                    type="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -171,10 +215,18 @@ export default function GlobalSettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                      <SelectItem value="America/New_York">
+                        Eastern Time
+                      </SelectItem>
+                      <SelectItem value="America/Chicago">
+                        Central Time
+                      </SelectItem>
+                      <SelectItem value="America/Denver">
+                        Mountain Time
+                      </SelectItem>
+                      <SelectItem value="America/Los_Angeles">
+                        Pacific Time
+                      </SelectItem>
                       <SelectItem value="UTC">UTC</SelectItem>
                     </SelectContent>
                   </Select>
@@ -199,11 +251,11 @@ export default function GlobalSettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="maxChurches">Max Churches per User</Label>
                   <Input
-                    id="maxChurches"
-                    type="number"
                     defaultValue={systemSettings.maxChurchesPerUser}
-                    min="1"
+                    id="maxChurches"
                     max="10"
+                    min="1"
+                    type="number"
                   />
                 </div>
               </div>
@@ -212,7 +264,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Maintenance Mode</Label>
-                    <p className="text-sm text-muted-foreground">Enable maintenance mode to prevent user access</p>
+                    <p className="text-muted-foreground text-sm">
+                      Enable maintenance mode to prevent user access
+                    </p>
                   </div>
                   <Switch defaultChecked={systemSettings.maintenanceMode} />
                 </div>
@@ -220,7 +274,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Registration Enabled</Label>
-                    <p className="text-sm text-muted-foreground">Allow new church registrations</p>
+                    <p className="text-muted-foreground text-sm">
+                      Allow new church registrations
+                    </p>
                   </div>
                   <Switch defaultChecked={systemSettings.registrationEnabled} />
                 </div>
@@ -228,9 +284,13 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Email Verification Required</Label>
-                    <p className="text-sm text-muted-foreground">Require email verification for new accounts</p>
+                    <p className="text-muted-foreground text-sm">
+                      Require email verification for new accounts
+                    </p>
                   </div>
-                  <Switch defaultChecked={systemSettings.emailVerificationRequired} />
+                  <Switch
+                    defaultChecked={systemSettings.emailVerificationRequired}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -238,58 +298,66 @@ export default function GlobalSettingsPage() {
         </TabsContent>
 
         {/* Security Settings */}
-        <TabsContent value="security" className="space-y-6">
+        <TabsContent className="space-y-6" value="security">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Shield className="mr-2 h-5 w-5" />
                 Security Configuration
               </CardTitle>
-              <CardDescription>Configure security policies and authentication settings</CardDescription>
+              <CardDescription>
+                Configure security policies and authentication settings
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="passwordLength">Minimum Password Length</Label>
+                  <Label htmlFor="passwordLength">
+                    Minimum Password Length
+                  </Label>
                   <Input
-                    id="passwordLength"
-                    type="number"
                     defaultValue={securitySettings.passwordMinLength}
-                    min="6"
+                    id="passwordLength"
                     max="20"
+                    min="6"
+                    type="number"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="loginAttempts">Max Login Attempts</Label>
                   <Input
-                    id="loginAttempts"
-                    type="number"
                     defaultValue={securitySettings.loginAttempts}
-                    min="3"
+                    id="loginAttempts"
                     max="10"
+                    min="3"
+                    type="number"
                   />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="lockoutDuration">Lockout Duration (minutes)</Label>
+                  <Label htmlFor="lockoutDuration">
+                    Lockout Duration (minutes)
+                  </Label>
                   <Input
-                    id="lockoutDuration"
-                    type="number"
                     defaultValue={securitySettings.lockoutDuration}
-                    min="5"
+                    id="lockoutDuration"
                     max="60"
+                    min="5"
+                    type="number"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                  <Label htmlFor="sessionTimeout">
+                    Session Timeout (minutes)
+                  </Label>
                   <Input
-                    id="sessionTimeout"
-                    type="number"
                     defaultValue={systemSettings.sessionTimeout}
-                    min="15"
+                    id="sessionTimeout"
                     max="120"
+                    min="15"
+                    type="number"
                   />
                 </div>
               </div>
@@ -298,7 +366,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Two-Factor Authentication Required</Label>
-                    <p className="text-sm text-muted-foreground">Require 2FA for all admin accounts</p>
+                    <p className="text-muted-foreground text-sm">
+                      Require 2FA for all admin accounts
+                    </p>
                   </div>
                   <Switch defaultChecked={securitySettings.twoFactorRequired} />
                 </div>
@@ -306,15 +376,21 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Password Complexity</Label>
-                    <p className="text-sm text-muted-foreground">Require uppercase, lowercase, numbers, and symbols</p>
+                    <p className="text-muted-foreground text-sm">
+                      Require uppercase, lowercase, numbers, and symbols
+                    </p>
                   </div>
-                  <Switch defaultChecked={securitySettings.passwordComplexity} />
+                  <Switch
+                    defaultChecked={securitySettings.passwordComplexity}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>IP Whitelisting</Label>
-                    <p className="text-sm text-muted-foreground">Restrict admin access to specific IP addresses</p>
+                    <p className="text-muted-foreground text-sm">
+                      Restrict admin access to specific IP addresses
+                    </p>
                   </div>
                   <Switch defaultChecked={securitySettings.ipWhitelisting} />
                 </div>
@@ -322,7 +398,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Audit Logging</Label>
-                    <p className="text-sm text-muted-foreground">Log all administrative actions</p>
+                    <p className="text-muted-foreground text-sm">
+                      Log all administrative actions
+                    </p>
                   </div>
                   <Switch defaultChecked={securitySettings.auditLogging} />
                 </div>
@@ -332,24 +410,35 @@ export default function GlobalSettingsPage() {
         </TabsContent>
 
         {/* Email Settings */}
-        <TabsContent value="email" className="space-y-6">
+        <TabsContent className="space-y-6" value="email">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Mail className="mr-2 h-5 w-5" />
                 Email Configuration
               </CardTitle>
-              <CardDescription>Configure SMTP settings and email templates</CardDescription>
+              <CardDescription>
+                Configure SMTP settings and email templates
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="smtpHost">SMTP Host</Label>
-                  <Input id="smtpHost" defaultValue={emailSettings.smtpHost} placeholder="smtp.example.com" />
+                  <Input
+                    defaultValue={emailSettings.smtpHost}
+                    id="smtpHost"
+                    placeholder="smtp.example.com"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="smtpPort">SMTP Port</Label>
-                  <Input id="smtpPort" type="number" defaultValue={emailSettings.smtpPort} placeholder="587" />
+                  <Input
+                    defaultValue={emailSettings.smtpPort}
+                    id="smtpPort"
+                    placeholder="587"
+                    type="number"
+                  />
                 </div>
               </div>
 
@@ -357,8 +446,8 @@ export default function GlobalSettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="smtpUsername">SMTP Username</Label>
                   <Input
-                    id="smtpUsername"
                     defaultValue={emailSettings.smtpUsername}
+                    id="smtpUsername"
                     placeholder="username@example.com"
                   />
                 </div>
@@ -380,15 +469,19 @@ export default function GlobalSettingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="fromName">From Name</Label>
-                  <Input id="fromName" defaultValue={emailSettings.fromName} placeholder="Your Organization" />
+                  <Input
+                    defaultValue={emailSettings.fromName}
+                    id="fromName"
+                    placeholder="Your Organization"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fromEmail">From Email</Label>
                   <Input
-                    id="fromEmail"
-                    type="email"
                     defaultValue={emailSettings.fromEmail}
+                    id="fromEmail"
                     placeholder="noreply@example.com"
+                    type="email"
                   />
                 </div>
               </div>
@@ -396,10 +489,10 @@ export default function GlobalSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="replyToEmail">Reply-To Email</Label>
                 <Input
-                  id="replyToEmail"
-                  type="email"
                   defaultValue={emailSettings.replyToEmail}
+                  id="replyToEmail"
                   placeholder="support@example.com"
+                  type="email"
                 />
               </div>
 
@@ -414,33 +507,44 @@ export default function GlobalSettingsPage() {
         </TabsContent>
 
         {/* Billing Settings */}
-        <TabsContent value="billing" className="space-y-6">
+        <TabsContent className="space-y-6" value="billing">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <CreditCard className="mr-2 h-5 w-5" />
                 Subscription Plans
               </CardTitle>
-              <CardDescription>Manage subscription plans and pricing</CardDescription>
+              <CardDescription>
+                Manage subscription plans and pricing
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {subscriptionPlans.map((plan) => (
-                  <div key={plan.id} className="flex items-center justify-between p-4 rounded-lg border">
+                  <div
+                    className="flex items-center justify-between rounded-lg border p-4"
+                    key={plan.id}
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
                         <h4 className="font-medium">{plan.name}</h4>
-                        <Badge className="bg-green-100 text-green-800">${plan.price}/month</Badge>
-                        {plan.active && <Badge className="bg-blue-100 text-blue-800">Active</Badge>}
+                        <Badge className="bg-green-100 text-green-800">
+                          ${plan.price}/month
+                        </Badge>
+                        {plan.active && (
+                          <Badge className="bg-blue-100 text-blue-800">
+                            Active
+                          </Badge>
+                        )}
                       </div>
-                      <ul className="text-sm text-muted-foreground mt-2">
+                      <ul className="mt-2 text-muted-foreground text-sm">
                         {plan.features.map((feature, index) => (
                           <li key={index}>• {feature}</li>
                         ))}
                       </ul>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button size="sm" variant="outline">
                         Edit
                       </Button>
                       <Switch defaultChecked={plan.active} />
@@ -453,21 +557,25 @@ export default function GlobalSettingsPage() {
         </TabsContent>
 
         {/* Notifications Settings */}
-        <TabsContent value="notifications" className="space-y-6">
+        <TabsContent className="space-y-6" value="notifications">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Bell className="mr-2 h-5 w-5" />
                 Notification Settings
               </CardTitle>
-              <CardDescription>Configure system notifications and alerts</CardDescription>
+              <CardDescription>
+                Configure system notifications and alerts
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>System Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Send alerts for system issues and maintenance</p>
+                    <p className="text-muted-foreground text-sm">
+                      Send alerts for system issues and maintenance
+                    </p>
                   </div>
                   <Switch defaultChecked={true} />
                 </div>
@@ -475,7 +583,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>New Church Registrations</Label>
-                    <p className="text-sm text-muted-foreground">Notify when new churches register</p>
+                    <p className="text-muted-foreground text-sm">
+                      Notify when new churches register
+                    </p>
                   </div>
                   <Switch defaultChecked={true} />
                 </div>
@@ -483,7 +593,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Payment Notifications</Label>
-                    <p className="text-sm text-muted-foreground">Send notifications for payment events</p>
+                    <p className="text-muted-foreground text-sm">
+                      Send notifications for payment events
+                    </p>
                   </div>
                   <Switch defaultChecked={true} />
                 </div>
@@ -491,7 +603,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Weekly Reports</Label>
-                    <p className="text-sm text-muted-foreground">Send weekly system usage reports</p>
+                    <p className="text-muted-foreground text-sm">
+                      Send weekly system usage reports
+                    </p>
                   </div>
                   <Switch defaultChecked={false} />
                 </div>
@@ -500,10 +614,10 @@ export default function GlobalSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="notificationEmail">Notification Email</Label>
                 <Input
-                  id="notificationEmail"
-                  type="email"
                   defaultValue="admin@churchflow.com"
+                  id="notificationEmail"
                   placeholder="notifications@example.com"
+                  type="email"
                 />
               </div>
             </CardContent>
@@ -511,20 +625,23 @@ export default function GlobalSettingsPage() {
         </TabsContent>
 
         {/* Advanced Settings */}
-        <TabsContent value="advanced" className="space-y-6">
+        <TabsContent className="space-y-6" value="advanced">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Server className="mr-2 h-5 w-5" />
                 Advanced Configuration
               </CardTitle>
-              <CardDescription>Advanced system settings and database configuration</CardDescription>
+              <CardDescription>
+                Advanced system settings and database configuration
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <Alert className="border-yellow-200 bg-yellow-50">
                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
                 <AlertDescription className="text-yellow-700">
-                  Warning: These settings can affect system performance. Only modify if you understand the implications.
+                  Warning: These settings can affect system performance. Only
+                  modify if you understand the implications.
                 </AlertDescription>
               </Alert>
 
@@ -561,12 +678,20 @@ export default function GlobalSettingsPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="customCss">Custom CSS</Label>
-                <Textarea id="customCss" placeholder="/* Add custom CSS here */" className="min-h-[100px]" />
+                <Textarea
+                  className="min-h-[100px]"
+                  id="customCss"
+                  placeholder="/* Add custom CSS here */"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="customJs">Custom JavaScript</Label>
-                <Textarea id="customJs" placeholder="// Add custom JavaScript here" className="min-h-[100px]" />
+                <Textarea
+                  className="min-h-[100px]"
+                  id="customJs"
+                  placeholder="// Add custom JavaScript here"
+                />
               </div>
 
               <div className="flex justify-end space-x-2">
@@ -584,5 +709,5 @@ export default function GlobalSettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

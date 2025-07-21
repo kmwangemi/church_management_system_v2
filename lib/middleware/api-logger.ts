@@ -1,6 +1,7 @@
-import { logger } from '@/lib/logger';
-import { NextRequest, NextResponse } from 'next/server';
+/** biome-ignore-all lint/suspicious/noExplicitAny: ignore */
+import type { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@/lib/logger';
 
 export interface ApiLoggerOptions {
   logRequests?: boolean;
@@ -11,7 +12,7 @@ export interface ApiLoggerOptions {
 
 export function withApiLogger(
   handler: (req: NextRequest, context?: any) => Promise<NextResponse>,
-  options: ApiLoggerOptions = {},
+  options: ApiLoggerOptions = {}
 ) {
   const {
     logRequests = true,
@@ -38,8 +39,8 @@ export function withApiLogger(
     };
 
     // Skip logging for excluded paths
-    const shouldSkip = excludePaths.some(path =>
-      req.nextUrl.pathname.startsWith(path),
+    const shouldSkip = excludePaths.some((path) =>
+      req.nextUrl.pathname.startsWith(path)
     );
 
     if (shouldSkip) {
@@ -51,7 +52,7 @@ export function withApiLogger(
       await logger.info(
         `Incoming ${req.method} request to ${req.nextUrl.pathname}`,
         metadata,
-        'api',
+        'api'
       );
     }
 
@@ -69,7 +70,7 @@ export function withApiLogger(
             statusCode: response.status,
             duration: `${duration}ms`,
           },
-          'api',
+          'api'
         );
       }
 
@@ -86,7 +87,7 @@ export function withApiLogger(
             ...metadata,
             duration: `${duration}ms`,
           },
-          'api',
+          'api'
         );
       }
 

@@ -1,3 +1,5 @@
+import { Church } from 'lucide-react';
+import { Suspense } from 'react';
 import LoginForm from '@/components/forms/login-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import {
@@ -7,27 +9,25 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Church } from 'lucide-react';
-import { Suspense } from 'react';
 
 export default function LoginPage() {
   return (
-    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4'>
-      <div className='w-full max-w-md'>
-        <Card className='shadow-xl border-0'>
-          <CardHeader className='text-center pb-8'>
-            <div className='flex items-center justify-center space-x-2 mb-6'>
-              <div className='bg-blue-600 p-2 rounded-lg'>
-                <Church className='h-8 w-8 text-white' />
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+      <div className="w-full max-w-md">
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="pb-8 text-center">
+            <div className="mb-6 flex items-center justify-center space-x-2">
+              <div className="rounded-lg bg-blue-600 p-2">
+                <Church className="h-8 w-8 text-white" />
               </div>
-              <span className='text-2xl font-bold text-gray-900'>
+              <span className="font-bold text-2xl text-gray-900">
                 ChurchFlow
               </span>
             </div>
-            <CardTitle className='text-2xl font-bold text-gray-900'>
+            <CardTitle className="font-bold text-2xl text-gray-900">
               Welcome Back
             </CardTitle>
-            <CardDescription className='text-gray-600'>
+            <CardDescription className="text-gray-600">
               Sign in to your church management account
             </CardDescription>
           </CardHeader>

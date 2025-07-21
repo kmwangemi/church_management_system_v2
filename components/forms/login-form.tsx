@@ -1,6 +1,6 @@
 'use client';
 
-import RenderApiError from '@/components/ApiError';
+import RenderApiError from '@/components/api-error';
 import { PasswordInput } from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useLogin } from '@/lib/hooks/auth/use-login-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
-import { LoginPayload, loginSchema } from '@/lib/validations/auth';
+import { type LoginPayload, loginSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -34,12 +34,7 @@ export default function LoginForm() {
       password: '',
     },
   });
-  const {
-    mutateAsync: loginMutation,
-    isPending: isPending,
-    isError: isError,
-    error: error,
-  } = useLogin();
+  const { mutateAsync: loginMutation, isPending, isError, error } = useLogin();
   const { reset } = form;
   const onSubmit = async (payload: LoginPayload) => {
     const result = await loginMutation(payload);
@@ -67,18 +62,18 @@ export default function LoginForm() {
     <>
       {isError && <RenderApiError error={error} />}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
           <FormField
             control={form.control}
-            name='email'
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className='text-gray-700'>Email Address</FormLabel>
+                <FormLabel className="text-gray-700">Email Address</FormLabel>
                 <FormControl>
                   <Input
-                    type='email'
-                    placeholder='Enter your email'
-                    className='h-11'
+                    className="h-11"
+                    placeholder="Enter your email"
+                    type="email"
                     {...field}
                   />
                 </FormControl>
@@ -88,25 +83,25 @@ export default function LoginForm() {
           />
           <FormField
             control={form.control}
-            name='password'
+            name="password"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <PasswordInput placeholder='Enter your password' {...field} />
+                  <PasswordInput placeholder="Enter your password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button
-            type='submit'
-            className='w-full h-11'
+            className="h-11 w-full"
             disabled={!form.formState.isValid || isPending}
+            type="submit"
           >
             {isPending ? (
               <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Signing in...
               </>
             ) : (
@@ -115,10 +110,10 @@ export default function LoginForm() {
           </Button>
         </form>
       </Form>
-      <div className='mt-4 text-center'>
+      <div className="mt-4 text-center">
         <Link
-          href='/auth/forgot-password'
-          className='text-sm text-blue-600 hover:text-blue-500 font-medium'
+          className="font-medium text-blue-600 text-sm hover:text-blue-500"
+          href="/auth/forgot-password"
         >
           Forgot password?
         </Link>

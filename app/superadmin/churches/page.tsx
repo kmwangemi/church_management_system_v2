@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/auth-context';
 import { useRole } from '@/lib/use-role';
 import {
   Building2,
@@ -77,7 +77,7 @@ export default function ChurchesPage() {
       denomination: 'Non-denominational',
       members: 2450,
       branches: 3,
-      revenue: 45000,
+      revenue: 45_000,
       growth: 15.2,
       status: 'active',
       plan: 'premium',
@@ -95,7 +95,7 @@ export default function ChurchesPage() {
       denomination: 'Baptist',
       members: 1890,
       branches: 2,
-      revenue: 38500,
+      revenue: 38_500,
       growth: 12.8,
       status: 'active',
       plan: 'standard',
@@ -113,7 +113,7 @@ export default function ChurchesPage() {
       denomination: 'Methodist',
       members: 1650,
       branches: 1,
-      revenue: 32000,
+      revenue: 32_000,
       growth: 10.5,
       status: 'active',
       plan: 'standard',
@@ -131,7 +131,7 @@ export default function ChurchesPage() {
       denomination: 'Presbyterian',
       members: 1420,
       branches: 2,
-      revenue: 28750,
+      revenue: 28_750,
       growth: 8.9,
       status: 'active',
       plan: 'premium',
@@ -149,7 +149,7 @@ export default function ChurchesPage() {
       denomination: 'Pentecostal',
       members: 1380,
       branches: 1,
-      revenue: 27200,
+      revenue: 27_200,
       growth: 7.6,
       status: 'pending',
       plan: 'basic',
@@ -159,7 +159,7 @@ export default function ChurchesPage() {
     },
   ];
 
-  const filteredChurches = churches.filter(church => {
+  const filteredChurches = churches.filter((church) => {
     const matchesSearch =
       church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       church.pastor.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -173,26 +173,26 @@ export default function ChurchesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className='bg-green-100 text-green-800'>Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
       case 'pending':
-        return <Badge className='bg-yellow-100 text-yellow-800'>Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case 'suspended':
-        return <Badge className='bg-red-100 text-red-800'>Suspended</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
       default:
-        return <Badge variant='secondary'>{status}</Badge>;
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   const getPlanBadge = (plan: string) => {
     switch (plan) {
       case 'premium':
-        return <Badge className='bg-purple-100 text-purple-800'>Premium</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">Premium</Badge>;
       case 'standard':
-        return <Badge className='bg-blue-100 text-blue-800'>Standard</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">Standard</Badge>;
       case 'basic':
-        return <Badge className='bg-gray-100 text-gray-800'>Basic</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Basic</Badge>;
       default:
-        return <Badge variant='secondary'>{plan}</Badge>;
+        return <Badge variant="secondary">{plan}</Badge>;
     }
   };
 
@@ -200,30 +200,32 @@ export default function ChurchesPage() {
 
   const { user, isLoading, isAuthenticated } = useAuthContext();
 
+  // biome-ignore lint/suspicious/noConsole: ignore console
   console.log({ isSuperAdmin, isAdmin, hasRole });
 
+  // biome-ignore lint/suspicious/noConsole: ignore console
   console.log({ user, isLoading, isAuthenticated });
 
   return (
-    <div className='space-y-6'>
+    <div className="space-y-6">
       {/* Header */}
-      <div className='flex items-center justify-between'>
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className='text-3xl font-bold tracking-tight'>
+          <h1 className="font-bold text-3xl tracking-tight">
             Churches Management
           </h1>
-          <p className='text-muted-foreground'>
+          <p className="text-muted-foreground">
             Manage all registered churches and their information
           </p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
             <Button>
-              <Plus className='mr-2 h-4 w-4' />
+              <Plus className="mr-2 h-4 w-4" />
               Add Church
             </Button>
           </DialogTrigger>
-          <DialogContent className='max-w-2xl'>
+          <DialogContent className="max-w-2xl">
             <DialogTitle>Add Church</DialogTitle>
             <AddChurchForm />
           </DialogContent>
@@ -231,69 +233,69 @@ export default function ChurchesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className='grid gap-4 md:grid-cols-4'>
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">
               Total Churches
             </CardTitle>
-            <Building2 className='h-4 w-4 text-muted-foreground' />
+            <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{churches.length}</div>
-            <p className='text-xs text-muted-foreground'>
-              <span className='text-green-600'>+2</span> new this month
+            <div className="font-bold text-2xl">{churches.length}</div>
+            <p className="text-muted-foreground text-xs">
+              <span className="text-green-600">+2</span> new this month
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Total Members</CardTitle>
-            <Users className='h-4 w-4 text-muted-foreground' />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">Total Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="font-bold text-2xl">
               {churches
                 .reduce((sum, church) => sum + church.members, 0)
                 .toLocaleString()}
             </div>
-            <p className='text-xs text-muted-foreground'>
-              <span className='text-green-600'>+8.2%</span> from last month
+            <p className="text-muted-foreground text-xs">
+              <span className="text-green-600">+8.2%</span> from last month
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">
               Total Branches
             </CardTitle>
-            <MapPin className='h-4 w-4 text-muted-foreground' />
+            <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="font-bold text-2xl">
               {churches.reduce((sum, church) => sum + church.branches, 0)}
             </div>
-            <p className='text-xs text-muted-foreground'>
-              <span className='text-green-600'>+3</span> new branches
+            <p className="text-muted-foreground text-xs">
+              <span className="text-green-600">+3</span> new branches
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">
               Monthly Revenue
             </CardTitle>
-            <DollarSign className='h-4 w-4 text-muted-foreground' />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="font-bold text-2xl">
               $
               {churches
                 .reduce((sum, church) => sum + church.revenue, 0)
                 .toLocaleString()}
             </div>
-            <p className='text-xs text-muted-foreground'>
-              <span className='text-green-600'>+15%</span> from last month
+            <p className="text-muted-foreground text-xs">
+              <span className="text-green-600">+15%</span> from last month
             </p>
           </CardContent>
         </Card>
@@ -308,41 +310,41 @@ export default function ChurchesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='flex items-center space-x-4 mb-6'>
-            <div className='relative flex-1'>
-              <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+          <div className="mb-6 flex items-center space-x-4">
+            <div className="relative flex-1">
+              <Search className="absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder='Search churches, pastors, or denominations...'
+                className="pl-8"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search churches, pastors, or denominations..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className='pl-8'
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className='w-[180px]'>
-                <SelectValue placeholder='Filter by status' />
+            <Select onValueChange={setStatusFilter} value={statusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Status</SelectItem>
-                <SelectItem value='active'>Active</SelectItem>
-                <SelectItem value='pending'>Pending</SelectItem>
-                <SelectItem value='suspended'>Suspended</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={planFilter} onValueChange={setPlanFilter}>
-              <SelectTrigger className='w-[180px]'>
-                <SelectValue placeholder='Filter by plan' />
+            <Select onValueChange={setPlanFilter} value={planFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by plan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Plans</SelectItem>
-                <SelectItem value='premium'>Premium</SelectItem>
-                <SelectItem value='standard'>Standard</SelectItem>
-                <SelectItem value='basic'>Basic</SelectItem>
+                <SelectItem value="all">All Plans</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="basic">Basic</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className='rounded-md border'>
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -355,29 +357,29 @@ export default function ChurchesPage() {
                   <TableHead>Growth</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Plan</TableHead>
-                  <TableHead className='text-right'>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredChurches.map(church => (
+                {filteredChurches.map((church) => (
                   <TableRow key={church.id}>
                     <TableCell>
-                      <div className='flex items-center space-x-3'>
-                        <Avatar className='h-10 w-10'>
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10">
                           <AvatarImage
-                            src={`/placeholder.svg?height=40&width=40`}
+                            src={'/placeholder.svg?height=40&width=40'}
                           />
                           <AvatarFallback>
                             {church.name
                               .split(' ')
-                              .map(n => n[0])
+                              .map((n) => n[0])
                               .join('')
                               .slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className='font-medium'>{church.name}</div>
-                          <div className='text-sm text-muted-foreground'>
+                          <div className="font-medium">{church.name}</div>
+                          <div className="text-muted-foreground text-sm">
                             {church.denomination} • Est. {church.established}
                           </div>
                         </div>
@@ -385,77 +387,77 @@ export default function ChurchesPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className='font-medium'>{church.pastor}</div>
-                        <div className='text-sm text-muted-foreground'>
+                        <div className="font-medium">{church.pastor}</div>
+                        <div className="text-muted-foreground text-sm">
                           Lead Pastor
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className='space-y-1'>
-                        <div className='flex items-center text-sm'>
-                          <Mail className='mr-1 h-3 w-3' />
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm">
+                          <Mail className="mr-1 h-3 w-3" />
                           {church.email}
                         </div>
-                        <div className='flex items-center text-sm'>
-                          <Phone className='mr-1 h-3 w-3' />
+                        <div className="flex items-center text-sm">
+                          <Phone className="mr-1 h-3 w-3" />
                           {church.phone}
                         </div>
-                        <div className='flex items-center text-sm'>
-                          <Globe className='mr-1 h-3 w-3' />
+                        <div className="flex items-center text-sm">
+                          <Globe className="mr-1 h-3 w-3" />
                           {church.website}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className='flex items-center'>
-                        <Users className='mr-1 h-4 w-4 text-muted-foreground' />
+                      <div className="flex items-center">
+                        <Users className="mr-1 h-4 w-4 text-muted-foreground" />
                         {church.members.toLocaleString()}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className='flex items-center'>
-                        <MapPin className='mr-1 h-4 w-4 text-muted-foreground' />
+                      <div className="flex items-center">
+                        <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
                         {church.branches}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className='flex items-center'>
-                        <DollarSign className='mr-1 h-4 w-4 text-muted-foreground' />
+                      <div className="flex items-center">
+                        <DollarSign className="mr-1 h-4 w-4 text-muted-foreground" />
                         ${church.revenue.toLocaleString()}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className='flex items-center text-green-600'>
-                        <TrendingUp className='mr-1 h-4 w-4' />+{church.growth}%
+                      <div className="flex items-center text-green-600">
+                        <TrendingUp className="mr-1 h-4 w-4" />+{church.growth}%
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(church.status)}</TableCell>
                     <TableCell>{getPlanBadge(church.plan)}</TableCell>
-                    <TableCell className='text-right'>
+                    <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant='ghost' className='h-8 w-8 p-0'>
-                            <MoreHorizontal className='h-4 w-4' />
+                          <Button className="h-8 w-8 p-0" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end'>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>
-                            <Eye className='mr-2 h-4 w-4' />
+                            <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Edit className='mr-2 h-4 w-4' />
+                            <Edit className="mr-2 h-4 w-4" />
                             Edit Church
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Users className='mr-2 h-4 w-4' />
+                            <Users className="mr-2 h-4 w-4" />
                             Manage Users
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className='text-red-600'>
-                            <Trash2 className='mr-2 h-4 w-4' />
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Suspend Church
                           </DropdownMenuItem>
                         </DropdownMenuContent>

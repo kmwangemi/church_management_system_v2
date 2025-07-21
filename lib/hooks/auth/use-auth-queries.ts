@@ -1,6 +1,6 @@
-import apiClient from '@/lib/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import apiClient from '@/lib/api-client';
 
 // -------------
 // Types
@@ -61,7 +61,8 @@ export const useLogout = () => {
       queryClient.clear(); // Clear all queries
       router.push('/auth/login');
     },
-    onError: error => {
+    onError: (error) => {
+      // biome-ignore lint/suspicious/noConsole: ignore
       console.error('Logout failed:', error);
       // Still redirect on error as the intent is to logout
       queryClient.clear();

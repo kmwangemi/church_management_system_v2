@@ -1,10 +1,10 @@
 'use client';
 
-import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { UseFormHandleSubmit, UseFormRegister } from 'react-hook-form';
+import type { UseFormHandleSubmit, UseFormRegister } from 'react-hook-form';
 import { useDebouncedCallback } from 'use-debounce';
+import { Input } from '@/components/ui/input';
 
 interface FormData {
   query: string;
@@ -35,20 +35,20 @@ const SearchInput: React.FC<SearchInputProps> = ({
     router.push(`${pathname}?${params.toString()}`);
   }, 500);
   return (
-    <div className='relative flex flex-1 flex-shrink-0 w-full'>
-      <label htmlFor='search' className='sr-only'>
+    <div className="relative flex w-full flex-1 flex-shrink-0">
+      <label className="sr-only" htmlFor="search">
         Search
       </label>
       <Input
-        type='search'
-        id='query'
+        id="query"
+        type="search"
         {...register('query', {
           onChange: handleSubmit(handleSearch),
         })}
+        className="m-0 block w-full rounded-md border bg-white bg-clip-padding py-2 pr-3 pl-10 font-normal text-base text-gray-900 shadow-sm outline-2 transition ease-in-out placeholder:text-gray-400 placeholder:text-sm focus:bg-white focus:text-gray-700"
         placeholder={placeholder}
-        className='block w-full py-2 pl-10 pr-3 m-0 text-base font-normal text-gray-900 transition ease-in-out bg-white border rounded-md shadow-sm outline-2 placeholder:text-gray-400 placeholder:text-sm bg-clip-padding focus:text-gray-700 focus:bg-white'
       />
-      <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 peer-focus:text-gray-900' />
+      <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-gray-500 peer-focus:text-gray-900" />
     </div>
   );
 };

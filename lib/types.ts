@@ -20,6 +20,26 @@ export interface APIError {
   name?: string;
 }
 
+export interface ContextLogger {
+  error: (
+    message: string,
+    error?: Error | unknown,
+    additionalMetadata?: Record<string, unknown>
+  ) => Promise<void>;
+  warn: (
+    message: string,
+    additionalMetadata?: Record<string, unknown>
+  ) => Promise<void>;
+  info: (
+    message: string,
+    additionalMetadata?: Record<string, unknown>
+  ) => Promise<void>;
+  debug: (
+    message: string,
+    additionalMetadata?: Record<string, unknown>
+  ) => Promise<void>;
+}
+
 export interface UploadResponse {
   success: boolean;
   message: string;
@@ -94,7 +114,7 @@ export interface DepartmentAddResponse {
   churchId: string;
   branchId: string;
   departmentName: string;
-  meetingDay: Array<string>;
+  meetingDay: string[];
   meetingTime: string;
   description: string;
   isActive: boolean;
@@ -146,7 +166,7 @@ export interface Department {
     country: string;
   };
   departmentName: string;
-  meetingDay: Array<string>;
+  meetingDay: string[];
   meetingTime: string;
   description: string;
   isActive: boolean;

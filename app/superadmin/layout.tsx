@@ -1,7 +1,5 @@
 'use client';
 
-import type React from 'react';
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +18,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/auth-context';
 import { getFirstLetter } from '@/lib/utils';
 import {
   Activity,
@@ -39,6 +37,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type React from 'react';
 import { useState } from 'react';
 
 const navigation = [
@@ -59,7 +58,9 @@ export default function SuperAdminLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { user, isLoading, isAuthenticated, isError, logout } = useAuthContext();
+  // const { user, isLoading, isAuthenticated, isError, logout } =
+  //   useAuthContext();
+  const { user, logout } = useAuthContext();
   const handleLogout = () => {
     setIsLoggingOut(true);
     logout();
@@ -67,20 +68,20 @@ export default function SuperAdminLayout({
   };
   const NavItems = () => (
     <>
-      {navigation.map(item => {
+      {navigation.map((item) => {
         const isActive = pathname === item.href;
         return (
           <Link
-            key={item.name}
-            href={item.href}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-sm transition-colors ${
               isActive
                 ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             }`}
+            href={item.href}
+            key={item.name}
             onClick={() => setSidebarOpen(false)}
           >
-            <item.icon className='h-4 w-4' />
+            <item.icon className="h-4 w-4" />
             {item.name}
           </Link>
         );
@@ -88,48 +89,48 @@ export default function SuperAdminLayout({
     </>
   );
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side='left' className='w-64 p-0'>
-          <SheetTitle className='sr-only'>
+      <Sheet onOpenChange={setSidebarOpen} open={sidebarOpen}>
+        <SheetContent className="w-64 p-0" side="left">
+          <SheetTitle className="sr-only">
             SuperAdmin Navigation Menu
           </SheetTitle>
-          <SheetDescription className='sr-only'>
+          <SheetDescription className="sr-only">
             Main navigation menu for the SuperAdmin portal
           </SheetDescription>
-          <div className='flex h-full flex-col'>
-            <div className='flex h-16 items-center gap-2 border-b px-6'>
-              <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-blue-600'>
-                <Shield className='h-4 w-4 text-white' />
+          <div className="flex h-full flex-col">
+            <div className="flex h-16 items-center gap-2 border-b px-6">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-blue-600">
+                <Shield className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h2 className='text-lg font-semibold'>SuperAdmin</h2>
-                <p className='text-xs text-gray-500'>ChurchFlow Global</p>
+                <h2 className="font-semibold text-lg">SuperAdmin</h2>
+                <p className="text-gray-500 text-xs">ChurchFlow Global</p>
               </div>
             </div>
-            <nav className='flex-1 space-y-1 p-4'>
+            <nav className="flex-1 space-y-1 p-4">
               <NavItems />
             </nav>
           </div>
         </SheetContent>
       </Sheet>
       {/* Desktop sidebar */}
-      <div className='hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col'>
-        <div className='flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6'>
-          <div className='flex h-16 shrink-0 items-center gap-2'>
-            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-blue-600'>
-              <Shield className='h-4 w-4 text-white' />
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-gray-200 border-r bg-white px-6">
+          <div className="flex h-16 shrink-0 items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-blue-600">
+              <Shield className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h2 className='text-lg font-semibold'>SuperAdmin</h2>
-              <p className='text-xs text-gray-500'>ChurchFlow Global</p>
+              <h2 className="font-semibold text-lg">SuperAdmin</h2>
+              <p className="text-gray-500 text-xs">ChurchFlow Global</p>
             </div>
           </div>
-          <nav className='flex flex-1 flex-col'>
-            <ul role='list' className='flex flex-1 flex-col gap-y-7'>
+          <nav className="flex flex-1 flex-col">
+            <ul className="flex flex-1 flex-col gap-y-7">
               <li>
-                <ul role='list' className='-mx-2 space-y-1'>
+                <ul className="-mx-2 space-y-1">
                   <NavItems />
                 </ul>
               </li>
@@ -138,99 +139,99 @@ export default function SuperAdminLayout({
         </div>
       </div>
       {/* Main content */}
-      <div className='lg:pl-64'>
+      <div className="lg:pl-64">
         {/* Top bar */}
-        <div className='sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8'>
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-gray-200 border-b bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+          <Sheet onOpenChange={setSidebarOpen} open={sidebarOpen}>
             <SheetTrigger asChild>
-              <Button variant='ghost' size='sm' className='lg:hidden'>
-                <Menu className='h-5 w-5' />
+              <Button className="lg:hidden" size="sm" variant="ghost">
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side='left' className='w-64 p-0'>
-              <SheetTitle className='sr-only'>
+            <SheetContent className="w-64 p-0" side="left">
+              <SheetTitle className="sr-only">
                 SuperAdmin Navigation Menu
               </SheetTitle>
-              <SheetDescription className='sr-only'>
+              <SheetDescription className="sr-only">
                 Main navigation menu for the SuperAdmin portal
               </SheetDescription>
-              <div className='flex h-full flex-col'>
-                <div className='flex h-16 items-center gap-2 border-b px-6'>
-                  <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-blue-600'>
-                    <Shield className='h-4 w-4 text-white' />
+              <div className="flex h-full flex-col">
+                <div className="flex h-16 items-center gap-2 border-b px-6">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-blue-600">
+                    <Shield className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <h2 className='text-lg font-semibold'>SuperAdmin</h2>
-                    <p className='text-xs text-gray-500'>ChurchFlow Global</p>
+                    <h2 className="font-semibold text-lg">SuperAdmin</h2>
+                    <p className="text-gray-500 text-xs">ChurchFlow Global</p>
                   </div>
                 </div>
-                <nav className='flex-1 space-y-1 p-4'>
+                <nav className="flex-1 space-y-1 p-4">
                   <NavItems />
                 </nav>
               </div>
             </SheetContent>
           </Sheet>
-          <div className='flex flex-1 gap-x-4 self-stretch lg:gap-x-6'>
-            <div className='flex flex-1 items-center'>
-              <div className='flex items-center gap-2'>
-                <Globe className='h-5 w-5 text-purple-600' />
-                <span className='text-sm font-medium text-gray-900'>
+          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+            <div className="flex flex-1 items-center">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-purple-600" />
+                <span className="font-medium text-gray-900 text-sm">
                   Global System Management
                 </span>
               </div>
             </div>
-            <div className='flex items-center gap-x-4 lg:gap-x-6'>
-              <Button variant='ghost' size='sm' className='relative'>
-                <Bell className='h-5 w-5' />
-                <Badge className='-right-1 -top-1 absolute flex size-5 items-center justify-center rounded-full bg-red-500 text-white text-xs'>
+            <div className="flex items-center gap-x-4 lg:gap-x-6">
+              <Button className="relative" size="sm" variant="ghost">
+                <Bell className="h-5 w-5" />
+                <Badge className="-right-1 -top-1 absolute flex size-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
                   3
                 </Badge>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant='ghost'
-                    className='relative h-8 w-8 rounded-full'
+                    className="relative h-8 w-8 rounded-full"
+                    variant="ghost"
                   >
-                    <Avatar className='h-8 w-8'>
+                    <Avatar className="h-8 w-8">
                       <AvatarImage
-                        src={user?.profilePictureUrl || ''}
                         alt={user?.firstName || 'Admin'}
+                        src={user?.profilePictureUrl || ''}
                       />
                       <AvatarFallback>{`${getFirstLetter(
-                        user?.firstName || '',
+                        user?.firstName || ''
                       )}${getFirstLetter(
-                        user?.lastName || '',
+                        user?.lastName || ''
                       )}`}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className='w-56' align='end' forceMount>
-                  <DropdownMenuLabel className='font-normal'>
-                    <div className='flex flex-col space-y-1'>
-                      <p className='text-sm font-medium leading-none'>
+                <DropdownMenuContent align="end" className="w-56" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="font-medium text-sm leading-none">
                         Super Admin
                       </p>
-                      <p className='text-xs leading-none text-muted-foreground'>
+                      <p className="text-muted-foreground text-xs leading-none">
                         {user?.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <User className='mr-2 h-4 w-4' />
+                    <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Settings className='mr-2 h-4 w-4' />
+                    <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={handleLogout}
                     disabled={isLoggingOut}
+                    onClick={handleLogout}
                   >
-                    <LogOut className='mr-2 h-4 w-4' />
+                    <LogOut className="mr-2 h-4 w-4" />
                     <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -239,8 +240,8 @@ export default function SuperAdminLayout({
           </div>
         </div>
         {/* Page content */}
-        <main className='py-8'>
-          <div className='px-4 sm:px-6 lg:px-8'>{children}</div>
+        <main className="py-8">
+          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>

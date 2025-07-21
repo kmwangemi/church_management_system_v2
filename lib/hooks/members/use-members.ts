@@ -1,12 +1,12 @@
-import apiClient from '@/lib/api-client';
-import { successToastStyle } from '@/lib/toast-styles';
-import { MemberAddResponse } from '@/lib/types';
-import { AddMemberFormValues } from '@/lib/validations/members';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import apiClient from '@/lib/api-client';
+import { successToastStyle } from '@/lib/toast-styles';
+import type { MemberAddResponse } from '@/lib/types';
+import type { AddMemberFormValues } from '@/lib/validations/members';
 
 const registerMember = async (
-  payload: AddMemberFormValues,
+  payload: AddMemberFormValues
 ): Promise<MemberAddResponse> => {
   const { data } = await apiClient.post('/members', payload);
   return data;
@@ -27,7 +27,7 @@ export const useRegisterMember = () => {
 
 const fetchMembers = async (page = 1, search = ''): Promise<any> => {
   const { data } = await apiClient.get(
-    `/members?page=${page}&search=${search}`,
+    `/members?page=${page}&search=${search}`
   );
   return data;
 };

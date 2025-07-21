@@ -1,72 +1,95 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Loader2, Upload } from "lucide-react"
+import { zodResolver } from '@hookform/resolvers/zod';
+import { FileText, Loader2, Upload } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const contentSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  description: z.string().min(20, "Description must be at least 20 characters"),
-  type: z.string().min(1, "Please select content type"),
-  category: z.string().min(1, "Please select a category"),
-  tags: z.string().min(1, "Please add at least one tag"),
-  status: z.string().min(1, "Please select status"),
+  title: z.string().min(5, 'Title must be at least 5 characters'),
+  description: z.string().min(20, 'Description must be at least 20 characters'),
+  type: z.string().min(1, 'Please select content type'),
+  category: z.string().min(1, 'Please select a category'),
+  tags: z.string().min(1, 'Please add at least one tag'),
+  status: z.string().min(1, 'Please select status'),
   file: z.string().optional(),
-})
+});
 
-type ContentForm = z.infer<typeof contentSchema>
+type ContentForm = z.infer<typeof contentSchema>;
 
 interface AddContentFormProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 export function AddContentForm({ onSuccess }: AddContentFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<ContentForm>({
     resolver: zodResolver(contentSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      type: "",
-      category: "",
-      tags: "",
-      status: "draft",
-      file: "",
+      title: '',
+      description: '',
+      type: '',
+      category: '',
+      tags: '',
+      status: 'draft',
+      file: '',
     },
-  })
+  });
 
   const onSubmit = async (data: ContentForm) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Content data:", data)
-      onSuccess()
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.log('Content data:', data);
+      onSuccess();
     } catch (error) {
-      console.error("Error adding content:", error)
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.error('Error adding content:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5" />
               <span>Content Details</span>
             </CardTitle>
-            <CardDescription>Add new content to the church library</CardDescription>
+            <CardDescription>
+              Add new content to the church library
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -90,21 +113,28 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the content..." rows={3} {...field} />
+                    <Textarea
+                      placeholder="Describe the content..."
+                      rows={3}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Content Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -116,7 +146,9 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                         <SelectItem value="document">Document</SelectItem>
                         <SelectItem value="audio">Audio</SelectItem>
                         <SelectItem value="gallery">Photo Gallery</SelectItem>
-                        <SelectItem value="presentation">Presentation</SelectItem>
+                        <SelectItem value="presentation">
+                          Presentation
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -129,7 +161,10 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -139,9 +174,13 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                         <SelectItem value="worship">Worship</SelectItem>
                         <SelectItem value="teaching">Teaching</SelectItem>
                         <SelectItem value="event">Event</SelectItem>
-                        <SelectItem value="study-material">Study Material</SelectItem>
+                        <SelectItem value="study-material">
+                          Study Material
+                        </SelectItem>
                         <SelectItem value="resource">Resource</SelectItem>
-                        <SelectItem value="announcement">Announcement</SelectItem>
+                        <SelectItem value="announcement">
+                          Announcement
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -157,7 +196,10 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 <FormItem>
                   <FormLabel>Tags</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter tags separated by commas (e.g., faith, prayer, worship)" {...field} />
+                    <Input
+                      placeholder="Enter tags separated by commas (e.g., faith, prayer, worship)"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,7 +212,10 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -194,23 +239,25 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 <FormItem>
                   <FormLabel>Upload File (Optional)</FormLabel>
                   <FormControl>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <div className="rounded-lg border-2 border-gray-300 border-dashed p-6 text-center transition-colors hover:border-gray-400">
                       <Upload className="mx-auto h-12 w-12 text-gray-400" />
                       <div className="mt-4">
                         <Input
-                          type="file"
                           accept=".pdf,.doc,.docx,.mp3,.mp4,.jpg,.jpeg,.png,.ppt,.pptx"
                           className="hidden"
                           id="file-upload"
+                          type="file"
                           {...field}
                         />
                         <label
+                          className="cursor-pointer font-medium text-blue-600 text-sm hover:text-blue-500"
                           htmlFor="file-upload"
-                          className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500"
                         >
                           Click to upload a file
                         </label>
-                        <p className="text-xs text-gray-500 mt-1">PDF, DOC, MP3, MP4, JPG, PNG, PPT up to 100MB</p>
+                        <p className="mt-1 text-gray-500 text-xs">
+                          PDF, DOC, MP3, MP4, JPG, PNG, PPT up to 100MB
+                        </p>
                       </div>
                     </div>
                   </FormControl>
@@ -222,21 +269,21 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
         </Card>
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onSuccess}>
+          <Button onClick={onSuccess} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button disabled={isLoading} type="submit">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Adding Content...
               </>
             ) : (
-              "Add Content"
+              'Add Content'
             )}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }

@@ -43,7 +43,7 @@ const BranchSchema = new Schema<IBranch>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Branch ||

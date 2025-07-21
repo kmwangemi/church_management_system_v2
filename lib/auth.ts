@@ -1,6 +1,6 @@
-import { AuthUser } from '@/lib/types';
 import { decodeJwt, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
+import type { AuthUser } from '@/lib/types';
 
 interface TokenPayload extends AuthUser {
   exp?: number;
@@ -23,7 +23,7 @@ export async function verifyToken(request: NextRequest): Promise<{
     let decodedUnverified: TokenPayload | null = null;
     try {
       decodedUnverified = decodeJwt(token) as TokenPayload;
-    } catch (error) {
+    } catch (_error) {
       return { isValid: false, user: null, reason: 'malformed' };
     }
     if (!decodedUnverified) {
@@ -54,7 +54,8 @@ export async function verifyToken(request: NextRequest): Promise<{
       // Check for specific JOSE error types
       if (error.message.includes('exp')) {
         return { isValid: false, user: null, reason: 'expired' };
-      } else if (error.message.includes('signature')) {
+      }
+      if (error.message.includes('signature')) {
         return { isValid: false, user: null, reason: 'invalid' };
       }
     }
@@ -72,7 +73,7 @@ export function requireAuth(roles?: string[]) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    if (roles && (!user.user || !roles.includes(user.user.role))) {
+    if (roles && !(user.user && roles.includes(user.user.role))) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -84,12 +85,12 @@ export function requireAuth(roles?: string[]) {
 
 // For API routes - extract user from headers set by middleware
 export function getUserFromHeaders(request: NextRequest): AuthUser | null {
-  console.log('Extracting user from headers', request.headers);
+  // console.log('Extracting user from headers', request.headers);
   const userId = request.headers.get('x-user-id');
   const churchId = request.headers.get('x-church-id');
   const branchId = request.headers.get('x-branch-id');
   const role = request.headers.get('x-user-role');
-  if (!userId || !churchId || !branchId || !role) {
+  if (!(userId && churchId && branchId && role)) {
     return null;
   }
   return {

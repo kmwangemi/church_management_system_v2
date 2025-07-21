@@ -1,12 +1,12 @@
-import apiClient from '@/lib/api-client';
-import { successToastStyle } from '@/lib/toast-styles';
-import { ChurchRegistrationResponse } from '@/lib/types';
-import { ChurchRegistrationPayload } from '@/lib/validations/auth';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import apiClient from '@/lib/api-client';
+import { successToastStyle } from '@/lib/toast-styles';
+import type { ChurchRegistrationResponse } from '@/lib/types';
+import type { ChurchRegistrationPayload } from '@/lib/validations/auth';
 
 const registerChurch = async (
-  payload: ChurchRegistrationPayload,
+  payload: ChurchRegistrationPayload
 ): Promise<ChurchRegistrationResponse> => {
   const { data } = await apiClient.post('/auth/register', payload);
   return data;

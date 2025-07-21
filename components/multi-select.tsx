@@ -1,4 +1,7 @@
 // MultiSelect Component Implementation
+
+import { Check, ChevronDown, X } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +16,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Check, ChevronDown, X } from 'lucide-react';
-import { useState } from 'react';
 
 interface MultiSelectOption {
   value: string;
@@ -39,63 +40,63 @@ export function MultiSelect({
   const [open, setOpen] = useState(false);
   const handleSelect = (value: string) => {
     if (selected.includes(value)) {
-      onChange(selected.filter(item => item !== value));
+      onChange(selected.filter((item) => item !== value));
     } else {
       onChange([...selected, value]);
     }
   };
   const handleRemove = (value: string) => {
-    onChange(selected.filter(item => item !== value));
+    onChange(selected.filter((item) => item !== value));
   };
   const selectedLabels = selected.map(
-    value => options.find(option => option.value === value)?.label || value,
+    (value) => options.find((option) => option.value === value)?.label || value
   );
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
-          variant='outline'
-          role='combobox'
           aria-expanded={open}
           className={`w-full justify-between ${className}`}
+          // role="combobox"
+          variant="outline"
         >
-          <div className='flex flex-wrap gap-1 max-w-full'>
+          <div className="flex max-w-full flex-wrap gap-1">
             {selected.length === 0 ? (
-              <span className='text-muted-foreground'>{placeholder}</span>
+              <span className="text-muted-foreground">{placeholder}</span>
             ) : selected.length <= 2 ? (
               selectedLabels.map((label, index) => (
                 <Badge
+                  className="text-xs"
                   key={index}
-                  variant='secondary'
-                  className='text-xs'
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleRemove(selected[index]);
                   }}
+                  variant="secondary"
                 >
                   {label}
-                  <X className='ml-1 h-3 w-3 cursor-pointer' />
+                  <X className="ml-1 h-3 w-3 cursor-pointer" />
                 </Badge>
               ))
             ) : (
-              <Badge variant='secondary' className='text-xs'>
+              <Badge className="text-xs" variant="secondary">
                 {selected.length} departments selected
               </Badge>
             )}
           </div>
-          <ChevronDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-full p-0' align='start'>
+      <PopoverContent align="start" className="w-full p-0">
         <Command>
-          <CommandInput placeholder='Search departments...' />
+          <CommandInput placeholder="Search departments..." />
           <CommandEmpty>No department found.</CommandEmpty>
-          <CommandGroup className='max-h-64 overflow-auto'>
-            {options.map(option => (
+          <CommandGroup className="max-h-64 overflow-auto">
+            {options.map((option) => (
               <CommandItem
+                className="cursor-pointer"
                 key={option.value}
                 onSelect={() => handleSelect(option.value)}
-                className='cursor-pointer'
               >
                 <Check
                   className={`mr-2 h-4 w-4 ${

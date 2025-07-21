@@ -1,4 +1,4 @@
-import { NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 
 // Utility class for response handling
 export class ApiResponse {

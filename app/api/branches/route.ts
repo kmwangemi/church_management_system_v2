@@ -1,8 +1,8 @@
+import { type NextRequest, NextResponse } from 'next/server';
 import { getUserFromHeaders, requireAuth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
-import { AddBranchFormValues } from '@/lib/validations/branch';
-import Branch from '@/models/Branch';
-import { type NextRequest, NextResponse } from 'next/server';
+import type { AddBranchPayload } from '@/lib/validations/branch';
+import Branch from '@/models/branch';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     }
     await dbConnect();
     const { searchParams } = new URL(request.url);
-    const page = Number.parseInt(searchParams.get('page') || '1');
-    const limit = Number.parseInt(searchParams.get('limit') || '10');
+    const page = Number.parseInt(searchParams.get('page') || '1', 10);
+    const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
     const search = searchParams.get('search') || '';
     const query: any = { churchId: user.churchId };
     if (search) {
@@ -44,11 +44,11 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    console.error('Get branches error:', error);
+  } catch (_error) {
+    // console.error('Get branches error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     // authResult is now the authenticated user
     const user = authResult;
     await dbConnect();
-    const branchData: AddBranchFormValues = await request.json();
+    const branchData: AddBranchPayload = await request.json();
     const existingChurchBranch = await Branch.findOne({
       branchName: branchData.branchName,
       churchId: user.user?.churchId,
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     if (existingChurchBranch) {
       return NextResponse.json(
         { error: 'Church branch already exists' },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const branch = new Branch({
@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
     });
     await branch.save();
     return NextResponse.json(branch, { status: 201 });
-  } catch (error) {
-    console.error('Create branch error:', error);
+  } catch (_error) {
+    // console.error('Create branch error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

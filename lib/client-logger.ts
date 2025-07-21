@@ -1,7 +1,7 @@
 export async function logClientError(
   message: string,
   error?: Error,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, any>
 ) {
   try {
     await fetch('/api/logs', {
@@ -28,6 +28,7 @@ export async function logClientError(
       }),
     });
   } catch (logError) {
+    // biome-ignore lint/suspicious/noConsole: ignore
     console.error('Failed to log error to server:', logError);
   }
 }

@@ -1,10 +1,41 @@
 'use client';
 
-import RenderApiError from '@/components/ApiError';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Activity,
+  BarChart3,
+  Building,
+  Edit,
+  MapPin,
+  // Phone,
+  Plus,
+  Trash2,
+  // TrendingDown,
+  // TrendingUp,
+  Users,
+} from 'lucide-react';
+// import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
 import { DatePicker } from '@/components/date-picker';
 import SearchInput from '@/components/search-input';
-import { Badge } from '@/components/ui/badge';
+import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts';
+// import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -55,37 +86,10 @@ import {
   useFetchBranches,
   useRegisterBranch,
 } from '@/lib/hooks/branch/use-branch-queries';
-import { AddBranchPayload, addBranchSchema } from '@/lib/validations/branch';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Activity,
-  BarChart3,
-  Building,
-  Edit,
-  MapPin,
-  Phone,
-  Plus,
-  Trash2,
-  TrendingDown,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
+  type AddBranchPayload,
+  addBranchSchema,
+} from '@/lib/validations/branch';
 
 // Mock data
 // const branches = [
@@ -162,16 +166,16 @@ const branchDistribution = [
 ];
 
 export default function BranchesPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const searchParams = useSearchParams();
-  const pathname = usePathname();
+  // const pathname = usePathname();
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const page = Number.parseInt(searchParams.get('page') || '1');
+  const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
   const {
     register,
-    reset: resetSearchInput,
+    // reset: resetSearchInput,
     handleSubmit,
   } = useForm({
     defaultValues: {
@@ -180,9 +184,9 @@ export default function BranchesPage() {
   });
   const {
     data: branches,
-    isLoading: isLoadingBranches,
-    isError: isErrorBranches,
-    error: errorBranches,
+    // isLoading: isLoadingBranches,
+    // isError: isErrorBranches,
+    // error: errorBranches,
   } = useFetchBranches(page, searchQuery);
   const {
     mutateAsync: registerBranchMutation,
@@ -212,10 +216,10 @@ export default function BranchesPage() {
     setIsDialogOpen(false);
     resetBranchForm();
   };
-  const handleResetQueries = () => {
-    resetSearchInput();
-    router.push(pathname);
-  };
+  // const handleResetQueries = () => {
+  //   resetSearchInput();
+  //   router.push(pathname);
+  // };
 
   // const totalMembers = branches?.branches.reduce(
   //   (sum, branch) => sum + branch?.members,
@@ -229,23 +233,23 @@ export default function BranchesPage() {
   //   branches?.branches.reduce((sum, branch) => sum + branch?.growth, 0) / branches?.length;
 
   return (
-    <div className='space-y-6'>
+    <div className="space-y-6">
       {/* Header */}
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className='text-3xl font-bold text-gray-900'>Church Branches</h1>
-          <p className='text-gray-600 mt-1'>
+          <h1 className="font-bold text-3xl text-gray-900">Church Branches</h1>
+          <p className="mt-1 text-gray-600">
             Manage and monitor all church locations
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
           <DialogTrigger asChild>
-            <Button className='flex items-center gap-2'>
-              <Plus className='h-4 w-4' />
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
               Add Branch
             </Button>
           </DialogTrigger>
-          <DialogContent className='sm:max-w-[425px]'>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Branch</DialogTitle>
               <DialogDescription>
@@ -255,19 +259,19 @@ export default function BranchesPage() {
             {isErrorBranch && <RenderApiError error={errorBranch} />}
             <Form {...branchForm}>
               <form
+                className="space-y-4"
                 onSubmit={branchForm.handleSubmit(onSubmitBranchForm)}
-                className='space-y-4'
               >
                 <FormField
                   control={branchForm.control}
-                  name='branchName'
+                  name="branchName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Branch Name <span className='text-red-500'>*</span>
+                        Branch Name <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder='Kibra' {...field} />
+                        <Input placeholder="Kibra" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -275,17 +279,17 @@ export default function BranchesPage() {
                 />
                 <FormField
                   control={branchForm.control}
-                  name='country'
+                  name="country"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Country <span className='text-red-500'>*</span>
+                        Country <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <CountrySelect
-                          value={field.value}
                           onChange={field.onChange}
-                          placeholder='Select country'
+                          placeholder="Select country"
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -294,45 +298,47 @@ export default function BranchesPage() {
                 />
                 <FormField
                   control={branchForm.control}
-                  name='capacity'
+                  name="capacity"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Capacity <span className='text-red-500'>*</span>
+                        Capacity <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         {/* <Input type='number' placeholder='300' {...field} /> */}
                         <Input
-                          type='text'
-                          inputMode='numeric'
-                          placeholder='Enter capacity number'
+                          inputMode="numeric"
+                          placeholder="Enter capacity number"
+                          type="text"
                           {...field}
-                          onChange={e => {
+                          onChange={(e) => {
                             const value = e.target.value.replace(
                               /[^0-9.]/g,
-                              '',
+                              ''
                             );
                             field.onChange(value);
                           }}
-                          onKeyDown={e => {
+                          onKeyDown={(e) => {
                             // Disable arrow keys
                             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                               e.preventDefault();
                             }
                             // Allow only numbers, backspace, delete, etc.
-                            const allowedKeys = [
-                              'Backspace',
-                              'Delete',
-                              'Tab',
-                              'ArrowLeft',
-                              'ArrowRight',
-                            ];
-                            if (
-                              !allowedKeys.includes(e.key) &&
-                              !/[0-9.]/.test(e.key)
-                            ) {
-                              e.preventDefault();
-                            }
+                            // const allowedKeys = [
+                            //   'Backspace',
+                            //   'Delete',
+                            //   'Tab',
+                            //   'ArrowLeft',
+                            //   'ArrowRight',
+                            // ];
+                            // if (
+                            //   !(
+                            //     allowedKeys.includes(e.key) ||
+                            //     /[0-9.]/.test(e.key)
+                            //   )
+                            // ) {
+                            //   e.preventDefault();
+                            // }
                           }}
                         />
                       </FormControl>
@@ -342,14 +348,14 @@ export default function BranchesPage() {
                 />
                 <FormField
                   control={branchForm.control}
-                  name='address'
+                  name="address"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Physical Address <span className='text-red-500'>*</span>
+                        Physical Address <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder='Kawangware 46' {...field} />
+                        <Input placeholder="Kawangware 46" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -357,40 +363,40 @@ export default function BranchesPage() {
                 />
                 <FormField
                   control={branchForm.control}
-                  name='establishedDate'
+                  name="establishedDate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Established Date <span className='text-red-500'>*</span>
+                        Established Date <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <DatePicker
+                          format="long"
+                          maxDate={new Date()}
+                          onChange={(date) =>
+                            field.onChange(date ? date.toISOString() : '')
+                          }
+                          placeholder="Select established date"
                           value={
                             field.value ? new Date(field.value) : undefined
                           }
-                          onChange={date =>
-                            field.onChange(date ? date.toISOString() : '')
-                          }
-                          placeholder='Select established date'
-                          format='long'
-                          maxDate={new Date()}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className='flex justify-end space-x-2'>
+                <div className="flex justify-end space-x-2">
                   <Button
-                    type='button'
-                    variant='outline'
                     onClick={handleCancelBranch}
+                    type="button"
+                    variant="outline"
                   >
                     Cancel
                   </Button>
                   <Button
-                    type='submit'
                     disabled={!branchForm.formState.isValid || isPendingBranch}
+                    type="submit"
                   >
                     {isPendingBranch ? 'Adding branch...' : 'Add Branch'}
                   </Button>
@@ -401,55 +407,55 @@ export default function BranchesPage() {
         </Dialog>
       </div>
       {/* Analytics Cards */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">
               Total Branches
             </CardTitle>
-            <Building className='h-4 w-4 text-muted-foreground' />
+            <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="font-bold text-2xl">
               {branches?.branches.length}
             </div>
-            <p className='text-xs text-muted-foreground'>Active locations</p>
+            <p className="text-muted-foreground text-xs">Active locations</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Total Members</CardTitle>
-            <Users className='h-4 w-4 text-muted-foreground' />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">Total Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="font-bold text-2xl">
               {/* {totalMembers.toLocaleString()} */}
               {0}
             </div>
-            <p className='text-xs text-muted-foreground'>Across all branches</p>
+            <p className="text-muted-foreground text-xs">Across all branches</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">
               Capacity Utilization
             </CardTitle>
-            <Activity className='h-4 w-4 text-muted-foreground' />
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="font-bold text-2xl">
               {/* {Math.round((totalMembers / totalCapacity) * 100)}% */}
               {0}%
             </div>
-            <p className='text-xs text-muted-foreground'>
+            <p className="text-muted-foreground text-xs">
               {/* {totalCapacity - totalMembers} seats available */}
               {0} seats available
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-sm">
               Average Growth
             </CardTitle>
             {/* {averageGrowth >= 0 ? (
@@ -463,24 +469,24 @@ export default function BranchesPage() {
               // className={`text-2xl font-bold ${
               //   averageGrowth >= 0 ? 'text-green-600' : 'text-red-600'
               // }`}
-              className='font-bold text-2xl text-green-600'
+              className="font-bold text-2xl text-green-600"
             >
               {/* {averageGrowth > 0 ? '+' : ''}
               {averageGrowth.toFixed(1)}% */}
               0
             </div>
-            <p className='text-xs text-muted-foreground'>This quarter</p>
+            <p className="text-muted-foreground text-xs">This quarter</p>
           </CardContent>
         </Card>
       </div>
-      <Tabs defaultValue='overview' className='space-y-6'>
+      <Tabs className="space-y-6" defaultValue="overview">
         <TabsList>
-          <TabsTrigger value='overview'>Overview</TabsTrigger>
-          <TabsTrigger value='analytics'>Analytics</TabsTrigger>
-          <TabsTrigger value='management'>Management</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="management">Management</TabsTrigger>
         </TabsList>
-        <TabsContent value='overview' className='space-y-6'>
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <TabsContent className="space-y-6" value="overview">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Branch Attendance Trends</CardTitle>
@@ -490,43 +496,43 @@ export default function BranchesPage() {
               </CardHeader>
               <CardContent>
                 <ChartContainer
+                  className="h-[300px]"
                   config={{
                     main: { label: 'Main Campus', color: '#3b82f6' },
                     north: { label: 'North Branch', color: '#10b981' },
                     south: { label: 'South Campus', color: '#f59e0b' },
                     east: { label: 'East Branch', color: '#ef4444' },
                   }}
-                  className='h-[300px]'
                 >
-                  <ResponsiveContainer width='100%' height='100%'>
+                  <ResponsiveContainer height="100%" width="100%">
                     <LineChart data={attendanceData}>
-                      <CartesianGrid strokeDasharray='3 3' />
-                      <XAxis dataKey='month' />
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line
-                        type='monotone'
-                        dataKey='main'
-                        stroke='var(--color-main)'
+                        dataKey="main"
+                        stroke="var(--color-main)"
                         strokeWidth={2}
+                        type="monotone"
                       />
                       <Line
-                        type='monotone'
-                        dataKey='north'
-                        stroke='var(--color-north)'
+                        dataKey="north"
+                        stroke="var(--color-north)"
                         strokeWidth={2}
+                        type="monotone"
                       />
                       <Line
-                        type='monotone'
-                        dataKey='south'
-                        stroke='var(--color-south)'
+                        dataKey="south"
+                        stroke="var(--color-south)"
                         strokeWidth={2}
+                        type="monotone"
                       />
                       <Line
-                        type='monotone'
-                        dataKey='east'
-                        stroke='var(--color-east)'
+                        dataKey="east"
+                        stroke="var(--color-east)"
                         strokeWidth={2}
+                        type="monotone"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -540,25 +546,25 @@ export default function BranchesPage() {
               </CardHeader>
               <CardContent>
                 <ChartContainer
+                  className="h-[300px]"
                   config={{
                     value: { label: 'Members' },
                   }}
-                  className='h-[300px]'
                 >
-                  <ResponsiveContainer width='100%' height='100%'>
+                  <ResponsiveContainer height="100%" width="100%">
                     <PieChart>
                       <Pie
+                        cx="50%"
+                        cy="50%"
                         data={branchDistribution}
-                        cx='50%'
-                        cy='50%'
-                        outerRadius={80}
-                        dataKey='value'
+                        dataKey="value"
                         label={({ name, percent }) =>
                           `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                         }
+                        outerRadius={80}
                       >
                         {branchDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell fill={entry.color} key={`cell-${index}`} />
                         ))}
                       </Pie>
                       <ChartTooltip content={<ChartTooltipContent />} />
@@ -569,8 +575,8 @@ export default function BranchesPage() {
             </Card>
           </div>
         </TabsContent>
-        <TabsContent value='analytics' className='space-y-6'>
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <TabsContent className="space-y-6" value="analytics">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Branch Performance</CardTitle>
@@ -578,18 +584,18 @@ export default function BranchesPage() {
               </CardHeader>
               <CardContent>
                 <ChartContainer
+                  className="h-[300px]"
                   config={{
                     growth: { label: 'Growth Rate', color: '#3b82f6' },
                   }}
-                  className='h-[300px]'
                 >
-                  <ResponsiveContainer width='100%' height='100%'>
+                  <ResponsiveContainer height="100%" width="100%">
                     <BarChart data={branches?.branches}>
-                      <CartesianGrid strokeDasharray='3 3' />
-                      <XAxis dataKey='name' />
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey='growth' fill='var(--color-growth)' />
+                      <Bar dataKey="growth" fill="var(--color-growth)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -601,40 +607,40 @@ export default function BranchesPage() {
                 <CardDescription>Current vs maximum capacity</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className='space-y-4'>
-                  {branches?.branches?.map(branch => (
-                    <div key={branch._id} className='space-y-2'>
-                      <div className='flex justify-between text-sm'>
+                {/* <div className="space-y-4">
+                  {branches?.branches?.map((branch) => (
+                    <div className="space-y-2" key={branch._id}>
+                      <div className="flex justify-between text-sm">
                         <span>{branch?.branchName}</span>
                         <span>
                           {branch?.members}/{branch?.capacity}
                         </span>
                       </div>
-                      <div className='w-full bg-gray-200 rounded-full h-2'>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
                         <div
-                          className='bg-blue-600 h-2 rounded-full'
+                          className="h-2 rounded-full bg-blue-600"
                           style={{
                             width: `${
                               (branch?.members / branch?.capacity) * 100
                             }%`,
                           }}
-                        ></div>
+                        />
                       </div>
                     </div>
                   ))}
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>
         </TabsContent>
-        <TabsContent value='management' className='space-y-6'>
+        <TabsContent className="space-y-6" value="management">
           {/* Search and Filter */}
-          <div className='flex flex-col sm:flex-row gap-4'>
-            <div className='mb-4'>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="mb-4">
               <SearchInput
-                register={register}
                 handleSubmit={handleSubmit}
-                placeholder='Search branches...'
+                placeholder="Search branches..."
+                register={register}
               />
             </div>
             {/* <div className='relative flex-1'>
@@ -646,15 +652,15 @@ export default function BranchesPage() {
                 className='pl-10'
               />
             </div> */}
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className='w-full sm:w-[180px]'>
-                <SelectValue placeholder='Filter by status' />
+            <Select onValueChange={setSelectedStatus} value={selectedStatus}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Status</SelectItem>
-                <SelectItem value='active'>Active</SelectItem>
-                <SelectItem value='growing'>Growing</SelectItem>
-                <SelectItem value='inactive'>Inactive</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="growing">Growing</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -680,27 +686,27 @@ export default function BranchesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {branches?.branches?.map(branch => (
+                  {branches?.branches?.map((branch) => (
                     <TableRow key={branch._id}>
                       <TableCell>
                         <div>
-                          <div className='font-medium'>{branch.branchName}</div>
-                          <div className='text-sm text-gray-500 flex items-center'>
-                            <MapPin className='h-3 w-3 mr-1' />
+                          <div className="font-medium">{branch.branchName}</div>
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <MapPin className="mr-1 h-3 w-3" />
                             {branch.address}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <div className='font-medium'>{branch?.pastor}</div>
-                          <div className='text-sm text-gray-500 flex items-center'>
-                            <Phone className='h-3 w-3 mr-1' />
+                        {/* <div>
+                          <div className="font-medium">{branch?.pastor}</div>
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <Phone className="mr-1 h-3 w-3" />
                             {branch?.phone}
                           </div>
-                        </div>
+                        </div> */}
                       </TableCell>
-                      <TableCell>{branch?.members}</TableCell>
+                      {/* <TableCell>{branch?.members}</TableCell>
                       <TableCell>{branch?.capacity}</TableCell>
                       <TableCell>
                         <div
@@ -711,37 +717,37 @@ export default function BranchesPage() {
                           }`}
                         >
                           {branch.growth >= 0 ? (
-                            <TrendingUp className='h-4 w-4 mr-1' />
+                            <TrendingUp className="mr-1 h-4 w-4" />
                           ) : (
-                            <TrendingDown className='h-4 w-4 mr-1' />
+                            <TrendingDown className="mr-1 h-4 w-4" />
                           )}
                           {branch.growth > 0 ? '+' : ''}
                           {branch.growth}%
                         </div>
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell>
-                        <Badge
+                        {/* <Badge
                           variant={
                             branch.status === 'Active' ? 'default' : 'secondary'
                           }
                         >
                           {branch.status}
-                        </Badge>
+                        </Badge> */}
                       </TableCell>
                       <TableCell>
-                        <div className='flex items-center gap-2'>
-                          <Button variant='ghost' size='sm'>
-                            <Edit className='h-4 w-4' />
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="ghost">
+                            <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant='ghost' size='sm'>
-                            <BarChart3 className='h-4 w-4' />
+                          <Button size="sm" variant="ghost">
+                            <BarChart3 className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant='ghost'
-                            size='sm'
-                            className='text-red-600'
+                            className="text-red-600"
+                            size="sm"
+                            variant="ghost"
                           >
-                            <Trash2 className='h-4 w-4' />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>

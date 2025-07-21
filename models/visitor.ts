@@ -43,7 +43,7 @@ const VisitorSchema = new Schema<IVisitor>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Visitor ||

@@ -1,87 +1,117 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { MessageSquare, Mail, Smartphone, Users, Loader2, Send } from "lucide-react"
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Loader2,
+  Mail,
+  MessageSquare,
+  Send,
+  Smartphone,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const messageSchema = z.object({
-  type: z.string().min(1, "Please select message type"),
-  title: z.string().min(2, "Title must be at least 2 characters"),
-  content: z.string().min(10, "Message content must be at least 10 characters"),
-  recipients: z.array(z.string()).min(1, "Please select at least one recipient group"),
-  scheduleType: z.string().min(1, "Please select when to send"),
+  type: z.string().min(1, 'Please select message type'),
+  title: z.string().min(2, 'Title must be at least 2 characters'),
+  content: z.string().min(10, 'Message content must be at least 10 characters'),
+  recipients: z
+    .array(z.string())
+    .min(1, 'Please select at least one recipient group'),
+  scheduleType: z.string().min(1, 'Please select when to send'),
   scheduleDate: z.string().optional(),
   scheduleTime: z.string().optional(),
   template: z.string().optional(),
-})
+});
 
-type MessageForm = z.infer<typeof messageSchema>
+type MessageForm = z.infer<typeof messageSchema>;
 
 interface SendMessageFormProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 const recipientGroups = [
-  { id: "all", name: "All Members", count: 1234 },
-  { id: "active", name: "Active Members", count: 1156 },
-  { id: "choir", name: "Choir Department", count: 45 },
-  { id: "youth", name: "Youth Department", count: 120 },
-  { id: "ushering", name: "Ushering Department", count: 32 },
-  { id: "leadership", name: "Leadership Team", count: 15 },
-  { id: "volunteers", name: "Volunteers", count: 89 },
-]
+  { id: 'all', name: 'All Members', count: 1234 },
+  { id: 'active', name: 'Active Members', count: 1156 },
+  { id: 'choir', name: 'Choir Department', count: 45 },
+  { id: 'youth', name: 'Youth Department', count: 120 },
+  { id: 'ushering', name: 'Ushering Department', count: 32 },
+  { id: 'leadership', name: 'Leadership Team', count: 15 },
+  { id: 'volunteers', name: 'Volunteers', count: 89 },
+];
 
 export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
 
   const form = useForm<MessageForm>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
-      type: "",
-      title: "",
-      content: "",
+      type: '',
+      title: '',
+      content: '',
       recipients: [],
-      scheduleType: "now",
-      scheduleDate: "",
-      scheduleTime: "",
-      template: "",
+      scheduleType: 'now',
+      scheduleDate: '',
+      scheduleTime: '',
+      template: '',
     },
-  })
+  });
 
   const onSubmit = async (data: MessageForm) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Message data:", data)
-      onSuccess()
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.log('Message data:', data);
+      onSuccess();
     } catch (error) {
-      console.error("Error sending message:", error)
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.error('Error sending message:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const getTotalRecipients = () => {
     return selectedRecipients.reduce((total, groupId) => {
-      const group = recipientGroups.find((g) => g.id === groupId)
-      return total + (group?.count || 0)
-    }, 0)
-  }
+      const group = recipientGroups.find((g) => g.id === groupId);
+      return total + (group?.count || 0);
+    }, 0);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         {/* Message Type & Template */}
         <Card>
           <CardHeader>
@@ -92,14 +122,17 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
             <CardDescription>Choose message type and content</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Message Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -130,17 +163,28 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Use Template (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select template" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="service-reminder">Service Reminder</SelectItem>
-                        <SelectItem value="event-registration">Event Registration</SelectItem>
-                        <SelectItem value="welcome-member">Welcome New Member</SelectItem>
-                        <SelectItem value="announcement">General Announcement</SelectItem>
+                        <SelectItem value="service-reminder">
+                          Service Reminder
+                        </SelectItem>
+                        <SelectItem value="event-registration">
+                          Event Registration
+                        </SelectItem>
+                        <SelectItem value="welcome-member">
+                          Welcome New Member
+                        </SelectItem>
+                        <SelectItem value="announcement">
+                          General Announcement
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -172,12 +216,15 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                   <FormControl>
                     <Textarea
                       placeholder="Enter your message content..."
-                      rows={form.watch("type") === "sms" ? 4 : 6}
+                      rows={form.watch('type') === 'sms' ? 4 : 6}
                       {...field}
                     />
                   </FormControl>
-                  {form.watch("type") === "sms" && (
-                    <p className="text-xs text-gray-500">Character count: {field.value?.length || 0}/160 (SMS limit)</p>
+                  {form.watch('type') === 'sms' && (
+                    <p className="text-gray-500 text-xs">
+                      Character count: {field.value?.length || 0}/160 (SMS
+                      limit)
+                    </p>
                   )}
                   <FormMessage />
                 </FormItem>
@@ -194,9 +241,13 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                 <Users className="h-5 w-5" />
                 <span>Recipients</span>
               </div>
-              <Badge variant="secondary">{getTotalRecipients()} members selected</Badge>
+              <Badge variant="secondary">
+                {getTotalRecipients()} members selected
+              </Badge>
             </CardTitle>
-            <CardDescription>Select member groups to send the message to</CardDescription>
+            <CardDescription>
+              Select member groups to send the message to
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FormField
@@ -204,17 +255,17 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
               name="recipients"
               render={() => (
                 <FormItem>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {recipientGroups.map((group) => (
                       <FormField
-                        key={group.id}
                         control={form.control}
+                        key={group.id}
                         name="recipients"
                         render={({ field }) => {
                           return (
                             <FormItem
+                              className="flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-3 hover:bg-gray-50"
                               key={group.id}
-                              className="flex flex-row items-center space-x-3 space-y-0 p-3 border rounded-lg hover:bg-gray-50"
                             >
                               <FormControl>
                                 <Checkbox
@@ -222,18 +273,24 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                                   onCheckedChange={(checked) => {
                                     const newValue = checked
                                       ? [...field.value, group.id]
-                                      : field.value?.filter((value) => value !== group.id)
-                                    field.onChange(newValue)
-                                    setSelectedRecipients(newValue)
+                                      : field.value?.filter(
+                                          (value) => value !== group.id
+                                        );
+                                    field.onChange(newValue);
+                                    setSelectedRecipients(newValue);
                                   }}
                                 />
                               </FormControl>
                               <div className="flex-1">
-                                <FormLabel className="text-sm font-medium cursor-pointer">{group.name}</FormLabel>
-                                <p className="text-xs text-gray-500">{group.count} members</p>
+                                <FormLabel className="cursor-pointer font-medium text-sm">
+                                  {group.name}
+                                </FormLabel>
+                                <p className="text-gray-500 text-xs">
+                                  {group.count} members
+                                </p>
                               </div>
                             </FormItem>
-                          )
+                          );
                         }}
                       />
                     ))}
@@ -258,7 +315,10 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Send Options</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select when to send" />
@@ -266,7 +326,9 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="now">Send Now</SelectItem>
-                      <SelectItem value="scheduled">Schedule for Later</SelectItem>
+                      <SelectItem value="scheduled">
+                        Schedule for Later
+                      </SelectItem>
                       <SelectItem value="draft">Save as Draft</SelectItem>
                     </SelectContent>
                   </Select>
@@ -275,8 +337,8 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
               )}
             />
 
-            {form.watch("scheduleType") === "scheduled" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {form.watch('scheduleType') === 'scheduled' && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="scheduleDate"
@@ -309,10 +371,10 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
         </Card>
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onSuccess}>
+          <Button onClick={onSuccess} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button disabled={isLoading} type="submit">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -321,12 +383,14 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
             ) : (
               <>
                 <Send className="mr-2 h-4 w-4" />
-                {form.watch("scheduleType") === "draft" ? "Save Draft" : "Send Message"}
+                {form.watch('scheduleType') === 'draft'
+                  ? 'Save Draft'
+                  : 'Send Message'}
               </>
             )}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }

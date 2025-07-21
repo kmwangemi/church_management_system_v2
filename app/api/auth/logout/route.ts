@@ -1,5 +1,6 @@
+/** biome-ignore-all assist/source/organizeImports: ignore import sort */
 import { logger } from '@/lib/logger';
-import { withApiLogger } from '@/lib/middleware/apiLogger';
+import { withApiLogger } from '@/lib/middleware/api-logger';
 import { jwtVerify } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -7,19 +8,22 @@ async function logoutHandler(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
     { requestId, endpoint: '/api/auth/logout' },
-    'api',
+    'api'
   );
   try {
     // Get the token from cookies to log user info before clearing
     const token = request.cookies.get('token')?.value;
-    let userInfo = null;
+    let userInfo: { userId: string; role: string } | null = null;
     if (token) {
       try {
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+        if (!process.env.JWT_SECRET) {
+          throw new Error('JWT_SECRET environment variable is not set');
+        }
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
         const { payload } = await jwtVerify(token, secret);
         userInfo = {
-          userId: payload.sub,
-          role: payload.role,
+          userId: payload.sub ?? 'unknown',
+          role: typeof payload.role === 'string' ? payload.role : 'unknown',
         };
       } catch (error) {
         // Token might be invalid or expired, but we'll still proceed with logout
@@ -44,11 +48,10 @@ async function logoutHandler(request: NextRequest) {
     });
     return response;
   } catch (error) {
-    console.error('Logout error:', error);
     contextLogger.error('Logout failed', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -1,15 +1,15 @@
 import { logger } from '@/lib/logger';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { level, message, error, metadata } = body;
     // Validate required fields
-    if (!level || !message) {
+    if (!(level && message)) {
       return NextResponse.json(
         { error: 'Level and message are required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
     // Validate log level
@@ -40,13 +40,18 @@ export async function POST(request: NextRequest) {
       case 'debug':
         await logger.debug(message, requestMetadata, 'client');
         break;
+      default:
+        return NextResponse.json(
+          { error: 'Invalid log level' },
+          { status: 400 }
+        );
     }
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error in log API:', error);
+  } catch (_error) {
+    // console.error('Error in log API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -57,10 +62,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const level = searchParams.get('level');
     const source = searchParams.get('source');
-    const limit = parseInt(searchParams.get('limit') || '100');
-    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Number.parseInt(searchParams.get('limit') || '100', 10);
+    const page = Number.parseInt(searchParams.get('page') || '1', 10);
     // Import Log model dynamically to avoid circular dependencies
-    const { Log } = await import('@/models/Log');
+    const { Log } = await import('@/models/log');
     await (await import('@/lib/mongodb')).default();
     // Build query
     const query: any = {};
@@ -82,11 +87,11 @@ export async function GET(request: NextRequest) {
         totalCount,
       },
     });
-  } catch (error) {
-    console.error('Error fetching logs:', error);
+  } catch (_error) {
+    // console.error('Error fetching logs:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

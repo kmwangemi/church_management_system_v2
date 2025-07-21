@@ -1,125 +1,166 @@
+/** biome-ignore-all assist/source/organizeImports: ignore sort import files */
 import { logger } from '@/lib/logger';
-import { withApiLogger } from '@/lib/middleware/apiLogger';
+import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import { getUserId } from '@/lib/utils';
-import User from '@/models/User';
+import type { IUser } from '@/models/user';
+import User from '@/models/user';
 import { SignJWT } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
+
+function checkUserStatus(
+  existingUser: IUser,
+  contextLogger: {
+    warn: (message: string, meta?: Record<string, unknown>) => void;
+  },
+  email: string
+) {
+  if (!existingUser.isActive) {
+    contextLogger.warn('Login failed - Account is deactivated', { email });
+    return NextResponse.json(
+      { error: 'Account is deactivated' },
+      { status: 401 }
+    );
+  }
+  if (existingUser.isDeleted) {
+    contextLogger.warn('Login failed - Account is deleted', { email });
+    return NextResponse.json(
+      { error: 'Account does not exist' },
+      { status: 401 }
+    );
+  }
+  if (existingUser.isSuspended) {
+    contextLogger.warn('Login failed - Account is suspended', { email });
+    return NextResponse.json(
+      { error: 'Account is suspended' },
+      { status: 401 }
+    );
+  }
+  return null;
+}
+
+async function validatePassword(
+  existingUser: IUser,
+  password: string,
+  contextLogger: {
+    warn: (message: string, meta?: Record<string, unknown>) => void;
+  },
+  email: string
+) {
+  let isPasswordValid = false;
+  try {
+    isPasswordValid = await existingUser.comparePassword(password);
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string' &&
+      (error as { message: string }).message.includes('temporarily locked')
+    ) {
+      contextLogger.warn('Login failed - Account temporarily locked', {
+        email,
+        lockUntil: existingUser.lockUntil,
+      });
+      return {
+        response: NextResponse.json(
+          {
+            error: `Account temporarily locked until ${new Date(
+              existingUser.lockUntil ?? Date.now()
+            ).toLocaleString()} due to too many failed login attempts.`,
+          },
+          { status: 423 }
+        ),
+        isPasswordValid: false,
+      };
+    }
+    throw error;
+  }
+  if (!isPasswordValid) {
+    contextLogger.warn('Login failed - Invalid password', {
+      email,
+      loginAttempts: (existingUser.loginAttempts ?? 0) + 1,
+    });
+    const willBeLocked = (existingUser.loginAttempts ?? 0) + 1 >= 5;
+    if (willBeLocked) {
+      return {
+        response: NextResponse.json(
+          {
+            error: `Invalid credentials. Account has been temporarily locked until ${new Date(
+              Date.now() + 2 * 60 * 60 * 1000
+            ).toISOString()}.`,
+          },
+          { status: 423 }
+        ),
+        isPasswordValid: false,
+      };
+    }
+    return {
+      response: NextResponse.json(
+        {
+          error: `Invalid credentials. Attempts remaining: ${
+            5 - ((existingUser.loginAttempts ?? 0) + 1)
+          }.`,
+        },
+        { status: 401 }
+      ),
+      isPasswordValid: false,
+    };
+  }
+  return { response: null, isPasswordValid: true };
+}
 
 async function loginHandler(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
     { requestId, endpoint: '/api/auth/login' },
-    'api',
+    'api'
   );
   try {
     await dbConnect();
-    contextLogger.info('Database connection established');
     const { email, password } = await request.json();
-    // Input validation
-    if (!email || !password) {
-      contextLogger.warn('Login failed - Missing email or password');
+    if (!(email && password)) {
+      contextLogger.warn('Login failed - Missing email or password', {
+        email,
+      });
       return NextResponse.json(
         { error: 'Email and password are required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
-    // Find user by email
     const existingUser = await User.findOne({
       email: email.toLowerCase().trim(),
     });
     if (!existingUser) {
-      contextLogger.warn('Login failed - User not found', {
-        email: email,
-      });
+      contextLogger.warn('Login failed - User not found', { email });
       return NextResponse.json(
         { error: 'Invalid credentials' },
-        { status: 401 },
+        { status: 401 }
       );
     }
-    // Check if user is active before attempting password verification
-    if (!existingUser.isActive) {
-      contextLogger.warn('Login failed - Account is deactivated', {
-        email: email,
-      });
-      return NextResponse.json(
-        { error: 'Account is deactivated' },
-        { status: 401 },
-      );
+    const statusResponse = checkUserStatus(existingUser, contextLogger, email);
+    if (statusResponse) {
+      return statusResponse;
     }
-    // Check if user is deleted
-    if (existingUser.isDeleted) {
-      contextLogger.warn('Login failed - Account is deleted', {
-        email: email,
-      });
-      return NextResponse.json(
-        { error: 'Account does not exist' },
-        { status: 401 },
-      );
+    const { response: passwordResponse } = await validatePassword(
+      existingUser,
+      password,
+      contextLogger,
+      email
+    );
+    if (passwordResponse) {
+      return passwordResponse;
     }
-    // Check if user is suspended
-    if (existingUser.isSuspended) {
-      contextLogger.warn('Login failed - Account is suspended', {
-        email: email,
-      });
-      return NextResponse.json(
-        { error: 'Account is suspended' },
-        { status: 401 },
-      );
-    }
-    // Check password with built-in rate limiting
-    let isPasswordValid = false;
-    try {
-      isPasswordValid = await existingUser.comparePassword(password);
-    } catch (error: any) {
-      // Handle account locked error
-      if (error.message && error.message.includes('temporarily locked')) {
-        contextLogger.warn('Login failed - Account temporarily locked', {
-          email: email,
-          lockUntil: existingUser.lockUntil,
-        });
-        return NextResponse.json(
-          {
-            error: `Account temporarily locked until ${new Date(
-              existingUser.lockUntil,
-            ).toLocaleString()} due to too many failed login attempts.`,
-          },
-          { status: 423 }, // 423 Locked
-        );
-      }
-      throw error; // Re-throw other errors
-    }
-    if (!isPasswordValid) {
-      contextLogger.warn('Login failed - Invalid password', {
-        email: email,
-        loginAttempts: existingUser.loginAttempts + 1,
-      });
-      // Check if account will be locked after this attempt
-      const willBeLocked = existingUser.loginAttempts + 1 >= 5;
-      if (willBeLocked) {
-        return NextResponse.json(
-          {
-            error: `Invalid credentials. Account has been temporarily locked until ${new Date(
-              Date.now() + 2 * 60 * 60 * 1000,
-            ).toISOString()}.`, // 2 hours from now
-          },
-          { status: 423 },
-        );
-      }
-      return NextResponse.json(
-        {
-          error: `Invalid credentials. Attempts remaining: ${
-            5 - (existingUser.loginAttempts + 1)
-          }.`,
-        },
-        { status: 401 },
-      );
-    }
-    // Update last login timestamp
     existingUser.lastLogin = new Date();
     await existingUser.save();
-    // Generate JWT token using JOSE
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    if (!process.env.JWT_SECRET) {
+      contextLogger.error('JWT_SECRET environment variable is not set');
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const token = await new SignJWT({
       sub: getUserId(existingUser._id),
       churchId: existingUser?.churchId
@@ -128,14 +169,14 @@ async function loginHandler(request: NextRequest) {
       branchId: existingUser?.branchId
         ? getUserId(existingUser.branchId)
         : null,
-      role: existingUser.role, // Direct string value since we're not populating role
+      role: existingUser.role,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('7d')
       .sign(secret);
     contextLogger.info('Login successful', {
-      email: email,
+      email,
       userId: existingUser._id,
       role: existingUser.role,
     });
@@ -152,20 +193,18 @@ async function loginHandler(request: NextRequest) {
         lastLogin: existingUser.lastLogin,
       },
     });
-    // Set HTTP-only cookie
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return response;
   } catch (error) {
-    console.error('Login error:', error);
-    contextLogger.error('Login failed', error);
+    contextLogger.error('Login failed', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

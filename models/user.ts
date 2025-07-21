@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import mongoose, { Schema, type CallbackError, type Document } from 'mongoose';
+import mongoose, { type CallbackError, type Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
   churchId?: mongoose.Types.ObjectId; // Optional for superadmin
@@ -79,8 +79,8 @@ const UserSchema = new Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: function (this: any) {
-        return this.role !== 'superadmin';
+      required(this: Document) {
+        return this.get('role') !== 'superadmin';
       },
     },
     profilePictureUrl: { type: String, default: null },
@@ -119,7 +119,7 @@ const UserSchema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Constants for rate limiting
@@ -156,7 +156,7 @@ UserSchema.methods.incLoginAttempts = function (this: IUser) {
       $set: { loginAttempts: 1 },
     });
   }
-  const updates: any = { $inc: { loginAttempts: 1 } };
+  const updates: Record<string, unknown> = { $inc: { loginAttempts: 1 } };
   // If we have hit max attempts and it's not locked yet, lock the account
   const currentLoginAttempts =
     typeof this.loginAttempts === 'number' ? this.loginAttempts : 0;
@@ -175,7 +175,9 @@ UserSchema.methods.resetLoginAttempts = function (this: IUser) {
 
 // Pre-save middleware for password hashing
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) {
+    return next();
+  }
   try {
     this.password = await bcrypt.hash(this.password, 12);
     next();
@@ -220,12 +222,12 @@ UserSchema.pre('save', function (next) {
 });
 
 UserSchema.methods.comparePassword = async function (
-  candidatePassword: string,
+  candidatePassword: string
 ): Promise<boolean> {
   // Check if account is locked
   if (this.isLocked) {
     throw new Error(
-      'Account is temporarily locked due to too many failed login attempts',
+      'Account is temporarily locked due to too many failed login attempts'
     );
   }
   const isMatch = await bcrypt.compare(candidatePassword, this.password);

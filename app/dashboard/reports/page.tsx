@@ -1,13 +1,23 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Download,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  PieChart,
+  Plus,
+  Search,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
+import { GenerateReportForm } from '@/components/forms/generate-report-form';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,190 +33,201 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
-  Search,
-  BarChart3,
-  Plus,
-  MoreHorizontal,
-  Download,
-  Eye,
-  Calendar,
-  Users,
-  DollarSign,
-  FileText,
-  PieChart,
-} from "lucide-react"
-import { GenerateReportForm } from "@/components/forms/generate-report-form"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Mock data
 const reports = [
   {
     id: 1,
-    name: "Monthly Attendance Report - December 2023",
-    type: "Attendance",
-    category: "Monthly",
-    description: "Comprehensive attendance analysis for December 2023",
-    generatedBy: "Pastor Michael Brown",
-    dateGenerated: "2024-01-01",
-    status: "Completed",
-    fileSize: "2.3 MB",
-    format: "PDF",
+    name: 'Monthly Attendance Report - December 2023',
+    type: 'Attendance',
+    category: 'Monthly',
+    description: 'Comprehensive attendance analysis for December 2023',
+    generatedBy: 'Pastor Michael Brown',
+    dateGenerated: '2024-01-01',
+    status: 'Completed',
+    fileSize: '2.3 MB',
+    format: 'PDF',
     downloads: 12,
     parameters: {
-      dateRange: "December 2023",
-      departments: "All",
+      dateRange: 'December 2023',
+      departments: 'All',
       includeGraphs: true,
     },
   },
   {
     id: 2,
-    name: "Financial Summary Q4 2023",
-    type: "Financial",
-    category: "Quarterly",
-    description: "Financial overview including offerings, tithes, and expenses",
-    generatedBy: "David Wilson",
-    dateGenerated: "2024-01-02",
-    status: "Completed",
-    fileSize: "1.8 MB",
-    format: "Excel",
+    name: 'Financial Summary Q4 2023',
+    type: 'Financial',
+    category: 'Quarterly',
+    description: 'Financial overview including offerings, tithes, and expenses',
+    generatedBy: 'David Wilson',
+    dateGenerated: '2024-01-02',
+    status: 'Completed',
+    fileSize: '1.8 MB',
+    format: 'Excel',
     downloads: 8,
     parameters: {
-      dateRange: "Q4 2023",
+      dateRange: 'Q4 2023',
       includeComparisons: true,
-      breakdown: "Monthly",
+      breakdown: 'Monthly',
     },
   },
   {
     id: 3,
-    name: "Member Growth Analysis 2023",
-    type: "Membership",
-    category: "Annual",
-    description: "Annual member growth trends and demographics",
-    generatedBy: "Sarah Johnson",
-    dateGenerated: "2024-01-03",
-    status: "Completed",
-    fileSize: "3.1 MB",
-    format: "PDF",
+    name: 'Member Growth Analysis 2023',
+    type: 'Membership',
+    category: 'Annual',
+    description: 'Annual member growth trends and demographics',
+    generatedBy: 'Sarah Johnson',
+    dateGenerated: '2024-01-03',
+    status: 'Completed',
+    fileSize: '3.1 MB',
+    format: 'PDF',
     downloads: 15,
     parameters: {
-      dateRange: "2023",
+      dateRange: '2023',
       includeDemographics: true,
       compareYears: true,
     },
   },
   {
     id: 4,
-    name: "Event Participation Report",
-    type: "Events",
-    category: "Custom",
-    description: "Analysis of event attendance and participation rates",
-    generatedBy: "Emily Davis",
-    dateGenerated: "2024-01-05",
-    status: "Processing",
-    fileSize: "0 MB",
-    format: "PDF",
+    name: 'Event Participation Report',
+    type: 'Events',
+    category: 'Custom',
+    description: 'Analysis of event attendance and participation rates',
+    generatedBy: 'Emily Davis',
+    dateGenerated: '2024-01-05',
+    status: 'Processing',
+    fileSize: '0 MB',
+    format: 'PDF',
     downloads: 0,
     parameters: {
-      dateRange: "Last 6 months",
-      eventTypes: "All",
+      dateRange: 'Last 6 months',
+      eventTypes: 'All',
       includeComparisons: true,
     },
   },
-]
+];
 
 const reportTemplates = [
   {
     id: 1,
-    name: "Monthly Attendance Summary",
-    type: "Attendance",
-    description: "Standard monthly attendance report with trends and comparisons",
-    frequency: "Monthly",
-    lastGenerated: "2024-01-01",
+    name: 'Monthly Attendance Summary',
+    type: 'Attendance',
+    description:
+      'Standard monthly attendance report with trends and comparisons',
+    frequency: 'Monthly',
+    lastGenerated: '2024-01-01',
     isActive: true,
   },
   {
     id: 2,
-    name: "Financial Dashboard",
-    type: "Financial",
-    description: "Comprehensive financial overview with charts and breakdowns",
-    frequency: "Weekly",
-    lastGenerated: "2024-01-07",
+    name: 'Financial Dashboard',
+    type: 'Financial',
+    description: 'Comprehensive financial overview with charts and breakdowns',
+    frequency: 'Weekly',
+    lastGenerated: '2024-01-07',
     isActive: true,
   },
   {
     id: 3,
-    name: "Member Engagement Report",
-    type: "Membership",
-    description: "Member activity and engagement metrics",
-    frequency: "Quarterly",
-    lastGenerated: "2023-12-31",
+    name: 'Member Engagement Report',
+    type: 'Membership',
+    description: 'Member activity and engagement metrics',
+    frequency: 'Quarterly',
+    lastGenerated: '2023-12-31',
     isActive: false,
   },
-]
+];
 
 export default function ReportsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedTab, setSelectedTab] = useState("reports")
-  const [isGenerateReportOpen, setIsGenerateReportOpen] = useState(false)
-  const [filterType, setFilterType] = useState("all")
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTab, setSelectedTab] = useState('reports');
+  const [isGenerateReportOpen, setIsGenerateReportOpen] = useState(false);
+  const [filterType, setFilterType] = useState('all');
 
   const filteredReports = reports.filter(
     (report) =>
-      (filterType === "all" || report.type.toLowerCase() === filterType) &&
+      (filterType === 'all' || report.type.toLowerCase() === filterType) &&
       (report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.generatedBy.toLowerCase().includes(searchTerm.toLowerCase())),
-  )
+        report.generatedBy.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>
-      case "Processing":
-        return <Badge className="bg-blue-100 text-blue-800">Processing</Badge>
-      case "Failed":
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>
+      case 'Completed':
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+      case 'Processing':
+        return <Badge className="bg-blue-100 text-blue-800">Processing</Badge>;
+      case 'Failed':
+        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case "attendance":
-        return <Users className="h-4 w-4" />
-      case "financial":
-        return <DollarSign className="h-4 w-4" />
-      case "membership":
-        return <Users className="h-4 w-4" />
-      case "events":
-        return <Calendar className="h-4 w-4" />
+      case 'attendance':
+        return <Users className="h-4 w-4" />;
+      case 'financial':
+        return <DollarSign className="h-4 w-4" />;
+      case 'membership':
+        return <Users className="h-4 w-4" />;
+      case 'events':
+        return <Calendar className="h-4 w-4" />;
       default:
-        return <FileText className="h-4 w-4" />
+        return <FileText className="h-4 w-4" />;
     }
-  }
+  };
 
   const stats = {
     totalReports: reports.length,
-    completedReports: reports.filter((r) => r.status === "Completed").length,
+    completedReports: reports.filter((r) => r.status === 'Completed').length,
     totalDownloads: reports.reduce((sum, r) => sum + r.downloads, 0),
     activeTemplates: reportTemplates.filter((t) => t.isActive).length,
-  }
+  };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600 mt-1">Generate and manage church reports and analytics</p>
+          <h1 className="font-bold text-3xl text-gray-900">
+            Reports & Analytics
+          </h1>
+          <p className="mt-1 text-gray-600">
+            Generate and manage church reports and analytics
+          </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
+          <Button size="sm" variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export All
           </Button>
-          <Dialog open={isGenerateReportOpen} onOpenChange={setIsGenerateReportOpen}>
+          <Dialog
+            onOpenChange={setIsGenerateReportOpen}
+            open={isGenerateReportOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -216,62 +237,82 @@ export default function ReportsPage() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Generate New Report</DialogTitle>
-                <DialogDescription>Create a custom report with specific parameters</DialogDescription>
+                <DialogDescription>
+                  Create a custom report with specific parameters
+                </DialogDescription>
               </DialogHeader>
-              <GenerateReportForm onSuccess={() => setIsGenerateReportOpen(false)} />
+              <GenerateReportForm
+                onSuccess={() => setIsGenerateReportOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-shadow">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Reports</CardTitle>
-            <div className="bg-blue-100 p-2 rounded-lg">
+            <CardTitle className="font-medium text-gray-600 text-sm">
+              Total Reports
+            </CardTitle>
+            <div className="rounded-lg bg-blue-100 p-2">
               <BarChart3 className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalReports}</div>
-            <p className="text-xs text-gray-500 mt-1">All time</p>
+            <div className="font-bold text-2xl text-gray-900">
+              {stats.totalReports}
+            </div>
+            <p className="mt-1 text-gray-500 text-xs">All time</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
-            <div className="bg-green-100 p-2 rounded-lg">
+            <CardTitle className="font-medium text-gray-600 text-sm">
+              Completed
+            </CardTitle>
+            <div className="rounded-lg bg-green-100 p-2">
               <FileText className="h-5 w-5 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completedReports}</div>
-            <p className="text-xs text-gray-500 mt-1">Ready for download</p>
+            <div className="font-bold text-2xl text-green-600">
+              {stats.completedReports}
+            </div>
+            <p className="mt-1 text-gray-500 text-xs">Ready for download</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Downloads</CardTitle>
-            <div className="bg-purple-100 p-2 rounded-lg">
+            <CardTitle className="font-medium text-gray-600 text-sm">
+              Downloads
+            </CardTitle>
+            <div className="rounded-lg bg-purple-100 p-2">
               <Download className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.totalDownloads}</div>
-            <p className="text-xs text-gray-500 mt-1">Total downloads</p>
+            <div className="font-bold text-2xl text-purple-600">
+              {stats.totalDownloads}
+            </div>
+            <p className="mt-1 text-gray-500 text-xs">Total downloads</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Active Templates</CardTitle>
-            <div className="bg-orange-100 p-2 rounded-lg">
+            <CardTitle className="font-medium text-gray-600 text-sm">
+              Active Templates
+            </CardTitle>
+            <div className="rounded-lg bg-orange-100 p-2">
               <PieChart className="h-5 w-5 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.activeTemplates}</div>
-            <p className="text-xs text-gray-500 mt-1">Automated reports</p>
+            <div className="font-bold text-2xl text-orange-600">
+              {stats.activeTemplates}
+            </div>
+            <p className="mt-1 text-gray-500 text-xs">Automated reports</p>
           </CardContent>
         </Card>
       </div>
@@ -279,17 +320,17 @@ export default function ReportsPage() {
       {/* Main Content */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-gray-400" />
               <Input
+                className="pl-10"
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search reports..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
               />
             </div>
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select onValueChange={setFilterType} value={filterType}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
@@ -304,14 +345,14 @@ export default function ReportsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <Tabs onValueChange={setSelectedTab} value={selectedTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="reports">Generated Reports</TabsTrigger>
               <TabsTrigger value="templates">Report Templates</TabsTrigger>
               <TabsTrigger value="analytics">Analytics Dashboard</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="reports" className="mt-6">
+            <TabsContent className="mt-6" value="reports">
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -327,15 +368,19 @@ export default function ReportsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredReports.map((report) => (
-                      <TableRow key={report.id} className="hover:bg-gray-50">
+                      <TableRow className="hover:bg-gray-50" key={report.id}>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center space-x-2">
                               {getTypeIcon(report.type)}
-                              <span className="font-medium text-gray-900">{report.name}</span>
+                              <span className="font-medium text-gray-900">
+                                {report.name}
+                              </span>
                             </div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">{report.description}</div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            <div className="max-w-xs truncate text-gray-500 text-sm">
+                              {report.description}
+                            </div>
+                            <div className="flex items-center space-x-2 text-gray-500 text-sm">
                               <Badge variant="outline">{report.format}</Badge>
                               <span>{report.fileSize}</span>
                             </div>
@@ -345,7 +390,9 @@ export default function ReportsPage() {
                           <Badge variant="outline">{report.type}</Badge>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm font-medium">{report.generatedBy}</span>
+                          <span className="font-medium text-sm">
+                            {report.generatedBy}
+                          </span>
                         </TableCell>
                         <TableCell>{getStatusBadge(report.status)}</TableCell>
                         <TableCell>
@@ -357,19 +404,25 @@ export default function ReportsPage() {
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm">{new Date(report.dateGenerated).toLocaleDateString()}</span>
+                            <span className="text-sm">
+                              {new Date(
+                                report.dateGenerated
+                              ).toLocaleDateString()}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
+                              <Button className="h-8 w-8 p-0" variant="ghost">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem disabled={report.status !== "Completed"}>
+                              <DropdownMenuItem
+                                disabled={report.status !== 'Completed'}
+                              >
                                 <Download className="mr-2 h-4 w-4" />
                                 Download Report
                               </DropdownMenuItem>
@@ -396,34 +449,50 @@ export default function ReportsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="templates" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <TabsContent className="mt-6" value="templates">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {reportTemplates.map((template) => (
-                  <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                  <Card
+                    className="transition-shadow hover:shadow-lg"
+                    key={template.id}
+                  >
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {getTypeIcon(template.type)}
                           <Badge variant="outline">{template.type}</Badge>
                         </div>
-                        <Badge variant={template.isActive ? "default" : "secondary"}>
-                          {template.isActive ? "Active" : "Inactive"}
+                        <Badge
+                          variant={template.isActive ? 'default' : 'secondary'}
+                        >
+                          {template.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
                       <CardTitle className="text-lg">{template.name}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm text-gray-600">{template.description}</p>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
+                      <p className="text-gray-600 text-sm">
+                        {template.description}
+                      </p>
+                      <div className="flex items-center justify-between text-gray-500 text-sm">
                         <span>Frequency: {template.frequency}</span>
-                        <span>Last: {new Date(template.lastGenerated).toLocaleDateString()}</span>
+                        <span>
+                          Last:{' '}
+                          {new Date(
+                            template.lastGenerated
+                          ).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline" className="flex-1 bg-transparent">
+                        <Button
+                          className="flex-1 bg-transparent"
+                          size="sm"
+                          variant="outline"
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           Preview
                         </Button>
-                        <Button size="sm" className="flex-1">
+                        <Button className="flex-1" size="sm">
                           <Plus className="mr-2 h-4 w-4" />
                           Generate
                         </Button>
@@ -434,8 +503,8 @@ export default function ReportsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="analytics" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TabsContent className="mt-6" value="analytics">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle>Report Generation Trends</CardTitle>
@@ -443,27 +512,38 @@ export default function ReportsPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">This Month</span>
-                        <span className="text-sm text-gray-600">4 reports</span>
+                        <span className="font-medium text-sm">This Month</span>
+                        <span className="text-gray-600 text-sm">4 reports</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: "100%" }}></div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Last Month</span>
-                        <span className="text-sm text-gray-600">2 reports</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: "50%" }}></div>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-2 rounded-full bg-blue-600"
+                          style={{ width: '100%' }}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Two Months Ago</span>
-                        <span className="text-sm text-gray-600">3 reports</span>
+                        <span className="font-medium text-sm">Last Month</span>
+                        <span className="text-gray-600 text-sm">2 reports</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-purple-600 h-2 rounded-full" style={{ width: "75%" }}></div>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-2 rounded-full bg-green-600"
+                          style={{ width: '50%' }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">
+                          Two Months Ago
+                        </span>
+                        <span className="text-gray-600 text-sm">3 reports</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-2 rounded-full bg-purple-600"
+                          style={{ width: '75%' }}
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -476,27 +556,48 @@ export default function ReportsPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Member Growth Analysis</span>
-                        <span className="text-sm text-gray-600">15 downloads</span>
+                        <span className="font-medium text-sm">
+                          Member Growth Analysis
+                        </span>
+                        <span className="text-gray-600 text-sm">
+                          15 downloads
+                        </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: "100%" }}></div>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-2 rounded-full bg-blue-600"
+                          style={{ width: '100%' }}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Monthly Attendance</span>
-                        <span className="text-sm text-gray-600">12 downloads</span>
+                        <span className="font-medium text-sm">
+                          Monthly Attendance
+                        </span>
+                        <span className="text-gray-600 text-sm">
+                          12 downloads
+                        </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: "80%" }}></div>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-2 rounded-full bg-green-600"
+                          style={{ width: '80%' }}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Financial Summary</span>
-                        <span className="text-sm text-gray-600">8 downloads</span>
+                        <span className="font-medium text-sm">
+                          Financial Summary
+                        </span>
+                        <span className="text-gray-600 text-sm">
+                          8 downloads
+                        </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-purple-600 h-2 rounded-full" style={{ width: "53%" }}></div>
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-2 rounded-full bg-purple-600"
+                          style={{ width: '53%' }}
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -507,5 +608,5 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

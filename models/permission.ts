@@ -46,7 +46,7 @@ const PermissionSchema = new Schema<IPermission>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export const Permission =
