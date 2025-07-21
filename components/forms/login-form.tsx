@@ -18,7 +18,7 @@ import { type LoginPayload, loginSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -26,7 +26,6 @@ import { toast } from 'sonner';
 export default function LoginForm() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
-  const router = useRouter();
   const form = useForm<LoginPayload>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -38,18 +37,19 @@ export default function LoginForm() {
   const { reset } = form;
   const onSubmit = async (payload: LoginPayload) => {
     const result = await loginMutation(payload);
-    if (result && result.user.role === 'superadmin') {
-      router.push('/superadmin');
-    } else if (result && result.user.role === 'admin') {
-      router.push('/dashboard');
-    } else {
-      router.push('/member');
-    }
+    if (!result) return; // Handle case where login fails
+    // Reset form before navigation
     reset();
-    // Add reload after a short delay (2 seconds)
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    // Determine redirect path
+    let redirectPath = '/member'; // default
+    if (result.user.role === 'superadmin') {
+      redirectPath = '/superadmin';
+    } else if (result.user.role === 'admin') {
+      redirectPath = '/dashboard';
+    }
+    // Use window.location for a hard redirect instead of router.push
+    // This ensures a fresh page load and clears any cached state
+    window.location.href = redirectPath;
   };
   useEffect(() => {
     if (reason === 'expired') {
