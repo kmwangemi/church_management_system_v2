@@ -18,7 +18,7 @@ export const useRegisterBranch = () => {
     mutationFn: registerBranch,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
-      toast.success('Church branch ha been created successfully.', {
+      toast.success('Church branch has been created successfully.', {
         style: successToastStyle,
       });
     },

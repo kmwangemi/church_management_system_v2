@@ -12,7 +12,6 @@ export default function DepartmentsLoading() {
         </div>
         <Skeleton className="h-10 w-36" />
       </div>
-
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -28,7 +27,6 @@ export default function DepartmentsLoading() {
           </Card>
         ))}
       </div>
-
       {/* Tabs */}
       <div className="space-y-6">
         <div className="flex space-x-1">
@@ -36,7 +34,6 @@ export default function DepartmentsLoading() {
             <Skeleton className="h-10 w-24" key={i} />
           ))}
         </div>
-
         {/* Department Cards Grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (

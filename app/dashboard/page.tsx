@@ -1,5 +1,20 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { useAuthContext } from '@/contexts/auth-context';
+import {
+  capitalizeFirstLetter,
+  capitalizeFirstLetterOfEachWord,
+} from '@/lib/utils';
 import {
   Building,
   Calendar,
@@ -13,33 +28,9 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-
-interface User {
-  name: string;
-  role: string;
-  churchName?: string;
-}
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
+  const { user } = useAuthContext();
 
   const stats = [
     {
@@ -194,11 +185,13 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="mb-2 font-bold text-3xl">
-              Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
+              Welcome back, {capitalizeFirstLetter(user?.firstName || 'user')}!
+              👋
             </h1>
             <p className="text-blue-100 text-lg">
-              Here's what's happening at {user?.churchName || 'your church'}{' '}
-              today.
+              Here's what's happening at{' '}
+              {/* {capitalizeFirstLetterOfEachWord(user?.churchId || 'your church')} today. */}
+              {capitalizeFirstLetterOfEachWord('acem church')} today.
             </p>
           </div>
           <div className="mt-4 md:mt-0">
@@ -218,7 +211,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
@@ -251,7 +243,6 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
-
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Quick Actions */}
@@ -290,7 +281,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-
         {/* Recent Activity */}
         <div className="lg:col-span-2">
           <Card>
@@ -333,7 +323,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-
       {/* Upcoming Events */}
       <Card>
         <CardHeader>
@@ -380,7 +369,6 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Church Health Overview */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
@@ -397,19 +385,16 @@ export default function DashboardPage() {
                 <span className="text-gray-600 text-sm">820 people</span>
               </div>
               <Progress className="h-2" value={85} />
-
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm">Week 2</span>
                 <span className="text-gray-600 text-sm">856 people</span>
               </div>
               <Progress className="h-2" value={89} />
-
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm">Week 3</span>
                 <span className="text-gray-600 text-sm">792 people</span>
               </div>
               <Progress className="h-2" value={82} />
-
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm">Week 4</span>
                 <span className="text-gray-600 text-sm">901 people</span>
@@ -418,7 +403,6 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Ministry Health</CardTitle>
@@ -433,7 +417,6 @@ export default function DashboardPage() {
                 </div>
                 <Progress className="h-2" value={75} />
               </div>
-
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <span className="font-medium text-sm">
@@ -443,7 +426,6 @@ export default function DashboardPage() {
                 </div>
                 <Progress className="h-2" value={89} />
               </div>
-
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <span className="font-medium text-sm">Giving Goal</span>
@@ -451,7 +433,6 @@ export default function DashboardPage() {
                 </div>
                 <Progress className="h-2" value={90} />
               </div>
-
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <span className="font-medium text-sm">Prayer Requests</span>
