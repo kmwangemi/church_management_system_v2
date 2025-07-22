@@ -4,7 +4,7 @@ import mongoose, { type CallbackError, type Document, Schema } from 'mongoose';
 export interface IUser extends Document {
   churchId?: mongoose.Types.ObjectId; // Optional for superadmin
   branchId?: mongoose.Types.ObjectId; // Optional for superadmin
-  email: string;
+  email?: string;
   password: string;
   firstName: string;
   lastName: string;
@@ -28,10 +28,13 @@ export interface IUser extends Document {
   maritalStatus?: 'single' | 'married' | 'divorced' | 'widowed';
   address?: string;
   country?: string;
-  emergencyContact?: {
-    fullName?: string;
-    relationship?: string;
-    phoneNumber?: string;
+  emergencyDetails: {
+    emergencyContactFullName?: string;
+    emergencyContactEmail?: string;
+    emergencyContactPhoneNumber?: string;
+    emergencyContactRelationship?: string;
+    emergencyContactAddress?: string;
+    emergencyContactNotes?: string;
   };
   notes?: string;
   createdAt: Date;
@@ -55,26 +58,26 @@ const UserSchema = new Schema(
     },
     email: {
       type: String,
-      required: true,
-      unique: true,
+      // required: true,
+      // unique: true,
       trim: true,
       lowercase: true,
-    },
-    password: { type: String, required: true, trim: true },
-    firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
-    role: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-      enum: ['member', 'visitor', 'pastor', 'bishop', 'admin', 'superadmin'],
     },
     phoneNumber: {
       type: String,
       required: true,
       unique: true,
       trim: true,
+    },
+    password: { type: String, required: true, trim: true },
+    firstName: { type: String, required: true, trim: true, lowercase: true },
+    lastName: { type: String, required: true, trim: true, lowercase: true },
+    role: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      enum: ['member', 'visitor', 'pastor', 'bishop', 'admin', 'superadmin'],
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -108,14 +111,21 @@ const UserSchema = new Schema(
       trim: true,
       lowercase: true,
     },
-    address: { type: String, trim: true },
+    address: { type: String, trim: true, lowercase: true },
     country: { type: String, trim: true },
-    emergencyContact: {
-      fullName: { type: String, trim: true },
-      relationship: { type: String, trim: true },
-      phoneNumber: { type: String, trim: true },
+    emergencyDetails: {
+      emergencyContactFullName: { type: String, trim: true, lowercase: true },
+      emergencyContactEmail: { type: String, trim: true, lowercase: true },
+      emergencyContactPhoneNumber: { type: String, trim: true },
+      emergencyContactRelationship: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+      emergencyContactAddress: { type: String, trim: true, lowercase: true },
+      emergencyContactNotes: { type: String, trim: true, lowercase: true },
     },
-    notes: { type: String, trim: true },
+    notes: { type: String, trim: true, lowercase: true },
   },
   {
     timestamps: true,

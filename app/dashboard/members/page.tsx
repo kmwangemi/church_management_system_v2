@@ -152,14 +152,13 @@ const getRoleBadgeVariant = (role: string) => {
 export default function MembersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredMembers = members.filter((member) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.department.toLowerCase().includes(searchTerm.toLowerCase());
-
     if (selectedTab === 'all') return matchesSearch;
     if (selectedTab === 'active')
       return matchesSearch && member.status === 'Active';
@@ -169,7 +168,6 @@ export default function MembersPage() {
       return (
         matchesSearch && (member.role === 'Pastor' || member.role === 'Admin')
       );
-
     return matchesSearch;
   });
 
@@ -202,26 +200,25 @@ export default function MembersPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Dialog onOpenChange={setIsAddMemberOpen} open={isAddMemberOpen}>
+          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Member
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Member</DialogTitle>
                 <DialogDescription>
                   Add a new member to the church database
                 </DialogDescription>
               </DialogHeader>
-              <AddMemberForm onSuccess={() => setIsAddMemberOpen(false)} />
+              <AddMemberForm onCloseDialog={() => setIsDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -289,7 +286,6 @@ export default function MembersPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Search and Filter */}
       <Card>
         <CardHeader>
@@ -428,7 +424,6 @@ export default function MembersPage() {
                   </TableBody>
                 </Table>
               </div>
-
               {filteredMembers.length === 0 && (
                 <div className="py-12 text-center">
                   <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />

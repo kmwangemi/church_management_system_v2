@@ -1,22 +1,27 @@
 import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IMember extends Document {
+  churchId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   memberId: string;
-  membershipDate: Date;
+  membershipDate?: Date;
   membershipStatus: 'active' | 'inactive' | 'transferred' | 'deceased';
-  branchId?: mongoose.Types.ObjectId;
-  departmentIds: mongoose.Types.ObjectId[];
-  groupIds: mongoose.Types.ObjectId[];
-  occupation?: string; // Kept here as it's specific to member context
+  departmentIds?: mongoose.Types.ObjectId[];
+  groupIds?: mongoose.Types.ObjectId[];
+  occupation?: string;
   baptismDate?: Date;
-  joinedDate: Date;
+  joinedDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const MemberSchema = new Schema<IMember>(
   {
+    churchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Church',
+      required: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -30,7 +35,6 @@ const MemberSchema = new Schema<IMember>(
       enum: ['active', 'inactive', 'transferred', 'deceased'],
       default: 'active',
     },
-    branchId: { type: Schema.Types.ObjectId, ref: 'Branch' },
     departmentIds: [{ type: Schema.Types.ObjectId, ref: 'Department' }],
     groupIds: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
     occupation: { type: String, trim: true },

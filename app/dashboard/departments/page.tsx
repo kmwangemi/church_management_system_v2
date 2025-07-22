@@ -342,35 +342,6 @@ export default function DepartmentsPage() {
                     </FormItem>
                   )}
                 />
-                {/* <FormField
-                  control={departmentForm.control}
-                  name="branchId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Church Branch
-                        <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <CustomSelect
-                          className="cursor-pointer"
-                          onChange={field.onChange}
-                          options={
-                            branches?.branches?.map((branch) => ({
-                              value: branch._id,
-                              label: capitalizeFirstLetterOfEachWord(
-                                branch.branchName
-                              ),
-                            })) || []
-                          }
-                          placeholder="Select church branch"
-                          selected={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                /> */}
                 <FormField
                   control={departmentForm.control}
                   name="meetingDay"
