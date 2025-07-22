@@ -1,20 +1,21 @@
 import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IPastor extends Document {
+  churchId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   pastorId: string;
-  ordinationDate: Date;
-  qualifications: string[];
-  specializations: string[];
-  assignments: {
-    branchId: mongoose.Types.ObjectId;
-    position: string;
-    startDate: Date;
+  ordinationDate?: Date;
+  qualifications?: string[];
+  specializations?: string[];
+  assignments?: {
+    branchId?: mongoose.Types.ObjectId;
+    position?: string;
+    startDate?: Date;
     endDate?: Date;
-    isActive: boolean;
+    isActive?: boolean;
   }[];
-  sermonCount: number;
-  counselingSessions: number;
+  sermonCount?: number;
+  counselingSessions?: number;
   biography?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +23,11 @@ export interface IPastor extends Document {
 
 const PastorSchema = new Schema<IPastor>(
   {
+    churchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Church',
+      required: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -29,7 +35,7 @@ const PastorSchema = new Schema<IPastor>(
       unique: true,
     },
     pastorId: { type: String, required: true, unique: true, trim: true },
-    ordinationDate: { type: Date, required: true },
+    ordinationDate: { type: Date },
     qualifications: [{ type: String, trim: true }],
     specializations: [{ type: String, trim: true }],
     assignments: [
@@ -37,10 +43,9 @@ const PastorSchema = new Schema<IPastor>(
         branchId: {
           type: Schema.Types.ObjectId,
           ref: 'Branch',
-          required: true,
         },
-        position: { type: String, required: true, trim: true },
-        startDate: { type: Date, required: true },
+        position: { type: String, trim: true },
+        startDate: { type: Date },
         endDate: { type: Date },
         isActive: { type: Boolean, default: true },
       },

@@ -1,16 +1,17 @@
 import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IBishop extends Document {
+  churchId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   bishopId: string;
-  appointmentDate: Date;
-  jurisdictionArea: string;
-  oversight: {
-    branchIds: mongoose.Types.ObjectId[];
-    pastorIds: mongoose.Types.ObjectId[];
+  appointmentDate?: Date;
+  jurisdictionArea?: string;
+  oversight?: {
+    branchIds?: mongoose.Types.ObjectId[];
+    pastorIds?: mongoose.Types.ObjectId[];
   };
-  qualifications: string[];
-  achievements: string[];
+  qualifications?: string[];
+  achievements?: string[];
   biography?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,11 @@ export interface IBishop extends Document {
 
 const BishopSchema = new Schema<IBishop>(
   {
+    churchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Church',
+      required: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -25,8 +31,8 @@ const BishopSchema = new Schema<IBishop>(
       unique: true,
     },
     bishopId: { type: String, required: true, unique: true, trim: true },
-    appointmentDate: { type: Date, required: true },
-    jurisdictionArea: { type: String, required: true, trim: true },
+    appointmentDate: { type: Date },
+    jurisdictionArea: { type: String, trim: true },
     oversight: {
       branchIds: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
       pastorIds: [{ type: Schema.Types.ObjectId, ref: 'Pastor' }],

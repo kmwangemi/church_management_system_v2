@@ -1,7 +1,7 @@
+import type { APIError, FastAPIValidationError } from '@/lib/types';
 import { type ClassValue, clsx } from 'clsx';
 import { formatDate, formatDistanceToNowStrict } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
-import type { APIError, FastAPIValidationError } from '@/lib/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -177,6 +177,25 @@ export const formatNotificationCount = (count: number) => {
   }
   return count.toString();
 };
+
+export const MEMBER_ROLE_OPTIONS = [
+  { value: 'visitor', label: 'Visitor' },
+  { value: 'member', label: 'Member' },
+  { value: 'pastor', label: 'Pastor' },
+  { value: 'bishop', label: 'Bishop' },
+];
+
+export const GENDER_OPTIONS = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+];
+
+export const MARITAL_STATUS_OPTIONS = [
+  { value: 'single', label: 'Single' },
+  { value: 'married', label: 'Married' },
+  { value: 'divorced', label: 'Divorced' },
+  { value: 'widowed', label: 'Widowed' },
+];
 
 export const CHURCH_DENOMINATION_OPTIONS = [
   { value: 'baptist', label: 'Baptist' },

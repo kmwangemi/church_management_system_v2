@@ -1,20 +1,27 @@
 import z from 'zod';
 
-export const addMemberSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.email('Please enter a valid email address'),
-  phoneNumber: z.string().min(1, 'Phone number is required'),
-  role: z.string().min(1, 'Role is required'),
-  departments: z
-    .array(z.string())
-    .min(1, 'At least one department is required'),
-  gender: z.enum(['female', 'male'], {
+export const memberSchema = z.object({
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  email: z.email().optional(),
+  phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
+  address: z.string().min(5, 'Please enter a valid address'),
+  gender: z.enum(['male', 'female'], {
     error: 'Gender is required',
   }),
-  branchId: z.string().min(1, 'Branch name is required'),
-  joinedDate: z.string().min(1, 'Joined date is required'),
-  notes: z.string().optional(),
+  maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed'], {
+    error: 'Marital status is required',
+  }),
+  role: z.string().min(1, 'Please select a role'),
+  branchId: z.string().min(1, 'Please select a branch'),
+  emergencyDetails: z.object({
+    emergencyContactFullName: z.string().optional(),
+    emergencyContactEmail: z.email().optional(),
+    emergencyContactPhoneNumber: z.string().optional(),
+    emergencyContactRelationship: z.string().optional(),
+    emergencyContactAddress: z.string().optional(),
+    emergencyContactNotes: z.string().optional(),
+  }),
 });
 
-export type AddMemberFormValues = z.infer<typeof addMemberSchema>;
+export type AddMemberPayload = z.infer<typeof memberSchema>;

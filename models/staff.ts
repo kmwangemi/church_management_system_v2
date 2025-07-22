@@ -1,10 +1,12 @@
 import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IStaff extends Document {
-  userId: mongoose.Types.ObjectId; // Link to User
-  jobTitle: string;
+  churchId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  staffId: string;
+  jobTitle?: string;
   department?: string;
-  startDate: Date;
+  startDate?: Date;
   endDate?: Date;
   salary?: number;
   employmentType: 'full-time' | 'part-time' | 'contract' | 'casual';
@@ -15,21 +17,27 @@ export interface IStaff extends Document {
 
 const StaffSchema = new Schema<IStaff>(
   {
+    churchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Church',
+      required: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true, // Each staff must have a unique user record
+      unique: true,
     },
-    jobTitle: { type: String, required: true, trim: true },
-    department: { type: String, trim: true },
-    startDate: { type: Date, required: true },
+    staffId: { type: String, required: true, unique: true, trim: true },
+    jobTitle: { type: String, trim: true, lowercase: true },
+    department: { type: String, trim: true, lowercase: true },
+    startDate: { type: Date },
     endDate: { type: Date },
     salary: { type: Number },
     employmentType: {
       type: String,
       enum: ['full-time', 'part-time', 'contract', 'casual'],
-      required: true,
+      default: 'casual',
     },
     isActive: { type: Boolean, default: true },
   },
