@@ -1,5 +1,45 @@
 'use client';
 
+import { AddSmallGroupForm } from '@/components/forms/add-small-group-form';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Baby,
   BarChart3,
@@ -33,47 +73,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 
 // Mock data
 const smallGroups = [
@@ -229,7 +228,7 @@ export default function SmallGroupsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDay, setSelectedDay] = useState('all');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredGroups = smallGroups.filter((group) => {
     const matchesSearch =
@@ -270,7 +269,7 @@ export default function SmallGroupsPage() {
             Manage and monitor small group ministries
           </p>
         </div>
-        <Dialog onOpenChange={setIsAddDialogOpen} open={isAddDialogOpen}>
+        <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -284,88 +283,10 @@ export default function SmallGroupsPage() {
                 Create a new small group ministry
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="group-name">Group Name</Label>
-                <Input id="group-name" placeholder="Enter group name" />
-              </div>
-              <div>
-                <Label htmlFor="group-leader">Group Leader</Label>
-                <Input id="group-leader" placeholder="Enter leader name" />
-              </div>
-              <div>
-                <Label htmlFor="group-category">Category</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bible-study">Bible Study</SelectItem>
-                    <SelectItem value="fellowship">Fellowship</SelectItem>
-                    <SelectItem value="prayer">Prayer</SelectItem>
-                    <SelectItem value="youth">Youth</SelectItem>
-                    <SelectItem value="children">Children</SelectItem>
-                    <SelectItem value="marriage">Marriage</SelectItem>
-                    <SelectItem value="worship">Worship</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="group-day">Meeting Day</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sunday">Sunday</SelectItem>
-                      <SelectItem value="monday">Monday</SelectItem>
-                      <SelectItem value="tuesday">Tuesday</SelectItem>
-                      <SelectItem value="wednesday">Wednesday</SelectItem>
-                      <SelectItem value="thursday">Thursday</SelectItem>
-                      <SelectItem value="friday">Friday</SelectItem>
-                      <SelectItem value="saturday">Saturday</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="group-time">Meeting Time</Label>
-                  <Input id="group-time" placeholder="7:00 PM" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="group-location">Location</Label>
-                  <Input id="group-location" placeholder="Room 101" />
-                </div>
-                <div>
-                  <Label htmlFor="group-capacity">Capacity</Label>
-                  <Input id="group-capacity" placeholder="15" type="number" />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="group-description">Description</Label>
-                <Textarea
-                  id="group-description"
-                  placeholder="Describe the group's purpose"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  onClick={() => setIsAddDialogOpen(false)}
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button onClick={() => setIsAddDialogOpen(false)}>
-                  Add Group
-                </Button>
-              </div>
-            </div>
+            <AddSmallGroupForm onCloseDialog={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
-
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -380,7 +301,6 @@ export default function SmallGroupsPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-sm">Total Members</CardTitle>
@@ -391,7 +311,6 @@ export default function SmallGroupsPage() {
             <p className="text-muted-foreground text-xs">Across all groups</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-sm">
@@ -408,7 +327,6 @@ export default function SmallGroupsPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-sm">
@@ -431,14 +349,12 @@ export default function SmallGroupsPage() {
           </CardContent>
         </Card>
       </div>
-
       <Tabs className="space-y-6" defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="management">Management</TabsTrigger>
         </TabsList>
-
         <TabsContent className="space-y-6" value="overview">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
@@ -486,7 +402,6 @@ export default function SmallGroupsPage() {
                 </ChartContainer>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Group Categories</CardTitle>
@@ -523,7 +438,6 @@ export default function SmallGroupsPage() {
             </Card>
           </div>
         </TabsContent>
-
         <TabsContent className="space-y-6" value="analytics">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
@@ -550,7 +464,6 @@ export default function SmallGroupsPage() {
                 </ChartContainer>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Group Performance</CardTitle>
@@ -589,7 +502,6 @@ export default function SmallGroupsPage() {
             </Card>
           </div>
         </TabsContent>
-
         <TabsContent className="space-y-6" value="management">
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -636,7 +548,6 @@ export default function SmallGroupsPage() {
               </SelectContent>
             </Select>
           </div>
-
           {/* Groups Table */}
           <Card>
             <CardHeader>

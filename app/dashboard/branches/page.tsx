@@ -1,6 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Activity,
   BarChart3,
@@ -15,10 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 // import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import RenderApiError from '@/components/api-error';
-import { CountrySelect } from '@/components/country-list-input';
-import { DatePicker } from '@/components/date-picker';
-import { NumberInput } from '@/components/number-input';
+import { AddBranchForm } from '@/components/forms/add-branch-form';
 import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,15 +39,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -67,15 +54,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  useFetchBranches,
-  useRegisterBranch,
-} from '@/lib/hooks/branch/use-branch-queries';
+import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
 import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
-import {
-  type AddBranchPayload,
-  addBranchSchema,
-} from '@/lib/validations/branch';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -190,33 +170,7 @@ export default function BranchesPage() {
     // isError: isErrorBranches,
     // error: errorBranches,
   } = useFetchBranches(page, searchQuery);
-  const {
-    mutateAsync: registerBranchMutation,
-    isPending: isPendingBranch,
-    isError: isErrorBranch,
-    error: errorBranch,
-  } = useRegisterBranch();
-  const branchForm = useForm<AddBranchPayload>({
-    resolver: zodResolver(addBranchSchema),
-    defaultValues: {
-      branchName: '',
-      country: '',
-      capacity: '',
-      address: '',
-      establishedDate: '',
-    },
-  });
-  const { reset: resetBranchForm } = branchForm;
-  // Handle form submission
-  const onSubmitBranchForm = async (payload: AddBranchPayload) => {
-    await registerBranchMutation(payload);
-    setIsDialogOpen(false);
-    resetBranchForm();
-  };
-  const handleCancelBranch = () => {
-    setIsDialogOpen(false);
-    resetBranchForm();
-  };
+
   // const handleResetQueries = () => {
   //   resetSearchInput();
   //   router.push(pathname);
@@ -255,119 +209,7 @@ export default function BranchesPage() {
               <DialogTitle>Add New Branch</DialogTitle>
               <DialogDescription>Create a new church branch</DialogDescription>
             </DialogHeader>
-            {isErrorBranch && <RenderApiError error={errorBranch} />}
-            <Form {...branchForm}>
-              <form
-                className="space-y-4"
-                onSubmit={branchForm.handleSubmit(onSubmitBranchForm)}
-              >
-                <FormField
-                  control={branchForm.control}
-                  name="branchName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Branch Name <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Kibra" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={branchForm.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Country <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <CountrySelect
-                          onChange={field.onChange}
-                          placeholder="Select country"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={branchForm.control}
-                  name="capacity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Capacity (1-100,000 Members){' '}
-                        <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <NumberInput placeholder="300" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={branchForm.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Physical Address <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Kawangware 46" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={branchForm.control}
-                  name="establishedDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Established Date <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <DatePicker
-                          format="long"
-                          maxDate={new Date()}
-                          onChange={(date) =>
-                            field.onChange(date ? date.toISOString() : '')
-                          }
-                          placeholder="Select established date"
-                          value={
-                            field.value ? new Date(field.value) : undefined
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    onClick={handleCancelBranch}
-                    type="button"
-                    variant="outline"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={!branchForm.formState.isValid || isPendingBranch}
-                    type="submit"
-                  >
-                    {isPendingBranch ? 'Adding branch...' : 'Add Branch'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+            <AddBranchForm onCloseDialog={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
