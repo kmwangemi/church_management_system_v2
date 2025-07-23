@@ -145,7 +145,7 @@ export default function DashboardLayout({
           <div className="rounded-lg bg-blue-600 p-1.5">
             <Church className="h-6 w-6 text-white" />
           </div>
-          <span className="font-bold text-gray-900 text-xl">ChurchFlow</span>
+          <span className="font-bold text-gray-900 text-xl">ChurchHub</span>
         </div>
       </div>
       {/* User Info */}

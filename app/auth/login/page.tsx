@@ -1,5 +1,3 @@
-import { Church } from 'lucide-react';
-import { Suspense } from 'react';
 import LoginForm from '@/components/forms/login-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import {
@@ -9,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Church } from 'lucide-react';
+import { Suspense } from 'react';
 
 export default function LoginPage() {
   return (
@@ -21,7 +21,7 @@ export default function LoginPage() {
                 <Church className="h-8 w-8 text-white" />
               </div>
               <span className="font-bold text-2xl text-gray-900">
-                ChurchFlow
+                ChurchHub
               </span>
             </div>
             <CardTitle className="font-bold text-2xl text-gray-900">

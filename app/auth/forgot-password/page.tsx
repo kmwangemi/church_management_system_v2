@@ -1,11 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, CheckCircle, Church, Loader2, Mail } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import z from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +18,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft, CheckCircle, Church, Loader2, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import z from 'zod';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
                 <Church className="h-8 w-8 text-white" />
               </div>
               <span className="font-bold text-2xl text-gray-900">
-                ChurchFlow
+                ChurchHub
               </span>
             </div>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 p-4">
@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
             <div className="rounded-lg bg-blue-600 p-2">
               <Church className="h-8 w-8 text-white" />
             </div>
-            <span className="font-bold text-2xl text-gray-900">ChurchFlow</span>
+            <span className="font-bold text-2xl text-gray-900">ChurchHub</span>
           </div>
           <CardTitle className="font-bold text-2xl text-gray-900">
             Forgot Password?
