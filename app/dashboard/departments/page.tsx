@@ -1,9 +1,6 @@
 'use client';
 
-import RenderApiError from '@/components/api-error';
-import { MultiSelect } from '@/components/multi-select';
 import SearchInput from '@/components/search-input';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Activity,
   BarChart3,
@@ -32,7 +29,7 @@ import {
   YAxis,
 } from 'recharts';
 // import { Badge } from '@/components/ui/badge';
-import { TimeInput } from '@/components/time-input';
+import { AddDepartmentForm } from '@/components/forms/add-department-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,15 +53,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -72,20 +60,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  useFetchDepartments,
-  useRegisterDepartment,
-} from '@/lib/hooks/department/use-department-queries';
+import { useFetchDepartments } from '@/lib/hooks/department/use-department-queries';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
-  MEETING_DAY_OPTIONS,
 } from '@/lib/utils';
-import {
-  type AddDepartmentPayload,
-  addDepartmentSchema,
-} from '@/lib/validations/department';
 
 // Mock data
 // const departments = [
@@ -249,32 +228,7 @@ export default function DepartmentsPage() {
     // isError: isErrorDepartments,
     // error: errorDepartments,
   } = useFetchDepartments(page, searchQuery);
-  const {
-    mutateAsync: registerDepartmentMutation,
-    isPending: isPendingDepartment,
-    isError: isErrorDepartment,
-    error: errorDepartment,
-  } = useRegisterDepartment();
-  const departmentForm = useForm<AddDepartmentPayload>({
-    resolver: zodResolver(addDepartmentSchema),
-    defaultValues: {
-      departmentName: '',
-      // leaderId: '',
-      meetingDay: [],
-      meetingTime: [],
-      description: '',
-    },
-  });
-  const { reset: resetDepartmentForm } = departmentForm;
-  const onSubmitDepartmentForm = async (payload: AddDepartmentPayload) => {
-    await registerDepartmentMutation(payload);
-    setIsDialogOpen(false);
-    resetDepartmentForm();
-  };
-  const handleCancelDepartment = () => {
-    setIsDialogOpen(false);
-    resetDepartmentForm();
-  };
+
   // const handleResetQueries = () => {
   //   resetSearchInput();
   //   router.push(pathname);
@@ -321,108 +275,7 @@ export default function DepartmentsPage() {
                 Create a new ministry department
               </DialogDescription>
             </DialogHeader>
-            {isErrorDepartment && <RenderApiError error={errorDepartment} />}
-            <Form {...departmentForm}>
-              <form
-                className="space-y-4"
-                onSubmit={departmentForm.handleSubmit(onSubmitDepartmentForm)}
-              >
-                <FormField
-                  control={departmentForm.control}
-                  name="departmentName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Department Name <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Choir" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={departmentForm.control}
-                  name="meetingDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Meeting day(s) <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <MultiSelect
-                          onChange={field.onChange}
-                          options={MEETING_DAY_OPTIONS}
-                          placeholder="Select meeting day(s)"
-                          selected={field.value || []}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={departmentForm.control}
-                  name="meetingTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Meeting Time(s) <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <TimeInput
-                          multiSelect
-                          onChange={field.onChange}
-                          placeholder="Select meeting times"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={departmentForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right" htmlFor="description">
-                        Description
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          className="col-span-3"
-                          id="description"
-                          placeholder="Enter department description..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="col-span-3 col-start-2" />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    onClick={handleCancelDepartment}
-                    type="button"
-                    variant="outline"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={
-                      !departmentForm.formState.isValid || isPendingDepartment
-                    }
-                    type="submit"
-                  >
-                    {isPendingDepartment
-                      ? 'Adding department...'
-                      : 'Add Department'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+            <AddDepartmentForm onCloseDialog={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>

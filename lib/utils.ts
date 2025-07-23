@@ -262,6 +262,18 @@ export const MEETING_DAY_OPTIONS = [
   { value: 'saturday', label: 'Saturday' },
 ];
 
+export const GROUP_CATEGORY_OPTIONS = [
+  { value: 'bible-study', label: 'Bible Study' },
+  { value: 'fellowship', label: 'Fellowship' },
+  { value: 'prayer', label: 'Prayer' },
+  { value: 'youth', label: 'Youth' },
+  { value: 'children', label: 'Children' },
+  { value: 'marriage', label: 'Marriage' },
+  { value: 'worship', label: 'Worship' },
+  { value: 'contribution', label: 'Contribution' },
+  { value: 'others', label: 'Others' },
+];
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {

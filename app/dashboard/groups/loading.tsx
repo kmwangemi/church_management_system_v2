@@ -12,7 +12,6 @@ export default function SmallGroupsLoading() {
         </div>
         <Skeleton className="h-10 w-32" />
       </div>
-
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -28,7 +27,6 @@ export default function SmallGroupsLoading() {
           </Card>
         ))}
       </div>
-
       {/* Tabs */}
       <div className="space-y-6">
         <div className="flex space-x-1">
@@ -36,7 +34,6 @@ export default function SmallGroupsLoading() {
             <Skeleton className="h-10 w-24" key={i} />
           ))}
         </div>
-
         {/* Charts */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
@@ -58,7 +55,6 @@ export default function SmallGroupsLoading() {
             </CardContent>
           </Card>
         </div>
-
         {/* Table */}
         <Card>
           <CardHeader>
