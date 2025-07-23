@@ -106,7 +106,7 @@ export default function SuperAdminLayout({
               </div>
               <div>
                 <h2 className="font-semibold text-lg">SuperAdmin</h2>
-                <p className="text-gray-500 text-xs">ChurchFlow Global</p>
+                <p className="text-gray-500 text-xs">ChurchHub Global</p>
               </div>
             </div>
             <nav className="flex-1 space-y-1 p-4">
@@ -124,7 +124,7 @@ export default function SuperAdminLayout({
             </div>
             <div>
               <h2 className="font-semibold text-lg">SuperAdmin</h2>
-              <p className="text-gray-500 text-xs">ChurchFlow Global</p>
+              <p className="text-gray-500 text-xs">ChurchHub Global</p>
             </div>
           </div>
           <nav className="flex flex-1 flex-col">
@@ -162,7 +162,7 @@ export default function SuperAdminLayout({
                   </div>
                   <div>
                     <h2 className="font-semibold text-lg">SuperAdmin</h2>
-                    <p className="text-gray-500 text-xs">ChurchFlow Global</p>
+                    <p className="text-gray-500 text-xs">ChurchHub Global</p>
                   </div>
                 </div>
                 <nav className="flex-1 space-y-1 p-4">

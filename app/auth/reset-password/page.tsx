@@ -1,12 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle, Church, Eye, EyeOff, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import z from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +18,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle, Church, Eye, EyeOff, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import z from 'zod';
 
 const resetPasswordSchema = z
   .object({
@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
                 <Church className="h-8 w-8 text-white" />
               </div>
               <span className="font-bold text-2xl text-gray-900">
-                ChurchFlow
+                ChurchHub
               </span>
             </div>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 p-4">
@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
                 <Church className="h-8 w-8 text-white" />
               </div>
               <span className="font-bold text-2xl text-gray-900">
-                ChurchFlow
+                ChurchHub
               </span>
             </div>
             <CardTitle className="font-bold text-2xl text-gray-900">
@@ -159,7 +159,7 @@ export default function ResetPasswordPage() {
             <div className="rounded-lg bg-blue-600 p-2">
               <Church className="h-8 w-8 text-white" />
             </div>
-            <span className="font-bold text-2xl text-gray-900">ChurchFlow</span>
+            <span className="font-bold text-2xl text-gray-900">ChurchHub</span>
           </div>
           <CardTitle className="font-bold text-2xl text-gray-900">
             Reset Your Password

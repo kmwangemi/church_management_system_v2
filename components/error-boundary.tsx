@@ -55,7 +55,7 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleGoHome = () => {
-    window.location.href = '/auth/login';
+    window.location.href = '/';
   };
 
   private handleReportError = () => {

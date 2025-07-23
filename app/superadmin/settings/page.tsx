@@ -1,19 +1,5 @@
 'use client';
 
-import {
-  AlertTriangle,
-  Bell,
-  CheckCircle,
-  CreditCard,
-  Database,
-  Globe,
-  Mail,
-  RefreshCw,
-  Save,
-  Server,
-  Shield,
-} from 'lucide-react';
-import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +22,20 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle,
+  CreditCard,
+  Database,
+  Globe,
+  Mail,
+  RefreshCw,
+  Save,
+  Server,
+  Shield,
+} from 'lucide-react';
+import { useState } from 'react';
 
 export default function GlobalSettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -57,9 +57,9 @@ export default function GlobalSettingsPage() {
   };
 
   const systemSettings = {
-    siteName: 'ChurchFlow Global',
-    siteUrl: 'https://churchflow.com',
-    adminEmail: 'admin@churchflow.com',
+    siteName: 'ChurchHub Global',
+    siteUrl: 'https://ChurchHub.com',
+    adminEmail: 'admin@ChurchHub.com',
     timezone: 'America/New_York',
     language: 'en',
     maintenanceMode: false,
@@ -82,13 +82,13 @@ export default function GlobalSettingsPage() {
   };
 
   const emailSettings = {
-    smtpHost: 'smtp.churchflow.com',
+    smtpHost: 'smtp.ChurchHub.com',
     smtpPort: 587,
-    smtpUsername: 'noreply@churchflow.com',
+    smtpUsername: 'noreply@ChurchHub.com',
     smtpSecurity: 'tls',
-    fromName: 'ChurchFlow System',
-    fromEmail: 'noreply@churchflow.com',
-    replyToEmail: 'support@churchflow.com',
+    fromName: 'ChurchHub System',
+    fromEmail: 'noreply@ChurchHub.com',
+    replyToEmail: 'support@ChurchHub.com',
   };
 
   const subscriptionPlans = [
@@ -614,7 +614,7 @@ export default function GlobalSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="notificationEmail">Notification Email</Label>
                 <Input
-                  defaultValue="admin@churchflow.com"
+                  defaultValue="admin@ChurchHub.com"
                   id="notificationEmail"
                   placeholder="notifications@example.com"
                   type="email"

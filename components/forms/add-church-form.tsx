@@ -602,14 +602,18 @@ export function AddChurchForm() {
                 />
                 <FormField
                   control={form.control}
-                  name="churchData.address.address"
+                  name="churchData.country"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Physical Address <span className="text-red-500">*</span>
+                        Country <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="123 Church Street" {...field} />
+                        <CountrySelect
+                          onChange={field.onChange}
+                          placeholder="Select your country"
+                          value={field.value}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -660,18 +664,14 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
-                  name="churchData.country"
+                  name="churchData.address.address"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Country <span className="text-red-500">*</span>
+                        Physical Address <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <CountrySelect
-                          onChange={field.onChange}
-                          placeholder="Select your country"
-                          value={field.value}
-                        />
+                        <Input placeholder="123 Church Street" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
