@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterDepartment } from '@/lib/hooks/department/use-department-queries';
+import { useRegisterGroup } from '@/lib/hooks/group/use-group-queries';
 import { GROUP_CATEGORY_OPTIONS, MEETING_DAY_OPTIONS } from '@/lib/utils';
 import {
   type AddGroupPayload,
@@ -41,7 +41,7 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
     isPending,
     isError,
     error,
-  } = useRegisterDepartment();
+  } = useRegisterGroup();
   const groupForm = useForm<AddGroupPayload>({
     resolver: zodResolver(addGroupSchema),
     defaultValues: {
@@ -94,7 +94,7 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Group Leader <span className="text-red-500">*</span>
+                  Group Leader
                 </FormLabel>
                 <FormControl>
                   <Input placeholder="Enter leader name" {...field} />

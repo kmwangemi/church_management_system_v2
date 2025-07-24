@@ -1,87 +1,171 @@
-// import { type NextRequest, NextResponse } from "next/server"
-// import dbConnect from "@/lib/mongodb"
-// import Event from "@/models/Event"
-// import { verifyToken } from "@/lib/auth"
+import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
+import { withApiLogger } from '@/lib/middleware/api-logger';
+import dbConnect from '@/lib/mongodb';
+import Event from '@/models/event';
+import mongoose from 'mongoose';
+import { type NextRequest, NextResponse } from 'next/server';
 
-// export async function GET(request: NextRequest) {
-//   try {
-//     const user = await verifyToken(request)
-//     if (!user) {
-//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-//     }
+async function getEventHandler(request: NextRequest): Promise<NextResponse> {
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    { requestId, endpoint: '/api/events' },
+    'api'
+  );
+  try {
+    // Check authentication and authorization
+    const authResult = await requireAuth(['superadmin', 'admin'])(request);
+    if (authResult instanceof Response) {
+      // If authResult is a Response object, it means authentication/authorization failed
+      // Convert Response to NextResponse
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
+    }
+    // authResult is now the authenticated user
+    const user = authResult;
+    if (!user.user?.churchId) {
+      // Validate user has churchId
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
+    await dbConnect();
+    // Parse query parameters with better validation
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(
+      1,
+      Number.parseInt(searchParams.get('page') || '1', 10)
+    );
+    const limit = Math.min(
+      10,
+      Math.max(1, Number.parseInt(searchParams.get('limit') || '10', 10))
+    ); // Cap at 10
+    const search = searchParams.get('search')?.trim() || '';
+    const type = searchParams.get('type') || '';
+    const status = searchParams.get('status') || '';
+    // Build query object
+    const query: any = {
+      churchId: new mongoose.Types.ObjectId(user.user?.churchId),
+    };
+    if (search) {
+      // Add search conditions
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } },
+      ];
+    }
+    if (type) {
+      // Add type filter (matches your form's event type)
+      query.type = type;
+    }
+    if (status && ['active', 'completed', 'cancelled'].includes(status)) {
+      // Add status filter with validation
+      query.status = status;
+    }
+    const skip = (page - 1) * limit;
+    // Execute queries with better error handling
+    const [events, total] = await Promise.all([
+      Event.find(query)
+        .sort({ startDate: -1, createdAt: -1 }) // Secondary sort by creation date
+        .skip(skip)
+        .limit(limit)
+        .lean(), // Use lean() for better performance if you don't need mongoose documents
+      Event.countDocuments(query),
+    ]);
+    return NextResponse.json({
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      },
+    });
+  } catch (error) {
+    contextLogger.error('Unexpected error in getEventHandler', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch events' },
+      { status: 500 }
+    );
+  }
+}
 
-//     await dbConnect()
+// Export the handler wrapped with logging middleware
+export const GET = withApiLogger(getEventHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
 
-//     const { searchParams } = new URL(request.url)
-//     const page = Number.parseInt(searchParams.get("page") || "1")
-//     const limit = Number.parseInt(searchParams.get("limit") || "10")
-//     const search = searchParams.get("search") || ""
-//     const category = searchParams.get("category") || ""
-//     const status = searchParams.get("status") || ""
+async function registerEventHandler(
+  request: NextRequest
+): Promise<NextResponse> {
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    { requestId, endpoint: '/api/events' },
+    'api'
+  );
+  try {
+    // Check authentication and authorization
+    const authResult = await requireAuth(['superadmin', 'admin'])(request);
+    if (authResult instanceof Response) {
+      // If authResult is a Response object, it means authentication/authorization failed
+      // Convert Response to NextResponse
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
+    }
+    // authResult is now the authenticated user
+    const user = authResult;
+    if (!user.user?.churchId) {
+      // Validate user has churchId
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
+    await dbConnect();
+    const eventData = await request.json();
+    // Create and save the event
+    const event = new Event({
+      ...eventData,
+      churchId: user.user?.churchId,
+    });
+    const savedEvent = await event.save();
+    return NextResponse.json(
+      {
+        success: true,
+        data: savedEvent,
+        message: 'Event created successfully',
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    contextLogger.error('Unexpected error in registerEventHandler', error);
+    return NextResponse.json(
+      { error: 'Failed to create event' },
+      { status: 500 }
+    );
+  }
+}
 
-//     const query: any = { churchId: user.churchId }
-
-//     if (search) {
-//       query.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }]
-//     }
-
-//     if (category) {
-//       query.category = category
-//     }
-
-//     if (status) {
-//       query.status = status
-//     }
-
-//     const skip = (page - 1) * limit
-
-//     const [events, total] = await Promise.all([
-//       Event.find(query)
-//         .populate("organizerId", "firstName lastName")
-//         .populate("branchId", "name")
-//         .sort({ startDate: -1 })
-//         .skip(skip)
-//         .limit(limit),
-//       Event.countDocuments(query),
-//     ])
-
-//     return NextResponse.json({
-//       events,
-//       pagination: {
-//         page,
-//         limit,
-//         total,
-//         pages: Math.ceil(total / limit),
-//       },
-//     })
-//   } catch (error) {
-//     console.error("Get events error:", error)
-//     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-//   }
-// }
-
-// export async function POST(request: NextRequest) {
-//   try {
-//     const user = await verifyToken(request)
-//     if (!user) {
-//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-//     }
-
-//     await dbConnect()
-
-//     const eventData = await request.json()
-
-//     const event = new Event({
-//       ...eventData,
-//       churchId: user.churchId,
-//     })
-
-//     await event.save()
-//     await event.populate(["organizerId", "branchId"])
-
-//     return NextResponse.json(event, { status: 201 })
-//   } catch (error) {
-//     console.error("Create event error:", error)
-//     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-//   }
-// }
+// Export the handler wrapped with logging middleware
+export const POST = withApiLogger(registerEventHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});

@@ -1,20 +1,5 @@
 'use client';
 
-import {
-  Bell,
-  Calendar,
-  Clock,
-  Download,
-  Edit,
-  MapPin,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Trash2,
-  UserCheck,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
 import { AddEventForm } from '@/components/forms/add-event-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +30,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Bell,
+  Calendar,
+  Clock,
+  Download,
+  Edit,
+  MapPin,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  UserCheck,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const events = [
@@ -151,17 +151,15 @@ const getTypeBadge = (type: string) => {
 export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('upcoming');
-  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-
     const eventDate = new Date(event.date);
     const today = new Date();
-
     if (selectedTab === 'upcoming') {
       return matchesSearch && eventDate >= today;
     }
@@ -171,7 +169,6 @@ export default function EventsPage() {
     if (selectedTab === 'recurring') {
       return matchesSearch && event.recurring !== 'None';
     }
-
     return matchesSearch;
   });
 
@@ -202,26 +199,25 @@ export default function EventsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export Calendar
           </Button>
-          <Dialog onOpenChange={setIsAddEventOpen} open={isAddEventOpen}>
+          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Create Event
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Event</DialogTitle>
                 <DialogDescription>
                   Schedule a new church event or service
                 </DialogDescription>
               </DialogHeader>
-              <AddEventForm onSuccess={() => setIsAddEventOpen(false)} />
+              <AddEventForm onCloseDialog={() => setIsDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -289,7 +285,6 @@ export default function EventsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Card>
         <CardHeader>
@@ -422,7 +417,6 @@ export default function EventsPage() {
                   </TableBody>
                 </Table>
               </div>
-
               {filteredEvents.length === 0 && (
                 <div className="py-12 text-center">
                   <Calendar className="mx-auto mb-4 h-12 w-12 text-gray-400" />

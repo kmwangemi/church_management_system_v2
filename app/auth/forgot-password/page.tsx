@@ -89,7 +89,6 @@ export default function ForgotPasswordPage() {
                 please check your spam folder.
               </AlertDescription>
             </Alert>
-
             <div className="space-y-3">
               <Button
                 className="w-full"
@@ -101,7 +100,6 @@ export default function ForgotPasswordPage() {
               >
                 Try Different Email
               </Button>
-
               <Link className="block" href="/auth/login">
                 <Button className="w-full" variant="ghost">
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -156,7 +154,6 @@ export default function ForgotPasswordPage() {
                   </FormItem>
                 )}
               />
-
               <Button
                 className="h-11 w-full"
                 disabled={isLoading}
@@ -176,7 +173,6 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
           </Form>
-
           <div className="mt-6 text-center">
             <Link
               className="inline-flex items-center font-medium text-blue-600 hover:text-blue-500"

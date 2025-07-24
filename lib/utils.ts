@@ -274,6 +274,26 @@ export const GROUP_CATEGORY_OPTIONS = [
   { value: 'others', label: 'Others' },
 ];
 
+export const EVENT_TYPE_OPTIONS = [
+  { value: 'service', label: 'Service' },
+  { value: 'conference', label: 'Conference' },
+  { value: 'study', label: 'Bible Study' },
+  { value: 'outreach', label: 'Outreach' },
+  { value: 'meeting', label: 'Meeting' },
+  { value: 'social', label: 'Social Event' },
+  { value: 'training', label: 'Training' },
+  { value: 'other', label: 'Other' },
+];
+
+export const EVENT_FREQUENCY_OPTIONS = [
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'annually', label: 'Annually' },
+];
+
+
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {
