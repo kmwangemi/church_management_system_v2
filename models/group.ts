@@ -2,22 +2,21 @@ import mongoose, { type Document, Schema } from 'mongoose';
 
 export interface IGroup extends Document {
   churchId: mongoose.Types.ObjectId;
-  branchId: mongoose.Types.ObjectId;
-  leaderId: mongoose.Types.ObjectId;
   groupName: string;
+  leaderId?: mongoose.Types.ObjectId;
+  meetingDay: string[];
+  meetingTime: string[];
   description?: string;
   category:
-    | 'Small Group'
-    | 'Youth Group'
-    | 'Bible Study'
-    | 'Prayer Group'
-    | 'Ministry Team'
-    | 'Other';
-  meetingSchedule: {
-    day: string;
-    time: string;
-    frequency: 'Weekly' | 'Bi-weekly' | 'Monthly';
-  };
+    | 'bible-study'
+    | 'fellowship'
+    | 'prayer'
+    | 'youth'
+    | 'children'
+    | 'marriage'
+    | 'worship'
+    | 'contribution'
+    | 'others';
   location?: string;
   capacity: number;
   isActive: boolean;
@@ -25,36 +24,71 @@ export interface IGroup extends Document {
   updatedAt: Date;
 }
 
+interface MeetingDayValidator {
+  validator: (arr: string[]) => boolean;
+  message: string;
+}
+
 const GroupSchema = new Schema<IGroup>(
   {
     churchId: { type: Schema.Types.ObjectId, ref: 'Church', required: true },
-    branchId: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
-    leaderId: { type: Schema.Types.ObjectId, ref: 'Member', required: true },
     groupName: { type: String, required: true, trim: true, lowercase: true },
+    leaderId: { type: String },
     description: { type: String },
     category: {
       type: String,
       enum: [
-        'Small Group',
-        'Youth Group',
-        'Bible Study',
-        'Prayer Group',
-        'Ministry Team',
-        'Other',
+        'bible-study',
+        'fellowship',
+        'prayer',
+        'youth',
+        'children',
+        'marriage',
+        'worship',
+        'contribution',
+        'others',
       ],
       required: true,
     },
-    meetingSchedule: {
-      day: { type: String, required: true },
-      time: { type: String, required: true },
-      frequency: {
-        type: String,
-        enum: ['Weekly', 'Bi-weekly', 'Monthly'],
-        required: true,
+    meetingDay: {
+      type: [String],
+      required: true,
+      validate: [
+        {
+          validator(arr: string[]): boolean {
+            return arr && arr.length > 0;
+          },
+          message: 'At least one meeting day is required',
+        } as MeetingDayValidator,
+        {
+          validator(arr: string[]): boolean {
+            const validDays = [
+              'monday',
+              'tuesday',
+              'wednesday',
+              'thursday',
+              'friday',
+              'saturday',
+              'sunday',
+            ];
+            return (arr as string[]).every((day: string) =>
+              validDays.includes(day.toLowerCase())
+            );
+          },
+          message: 'Invalid meeting day provided',
+        } as MeetingDayValidator,
+      ],
+      set(arr: string[]): string[] {
+        return arr.map((day: string) => day.toLowerCase().trim());
       },
     },
-    location: { type: String },
-    capacity: { type: Number, required: true },
+    meetingTime: {
+      type: [String],
+      required: true,
+      trim: true,
+    },
+    location: { type: String, required: true, trim: true, lowercase: true },
+    capacity: { type: Number, required: true, trim: true },
     isActive: { type: Boolean, default: true },
   },
   {

@@ -39,7 +39,7 @@ import {
   requestDemoSchema,
 } from '@/lib/validations/demo';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle, Church, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Church, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -430,9 +430,10 @@ export default function RequestDemoPage() {
             </Form>
             <div className="mt-4 text-center">
               <Link
-                className="font-medium text-blue-600 hover:underline"
+                className="inline-flex items-center font-medium text-blue-600 hover:underline"
                 href="/"
               >
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to home page
               </Link>
             </div>

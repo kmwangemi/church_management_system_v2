@@ -1,19 +1,41 @@
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
+import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddDepartmentPayload } from '@/lib/validations/department';
 import Department from '@/models/department';
 import { type NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+async function getDepartmentHandler(
+  request: NextRequest
+): Promise<NextResponse> {
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    { requestId, endpoint: '/api/departments' },
+    'api'
+  );
   try {
     // Check authentication and authorization
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
-    // If authResult is a Response object, it means authentication/authorization failed
     if (authResult instanceof Response) {
-      return authResult;
+      // If authResult is a Response object, it means authentication/authorization failed
+      // Convert Response to NextResponse
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
     }
     // authResult is now the authenticated user
     const user = authResult;
+    if (!user.user?.churchId) {
+      // Validate user has churchId
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const page = Number.parseInt(searchParams.get('page') || '1', 10);
@@ -44,8 +66,8 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (_error) {
-    // console.error('Get departments error:', error);
+  } catch (error) {
+    contextLogger.error('Unexpected error in getDepartmentHandler', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -53,16 +75,43 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+// Export the handler wrapped with logging middleware
+export const GET = withApiLogger(getDepartmentHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
+
+async function registerDepartmentHandler(
+  request: NextRequest
+): Promise<NextResponse> {
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    { requestId, endpoint: '/api/departments' },
+    'api'
+  );
   try {
     // Check authentication and authorization
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
-    // If authResult is a Response object, it means authentication/authorization failed
     if (authResult instanceof Response) {
-      return authResult;
+      // If authResult is a Response object, it means authentication/authorization failed
+      // Convert Response to NextResponse
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
     }
     // authResult is now the authenticated user
     const user = authResult;
+    if (!user.user?.churchId) {
+      // Validate user has churchId
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
     await dbConnect();
     const departmentData: AddDepartmentPayload = await request.json();
     const existingDepartment = await Department.findOne({
@@ -81,11 +130,18 @@ export async function POST(request: NextRequest) {
     });
     await department.save();
     return NextResponse.json(department, { status: 201 });
-  } catch (_error) {
-    // console.error('Create department error:', error);
+  } catch (error) {
+    contextLogger.error('Unexpected error in registerDepartmentHandler', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
+// Export the handler wrapped with logging middleware
+export const POST = withApiLogger(registerDepartmentHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
