@@ -1,6 +1,6 @@
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
-import type { MemberAddResponse } from '@/lib/types';
+import type { MemberAddResponse, MemberListResponse } from '@/lib/types';
 import type { AddMemberPayload } from '@/lib/validations/members';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -25,7 +25,10 @@ export const useRegisterMember = () => {
   });
 };
 
-const fetchMembers = async (page = 1, search = ''): Promise<any> => {
+const fetchMembers = async (
+  page = 1,
+  search = ''
+): Promise<MemberListResponse> => {
   const { data } = await apiClient.get(
     `/members?page=${page}&search=${search}`
   );

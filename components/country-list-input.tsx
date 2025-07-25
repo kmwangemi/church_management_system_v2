@@ -1,8 +1,8 @@
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { countries } from 'countries-list';
 import { ChevronDown, Search } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 
 interface CountrySelectProps {
   value?: string;

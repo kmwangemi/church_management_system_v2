@@ -1,10 +1,9 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Target } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
+import { MemberListInput } from '@/components/member-list-input';
+import { NumberInput } from '@/components/number-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,7 +20,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -30,29 +28,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-const pledgeSchema = z.object({
-  member: z.string().min(1, 'Please select a member'),
-  amount: z.string().min(1, 'Please enter pledge amount'),
-  purpose: z.string().min(1, 'Please select purpose'),
-  dueDate: z.string().min(1, 'Due date is required'),
-  paymentSchedule: z.string().min(1, 'Please select payment schedule'),
-  notes: z.string().optional(),
-});
-
-type PledgeForm = z.infer<typeof pledgeSchema>;
+import { useRegisterPledge } from '@/lib/hooks/pledge/use-pledge-queries';
+import type { Member } from '@/lib/types';
+import { PLEDGE_FREQUENCY_OPTIONS, PLEDGE_PURPOSE_OPTIONS } from '@/lib/utils';
+import {
+  type AddPledgePayload,
+  AddPledgeSchema,
+} from '@/lib/validations/pledge';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, Target } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 interface AddPledgeFormProps {
-  onSuccess: () => void;
+  onCloseDialog: () => void;
 }
 
-export function AddPledgeForm({ onSuccess }: AddPledgeFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<PledgeForm>({
-    resolver: zodResolver(pledgeSchema),
+export function AddPledgeForm({ onCloseDialog }: AddPledgeFormProps) {
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 5);
+  const {
+    mutateAsync: registerPledgeMutation,
+    isPending,
+    isError,
+    error,
+  } = useRegisterPledge();
+  const form = useForm<AddPledgePayload>({
+    resolver: zodResolver(AddPledgeSchema),
     defaultValues: {
-      member: '',
+      memberId: '',
       amount: '',
       purpose: '',
       dueDate: '',
@@ -60,64 +65,159 @@ export function AddPledgeForm({ onSuccess }: AddPledgeFormProps) {
       notes: '',
     },
   });
-
-  const onSubmit = async (data: PledgeForm) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.log('Pledge data:', data);
-      onSuccess();
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.error('Error adding pledge:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const { reset } = form;
+  // Handle form submission
+  const onSubmit = async (payload: AddPledgePayload) => {
+    await registerPledgeMutation(payload);
+    onCloseDialog();
+    reset();
   };
-
+  const handleCancelDialog = () => {
+    onCloseDialog();
+    reset();
+  };
   return (
-    <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Target className="h-5 w-5" />
-              <span>Pledge Information</span>
-            </CardTitle>
-            <CardDescription>
-              Record member pledge or commitment details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <>
+      {isError && <RenderApiError error={error} />}
+      <Form {...form}>
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Target className="h-5 w-5" />
+                <span>Pledge Information</span>
+              </CardTitle>
+              <CardDescription>
+                Record member pledge or commitment details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="memberId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Member <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <MemberListInput
+                          className="w-full"
+                          onChange={(member) => {
+                            setSelectedMember(member);
+                            field.onChange(member?._id || ''); // ✅ Store only the ID
+                          }}
+                          placeholder="Search and select a member"
+                          value={selectedMember} // ✅ Use state for display
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Pledge Amount (KES)
+                        <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <NumberInput placeholder="300" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="purpose"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Purpose <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select purpose" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {PLEDGE_PURPOSE_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Due Date <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          format="long"
+                          maxDate={maxDate}
+                          minDate={new Date()}
+                          onChange={(date) =>
+                            field.onChange(date ? date.toISOString() : '')
+                          }
+                          placeholder="Select due date"
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="member"
+                name="paymentSchedule"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Member</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <FormLabel>
+                      Payment Schedule <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select member" />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select payment schedule" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="john-smith">John Smith</SelectItem>
-                        <SelectItem value="sarah-johnson">
-                          Sarah Johnson
-                        </SelectItem>
-                        <SelectItem value="emily-davis">Emily Davis</SelectItem>
-                        <SelectItem value="david-wilson">
-                          David Wilson
-                        </SelectItem>
-                        <SelectItem value="michael-brown">
-                          Michael Brown
-                        </SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {PLEDGE_FREQUENCY_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -126,14 +226,14 @@ export function AddPledgeForm({ onSuccess }: AddPledgeFormProps) {
               />
               <FormField
                 control={form.control}
-                name="amount"
+                name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pledge Amount ($)</FormLabel>
+                    <FormLabel>Notes (Optional)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Enter pledge amount"
-                        type="number"
+                      <Textarea
+                        placeholder="Additional notes about the pledge"
+                        rows={3}
                         {...field}
                       />
                     </FormControl>
@@ -141,129 +241,32 @@ export function AddPledgeForm({ onSuccess }: AddPledgeFormProps) {
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="purpose"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Purpose</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select purpose" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="building-fund">
-                          Building Fund
-                        </SelectItem>
-                        <SelectItem value="mission-trip">
-                          Mission Trip
-                        </SelectItem>
-                        <SelectItem value="youth-program">
-                          Youth Program
-                        </SelectItem>
-                        <SelectItem value="equipment">
-                          Equipment Purchase
-                        </SelectItem>
-                        <SelectItem value="outreach">
-                          Community Outreach
-                        </SelectItem>
-                        <SelectItem value="education">
-                          Education Fund
-                        </SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="paymentSchedule"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Schedule</FormLabel>
-                  <Select
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment schedule" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="one-time">One-time Payment</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="annually">Annually</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+            </CardContent>
+          </Card>
+          <div className="flex justify-end space-x-4">
+            <Button
+              onClick={handleCancelDialog}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!form.formState.isValid || isPending}
+              type="submit"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding Pledge...
+                </>
+              ) : (
+                'Add Pledge'
               )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional notes about the pledge"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end space-x-4">
-          <Button onClick={onSuccess} type="button" variant="outline">
-            Cancel
-          </Button>
-          <Button disabled={isLoading} type="submit">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding Pledge...
-              </>
-            ) : (
-              'Add Pledge'
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 }
