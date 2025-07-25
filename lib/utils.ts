@@ -292,7 +292,24 @@ export const EVENT_FREQUENCY_OPTIONS = [
   { value: 'annually', label: 'Annually' },
 ];
 
+export const PLEDGE_PURPOSE_OPTIONS = [
+  { value: 'building-fund', label: 'Building Fund' },
+  { value: 'mission-trip', label: 'Mission Trip' },
+  { value: 'youth-program', label: 'Youth Program' },
+  { value: 'equipment', label: 'Equipment Purchase' },
+  { value: 'outreach', label: 'Community Outreach' },
+  { value: 'education', label: 'Education Fund' },
+  { value: 'other', label: 'Other' },
+];
 
+export const PLEDGE_FREQUENCY_OPTIONS = [
+  { value: 'one-time', label: 'One-time Payment' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'annually', label: 'Annually' },
+];
 
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;

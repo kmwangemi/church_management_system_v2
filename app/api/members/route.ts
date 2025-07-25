@@ -121,16 +121,34 @@ const createRoleSpecificRecord = async (
   }
 };
 
-export async function GET(request: NextRequest) {
+async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+    const contextLogger = logger.createContextLogger(
+      { requestId, endpoint: '/api/members' },
+      'api'
+    );
   try {
     // Check authentication and authorization
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
-    // If authResult is a Response object, it means authentication/authorization failed
     if (authResult instanceof Response) {
-      return authResult;
+      // If authResult is a Response object, it means authentication/authorization failed
+      // Convert Response to NextResponse
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
     }
     // authResult is now the authenticated user
     const user = authResult;
+    if (!user.user?.churchId) {
+      // Validate user has churchId
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const page = Number.parseInt(searchParams.get('page') || '1', 10);
@@ -170,13 +188,21 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (_error) {
+  } catch (error) {
+    contextLogger.error('Unexpected error in getMemberHandler', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
+// Export the handler wrapped with logging middleware
+export const GET = withApiLogger(getMemberHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
 
 async function registerHandler(request: NextRequest): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';

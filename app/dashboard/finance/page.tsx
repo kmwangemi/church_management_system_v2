@@ -1,18 +1,5 @@
 'use client';
 
-import {
-  Calendar,
-  CreditCard,
-  DollarSign,
-  Download,
-  PiggyBank,
-  Plus,
-  Search,
-  Smartphone,
-  Target,
-  TrendingUp,
-} from 'lucide-react';
-import { useState } from 'react';
 import { AddOfferingForm } from '@/components/forms/add-offering-form';
 import { AddPledgeForm } from '@/components/forms/add-pledge-form';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +30,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Calendar,
+  CreditCard,
+  DollarSign,
+  Download,
+  PiggyBank,
+  Plus,
+  Search,
+  Smartphone,
+  Target,
+  TrendingUp,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const financialSummary = {
@@ -192,7 +192,7 @@ export default function FinancePage() {
                   Record a new member pledge or commitment
                 </DialogDescription>
               </DialogHeader>
-              <AddPledgeForm onSuccess={() => setIsPledgeOpen(false)} />
+              <AddPledgeForm onCloseDialog={() => setIsPledgeOpen(false)} />
             </DialogContent>
           </Dialog>
           <Dialog onOpenChange={setIsOfferingOpen} open={isOfferingOpen}>
@@ -209,12 +209,11 @@ export default function FinancePage() {
                   Record tithes, offerings, and donations
                 </DialogDescription>
               </DialogHeader>
-              <AddOfferingForm onSuccess={() => setIsOfferingOpen(false)} />
+              <AddOfferingForm onCloseDialog={() => setIsOfferingOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Financial Summary Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -303,7 +302,6 @@ export default function FinancePage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Tabs className="space-y-6" defaultValue="transactions">
         <TabsList>
@@ -311,7 +309,6 @@ export default function FinancePage() {
           <TabsTrigger value="pledges">Pledges</TabsTrigger>
           <TabsTrigger value="reports">Financial Reports</TabsTrigger>
         </TabsList>
-
         <TabsContent className="space-y-6" value="transactions">
           <Card>
             <CardHeader>
@@ -406,7 +403,6 @@ export default function FinancePage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent className="space-y-6" value="pledges">
           <Card>
             <CardHeader>
@@ -485,7 +481,6 @@ export default function FinancePage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent className="space-y-6" value="reports">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Card>
@@ -504,7 +499,6 @@ export default function FinancePage() {
                       style={{ width: '50%' }}
                     />
                   </div>
-
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">Offerings</span>
                     <span className="text-gray-600 text-sm">$45,231 (70%)</span>
@@ -515,7 +509,6 @@ export default function FinancePage() {
                       style={{ width: '70%' }}
                     />
                   </div>
-
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">
                       Special Offerings
@@ -531,7 +524,6 @@ export default function FinancePage() {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Expense Categories</CardTitle>
@@ -548,7 +540,6 @@ export default function FinancePage() {
                       style={{ width: '30%' }}
                     />
                   </div>
-
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">Maintenance</span>
                     <span className="text-gray-600 text-sm">$12,250</span>
@@ -559,7 +550,6 @@ export default function FinancePage() {
                       style={{ width: '43%' }}
                     />
                   </div>
-
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">
                       Ministry Programs

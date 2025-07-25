@@ -182,3 +182,34 @@ export interface DepartmentListResponse {
   departments: Department[];
   pagination: Pagination;
 }
+
+export interface Member {
+  _id: string;
+  churchId: string;
+  branchId?: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: 'member' | 'visitor' | 'pastor' | 'bishop' | 'admin' | 'superadmin';
+  phoneNumber: string;
+  createdBy: string;
+  profilePictureUrl: string | null;
+  agreeToTerms: boolean;
+  isActive: boolean;
+  isSuspended: boolean;
+  isDeleted: boolean;
+  loginAttempts: number;
+  gender?: 'male' | 'female' | string;
+  maritalStatus?: 'single' | 'married' | string;
+  address?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin?: string;
+  __v: number;
+}
+
+export interface MemberListResponse {
+  users: Member[];
+  pagination: Pagination;
+}
