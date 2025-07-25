@@ -6,7 +6,6 @@ export const AddPledgeSchema = z.object({
   memberId: z.string().min(1, 'Please select a member'),
   amount: z
     .string()
-    .optional()
     .refine((val) => {
       if (!val || val.trim() === '') return true;
       if (!REGEX.test(val)) return false;

@@ -30,7 +30,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterPledge } from '@/lib/hooks/pledge/use-pledge-queries';
 import type { Member } from '@/lib/types';
-import { PLEDGE_FREQUENCY_OPTIONS, PLEDGE_PURPOSE_OPTIONS } from '@/lib/utils';
+import {
+  getRelativeYear,
+  PLEDGE_FREQUENCY_OPTIONS,
+  PLEDGE_PURPOSE_OPTIONS,
+} from '@/lib/utils';
 import {
   type AddPledgePayload,
   AddPledgeSchema,
@@ -46,8 +50,6 @@ interface AddPledgeFormProps {
 
 export function AddPledgeForm({ onCloseDialog }: AddPledgeFormProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() + 5);
   const {
     mutateAsync: registerPledgeMutation,
     isPending,
@@ -178,7 +180,7 @@ export function AddPledgeForm({ onCloseDialog }: AddPledgeFormProps) {
                       <FormControl>
                         <DatePicker
                           format="long"
-                          maxDate={maxDate}
+                          maxDate={getRelativeYear(2)}
                           minDate={new Date()}
                           onChange={(date) =>
                             field.onChange(date ? date.toISOString() : '')

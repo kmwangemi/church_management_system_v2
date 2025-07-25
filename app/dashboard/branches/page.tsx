@@ -204,7 +204,7 @@ export default function BranchesPage() {
               Add Branch
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Branch</DialogTitle>
               <DialogDescription>Create a new church branch</DialogDescription>

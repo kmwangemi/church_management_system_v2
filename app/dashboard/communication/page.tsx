@@ -1,20 +1,5 @@
 'use client';
 
-import {
-  Bell,
-  Download,
-  Edit,
-  Eye,
-  Mail,
-  MessageSquare,
-  MoreHorizontal,
-  Search,
-  Send,
-  Smartphone,
-  Trash2,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
 import { CreateAnnouncementForm } from '@/components/forms/create-announcement-form';
 import { SendMessageForm } from '@/components/forms/send-message-form';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +31,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Bell,
+  Download,
+  Edit,
+  Eye,
+  Mail,
+  MessageSquare,
+  MoreHorizontal,
+  Search,
+  Send,
+  Smartphone,
+  Trash2,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const messages = [
@@ -230,7 +230,7 @@ export default function CommunicationPage() {
                 New Announcement
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Announcement</DialogTitle>
                 <DialogDescription>

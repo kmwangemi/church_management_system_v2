@@ -13,6 +13,12 @@ export const formatToNewDate: FormatToNewDate = (date) => {
   return formatDate(date, 'dd/MM/yyyy');
 };
 
+export const getRelativeYear = (offset: number) => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() + offset);
+  return date;
+};
+
 export function formatRelativeDate(createdAt: Date): string {
   const currentDate: Date = new Date();
   const oneYearInMs: number = 365 * 24 * 60 * 60 * 1000; // One year in milliseconds
@@ -309,6 +315,27 @@ export const PLEDGE_FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly' },
   { value: 'annually', label: 'Annually' },
+];
+
+export const CONTRIBUTION_TYPE_OPTIONS = [
+  { value: 'tithe', label: 'Tithe' },
+  { value: 'offering', label: 'Regular Offering' },
+  { value: 'special-offering', label: 'Special Offering' },
+  { value: 'building-fund', label: 'Building Fund' },
+  { value: 'mission', label: 'Mission Fund' },
+  { value: 'thanksgiving', label: 'Thanksgiving' },
+  { value: 'partnership', label: 'Partnership' },
+  { value: 'donation', label: 'Donation' },
+  { value: 'other', label: 'Other' },
+];
+
+export const PAYMENT_METHOD_OPTIONS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'm-pesa', label: 'M-Pesa' },
+  { value: 'bank-transfer', label: 'Bank Transfer' },
+  { value: 'card', label: 'Credit/Debit Card' },
+  { value: 'check', label: 'Check' },
+  { value: 'online', label: 'Online Payment' },
 ];
 
 export const getUserId = (userId: any): string => {

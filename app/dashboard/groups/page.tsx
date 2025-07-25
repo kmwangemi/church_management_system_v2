@@ -276,7 +276,7 @@ export default function SmallGroupsPage() {
               Add Group
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Small Group</DialogTitle>
               <DialogDescription>

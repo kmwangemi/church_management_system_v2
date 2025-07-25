@@ -268,7 +268,7 @@ export default function DepartmentsPage() {
               Add Department
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Department</DialogTitle>
               <DialogDescription>

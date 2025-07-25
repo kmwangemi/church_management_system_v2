@@ -1,20 +1,5 @@
 'use client';
 
-import {
-  Award,
-  Calendar,
-  Download,
-  Edit,
-  Eye,
-  Heart,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Star,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
 import { AddDiscipleForm } from '@/components/forms/add-disciple-form';
 import { AddMilestoneForm } from '@/components/forms/add-milestone-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,6 +33,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Award,
+  Calendar,
+  Download,
+  Edit,
+  Eye,
+  Heart,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Star,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const disciples = [
@@ -256,7 +256,7 @@ export default function DiscipleshipPage() {
                 Add Milestone
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Milestone</DialogTitle>
                 <DialogDescription>

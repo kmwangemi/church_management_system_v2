@@ -2,15 +2,14 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import type { AddGroupPayload } from '@/lib/validations/small-group';
-import Group from '@/models/group';
-import Member from '@/models/member';
+import Offering from '@/models/offering';
+import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
-async function getGroupHandler(request: NextRequest): Promise<NextResponse> {
+async function getOfferingHandler(request: NextRequest): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: '/api/groups' },
+    { requestId, endpoint: '/api/offerings' },
     'api'
   );
   try {
@@ -36,74 +35,84 @@ async function getGroupHandler(request: NextRequest): Promise<NextResponse> {
       );
     }
     await dbConnect();
+    // Parse query parameters with better validation
     const { searchParams } = new URL(request.url);
-    const page = Number.parseInt(searchParams.get('page') || '1', 10);
-    const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
-    const search = searchParams.get('search') || '';
-    const category = searchParams.get('category') || '';
-    const query: any = { churchId: user.user?.churchId };
+    const page = Math.max(
+      1,
+      Number.parseInt(searchParams.get('page') || '1', 10)
+    );
+    const limit = Math.min(
+      10,
+      Math.max(1, Number.parseInt(searchParams.get('limit') || '10', 10))
+    ); // Cap at 10
+    const search = searchParams.get('search')?.trim() || '';
+    const type = searchParams.get('type') || '';
+    const status = searchParams.get('status') || '';
+    // Build query object
+    const query: any = {
+      churchId: new mongoose.Types.ObjectId(user.user?.churchId),
+    };
     if (search) {
+      // Add search conditions
       query.$or = [
-        { groupName: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { amount: { $regex: search, $options: 'i' } },
+        // { description: { $regex: search, $options: 'i' } },
       ];
     }
-    if (category) {
-      query.category = category;
+    if (type) {
+      // Add type filter (matches your form's offering type)
+      query.type = type;
+    }
+    if (status && ['active', 'completed', 'cancelled'].includes(status)) {
+      // Add status filter with validation
+      query.status = status;
     }
     const skip = (page - 1) * limit;
-    const [groups, total] = await Promise.all([
-      Group.find(query)
-        .populate('leaderId', 'firstName lastName')
-        .sort({ createdAt: -1 })
+    // Execute queries with better error handling
+    const [offerings, total] = await Promise.all([
+      Offering.find(query)
+        .sort({ startDate: -1, createdAt: -1 }) // Secondary sort by creation date
         .skip(skip)
-        .limit(limit),
-      Group.countDocuments(query),
+        .limit(limit)
+        .lean(), // Use lean() for better performance if you don't need mongoose documents
+      Offering.countDocuments(query),
     ]);
-    // Get member counts for each group
-    const groupsWithCounts = await Promise.all(
-      groups.map(async (group) => {
-        const memberCount = await Member.countDocuments({
-          groupIds: group._id,
-          churchId: user.user?.churchId,
-        });
-        return {
-          ...group.toObject(),
-          memberCount,
-        };
-      })
-    );
     return NextResponse.json({
-      groups: groupsWithCounts,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
+      success: true,
+      data: {
+        offerings,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
       },
     });
   } catch (error) {
-    contextLogger.error('Unexpected error in getGroupHandler', error);
+    contextLogger.error('Unexpected error in getOfferingHandler', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch offerings' },
       { status: 500 }
     );
   }
 }
 
 // Export the handler wrapped with logging middleware
-export const GET = withApiLogger(getGroupHandler, {
+export const GET = withApiLogger(getOfferingHandler, {
   logRequests: true,
   logResponses: true,
   logErrors: true,
 });
 
-async function registerGroupHandler(
+async function registerOfferingHandler(
   request: NextRequest
 ): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: '/api/groups' },
+    { requestId, endpoint: '/api/offerings' },
     'api'
   );
   try {
@@ -129,40 +138,32 @@ async function registerGroupHandler(
       );
     }
     await dbConnect();
-    const groupData: AddGroupPayload = await request.json();
-    const existingGroup = await Group.findOne({
-      groupName: groupData.groupName,
+    const offeringData = await request.json();
+    // Create and save the offering
+    const offering = new Offering({
+      ...offeringData,
       churchId: user.user?.churchId,
     });
-    if (existingGroup) {
-      contextLogger.warn(
-        'Group registration failed - group name already exists',
-        {
-          groupName: groupData.groupName,
-        }
-      );
-      return NextResponse.json(
-        { error: 'Group already exists' },
-        { status: 400 }
-      );
-    }
-    const group = new Group({
-      ...groupData,
-      churchId: user.user?.churchId,
-    });
-    await group.save();
-    return NextResponse.json(group, { status: 201 });
-  } catch (error) {
-    contextLogger.error('Unexpected error in registerGroupHandler', error);
+    const savedOffering = await offering.save();
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        success: true,
+        data: savedOffering,
+        message: 'Offering created successfully',
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    contextLogger.error('Unexpected error in registerOfferingHandler', error);
+    return NextResponse.json(
+      { error: 'Failed to create offering' },
       { status: 500 }
     );
   }
 }
 
 // Export the handler wrapped with logging middleware
-export const POST = withApiLogger(registerGroupHandler, {
+export const POST = withApiLogger(registerOfferingHandler, {
   logRequests: true,
   logResponses: true,
   logErrors: true,

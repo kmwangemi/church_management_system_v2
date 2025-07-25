@@ -1,19 +1,5 @@
 'use client';
 
-import {
-  BarChart3,
-  Calendar,
-  DollarSign,
-  Download,
-  Eye,
-  FileText,
-  MoreHorizontal,
-  PieChart,
-  Plus,
-  Search,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
 import { GenerateReportForm } from '@/components/forms/generate-report-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,6 +37,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Download,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  PieChart,
+  Plus,
+  Search,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const reports = [
@@ -234,7 +234,7 @@ export default function ReportsPage() {
                 Generate Report
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Generate New Report</DialogTitle>
                 <DialogDescription>
