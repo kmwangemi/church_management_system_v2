@@ -185,7 +185,7 @@ export default function FinancePage() {
                 Add Pledge
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Pledge</DialogTitle>
                 <DialogDescription>
@@ -202,7 +202,7 @@ export default function FinancePage() {
                 Record Offering
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Record Offering</DialogTitle>
                 <DialogDescription>

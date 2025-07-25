@@ -1,22 +1,5 @@
 'use client';
 
-import {
-  Crown,
-  Download,
-  Edit,
-  Filter,
-  Mail,
-  MoreHorizontal,
-  Phone,
-  Search,
-  Trash2,
-  Upload,
-  UserCheck,
-  UserPlus,
-  Users,
-  UserX,
-} from 'lucide-react';
-import { useState } from 'react';
 import { AddMemberForm } from '@/components/forms/add-member-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +31,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Crown,
+  Download,
+  Edit,
+  Filter,
+  Mail,
+  MoreHorizontal,
+  Phone,
+  Search,
+  Trash2,
+  Upload,
+  UserCheck,
+  UserPlus,
+  Users,
+  UserX,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const members = [

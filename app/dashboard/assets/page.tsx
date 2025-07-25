@@ -1,24 +1,5 @@
 'use client';
 
-import {
-  AlertTriangle,
-  Building,
-  Calendar,
-  Car,
-  CheckCircle,
-  DollarSign,
-  Download,
-  Edit,
-  Filter,
-  Home,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Trash2,
-  Upload,
-  Wrench,
-} from 'lucide-react';
-import { useState } from 'react';
 import { AddAssetForm } from '@/components/forms/add-asset-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +30,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertTriangle,
+  Building,
+  Calendar,
+  Car,
+  CheckCircle,
+  DollarSign,
+  Download,
+  Edit,
+  Filter,
+  Home,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Wrench,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const assets = [
@@ -251,7 +251,7 @@ export default function AssetsPage() {
                 Add Asset
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Asset</DialogTitle>
                 <DialogDescription>

@@ -1,22 +1,5 @@
 'use client';
 
-import {
-  BookOpen,
-  Calendar,
-  Download,
-  Edit,
-  Eye,
-  FileText,
-  ImageIcon,
-  Mic,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Trash2,
-  Upload,
-  Video,
-} from 'lucide-react';
-import { useState } from 'react';
 import { AddContentForm } from '@/components/forms/add-content-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,6 +30,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  BookOpen,
+  Calendar,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  ImageIcon,
+  Mic,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Video,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const content = [
@@ -210,7 +210,7 @@ export default function ContentPage() {
                 Add Content
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Content</DialogTitle>
                 <DialogDescription>
