@@ -32,9 +32,7 @@ const fetchAssets = async (
   page = 1,
   search = ''
 ): Promise<DepartmentListResponse> => {
-  const { data } = await apiClient.get(
-    `/assets?page=${page}&search=${search}`
-  );
+  const { data } = await apiClient.get(`/assets?page=${page}&search=${search}`);
   return data;
 };
 
