@@ -197,7 +197,7 @@ const getStatusBadge = (status: string) => {
 export default function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [isAddAssetOpen, setIsAddAssetOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredAssets = assets.filter((asset) => {
     const matchesSearch =
@@ -244,7 +244,7 @@ export default function AssetsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Dialog onOpenChange={setIsAddAssetOpen} open={isAddAssetOpen}>
+          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -258,12 +258,11 @@ export default function AssetsPage() {
                   Add a new asset to the church inventory
                 </DialogDescription>
               </DialogHeader>
-              <AddAssetForm onSuccess={() => setIsAddAssetOpen(false)} />
+              <AddAssetForm onCloseDialog={() => setIsDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -331,7 +330,6 @@ export default function AssetsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Search and Filter */}
       <Card>
         <CardHeader>
@@ -458,7 +456,6 @@ export default function AssetsPage() {
                   </TableBody>
                 </Table>
               </div>
-
               {filteredAssets.length === 0 && (
                 <div className="py-12 text-center">
                   <Building className="mx-auto mb-4 h-12 w-12 text-gray-400" />

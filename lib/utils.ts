@@ -338,6 +338,45 @@ export const PAYMENT_METHOD_OPTIONS = [
   { value: 'online', label: 'Online Payment' },
 ];
 
+export const ASSET_TYPE_OPTIONS = [
+  { value: 'vehicle', label: 'Vehicle' },
+  { value: 'property', label: 'Property' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'furniture', label: 'Furniture' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'musical', label: 'Musical Instruments' },
+  { value: 'computer', label: 'Computer' },
+  { value: 'appliance', label: 'Appliance' },
+  { value: 'building-material', label: 'Building Material' },
+  { value: 'book', label: 'Book/Literature' },
+  { value: 'other', label: 'Other' },
+];
+
+export const ASSET_CONDITION_OPTIONS = [
+  { value: 'excellent', label: 'Excellent' },
+  { value: 'good', label: 'Good' },
+  { value: 'fair', label: 'Fair' },
+  { value: 'poor', label: 'Poor' },
+];
+
+export const ASSET_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'disposed', label: 'Disposed' },
+  { value: 'sold', label: 'Sold' },
+  { value: 'donated', label: 'Donated' },
+  { value: 'lost', label: 'Lost' },
+  { value: 'stolen', label: 'Stolen' },
+];
+
+export const ASSET_MAINTENANCE_FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'annually', label: 'Annually' },
+];
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {
