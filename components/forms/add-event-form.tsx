@@ -31,7 +31,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterEvent } from '@/lib/hooks/event/use-event-queries';
-import { EVENT_FREQUENCY_OPTIONS, EVENT_TYPE_OPTIONS } from '@/lib/utils';
+import {
+  EVENT_FREQUENCY_OPTIONS,
+  EVENT_TYPE_OPTIONS,
+  getRelativeYear,
+} from '@/lib/utils';
 import { type AddEventPayload, addEventSchema } from '@/lib/validations/event';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Clock, Loader2, Users } from 'lucide-react';
@@ -42,8 +46,6 @@ interface AddEventFormProps {
 }
 
 export function AddEventForm({ onCloseDialog }: AddEventFormProps) {
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() + 5);
   const {
     mutateAsync: registerEventMutation,
     isPending,
@@ -172,9 +174,7 @@ export function AddEventForm({ onCloseDialog }: AddEventFormProps) {
                   name="organizer"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Organizer
-                      </FormLabel>
+                      <FormLabel>Organizer</FormLabel>
                       <FormControl>
                         <Input placeholder="Event organizer name" {...field} />
                       </FormControl>
@@ -209,7 +209,7 @@ export function AddEventForm({ onCloseDialog }: AddEventFormProps) {
                       <FormControl>
                         <DatePicker
                           format="long"
-                          maxDate={maxDate}
+                          maxDate={getRelativeYear(2)}
                           minDate={new Date()}
                           onChange={(date) =>
                             field.onChange(date ? date.toISOString() : '')
@@ -235,7 +235,7 @@ export function AddEventForm({ onCloseDialog }: AddEventFormProps) {
                       <FormControl>
                         <DatePicker
                           format="long"
-                          maxDate={maxDate}
+                          maxDate={getRelativeYear(2)}
                           minDate={new Date()}
                           onChange={(date) =>
                             field.onChange(date ? date.toISOString() : '')
@@ -426,7 +426,7 @@ export function AddEventForm({ onCloseDialog }: AddEventFormProps) {
                       <FormControl>
                         <DatePicker
                           format="long"
-                          maxDate={maxDate}
+                          maxDate={getRelativeYear(2)}
                           minDate={new Date()}
                           onChange={(date) =>
                             field.onChange(date ? date.toISOString() : '')

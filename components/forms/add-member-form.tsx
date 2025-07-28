@@ -1,7 +1,6 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
-import { CustomSelect } from '@/components/custom-select';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,10 +27,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
 import { useRegisterMember } from '@/lib/hooks/member/use-member-queries';
+import type { Branch } from '@/lib/types';
 import {
-  capitalizeFirstLetterOfEachWord,
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   MEMBER_ROLE_OPTIONS,
@@ -39,19 +37,16 @@ import {
 import { type AddMemberPayload, memberSchema } from '@/lib/validations/members';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, Shield, User } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { BranchListInput } from '../branch-list-input';
 
 interface AddMemberFormProps {
   onCloseDialog: () => void;
 }
 
 export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
-  const {
-    data: branches,
-    isLoading: isLoadingBranches,
-    isError: isErrorBranches,
-    error: errorBranches,
-  } = useFetchBranches();
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const {
     mutateAsync: registerMemberMutation,
     isPending,
@@ -94,7 +89,6 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
   return (
     <>
       {isError && <RenderApiError error={error} />}
-      {isErrorBranches && <RenderApiError error={errorBranches} />}
       <Form {...form}>
         <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
           {/* Personal Information */}
@@ -282,28 +276,21 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  disabled={isLoadingBranches}
                   name="branchId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Church Branch
-                        <span className="text-red-500">*</span>
+                        Branch <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <CustomSelect
-                          className="cursor-pointer"
-                          onChange={field.onChange}
-                          options={
-                            branches?.branches?.map((branch) => ({
-                              value: branch._id,
-                              label: capitalizeFirstLetterOfEachWord(
-                                branch.branchName
-                              ),
-                            })) || []
-                          }
-                          placeholder="Select church branch"
-                          selected={field.value || ''}
+                        <BranchListInput
+                          className="w-full"
+                          onChange={(branch) => {
+                            setSelectedBranch(branch);
+                            field.onChange(branch?._id || ''); // ✅ Store only the ID
+                          }}
+                          placeholder="Search and select a branch"
+                          value={selectedBranch} // ✅ Use state for display
                         />
                       </FormControl>
                       <FormMessage />
