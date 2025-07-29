@@ -162,8 +162,8 @@ const templates = [
 export default function CommunicationPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('messages');
-  const [isSendMessageOpen, setIsSendMessageOpen] = useState(false);
-  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+  const [isSendMessageDialogOpen, setIsSendMessageDialogOpen] = useState(false);
+  const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -221,8 +221,8 @@ export default function CommunicationPage() {
             Export Reports
           </Button>
           <Dialog
-            onOpenChange={setIsAnnouncementOpen}
-            open={isAnnouncementOpen}
+            onOpenChange={setIsAnnouncementDialogOpen}
+            open={isAnnouncementDialogOpen}
           >
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -238,11 +238,14 @@ export default function CommunicationPage() {
                 </DialogDescription>
               </DialogHeader>
               <CreateAnnouncementForm
-                onSuccess={() => setIsAnnouncementOpen(false)}
+                onCloseDialog={() => setIsAnnouncementDialogOpen(false)}
               />
             </DialogContent>
           </Dialog>
-          <Dialog onOpenChange={setIsSendMessageOpen} open={isSendMessageOpen}>
+          <Dialog
+            onOpenChange={setIsSendMessageDialogOpen}
+            open={isSendMessageDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Send className="mr-2 h-4 w-4" />
@@ -256,12 +259,11 @@ export default function CommunicationPage() {
                   Send SMS or Email to church members
                 </DialogDescription>
               </DialogHeader>
-              <SendMessageForm onSuccess={() => setIsSendMessageOpen(false)} />
+              <SendMessageForm onCloseDialog={() => setIsSendMessageDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -329,7 +331,6 @@ export default function CommunicationPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Card>
         <CardHeader>
@@ -353,7 +354,6 @@ export default function CommunicationPage() {
               <TabsTrigger value="templates">Templates</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
-
             <TabsContent className="mt-6" value="messages">
               <div className="rounded-md border">
                 <Table>
@@ -446,7 +446,6 @@ export default function CommunicationPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="announcements">
               <div className="rounded-md border">
                 <Table>
@@ -550,7 +549,6 @@ export default function CommunicationPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="templates">
               <div className="rounded-md border">
                 <Table>
@@ -626,7 +624,6 @@ export default function CommunicationPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="analytics">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
@@ -647,7 +644,6 @@ export default function CommunicationPage() {
                           style={{ width: '97%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Email Messages
@@ -663,7 +659,6 @@ export default function CommunicationPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Communication Trends</CardTitle>
@@ -682,7 +677,6 @@ export default function CommunicationPage() {
                           style={{ width: '76%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Last Week</span>
                         <span className="text-gray-600 text-sm">
