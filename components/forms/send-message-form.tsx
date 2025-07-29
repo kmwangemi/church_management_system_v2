@@ -1,17 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Loader2,
-  Mail,
-  MessageSquare,
-  Send,
-  Smartphone,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,6 +27,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { getRelativeYear, MESSAGE_SEND_TIME_OPTIONS } from '@/lib/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Loader2,
+  Mail,
+  MessageSquare,
+  Send,
+  Smartphone,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { DatePicker } from '../date-picker';
+import { TimeInput } from '../time-input';
 
 const messageSchema = z.object({
   type: z.string().min(1, 'Please select message type'),
@@ -56,10 +59,10 @@ const messageSchema = z.object({
 type MessageForm = z.infer<typeof messageSchema>;
 
 interface SendMessageFormProps {
-  onSuccess: () => void;
+  onCloseDialog: () => void;
 }
 
-const recipientGroups = [
+const messageRecipientGroups = [
   { id: 'all', name: 'All Members', count: 1234 },
   { id: 'active', name: 'Active Members', count: 1156 },
   { id: 'choir', name: 'Choir Department', count: 45 },
@@ -69,7 +72,7 @@ const recipientGroups = [
   { id: 'volunteers', name: 'Volunteers', count: 89 },
 ];
 
-export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
+export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
 
@@ -93,7 +96,7 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       // biome-ignore lint/suspicious/noConsole: ignore console
       console.log('Message data:', data);
-      onSuccess();
+      onCloseDialog();
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: ignore console
       console.error('Error sending message:', error);
@@ -104,7 +107,7 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
 
   const getTotalRecipients = () => {
     return selectedRecipients.reduce((total, groupId) => {
-      const group = recipientGroups.find((g) => g.id === groupId);
+      const group = messageRecipientGroups.find((g) => g.id === groupId);
       return total + (group?.count || 0);
     }, 0);
   };
@@ -192,7 +195,6 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                 )}
               />
             </div>
-
             <FormField
               control={form.control}
               name="title"
@@ -206,7 +208,6 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="content"
@@ -232,7 +233,6 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
             />
           </CardContent>
         </Card>
-
         {/* Recipients */}
         <Card>
           <CardHeader>
@@ -256,7 +256,7 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
               render={() => (
                 <FormItem>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {recipientGroups.map((group) => (
+                    {messageRecipientGroups.map((group) => (
                       <FormField
                         control={form.control}
                         key={group.id}
@@ -301,7 +301,6 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
             />
           </CardContent>
         </Card>
-
         {/* Scheduling */}
         <Card>
           <CardHeader>
@@ -314,29 +313,31 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
               name="scheduleType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Send Options</FormLabel>
-                  <Select
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
-                  >
+                  <FormLabel>
+                    Send Options <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="cursor-pointer">
                         <SelectValue placeholder="Select when to send" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="now">Send Now</SelectItem>
-                      <SelectItem value="scheduled">
-                        Schedule for Later
-                      </SelectItem>
-                      <SelectItem value="draft">Save as Draft</SelectItem>
+                    <SelectContent className="max-h-[400px] overflow-y-auto">
+                      {MESSAGE_SEND_TIME_OPTIONS.map((option) => (
+                        <SelectItem
+                          className="cursor-pointer"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             {form.watch('scheduleType') === 'scheduled' && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
@@ -344,9 +345,22 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                   name="scheduleDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Schedule Date</FormLabel>
+                      <FormLabel>
+                        Schedule Date <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          format="long"
+                          maxDate={getRelativeYear(1)}
+                          minDate={new Date()}
+                          onChange={(date) =>
+                            field.onChange(date ? date.toISOString() : '')
+                          }
+                          placeholder="Select schedule date"
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -359,7 +373,7 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
                     <FormItem>
                       <FormLabel>Schedule Time</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <TimeInput {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -369,9 +383,8 @@ export function SendMessageForm({ onSuccess }: SendMessageFormProps) {
             )}
           </CardContent>
         </Card>
-
         <div className="flex justify-end space-x-4">
-          <Button onClick={onSuccess} type="button" variant="outline">
+          <Button onClick={onCloseDialog} type="button" variant="outline">
             Cancel
           </Button>
           <Button disabled={isLoading} type="submit">

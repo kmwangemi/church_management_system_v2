@@ -1,10 +1,7 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Bell, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,30 +27,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-const announcementSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters'),
-  content: z.string().min(10, 'Content must be at least 10 characters'),
-  category: z.string().min(1, 'Please select a category'),
-  priority: z.string().min(1, 'Please select priority level'),
-  publishDate: z.string().min(1, 'Publish date is required'),
-  expiryDate: z.string().optional(),
-  status: z.string().min(1, 'Please select status'),
-});
-
-type AnnouncementForm = z.infer<typeof announcementSchema>;
+import { useRegisterAnnouncement } from '@/lib/hooks/announcement/use-announcement-queries';
+import {
+  ANNOUNCEMENT_CATEGORY_OPTIONS,
+  ANNOUNCEMENT_PRIORITY_OPTIONS,
+  ANNOUNCEMENT_STATUS_OPTIONS,
+  getRelativeYear,
+} from '@/lib/utils';
+import {
+  type AddAnnouncementPayload,
+  AddAnnouncementSchema,
+} from '@/lib/validations/announcement';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Bell, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 
 interface CreateAnnouncementFormProps {
-  onSuccess: () => void;
+  onCloseDialog: () => void;
 }
 
 export function CreateAnnouncementForm({
-  onSuccess,
+  onCloseDialog,
 }: CreateAnnouncementFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<AnnouncementForm>({
-    resolver: zodResolver(announcementSchema),
+  const {
+    mutateAsync: registerAssetMutation,
+    isPending,
+    isError,
+    error,
+  } = useRegisterAnnouncement();
+  const form = useForm<AddAnnouncementPayload>({
+    resolver: zodResolver(AddAnnouncementSchema),
     defaultValues: {
       title: '',
       content: '',
@@ -64,133 +67,46 @@ export function CreateAnnouncementForm({
       status: 'draft',
     },
   });
-
-  const onSubmit = async (data: AnnouncementForm) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.log('Announcement data:', data);
-      onSuccess();
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.error('Error creating announcement:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const { reset } = form;
+  // Handle form submission
+  const onSubmit = async (payload: AddAnnouncementPayload) => {
+    await registerAssetMutation(payload);
+    onCloseDialog();
+    reset();
   };
-
+  const handleCancelDialog = () => {
+    onCloseDialog();
+    reset();
+  };
   return (
-    <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Bell className="h-5 w-5" />
-              <span>Announcement Details</span>
-            </CardTitle>
-            <CardDescription>
-              Create a new announcement for the member board
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Announcement Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter announcement title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter announcement content..."
-                      rows={5}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <>
+      {isError && <RenderApiError error={error} />}
+      <Form {...form}>
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Bell className="h-5 w-5" />
+                <span>Announcement Details</span>
+              </CardTitle>
+              <CardDescription>
+                Create a new announcement for the member board
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="category"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="events">Events</SelectItem>
-                        <SelectItem value="youth">Youth</SelectItem>
-                        <SelectItem value="finance">Finance</SelectItem>
-                        <SelectItem value="volunteer">Volunteer</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="publishDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Publish Date</FormLabel>
+                    <FormLabel>
+                      Announcement Title <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input
+                        placeholder="Enter announcement title"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,64 +114,202 @@ export function CreateAnnouncementForm({
               />
               <FormField
                 control={form.control}
-                name="expiryDate"
+                name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Expiry Date (Optional)</FormLabel>
+                    <FormLabel>
+                      Content <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Textarea
+                        placeholder="Enter announcement content..."
+                        rows={5}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Category <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {ANNOUNCEMENT_CATEGORY_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Priority <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {ANNOUNCEMENT_PRIORITY_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="publishDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Publish Date <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
+                        <DatePicker
+                          format="long"
+                          maxDate={getRelativeYear(1)}
+                          minDate={new Date()}
+                          onChange={(date) =>
+                            field.onChange(date ? date.toISOString() : '')
+                          }
+                          placeholder="Select publish date"
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="published">Publish Now</SelectItem>
-                        <SelectItem value="scheduled">
-                          Schedule for Later
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end space-x-4">
-          <Button onClick={onSuccess} type="button" variant="outline">
-            Cancel
-          </Button>
-          <Button disabled={isLoading} type="submit">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Announcement'
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="expiryDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expiry Date (Optional)</FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          format="long"
+                          maxDate={getRelativeYear(1)}
+                          minDate={new Date()}
+                          onChange={(date) =>
+                            field.onChange(date ? date.toISOString() : '')
+                          }
+                          placeholder="Select expiry date"
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Status <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {ANNOUNCEMENT_STATUS_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="flex justify-end space-x-4">
+            <Button
+              onClick={handleCancelDialog}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!form.formState.isValid || isPending}
+              type="submit"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Announcement'
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 }

@@ -377,6 +377,38 @@ export const ASSET_MAINTENANCE_FREQUENCY_OPTIONS = [
   { value: 'annually', label: 'Annually' },
 ];
 
+export const ANNOUNCEMENT_CATEGORY_OPTIONS = [
+  { value: 'general', label: 'General' },
+  { value: 'service', label: 'Service' },
+  { value: 'prayer', label: 'Prayer' },
+  { value: 'ministry', label: 'Ministry' },
+  { value: 'children', label: 'Children' },
+  { value: 'event', label: 'Event' },
+  { value: 'youth', label: 'Youth' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'volunteer', label: 'Volunteer' },
+  { value: 'emergency', label: 'Emergency' },
+];
+
+export const ANNOUNCEMENT_PRIORITY_OPTIONS = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+];
+
+export const ANNOUNCEMENT_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'published', label: 'Publish Now' },
+  { value: 'scheduled', label: 'Schedule for Later' },
+];
+
+export const MESSAGE_SEND_TIME_OPTIONS = [
+  { value: 'now', label: 'Send Now' },
+  { value: 'scheduled', label: 'Schedule for Later' },
+  { value: 'draft', label: 'Save as Draft' },
+];
+
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {
