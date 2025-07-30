@@ -183,8 +183,8 @@ const milestones = [
 export default function DiscipleshipPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('disciples');
-  const [isAddDiscipleOpen, setIsAddDiscipleOpen] = useState(false);
-  const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
+  const [isAddDiscipleDialogOpen, setIsAddDiscipleDialogOpen] = useState(false);
+  const [isAddMilestoneDialogOpen, setIsAddMilestoneDialogOpen] = useState(false);
 
   const filteredDisciples = disciples.filter(
     (disciple) =>
@@ -247,8 +247,8 @@ export default function DiscipleshipPage() {
             Export Report
           </Button>
           <Dialog
-            onOpenChange={setIsAddMilestoneOpen}
-            open={isAddMilestoneOpen}
+            onOpenChange={setIsAddMilestoneDialogOpen}
+            open={isAddMilestoneDialogOpen}
           >
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -264,11 +264,14 @@ export default function DiscipleshipPage() {
                 </DialogDescription>
               </DialogHeader>
               <AddMilestoneForm
-                onSuccess={() => setIsAddMilestoneOpen(false)}
+                onCloseDialog={() => setIsAddMilestoneDialogOpen(false)}
               />
             </DialogContent>
           </Dialog>
-          <Dialog onOpenChange={setIsAddDiscipleOpen} open={isAddDiscipleOpen}>
+          <Dialog
+            onOpenChange={setIsAddDiscipleDialogOpen}
+            open={isAddDiscipleDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -282,12 +285,13 @@ export default function DiscipleshipPage() {
                   Add a new person to the discipleship program
                 </DialogDescription>
               </DialogHeader>
-              <AddDiscipleForm onSuccess={() => setIsAddDiscipleOpen(false)} />
+              <AddDiscipleForm
+                onCloseDialog={() => setIsAddDiscipleDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -357,7 +361,6 @@ export default function DiscipleshipPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Card>
         <CardHeader>
@@ -381,7 +384,6 @@ export default function DiscipleshipPage() {
               <TabsTrigger value="milestones">Milestones</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
-
             <TabsContent className="mt-6" value="disciples">
               <div className="rounded-md border">
                 <Table>
@@ -493,7 +495,6 @@ export default function DiscipleshipPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="classes">
               <div className="rounded-md border">
                 <Table>
@@ -603,7 +604,6 @@ export default function DiscipleshipPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="milestones">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {milestones.map((milestone) => (
@@ -643,7 +643,6 @@ export default function DiscipleshipPage() {
                 ))}
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="analytics">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
@@ -664,7 +663,6 @@ export default function DiscipleshipPage() {
                           style={{ width: '33%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Growing</span>
                         <span className="text-gray-600 text-sm">1 person</span>
@@ -675,7 +673,6 @@ export default function DiscipleshipPage() {
                           style={{ width: '33%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Mature</span>
                         <span className="text-gray-600 text-sm">1 person</span>
@@ -689,7 +686,6 @@ export default function DiscipleshipPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Milestone Achievements</CardTitle>
@@ -708,7 +704,6 @@ export default function DiscipleshipPage() {
                           style={{ width: '67%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Class Completions
@@ -723,7 +718,6 @@ export default function DiscipleshipPage() {
                           style={{ width: '33%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Ministry Assignments
