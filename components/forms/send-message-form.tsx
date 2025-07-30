@@ -30,7 +30,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  useCreateMessage,
+  useFetchRecipientGroups,
+} from '@/lib/hooks/message/use-message-queries';
 import { getRelativeYear, MESSAGE_SEND_TIME_OPTIONS } from '@/lib/utils';
+import {
+  type AddMessagePayload,
+  AddMessageSchema,
+} from '@/lib/validations/message';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Loader2,
@@ -42,47 +50,24 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-
-const messageSchema = z.object({
-  type: z.string().min(1, 'Please select message type'),
-  title: z.string().min(2, 'Title must be at least 2 characters'),
-  content: z.string().min(10, 'Message content must be at least 10 characters'),
-  recipients: z
-    .array(z.string())
-    .min(1, 'Please select at least one recipient group'),
-  scheduleType: z.string().min(1, 'Please select when to send'),
-  scheduleDate: z.string().optional(),
-  scheduleTime: z.string().optional(),
-  template: z.string().optional(),
-});
-
-type MessageForm = z.infer<typeof messageSchema>;
 
 interface SendMessageFormProps {
   onCloseDialog: () => void;
 }
 
-const messageRecipientGroups = [
-  { id: 'all', name: 'All Members', count: 1234 },
-  { id: 'active', name: 'Active Members', count: 1156 },
-  { id: 'choir', name: 'Choir Department', count: 45 },
-  { id: 'youth', name: 'Youth Department', count: 120 },
-  { id: 'ushering', name: 'Ushering Department', count: 32 },
-  { id: 'leadership', name: 'Leadership Team', count: 15 },
-  { id: 'volunteers', name: 'Volunteers', count: 89 },
-];
-
 export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const {
-    mutateAsync: registerAssetMutation,
+    mutateAsync: createMessageMutation,
     isPending,
     isError,
     error,
-  } = useRegisterAnnouncement();
-  const form = useForm<MessageForm>({
-    resolver: zodResolver(messageSchema),
+  } = useCreateMessage();
+  const { data: recipientGroupsData, isLoading: isLoadingGroups } =
+    useFetchRecipientGroups();
+  const messageRecipientGroups = recipientGroupsData?.data?.groups || [];
+  const form = useForm<AddMessagePayload>({
+    resolver: zodResolver(AddMessageSchema),
     defaultValues: {
       type: '',
       title: '',
@@ -96,8 +81,8 @@ export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
   });
   const { reset } = form;
   // Handle form submission
-  const onSubmit = async (payload: AddAnnouncementPayload) => {
-    await registerAssetMutation(payload);
+  const onSubmit = async (payload: AddMessagePayload) => {
+    await createMessageMutation(payload);
     onCloseDialog();
     reset();
   };
@@ -111,6 +96,14 @@ export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
       return total + (group?.count || 0);
     }, 0);
   };
+  if (isLoadingGroups) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading recipient groups...</span>
+      </div>
+    );
+  }
   return (
     <>
       {isError && <RenderApiError error={error} />}

@@ -53,6 +53,7 @@ const MessageRecipientSchema = new Schema<IMessageRecipient>(
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
+      default: null
     },
     id: {
       type: String,

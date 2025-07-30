@@ -1,10 +1,8 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Heart, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
+import { MemberListInput } from '@/components/member-list-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,7 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -30,143 +27,192 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-const discipleSchema = z.object({
-  member: z.string().min(1, 'Please select a member'),
-  mentor: z.string().min(1, 'Please select a mentor'),
-  startDate: z.string().min(1, 'Start date is required'),
-  currentLevel: z.string().min(1, 'Please select current level'),
-  goals: z.string().min(10, 'Please describe discipleship goals'),
-  notes: z.string().optional(),
-});
-
-type DiscipleForm = z.infer<typeof discipleSchema>;
+import { useRegisterDisciple } from '@/lib/hooks/disciple/use-disciple-queries';
+import type { Member } from '@/lib/types';
+import { DISCIPLE_LEVEL_OPTIONS, getRelativeYear } from '@/lib/utils';
+import {
+  type AddDisciplePayload,
+  AddDiscipleSchema,
+} from '@/lib/validations/disciple';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Heart, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 interface AddDiscipleFormProps {
-  onSuccess: () => void;
+  onCloseDialog: () => void;
 }
 
-export function AddDiscipleForm({ onSuccess }: AddDiscipleFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<DiscipleForm>({
-    resolver: zodResolver(discipleSchema),
+export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMentor, setSelectedMentor] = useState<Member | null>(null);
+  const {
+    mutateAsync: registerDiscipleMutation,
+    isPending,
+    isError,
+    error,
+  } = useRegisterDisciple();
+  const form = useForm<AddDisciplePayload>({
+    resolver: zodResolver(AddDiscipleSchema),
     defaultValues: {
-      member: '',
-      mentor: '',
+      memberId: '',
+      mentorId: '',
       startDate: new Date().toISOString().split('T')[0],
       currentLevel: '',
       goals: '',
       notes: '',
     },
   });
-
-  const onSubmit = async (data: DiscipleForm) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.log('Disciple data:', data);
-      onSuccess();
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.error('Error adding disciple:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const { reset } = form;
+  // Handle form submission
+  const onSubmit = async (payload: AddDisciplePayload) => {
+    await registerDiscipleMutation(payload);
+    onCloseDialog();
+    reset();
   };
-
+  const handleCancelDialog = () => {
+    onCloseDialog();
+    reset();
+  };
   return (
-    <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Heart className="h-5 w-5" />
-              <span>Discipleship Information</span>
-            </CardTitle>
-            <CardDescription>
-              Add a new person to the discipleship program
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="member"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Member</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+    <>
+      {isError && <RenderApiError error={error} />}
+      <Form {...form}>
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Heart className="h-5 w-5" />
+                <span>Discipleship Information</span>
+              </CardTitle>
+              <CardDescription>
+                Add a new person to the discipleship program
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="memberId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Member <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select member" />
-                        </SelectTrigger>
+                        <MemberListInput
+                          className="w-full"
+                          onChange={(member) => {
+                            setSelectedMember(member);
+                            field.onChange(member?._id || ''); // ✅ Store only the ID
+                          }}
+                          placeholder="Search and select a member"
+                          value={selectedMember} // ✅ Use state for display
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="john-smith">John Smith</SelectItem>
-                        <SelectItem value="sarah-johnson">
-                          Sarah Johnson
-                        </SelectItem>
-                        <SelectItem value="emily-davis">Emily Davis</SelectItem>
-                        <SelectItem value="david-wilson">
-                          David Wilson
-                        </SelectItem>
-                        <SelectItem value="michael-brown">
-                          Michael Brown
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="mentor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mentor</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mentorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Mentor <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select mentor" />
-                        </SelectTrigger>
+                        <MemberListInput
+                          className="w-full"
+                          onChange={(mentor) => {
+                            setSelectedMentor(mentor);
+                            field.onChange(mentor?._id || ''); // ✅ Store only the ID
+                          }}
+                          placeholder="Search and select a mentor"
+                          value={selectedMentor} // ✅ Use state for display
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pastor-michael">
-                          Pastor Michael Brown
-                        </SelectItem>
-                        <SelectItem value="david-wilson">
-                          David Wilson
-                        </SelectItem>
-                        <SelectItem value="sarah-johnson">
-                          Sarah Johnson
-                        </SelectItem>
-                        <SelectItem value="emily-davis">Emily Davis</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Start Date <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          format="long"
+                          maxDate={getRelativeYear(2)}
+                          minDate={new Date()}
+                          onChange={(date) =>
+                            field.onChange(date ? date.toISOString() : '')
+                          }
+                          placeholder="Select start date"
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="currentLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Current Level <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select current level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {DISCIPLE_LEVEL_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="startDate"
+                name="goals"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Date</FormLabel>
+                    <FormLabel>
+                      Discipleship Goals <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Textarea
+                        placeholder="Describe the discipleship goals and objectives..."
+                        rows={3}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -174,86 +220,47 @@ export function AddDiscipleForm({ onSuccess }: AddDiscipleFormProps) {
               />
               <FormField
                 control={form.control}
-                name="currentLevel"
+                name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Level</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="new-convert">New Convert</SelectItem>
-                        <SelectItem value="growing">Growing</SelectItem>
-                        <SelectItem value="mature">Mature</SelectItem>
-                        <SelectItem value="leader">Leader</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Additional Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Any additional notes or observations..."
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="goals"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Discipleship Goals</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe the discipleship goals and objectives..."
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            </CardContent>
+          </Card>
+          <div className="flex justify-end space-x-4">
+            <Button
+              onClick={handleCancelDialog}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!form.formState.isValid || isPending}
+              type="submit"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding Disciple...
+                </>
+              ) : (
+                'Add Disciple'
               )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Additional Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any additional notes or observations..."
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end space-x-4">
-          <Button onClick={onSuccess} type="button" variant="outline">
-            Cancel
-          </Button>
-          <Button disabled={isLoading} type="submit">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding Disciple...
-              </>
-            ) : (
-              'Add Disciple'
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 }

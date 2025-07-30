@@ -191,6 +191,25 @@ export const MEMBER_ROLE_OPTIONS = [
   { value: 'bishop', label: 'Bishop' },
 ];
 
+export const MILESTONE_CATEGORY_OPTIONS = [
+  { value: 'spiritual', label: 'Spiritual' },
+  { value: 'bible_study', label: 'Bible Study' },
+  { value: 'prayer', label: 'Prayer' },
+  { value: 'service', label: 'Service' },
+  { value: 'leadership', label: 'Leadership' },
+  { value: 'evangelism', label: 'Evangelism' },
+  { value: 'fellowship', label: 'Fellowship' },
+  { value: 'worship', label: 'Worship' },
+  { value: 'discipleship', label: 'Discipleship' },
+];
+
+export const DISCIPLE_LEVEL_OPTIONS = [
+  { value: 'new-convert', label: 'New Convert' },
+  { value: 'growing', label: 'Growing' },
+  { value: 'mature', label: 'Mature' },
+  { value: 'leader', label: 'Leader' },
+];
+
 export const GENDER_OPTIONS = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
@@ -407,7 +426,6 @@ export const MESSAGE_SEND_TIME_OPTIONS = [
   { value: 'scheduled', label: 'Schedule for Later' },
   { value: 'draft', label: 'Save as Draft' },
 ];
-
 
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;

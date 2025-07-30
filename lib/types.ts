@@ -213,3 +213,238 @@ export interface MemberListResponse {
   users: Member[];
   pagination: Pagination;
 }
+
+export interface MessageAddResponse {
+  success: boolean;
+  data: {
+    _id: string;
+    type: 'sms' | 'email';
+    title: string;
+    content: string;
+    recipients: string[];
+    scheduleType: 'now' | 'scheduled' | 'draft';
+    scheduleDate?: string;
+    scheduleTime?: string;
+    status: 'draft' | 'scheduled' | 'sent' | 'failed' | 'cancelled';
+    deliveryStats: {
+      total: number;
+      sent: number;
+      delivered: number;
+      failed: number;
+    };
+    createdBy: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+    templateId?: {
+      _id: string;
+      name: string;
+      category: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+  };
+  message: string;
+}
+
+export interface MessageListResponse {
+  success: boolean;
+  data: {
+    messages: MessageAddResponse['data'][];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+}
+
+export interface RecipientGroup {
+  id: string;
+  name: string;
+  count: number;
+  type: 'system' | 'department' | 'group';
+  description: string;
+  targetModel: 'User' | 'Department' | 'Group';
+  targetId?: string;
+  criteria: Record<string, any>;
+}
+
+export interface RecipientGroupsResponse {
+  success: boolean;
+  data: {
+    groups: RecipientGroup[];
+    total: number;
+  };
+}
+
+export interface Disciple {
+  _id: string;
+  churchId: string;
+  branchId: string;
+  memberId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  };
+  mentorId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  };
+  startDate: string;
+  endDate?: string;
+  currentLevel: string;
+  status: 'active' | 'completed' | 'paused' | 'discontinued';
+  goals: string;
+  notes?: string;
+  progress: number;
+  milestonesCompleted: Array<{
+    _id: string;
+    name: string;
+    points: number;
+    category: string;
+  }>;
+  durationInDays: number;
+  completionPercentage: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DisciplesResponse {
+  success: boolean;
+  data: {
+    disciples: Disciple[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+}
+
+export interface DiscipleResponse {
+  success: boolean;
+  data: {
+    disciple: Disciple;
+    progressRecords: Array<{
+      _id: string;
+      milestoneId: {
+        _id: string;
+        name: string;
+        points: number;
+        category: string;
+      };
+      completedDate: string;
+      pointsEarned: number;
+      status: 'pending' | 'approved' | 'rejected';
+      notes?: string;
+      evidence?: string;
+    }>;
+    totalPoints: number;
+    stats: {
+      milestonesCompleted: number;
+      pendingApproval: number;
+      totalPoints: number;
+    };
+  };
+}
+
+export interface DiscipleFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  level?: string;
+  mentorId?: string;
+}
+
+export interface Milestone {
+  _id: string;
+  churchId: string;
+  branchId: string;
+  name: string;
+  description: string;
+  category: string;
+  points: number;
+  requirements?: string;
+  isActive: boolean;
+  order: number;
+  level: string;
+  prerequisiteMilestones: Array<{
+    _id: string;
+    name: string;
+    points: number;
+    category: string;
+    level: string;
+  }>;
+  completionCount: number;
+  difficulty: string;
+  formattedPoints: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MilestonesResponse {
+  success: boolean;
+  data: {
+    milestones: Milestone[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+}
+
+export interface MilestoneResponse {
+  success: boolean;
+  data: {
+    milestone: Milestone;
+    stats: {
+      approved: number;
+      pending: number;
+      rejected: number;
+      total: number;
+    };
+    recentCompletions: Array<{
+      _id: string;
+      discipleId: {
+        memberId: {
+          firstName: string;
+          lastName: string;
+        };
+      };
+      verifiedBy: {
+        firstName: string;
+        lastName: string;
+      };
+      completedDate: string;
+      pointsEarned: number;
+      status: string;
+    }>;
+  };
+}
+
+export interface MilestoneFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  level?: string;
+  isActive?: boolean;
+}

@@ -3,7 +3,7 @@ import mongoose, { Schema, type Document, type Model } from 'mongoose';
 // Define the interface for a Message document
 export interface IMessage extends Document {
   churchId: mongoose.Types.ObjectId;
-  branchId: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
   type: 'sms' | 'email';
   title: string;
   content: string;
@@ -42,7 +42,7 @@ const MessageSchema = new Schema<IMessage>(
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
-      required: true,
+      default: null,
     },
     type: {
       type: String,

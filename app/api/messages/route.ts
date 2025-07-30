@@ -4,7 +4,7 @@ import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import Message from '@/models/message';
 import MessageTemplate from '@/models/message-template';
-import RecipientGroup from '@/models/recipient-group';
+import User from '@/models/user';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -15,7 +15,6 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
     { requestId, endpoint: '/api/messages' },
     'api'
   );
-
   try {
     // Check authentication and authorization
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
@@ -27,7 +26,6 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     if (!user.user?.churchId) {
       return NextResponse.json(
@@ -35,9 +33,7 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
-
     await dbConnect();
-
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const page = Math.max(
@@ -52,36 +48,29 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
     const type = searchParams.get('type') || '';
     const status = searchParams.get('status') || '';
     const scheduleType = searchParams.get('scheduleType') || '';
-
     // Build query object
     const query: any = {
       churchId: new mongoose.Types.ObjectId(user.user?.churchId),
     };
-
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { content: { $regex: search, $options: 'i' } },
       ];
     }
-
     if (type && ['sms', 'email'].includes(type)) {
       query.type = type;
     }
-
     if (
       status &&
       ['draft', 'scheduled', 'sent', 'failed', 'cancelled'].includes(status)
     ) {
       query.status = status;
     }
-
     if (scheduleType && ['now', 'scheduled', 'draft'].includes(scheduleType)) {
       query.scheduleType = scheduleType;
     }
-
     const skip = (page - 1) * limit;
-
     // Execute queries
     const [messages, total] = await Promise.all([
       Message.find(query)
@@ -93,7 +82,6 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
         .lean(),
       Message.countDocuments(query),
     ]);
-
     return NextResponse.json({
       success: true,
       data: {
@@ -117,6 +105,53 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+// Helper function to calculate recipient counts
+async function calculateRecipientCounts(
+  recipients: string[],
+  churchId: mongoose.Types.ObjectId
+) {
+  let totalCount = 0;
+  const recipientCounts = [];
+  for (const recipientId of recipients) {
+    let count = 0;
+    // Parse recipient ID to determine type and count members
+    if (recipientId === 'all') {
+      count = await User.countDocuments({ churchId });
+    } else if (recipientId === 'active') {
+      count = await User.countDocuments({ churchId, status: 'active' });
+    } else if (recipientId.startsWith('dept_')) {
+      const departmentId = recipientId.replace('dept_', '');
+      count = await User.countDocuments({
+        churchId,
+        departmentId: new mongoose.Types.ObjectId(departmentId),
+        status: 'active',
+      });
+    } else if (recipientId.startsWith('group_')) {
+      const groupId = recipientId.replace('group_', '');
+      count = await User.countDocuments({
+        churchId,
+        groupId: new mongoose.Types.ObjectId(groupId),
+        status: 'active',
+      });
+    } else if (recipientId === 'leadership') {
+      count = await User.countDocuments({
+        churchId,
+        role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
+        status: 'active',
+      });
+    } else if (recipientId === 'volunteers') {
+      count = await User.countDocuments({
+        churchId,
+        role: 'volunteer',
+        status: 'active',
+      });
+    }
+    recipientCounts.push({ recipientId, count });
+    totalCount += count;
+  }
+  return { totalCount, recipientCounts };
+}
+
 // POST /api/messages - Create a new message
 async function createMessageHandler(
   request: NextRequest
@@ -126,7 +161,6 @@ async function createMessageHandler(
     { requestId, endpoint: '/api/messages' },
     'api'
   );
-
   try {
     // Check authentication and authorization
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
@@ -138,7 +172,6 @@ async function createMessageHandler(
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     if (!user.user?.churchId) {
       return NextResponse.json(
@@ -146,11 +179,8 @@ async function createMessageHandler(
         { status: 400 }
       );
     }
-
     await dbConnect();
-
     const messageData = await request.json();
-
     // Validate required fields
     const requiredFields = [
       'type',
@@ -167,7 +197,6 @@ async function createMessageHandler(
         );
       }
     }
-
     // Validate message type
     if (!['sms', 'email'].includes(messageData.type)) {
       return NextResponse.json(
@@ -175,7 +204,6 @@ async function createMessageHandler(
         { status: 400 }
       );
     }
-
     // Validate schedule type
     if (!['now', 'scheduled', 'draft'].includes(messageData.scheduleType)) {
       return NextResponse.json(
@@ -183,7 +211,6 @@ async function createMessageHandler(
         { status: 400 }
       );
     }
-
     // Validate scheduled message requirements
     if (messageData.scheduleType === 'scheduled') {
       if (!messageData.scheduleDate) {
@@ -192,7 +219,6 @@ async function createMessageHandler(
           { status: 400 }
         );
       }
-
       const scheduleDate = new Date(messageData.scheduleDate);
       if (scheduleDate <= new Date()) {
         return NextResponse.json(
@@ -201,27 +227,17 @@ async function createMessageHandler(
         );
       }
     }
-
-    // Validate recipients exist
-    const validGroups = await RecipientGroup.find({
-      churchId: new mongoose.Types.ObjectId(user.user?.churchId),
-      id: { $in: messageData.recipients },
-      isActive: true,
-    }).select('id memberCount');
-
-    if (validGroups.length !== messageData.recipients.length) {
+    // Validate recipients exist and calculate total recipients
+    const recipientCounts = await calculateRecipientCounts(
+      messageData.recipients,
+      new mongoose.Types.ObjectId(user.user?.churchId)
+    );
+    if (recipientCounts.totalCount === 0) {
       return NextResponse.json(
-        { error: 'Some recipient groups are invalid or inactive' },
+        { error: 'No valid recipients found for the selected groups' },
         { status: 400 }
       );
     }
-
-    // Calculate total recipients
-    const totalRecipients = validGroups.reduce(
-      (sum, group) => sum + group.memberCount,
-      0
-    );
-
     // Validate template if provided
     let template = null;
     if (messageData.template) {
@@ -231,36 +247,31 @@ async function createMessageHandler(
         type: messageData.type,
         isActive: true,
       });
-
       if (template) {
         // Use template content if found
         messageData.title = template.title;
         messageData.content = template.content;
         messageData.templateId = template._id;
-
         // Increment template usage
         await template.incrementUsage();
       }
     }
-
     // Create message object
     const messageObj = {
       ...messageData,
       churchId: user.user?.churchId,
-      branchId: user.user?.branchId || messageData.branchId,
+      branchId: user.user?.branchId || null,
       createdBy: user.user?.sub,
       deliveryStats: {
-        total: totalRecipients,
+        total: recipientCounts.totalCount,
         sent: 0,
         delivered: 0,
         failed: 0,
       },
     };
-
     // Set schedule date if provided
     if (messageData.scheduleDate) {
       messageObj.scheduleDate = new Date(messageData.scheduleDate);
-
       // Combine with schedule time if provided
       if (messageData.scheduleTime) {
         const [hours, minutes] = messageData.scheduleTime.split(':');
@@ -270,23 +281,19 @@ async function createMessageHandler(
         );
       }
     }
-
     // Create and save message
     const message = new Message(messageObj);
     const savedMessage = await message.save();
-
     // Populate the saved message for response
     const populatedMessage = await Message.findById(savedMessage._id)
       .populate('templateId', 'name category')
       .populate('createdBy', 'name email');
-
     contextLogger.info('Message created successfully', {
       messageId: savedMessage._id,
       type: savedMessage.type,
       scheduleType: savedMessage.scheduleType,
-      recipientCount: totalRecipients,
+      recipientCount: recipientCounts.totalCount,
     });
-
     return NextResponse.json(
       {
         success: true,
@@ -297,7 +304,6 @@ async function createMessageHandler(
     );
   } catch (error) {
     contextLogger.error('Unexpected error in createMessageHandler', error);
-
     // Handle validation errors
     if (error instanceof mongoose.Error.ValidationError) {
       const validationErrors = Object.values(error.errors).map(
@@ -308,7 +314,6 @@ async function createMessageHandler(
         { status: 400 }
       );
     }
-
     return NextResponse.json(
       { error: 'Failed to create message' },
       { status: 500 }
