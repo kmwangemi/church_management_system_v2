@@ -447,26 +447,63 @@ export const MESSAGE_SEND_TIME_OPTIONS = [
 
 export const CONTENT_TYPE_OPTIONS = [
   { value: 'sermon', label: 'Sermon' },
+  { value: 'bible_study', label: 'Bible Study' },
+  { value: 'prayer', label: 'Prayer' },
+  { value: 'worship', label: 'Worship' },
+  { value: 'announcement', label: 'Announcement' },
+  { value: 'event', label: 'Event' },
+  { value: 'devotional', label: 'Devotional' },
+  { value: 'testimony', label: 'Testimony' },
+  { value: 'music', label: 'Music' },
   { value: 'video', label: 'Video' },
   { value: 'document', label: 'Document' },
+  { value: 'image', label: 'Image' },
   { value: 'audio', label: 'Audio' },
-  { value: 'gallery', label: 'Photo Gallery' },
-  { value: 'presentation', label: 'Presentation' },
 ];
 
 export const CONTENT_STATUS_OPTIONS = [
   { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
   { value: 'archived', label: 'Archived' },
+  { value: 'private', label: 'Private' },
 ];
 
 export const CONTENT_CATEGORY_OPTIONS = [
+  { value: 'spiritual', label: 'Spiritual' },
+  { value: 'educational', label: 'Educational' },
+  { value: 'administrative', label: 'Administrative' },
   { value: 'worship', label: 'Worship' },
-  { value: 'teaching', label: 'Teaching' },
-  { value: 'event', label: 'Event' },
-  { value: 'study-material', label: 'Study Material' },
-  { value: 'resource', label: 'Resource' },
-  { value: 'announcement', label: 'Announcement' },
+  { value: 'youth', label: 'Youth' },
+  { value: 'children', label: 'Children' },
+  { value: 'missions', label: 'Missions' },
+  { value: 'fellowship', label: 'Fellowship' },
+  { value: 'outreach', label: 'Outreach' },
+  { value: 'discipleship', label: 'Discipleship' },
+];
+
+export const REPORT_TYPE_OPTIONS = [
+  { value: 'attendance', label: 'Attendance Report' },
+  { value: 'financial', label: 'Financial Report' },
+  { value: 'membership', label: 'Membership Report' },
+  { value: 'events', label: 'Events Report' },
+  { value: 'discipleship', label: 'Discipleship Report' },
+  { value: 'custom', label: 'Custom Report' },
+];
+
+export const REPORT_OUTPUT_FORMAT_OPTIONS = [
+  { value: 'pdf', label: 'PDF Document' },
+  { value: 'excel', label: 'Excel Spreadsheet' },
+  { value: 'csv', label: 'CSV File' },
+  { value: 'powerpoint', label: 'PowerPoint Presentation' },
+];
+
+export const REPORT_DATE_RANGE_OPTIONS = [
+  { value: 'last-week', label: 'Last Week' },
+  { value: 'last-month', label: 'Last Month' },
+  { value: 'last-quarter', label: 'Last Quarter' },
+  { value: 'last-year', label: 'Last Year' },
+  { value: 'ytd', label: 'Year to Date' },
+  { value: 'custom', label: 'Custom Range' },
 ];
 
 export const getUserId = (userId: any): string => {

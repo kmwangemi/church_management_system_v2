@@ -162,7 +162,8 @@ const reportTemplates = [
 export default function ReportsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('reports');
-  const [isGenerateReportOpen, setIsGenerateReportOpen] = useState(false);
+  const [isGenerateReportDialogOpen, setIsGenerateReportDialogOpen] =
+    useState(false);
   const [filterType, setFilterType] = useState('all');
 
   const filteredReports = reports.filter(
@@ -225,8 +226,8 @@ export default function ReportsPage() {
             Export All
           </Button>
           <Dialog
-            onOpenChange={setIsGenerateReportOpen}
-            open={isGenerateReportOpen}
+            onOpenChange={setIsGenerateReportDialogOpen}
+            open={isGenerateReportDialogOpen}
           >
             <DialogTrigger asChild>
               <Button>
@@ -242,13 +243,12 @@ export default function ReportsPage() {
                 </DialogDescription>
               </DialogHeader>
               <GenerateReportForm
-                onSuccess={() => setIsGenerateReportOpen(false)}
+                onCloseDialog={() => setIsGenerateReportDialogOpen(false)}
               />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -316,7 +316,6 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Card>
         <CardHeader>
@@ -351,7 +350,6 @@ export default function ReportsPage() {
               <TabsTrigger value="templates">Report Templates</TabsTrigger>
               <TabsTrigger value="analytics">Analytics Dashboard</TabsTrigger>
             </TabsList>
-
             <TabsContent className="mt-6" value="reports">
               <div className="rounded-md border">
                 <Table>
@@ -448,7 +446,6 @@ export default function ReportsPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="templates">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {reportTemplates.map((template) => (
@@ -502,7 +499,6 @@ export default function ReportsPage() {
                 ))}
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="analytics">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
@@ -521,7 +517,6 @@ export default function ReportsPage() {
                           style={{ width: '100%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Last Month</span>
                         <span className="text-gray-600 text-sm">2 reports</span>
@@ -532,7 +527,6 @@ export default function ReportsPage() {
                           style={{ width: '50%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Two Months Ago
@@ -548,7 +542,6 @@ export default function ReportsPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Most Popular Reports</CardTitle>
@@ -569,7 +562,6 @@ export default function ReportsPage() {
                           style={{ width: '100%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Monthly Attendance
@@ -584,7 +576,6 @@ export default function ReportsPage() {
                           style={{ width: '80%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Financial Summary
