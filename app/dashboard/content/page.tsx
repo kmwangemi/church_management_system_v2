@@ -141,7 +141,7 @@ const categories = [
 export default function ContentPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [isAddContentOpen, setIsAddContentOpen] = useState(false);
+  const [isAddContentDialogOpen, setIsAddContentDialogOpen] = useState(false);
 
   const filteredContent = content.filter(
     (item) =>
@@ -203,7 +203,10 @@ export default function ContentPage() {
             <Download className="mr-2 h-4 w-4" />
             Export List
           </Button>
-          <Dialog onOpenChange={setIsAddContentOpen} open={isAddContentOpen}>
+          <Dialog
+            onOpenChange={setIsAddContentDialogOpen}
+            open={isAddContentDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -217,12 +220,13 @@ export default function ContentPage() {
                   Upload and manage new church content
                 </DialogDescription>
               </DialogHeader>
-              <AddContentForm onSuccess={() => setIsAddContentOpen(false)} />
+              <AddContentForm
+                onCloseDialog={() => setIsAddContentDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -290,7 +294,6 @@ export default function ContentPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Categories */}
       <Card>
         <CardHeader>
@@ -319,7 +322,6 @@ export default function ContentPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Main Content */}
       <Card>
         <CardHeader>
@@ -343,7 +345,6 @@ export default function ContentPage() {
               <TabsTrigger value="popular">Popular</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
-
             <TabsContent className="mt-6" value="all">
               <div className="rounded-md border">
                 <Table>
@@ -456,7 +457,6 @@ export default function ContentPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="recent">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {content
@@ -506,7 +506,6 @@ export default function ContentPage() {
                   ))}
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="popular">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {content
@@ -552,7 +551,6 @@ export default function ContentPage() {
                   ))}
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="analytics">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
@@ -571,7 +569,6 @@ export default function ContentPage() {
                           style={{ width: '70%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Videos</span>
                         <span className="text-gray-600 text-sm">156 views</span>
@@ -582,7 +579,6 @@ export default function ContentPage() {
                           style={{ width: '47%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Documents</span>
                         <span className="text-gray-600 text-sm">101 views</span>
@@ -596,7 +592,6 @@ export default function ContentPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Monthly Uploads</CardTitle>
@@ -615,7 +610,6 @@ export default function ContentPage() {
                           style={{ width: '60%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           December 2023

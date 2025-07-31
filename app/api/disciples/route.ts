@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import Disciple from '@/models/disciple';
+import User from '@/models/user';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -70,7 +71,10 @@ async function getDisciplesHandler(
       // Add status filter with validation
       query.status = status;
     }
-    if (level && ['new-convert', 'growing', 'mature', 'leader'].includes(level)) {
+    if (
+      level &&
+      ['new-convert', 'growing', 'mature', 'leader'].includes(level)
+    ) {
       // Add level filter with validation
       query.currentLevel = level;
     }
@@ -173,6 +177,16 @@ async function registerDiscipleHandler(
         { status: 400 }
       );
     }
+    // check if member exists
+    const existingMember = await User.findById(memberId);
+    if (!existingMember) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+    // check if mentor exists
+    const existingMentor = await User.findById(mentorId);
+    if (!existingMentor) {
+      return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
+    }
     // Check if member is already in discipleship program
     const existingDisciple = await Disciple.findOne({
       churchId: user.user?.churchId,
@@ -189,19 +203,14 @@ async function registerDiscipleHandler(
     const disciple = new Disciple({
       ...discipleData,
       churchId: user.user?.churchId,
-      branchId: user.user?.branchId, // Assuming user has branchId
+      branchId: existingMember?.branchId || null, // Assuming user has branchId
       startDate: new Date(startDate),
     });
     const savedDisciple = await disciple.save();
-    // Populate the saved disciple before returning
-    const populatedDisciple = await Disciple.findById(savedDisciple._id)
-      .populate('memberId', 'firstName lastName email phoneNumber')
-      .populate('mentorId', 'firstName lastName email phoneNumber')
-      .lean();
     return NextResponse.json(
       {
         success: true,
-        data: populatedDisciple,
+        data: savedDisciple,
         message: 'Disciple added successfully',
       },
       { status: 201 }

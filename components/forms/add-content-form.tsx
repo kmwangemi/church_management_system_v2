@@ -1,10 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, Loader2, Upload } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,8 +25,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  CONTENT_CATEGORY_OPTIONS,
+  CONTENT_STATUS_OPTIONS,
+  CONTENT_TYPE_OPTIONS,
+} from '@/lib/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { FileText, Loader2, Upload } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import z from 'zod';
 
-const contentSchema = z.object({
+const AddcontentSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   type: z.string().min(1, 'Please select content type'),
@@ -41,17 +46,16 @@ const contentSchema = z.object({
   file: z.string().optional(),
 });
 
-type ContentForm = z.infer<typeof contentSchema>;
+type AddContentPayload = z.infer<typeof AddcontentSchema>;
 
 interface AddContentFormProps {
-  onSuccess: () => void;
+  onCloseDialog: () => void;
 }
 
-export function AddContentForm({ onSuccess }: AddContentFormProps) {
+export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<ContentForm>({
-    resolver: zodResolver(contentSchema),
+  const form = useForm<AddContentPayload>({
+    resolver: zodResolver(AddcontentSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -62,14 +66,13 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
       file: '',
     },
   });
-
-  const onSubmit = async (data: ContentForm) => {
+  const onSubmit = async (data: AddContentPayload) => {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       // biome-ignore lint/suspicious/noConsole: ignore console
       console.log('Content data:', data);
-      onSuccess();
+      onCloseDialog();
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: ignore console
       console.error('Error adding content:', error);
@@ -77,7 +80,6 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
       setIsLoading(false);
     }
   };
-
   return (
     <Form {...form}>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -97,7 +99,9 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Content Title</FormLabel>
+                  <FormLabel>
+                    Content Title <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="Enter content title" {...field} />
                   </FormControl>
@@ -105,13 +109,14 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>
+                    Description <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Describe the content..."
@@ -123,32 +128,31 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 </FormItem>
               )}
             />
-
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Content Type</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <FormLabel>
+                      Content Type <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="cursor-pointer">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="sermon">Sermon</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="document">Document</SelectItem>
-                        <SelectItem value="audio">Audio</SelectItem>
-                        <SelectItem value="gallery">Photo Gallery</SelectItem>
-                        <SelectItem value="presentation">
-                          Presentation
-                        </SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {CONTENT_TYPE_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -160,27 +164,25 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <FormLabel>
+                      Category <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="cursor-pointer">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="worship">Worship</SelectItem>
-                        <SelectItem value="teaching">Teaching</SelectItem>
-                        <SelectItem value="event">Event</SelectItem>
-                        <SelectItem value="study-material">
-                          Study Material
-                        </SelectItem>
-                        <SelectItem value="resource">Resource</SelectItem>
-                        <SelectItem value="announcement">
-                          Announcement
-                        </SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {CONTENT_CATEGORY_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -188,7 +190,6 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 )}
               />
             </div>
-
             <FormField
               control={form.control}
               name="tags"
@@ -205,33 +206,36 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
-                  >
+                  <FormLabel>
+                    Status <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="cursor-pointer">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
+                    <SelectContent className="max-h-[400px] overflow-y-auto">
+                      {CONTENT_STATUS_OPTIONS.map((option) => (
+                        <SelectItem
+                          className="cursor-pointer"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="file"
@@ -267,9 +271,8 @@ export function AddContentForm({ onSuccess }: AddContentFormProps) {
             />
           </CardContent>
         </Card>
-
         <div className="flex justify-end space-x-4">
-          <Button onClick={onSuccess} type="button" variant="outline">
+          <Button onClick={onCloseDialog} type="button" variant="outline">
             Cancel
           </Button>
           <Button disabled={isLoading} type="submit">

@@ -1,4 +1,5 @@
 import apiClient from '@/lib/api-client';
+import { successToastStyle } from '@/lib/toast-styles';
 import type {
   MilestoneFilters,
   MilestoneResponse,
@@ -82,16 +83,11 @@ export function useCreateMilestone() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createMilestoneApi,
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate and refetch milestones list
       queryClient.invalidateQueries({ queryKey: milestoneKeys.lists() });
-      toast.success(data.message || 'Milestone created successfully!', {
-        description: `"${data.data.name}" has been added to the milestone library.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to create milestone', {
-        description: error.message,
+      toast.success('Milestone created successfully!', {
+        style: successToastStyle,
       });
     },
   });
@@ -120,11 +116,8 @@ export function useUpdateMilestone() {
       );
       // Invalidate milestones list to refetch
       queryClient.invalidateQueries({ queryKey: milestoneKeys.lists() });
-      toast.success(data.message || 'Milestone updated successfully!');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update milestone', {
-        description: error.message,
+      toast.success('Milestone updated successfully!', {
+        style: successToastStyle,
       });
     },
   });
@@ -134,18 +127,15 @@ export function useDeleteMilestone() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteMilestoneApi,
-    onSuccess: (data, milestoneId) => {
+    onSuccess: (_data, milestoneId) => {
       // Remove from cache
       queryClient.removeQueries({
         queryKey: milestoneKeys.detail(milestoneId),
       });
       // Invalidate milestones list to refetch
       queryClient.invalidateQueries({ queryKey: milestoneKeys.lists() });
-      toast.success(data.message || 'Milestone deleted successfully!');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to delete milestone', {
-        description: error.message,
+      toast.success('Milestone deleted successfully!', {
+        style: successToastStyle,
       });
     },
   });
@@ -174,11 +164,8 @@ export function useToggleMilestoneStatus() {
       );
       // Invalidate milestones list to refetch
       queryClient.invalidateQueries({ queryKey: milestoneKeys.lists() });
-      toast.success(data.message || 'Milestone status updated!');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to toggle milestone status', {
-        description: error.message,
+      toast.success('Milestone status updated!', {
+        style: successToastStyle,
       });
     },
   });

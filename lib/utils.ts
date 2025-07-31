@@ -191,6 +191,24 @@ export const MEMBER_ROLE_OPTIONS = [
   { value: 'bishop', label: 'Bishop' },
 ];
 
+export const PRAYER_CATEGORY_OPTIONS = [
+  { value: 'health', label: 'Health & Healing' },
+  { value: 'family', label: 'Family & Relationships' },
+  { value: 'career', label: 'Career & Work' },
+  { value: 'financial', label: 'Financial' },
+  { value: 'spiritual', label: 'Spiritual Growth' },
+  { value: 'thanksgiving', label: 'Thanksgiving & Praise' },
+  { value: 'guidance', label: 'Guidance & Wisdom' },
+  { value: 'other', label: 'Other' },
+];
+
+export const PRAYER_PRIORITY_OPTIONS = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
+];
+
 export const MILESTONE_CATEGORY_OPTIONS = [
   { value: 'spiritual', label: 'Spiritual' },
   { value: 'bible_study', label: 'Bible Study' },
@@ -425,6 +443,30 @@ export const MESSAGE_SEND_TIME_OPTIONS = [
   { value: 'now', label: 'Send Now' },
   { value: 'scheduled', label: 'Schedule for Later' },
   { value: 'draft', label: 'Save as Draft' },
+];
+
+export const CONTENT_TYPE_OPTIONS = [
+  { value: 'sermon', label: 'Sermon' },
+  { value: 'video', label: 'Video' },
+  { value: 'document', label: 'Document' },
+  { value: 'audio', label: 'Audio' },
+  { value: 'gallery', label: 'Photo Gallery' },
+  { value: 'presentation', label: 'Presentation' },
+];
+
+export const CONTENT_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'published', label: 'Published' },
+  { value: 'archived', label: 'Archived' },
+];
+
+export const CONTENT_CATEGORY_OPTIONS = [
+  { value: 'worship', label: 'Worship' },
+  { value: 'teaching', label: 'Teaching' },
+  { value: 'event', label: 'Event' },
+  { value: 'study-material', label: 'Study Material' },
+  { value: 'resource', label: 'Resource' },
+  { value: 'announcement', label: 'Announcement' },
 ];
 
 export const getUserId = (userId: any): string => {

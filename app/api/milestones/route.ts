@@ -77,7 +77,10 @@ async function getMilestonesHandler(
       // Add category filter with validation
       query.category = category;
     }
-    if (level && ['new-convert', 'growing', 'mature', 'leader'].includes(level)) {
+    if (
+      level &&
+      ['new-convert', 'growing', 'mature', 'leader'].includes(level)
+    ) {
       // Add level filter with validation
       query.level = level;
     }
@@ -199,7 +202,7 @@ async function createMilestoneHandler(
     }).sort({ order: -1 });
     const nextOrder = lastMilestone ? lastMilestone.order + 1 : 1;
     // Set default level if not provided
-    const level = milestoneData.level || 'new_believer';
+    const level = milestoneData.level || 'new-convert';
     // Create and save the milestone
     const milestone = new Milestone({
       ...milestoneData,
@@ -210,14 +213,10 @@ async function createMilestoneHandler(
       order: nextOrder,
     });
     const savedMilestone = await milestone.save();
-    // Populate the saved milestone before returning
-    const populatedMilestone = await Milestone.findById(savedMilestone._id)
-      .populate('prerequisiteMilestones', 'name points category level')
-      .lean();
     return NextResponse.json(
       {
         success: true,
-        data: populatedMilestone,
+        data: savedMilestone,
         message: 'Milestone created successfully',
       },
       { status: 201 }
@@ -225,15 +224,6 @@ async function createMilestoneHandler(
   } catch (error) {
     contextLogger.error('Unexpected error in createMilestoneHandler', error);
     // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
-      );
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationErrors },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { error: 'Failed to create milestone' },
       { status: 500 }
