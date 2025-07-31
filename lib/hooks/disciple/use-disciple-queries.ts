@@ -1,4 +1,5 @@
 import apiClient from '@/lib/api-client';
+import { successToastStyle } from '@/lib/toast-styles';
 import type {
   DiscipleFilters,
   DiscipleResponse,
@@ -91,16 +92,11 @@ export function useRegisterDisciple() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createDiscipleApi,
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate and refetch disciples list
       queryClient.invalidateQueries({ queryKey: discipleKeys.lists() });
-      toast.success(data.message || 'Disciple added successfully!', {
-        description: `${data.data.memberId.firstName} ${data.data.memberId.lastName} has been added to the discipleship program.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to add disciple', {
-        description: error.message,
+      toast.success('Disciple added successfully!', {
+        style: successToastStyle,
       });
     },
   });
@@ -115,11 +111,8 @@ export function useUpdateDisciple() {
       queryClient.setQueryData(discipleKeys.detail(variables.id), data);
       // Invalidate disciples list to refetch
       queryClient.invalidateQueries({ queryKey: discipleKeys.lists() });
-      toast.success(data.message || 'Disciple updated successfully!');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update disciple', {
-        description: error.message,
+      toast.success('Disciple updated successfully!', {
+        style: successToastStyle,
       });
     },
   });
@@ -129,16 +122,13 @@ export function useDeleteDisciple() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteDiscipleApi,
-    onSuccess: (data, discipleId) => {
+    onSuccess: (_data, discipleId) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: discipleKeys.detail(discipleId) });
       // Invalidate disciples list to refetch
       queryClient.invalidateQueries({ queryKey: discipleKeys.lists() });
-      toast.success(data.message || 'Disciple deleted successfully!');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to delete disciple', {
-        description: error.message,
+      toast.success('Disciple deleted successfully!', {
+        style: successToastStyle,
       });
     },
   });
@@ -148,18 +138,15 @@ export function useAddMilestoneCompletion() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: addMilestoneCompletionApi,
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate the specific disciple's data
       queryClient.invalidateQueries({
         queryKey: discipleKeys.detail(variables.discipleId),
       });
       // Invalidate disciples list to update progress
       queryClient.invalidateQueries({ queryKey: discipleKeys.lists() });
-      toast.success(data.message || 'Milestone completion recorded!');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to record milestone completion', {
-        description: error.message,
+      toast.success('Milestone completion recorded!', {
+        style: successToastStyle,
       });
     },
   });

@@ -163,7 +163,7 @@ const prayerTeam = [
 export default function PrayerPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('requests');
-  const [isAddRequestOpen, setIsAddRequestOpen] = useState(false);
+  const [isAddRequestDialogOpen, setIsAddRequestDialogOpen] = useState(false);
 
   const filteredRequests = prayerRequests.filter(
     (request) =>
@@ -221,7 +221,10 @@ export default function PrayerPage() {
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </Button>
-          <Dialog onOpenChange={setIsAddRequestOpen} open={isAddRequestOpen}>
+          <Dialog
+            onOpenChange={setIsAddRequestDialogOpen}
+            open={isAddRequestDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -236,13 +239,12 @@ export default function PrayerPage() {
                 </DialogDescription>
               </DialogHeader>
               <AddPrayerRequestForm
-                onSuccess={() => setIsAddRequestOpen(false)}
+                onCloseDialog={() => setIsAddRequestDialogOpen(false)}
               />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -310,7 +312,6 @@ export default function PrayerPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Card>
         <CardHeader>
@@ -333,7 +334,6 @@ export default function PrayerPage() {
               <TabsTrigger value="team">Prayer Team</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
-
             <TabsContent className="mt-6" value="requests">
               <div className="rounded-md border">
                 <Table>
@@ -446,7 +446,6 @@ export default function PrayerPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="team">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {prayerTeam.map((member) => (
@@ -511,7 +510,6 @@ export default function PrayerPage() {
                 ))}
               </div>
             </TabsContent>
-
             <TabsContent className="mt-6" value="analytics">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
@@ -530,7 +528,6 @@ export default function PrayerPage() {
                           style={{ width: '25%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Family</span>
                         <span className="text-gray-600 text-sm">1 request</span>
@@ -541,7 +538,6 @@ export default function PrayerPage() {
                           style={{ width: '25%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Career</span>
                         <span className="text-gray-600 text-sm">1 request</span>
@@ -552,7 +548,6 @@ export default function PrayerPage() {
                           style={{ width: '25%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Thanksgiving
@@ -568,7 +563,6 @@ export default function PrayerPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Prayer Activity</CardTitle>
@@ -587,7 +581,6 @@ export default function PrayerPage() {
                           style={{ width: '76%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Last Week</span>
                         <span className="text-gray-600 text-sm">
@@ -600,7 +593,6 @@ export default function PrayerPage() {
                           style={{ width: '100%' }}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
                           Two Weeks Ago
