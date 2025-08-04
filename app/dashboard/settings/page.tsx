@@ -138,7 +138,7 @@ const roles = [
 
 export default function SettingsPage() {
   const [selectedTab, setSelectedTab] = useState('general');
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [settings, setSettings] = useState({
     churchName: 'Grace Community Church',
     address: '123 Church Street, City, State 12345',
@@ -207,7 +207,6 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
-
       {/* Main Content */}
       <Card>
         <CardContent className="p-0">
@@ -251,7 +250,6 @@ export default function SettingsPage() {
                 </TabsTrigger>
               </TabsList>
             </div>
-
             <TabsContent className="space-y-6 p-6" value="general">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
@@ -313,7 +311,6 @@ export default function SettingsPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Regional Settings</CardTitle>
@@ -390,7 +387,6 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
               </div>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Church Logo</CardTitle>
@@ -419,7 +415,6 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent className="p-6" value="users">
               <div className="mb-6 flex items-center justify-between">
                 <div>
@@ -428,25 +423,29 @@ export default function SettingsPage() {
                     Manage system users and their access
                   </p>
                 </div>
-                <Dialog onOpenChange={setIsAddUserOpen} open={isAddUserOpen}>
+                <Dialog
+                  onOpenChange={setIsAddUserDialogOpen}
+                  open={isAddUserDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
                       Add User
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add New User</DialogTitle>
                       <DialogDescription>
                         Create a new user account with specific permissions
                       </DialogDescription>
                     </DialogHeader>
-                    <AddUserForm onSuccess={() => setIsAddUserOpen(false)} />
+                    <AddUserForm
+                      onCloseDialog={() => setIsAddUserDialogOpen(false)}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
-
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -544,7 +543,6 @@ export default function SettingsPage() {
                 </Table>
               </div>
             </TabsContent>
-
             <TabsContent className="p-6" value="roles">
               <div className="mb-6 flex items-center justify-between">
                 <div>
@@ -558,7 +556,6 @@ export default function SettingsPage() {
                   Create Role
                 </Button>
               </div>
-
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {roles.map((role) => (
                   <Card
@@ -614,7 +611,6 @@ export default function SettingsPage() {
                 ))}
               </div>
             </TabsContent>
-
             <TabsContent className="space-y-6 p-6" value="notifications">
               <Card>
                 <CardHeader>
@@ -647,7 +643,6 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>SMS Notifications</CardTitle>
@@ -675,7 +670,6 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Web Notifications</CardTitle>
@@ -699,7 +693,6 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent className="space-y-6 p-6" value="system">
               <Card>
                 <CardHeader>
@@ -736,7 +729,6 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Registration Settings</CardTitle>
@@ -774,7 +766,6 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Data Management</CardTitle>

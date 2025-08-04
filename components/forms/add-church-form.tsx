@@ -34,7 +34,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterChurch } from '@/lib/hooks/auth/use-register-queries';
-import { useLogoUpload } from '@/lib/hooks/upload/use-file-upload';
+import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
+import { errorToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   NUMBER_OF_CHURCH_BRANCHES_OPTIONS,
@@ -78,7 +79,7 @@ export function AddChurchForm() {
     uploadProgress,
     error: uploadError,
     clearError,
-  } = useLogoUpload();
+  } = useFileUpload('logo');
   const form = useForm<ChurchRegistrationPayload>({
     resolver: zodResolver(churchRegistrationSchema),
     mode: 'onTouched',
@@ -136,7 +137,9 @@ export function AddChurchForm() {
     }
     // Validate file size (2MB limit)
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('File size must be less than 2MB');
+      toast.error('File size must be less than 2MB', {
+        style: errorToastStyle,
+      });
       return;
     }
     setLogoFile(file);
