@@ -48,7 +48,6 @@ import {
   Smartphone,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface SendMessageFormProps {
@@ -56,7 +55,6 @@ interface SendMessageFormProps {
 }
 
 export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
-  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const {
     mutateAsync: createMessageMutation,
     isPending,
@@ -91,7 +89,8 @@ export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
     reset();
   };
   const getTotalRecipients = () => {
-    return selectedRecipients.reduce((total, groupId) => {
+    const departments = form.watch('recipients') || [];
+    return departments.reduce((total, groupId) => {
       const group = messageRecipientGroups.find((g) => g.id === groupId);
       return total + (group?.count || 0);
     }, 0);
@@ -271,7 +270,6 @@ export function SendMessageForm({ onCloseDialog }: SendMessageFormProps) {
                                             (value) => value !== group.id
                                           );
                                       field.onChange(newValue);
-                                      setSelectedRecipients(newValue);
                                     }}
                                   />
                                 </FormControl>
