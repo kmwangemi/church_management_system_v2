@@ -5,10 +5,10 @@ export interface IContentBase {
   branchId: string;
   title: string;
   description: string;
-  type: ContentType;
-  category: ContentCategory;
+  type: string;
+  category: string;
   tags: string[];
-  status: ContentStatus;
+  status: string;
   author: string;
   isPublic: boolean;
   viewCount: number;
@@ -30,37 +30,6 @@ export interface IContent extends IContentBase {
   engagementScore?: number;
 }
 
-// Content Types
-export type ContentType =
-  | 'sermon'
-  | 'bible_study'
-  | 'prayer'
-  | 'worship'
-  | 'announcement'
-  | 'event'
-  | 'devotional'
-  | 'testimony'
-  | 'music'
-  | 'video'
-  | 'document'
-  | 'image'
-  | 'audio';
-
-// Content Categories
-export type ContentCategory =
-  | 'spiritual'
-  | 'educational'
-  | 'administrative'
-  | 'worship'
-  | 'youth'
-  | 'children'
-  | 'missions'
-  | 'fellowship'
-  | 'outreach'
-  | 'discipleship';
-
-// Content Status
-export type ContentStatus = 'draft' | 'published' | 'archived' | 'private';
 
 // API Response Types
 export interface ContentAddResponse {
@@ -114,25 +83,25 @@ export interface ContentStats {
   totalViews: number;
   totalDownloads: number;
   contentByType: Array<{
-    type: ContentType;
+    type: string;
     count: number;
     percentage: number;
   }>;
   contentByCategory: Array<{
-    category: ContentCategory;
+    category: string;
     count: number;
     percentage: number;
   }>;
   contentByStatus: Array<{
-    status: ContentStatus;
+    status: string;
     count: number;
     percentage: number;
   }>;
   recentContent: Array<{
     _id: string;
     title: string;
-    type: ContentType;
-    status: ContentStatus;
+    type: string;
+    status: string;
     createdAt: string;
     viewCount: number;
     downloadCount: number;
@@ -154,8 +123,8 @@ export interface ContentStatsResponse {
 export interface PopularContent {
   _id: string;
   title: string;
-  type: ContentType;
-  category: ContentCategory;
+  type: string;
+  category: string;
   author: string;
   viewCount: number;
   downloadCount: number;
@@ -177,9 +146,9 @@ export interface PopularContentResponse {
 export interface ContentAnalytics {
   contentId: string;
   title: string;
-  type: ContentType;
-  category: ContentCategory;
-  status: ContentStatus;
+  type: string;
+  category: string;
+  status: string;
   author: string;
   publishedAt?: string;
   createdAt: string;
@@ -252,10 +221,10 @@ export interface ContentSearchResult {
   _id: string;
   title: string;
   description: string;
-  type: ContentType;
-  category: ContentCategory;
+  type: string;
+  category: string;
   tags: string[];
-  status: ContentStatus;
+  status: string;
   author: string;
   createdAt: string;
   publishedAt?: string;
@@ -279,9 +248,9 @@ export interface ContentSearchResponse {
     searchTime: number;
     suggestions?: string[];
     facets: {
-      types: Array<{ type: ContentType; count: number }>;
-      categories: Array<{ category: ContentCategory; count: number }>;
-      statuses: Array<{ status: ContentStatus; count: number }>;
+      types: Array<{ type: string; count: number }>;
+      categories: Array<{ category: string; count: number }>;
+      statuses: Array<{ status: string; count: number }>;
       authors: Array<{ author: string; count: number }>;
     };
   };
@@ -291,9 +260,9 @@ export interface ContentSearchResponse {
 // Filter and Sort Types
 export interface ContentFilters {
   search?: string;
-  type?: ContentType | '';
-  category?: ContentCategory | '';
-  status?: ContentStatus | '';
+  type?: string | '';
+  category?: string | '';
+  status?: string | '';
   tags?: string[];
   author?: string;
   dateFrom?: Date;
@@ -318,10 +287,10 @@ export interface ContentSortOptions {
 export interface ContentFormData {
   title: string;
   description: string;
-  type: ContentType | '';
-  category: ContentCategory | '';
+  type: string | '';
+  category: string | '';
   tags: string;
-  status: ContentStatus;
+  status: string;
   isPublic: boolean;
   file?: File;
 }
@@ -330,9 +299,9 @@ export interface ContentFormData {
 export interface ContentTableRow {
   _id: string;
   title: string;
-  type: ContentType;
-  category: ContentCategory;
-  status: ContentStatus;
+  type: string;
+  category: string;
+  status: string;
   author: string;
   viewCount: number;
   downloadCount: number;
@@ -346,9 +315,9 @@ export interface ContentCardData {
   _id: string;
   title: string;
   description: string;
-  type: ContentType;
-  category: ContentCategory;
-  status: ContentStatus;
+  type: string;
+  category: string;
+  status: string;
   author: string;
   tags: string[];
   viewCount: number;
@@ -414,12 +383,3 @@ export type ContentSummary = Pick<
   IContent,
   '_id' | 'title' | 'type' | 'status' | 'createdAt' | 'viewCount'
 >;
-
-// Re-export from validation file for convenience
-export type {
-  AddContentPayload,
-  BulkDeletePayload,
-  BulkUpdateStatusPayload,
-  ContentQueryParams,
-  UpdateContentPayload,
-} from '@/lib/validations/content';

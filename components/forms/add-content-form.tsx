@@ -1,5 +1,6 @@
 'use client';
 
+import RenderApiError from '@/components/api-error';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,21 +27,25 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { uploadDocument, uploadImage } from '@/components/upload-helpers';
 import { useCreateContent } from '@/lib/hooks/content/use-content-queries';
+import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
+import { errorToastStyle } from '@/lib/toast-styles';
 import type { FileType } from '@/lib/types';
-import type { AddContentPayload } from '@/lib/validations/content';
 import {
-  AddContentSchema,
-  CONTENT_CATEGORIES,
-  CONTENT_STATUSES,
-  CONTENT_TYPES,
+  CONTENT_CATEGORY_OPTIONS,
+  CONTENT_STATUS_OPTIONS,
+  CONTENT_TYPE_OPTIONS,
+} from '@/lib/utils';
+import {
+  // AddContentSchema,
+  FILE_VALIDATION,
+  // type AddContentPayload,
 } from '@/lib/validations/content';
-import { zodResolver } from '@hookform/resolvers/zod';
+// import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, FileText, Loader2, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import RenderApiError from '../api-error';
+import { toast } from 'sonner';
 
 interface AddContentFormProps {
   onCloseDialog: () => void;
@@ -48,8 +53,7 @@ interface AddContentFormProps {
 
 export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileType, setFileType] = useState<FileType>('image');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     mutateAsync: createContentMutation,
@@ -57,13 +61,20 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
     isError,
     error,
   } = useCreateContent();
-  const form = useForm<AddContentPayload>({
-    resolver: zodResolver(AddContentSchema),
+  const {
+    upload,
+    isUploading,
+    uploadProgress,
+    error: uploadError,
+    clearError,
+  } = useFileUpload(fileType);
+  const form = useForm<any>({
+    // resolver: zodResolver(AddContentSchema),
     defaultValues: {
       title: '',
       description: '',
-      type: '' as any,
-      category: '' as any,
+      type: '',
+      category: '',
       tags: '',
       status: 'draft',
       isPublic: false,
@@ -71,43 +82,32 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
   });
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Validate file size (100MB)
-      if (file.size > 100 * 1024 * 1024) {
-        form.setError('fileUrl', {
-          type: 'manual',
-          message: 'File size must be less than 100MB',
-        });
-        return;
-      }
-      // Validate file type
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'audio/mpeg',
-        'audio/wav',
-        'audio/mp3',
-        'video/mp4',
-        'video/avi',
-        'video/quicktime',
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        form.setError('fileUrl', {
-          type: 'manual',
-          message:
-            'Invalid file type. Please upload PDF, DOC, MP3, MP4, JPG, PNG, or PPT files.',
-        });
-        return;
-      }
-      setSelectedFile(file);
-      form.clearErrors('fileUrl');
+    if (!file) return;
+    // Clear any previous errors
+    clearError();
+    // Validate file size (100MB limit)
+    if (file.size > FILE_VALIDATION.MAX_SIZE) {
+      toast.error('File size must be less than 100MB', {
+        style: errorToastStyle,
+      });
+      return;
     }
+    if (!FILE_VALIDATION.ALLOWED_TYPES.includes(file.type)) {
+      toast.error(
+        'Invalid file type. Please upload PDF, DOC, MP3, MP4, JPG, PNG, or PPT files.',
+        {
+          style: errorToastStyle,
+        }
+      );
+      return;
+    }
+    // Determine file type for upload service
+    const determinedFileType: FileType = file.type.startsWith('image/')
+      ? 'image'
+      : 'document';
+    setFileType(determinedFileType);
+    setSelectedFile(file);
+    clearError();
   };
   const removeFile = () => {
     setSelectedFile(null);
@@ -118,8 +118,10 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
     form.setValue('fileName', undefined);
     form.setValue('fileSize', undefined);
     form.setValue('fileMimeType', undefined);
+    clearError();
   };
-  const uploadFileToServer = async (
+  // Handle file upload using the hook
+  const handleFileUpload = async (
     file: File
   ): Promise<{
     fileUrl: string;
@@ -127,66 +129,51 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
     fileSize: number;
     fileMimeType: string;
   }> => {
-    setIsUploading(true);
-    setUploadProgress(0);
     try {
-      // Determine file type for upload service
-      const fileType: FileType = file.type.startsWith('image/')
-        ? 'image'
-        : 'document';
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + Math.random() * 15;
-        });
-      }, 200);
-      let fileUrl: string;
-      if (fileType === 'image') {
-        fileUrl = await uploadImage(file);
-      } else {
-        fileUrl = await uploadDocument(file);
-      }
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      // Use the upload function from the hook
+      const fileUrl = await upload(file);
       return {
         fileUrl,
         fileName: file.name,
         fileSize: file.size,
         fileMimeType: file.type,
       };
-    } finally {
-      setIsUploading(false);
-      setTimeout(() => setUploadProgress(0), 1000);
+    } catch (error) {
+      toast.error('Failed to upload file');
+      console.error('File upload error:', error);
+      throw error;
     }
   };
-  const onSubmit = async (data: AddContentPayload) => {
+  const onSubmit = async (data: any) => {
     try {
       let fileData = {};
       // Upload file if selected
       if (selectedFile) {
-        const uploadResult = await uploadFileToServer(selectedFile);
+        const uploadResult = await handleFileUpload(selectedFile);
         fileData = uploadResult;
       }
       // Create content with file data
-      const contentPayload: AddContentPayload = {
+      const contentPayload: any = {
         ...data,
         ...fileData,
       };
       await createContentMutation(contentPayload);
+      toast.success('Content created successfully');
       onCloseDialog();
     } catch (error) {
       console.error('Error creating content:', error);
-      // Error handling is managed by the mutation hook
+      // Error handling is managed by the mutation hook and upload hook
     }
   };
   const isLoading = isPending || isUploading;
   return (
     <>
       {isError && <RenderApiError error={error} />}
+      {uploadError && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3">
+          <p className="text-red-600 text-sm">{uploadError}</p>
+        </div>
+      )}
       <Form {...form}>
         <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
@@ -253,7 +240,7 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {CONTENT_TYPES.map((option) => (
+                          {CONTENT_TYPE_OPTIONS.map((option) => (
                             <SelectItem
                               className="cursor-pointer"
                               key={option.value}
@@ -286,7 +273,7 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {CONTENT_CATEGORIES.map((option) => (
+                          {CONTENT_CATEGORY_OPTIONS.map((option) => (
                             <SelectItem
                               className="cursor-pointer"
                               key={option.value}
@@ -339,7 +326,7 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {CONTENT_STATUSES.map((option) => (
+                          {CONTENT_STATUS_OPTIONS.map((option) => (
                             <SelectItem
                               className="cursor-pointer"
                               key={option.value}
@@ -358,7 +345,7 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
                   control={form.control}
                   name="isPublic"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <FormItem className="flex flex-col items-start justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">
                           Public Content
@@ -474,11 +461,7 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
             >
               Cancel
             </Button>
-            <Button
-              // disabled={!form.formState.isValid || isLoading}
-              disabled={isLoading}
-              type="submit"
-            >
+            <Button disabled={isLoading} type="submit">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

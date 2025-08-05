@@ -1,6 +1,7 @@
 'use client';
 
 import { DatePicker } from '@/components/date-picker';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useFetchRecipientGroups } from '@/lib/hooks/message/use-message-queries';
 import {
   getRelativeYear,
   REPORT_DATE_RANGE_OPTIONS,
@@ -34,7 +36,7 @@ import {
   REPORT_TYPE_OPTIONS,
 } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BarChart3, Loader2 } from 'lucide-react';
+import { BarChart3, Loader2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -45,8 +47,8 @@ export const AddReportSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   dateRange: z.string().min(1, 'Please select date range'),
   format: z.string().min(1, 'Please select output format'),
-  includeCharts: z.boolean().default(true),
-  includeComparisons: z.boolean().default(false),
+  includeCharts: z.boolean(),
+  includeComparisons: z.boolean(),
   departments: z
     .array(z.string())
     .min(1, 'Please select at least one department'),
@@ -60,18 +62,11 @@ interface GenerateReportFormProps {
   onCloseDialog: () => void;
 }
 
-const departments = [
-  { id: 'all', name: 'All Departments' },
-  { id: 'worship', name: 'Worship Team' },
-  { id: 'youth', name: 'Youth Ministry' },
-  { id: 'children', name: "Children's Ministry" },
-  { id: 'ushering', name: 'Ushering Department' },
-  { id: 'choir', name: 'Choir' },
-  { id: 'media', name: 'Media Team' },
-];
-
 export function GenerateReportForm({ onCloseDialog }: GenerateReportFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { data: departmentsData, isLoading: isLoadingDepartments } =
+    useFetchRecipientGroups();
+  const reportDepartmentGroups = departmentsData?.data?.groups || [];
   const form = useForm<AddReportPayload>({
     resolver: zodResolver(AddReportSchema),
     defaultValues: {
@@ -99,6 +94,21 @@ export function GenerateReportForm({ onCloseDialog }: GenerateReportFormProps) {
       setIsLoading(false);
     }
   };
+  const getTotalDepartments = () => {
+    const departments = form.watch('departments') || [];
+    return departments.reduce((total, groupId) => {
+      const group = reportDepartmentGroups.find((g) => g.id === groupId);
+      return total + (group?.count || 0);
+    }, 0);
+  };
+  if (isLoadingDepartments) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading department groups...</span>
+      </div>
+    );
+  }
   return (
     <Form {...form}>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -207,7 +217,6 @@ export function GenerateReportForm({ onCloseDialog }: GenerateReportFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="dateRange"
@@ -294,52 +303,73 @@ export function GenerateReportForm({ onCloseDialog }: GenerateReportFormProps) {
                 />
               </div>
             )}
-            <FormField
-              control={form.control}
-              name="departments"
-              render={() => (
-                <FormItem>
-                  <FormLabel>
-                    Include Departments <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {departments.map((dept) => (
-                      <FormField
-                        control={form.control}
-                        key={dept.id}
-                        name="departments"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              className="flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-3 hover:bg-gray-50"
-                              key={dept.id}
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(dept.id)}
-                                  onCheckedChange={(checked) => {
-                                    const newValue = checked
-                                      ? [...field.value, dept.id]
-                                      : field.value?.filter(
-                                          (value) => value !== dept.id
-                                        );
-                                    field.onChange(newValue);
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="cursor-pointer font-medium text-sm">
-                                {dept.name}
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Users className="h-5 w-5" />
+                    <span>Departments</span>
+                    <span className="text-red-500">*</span>
                   </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  <Badge variant="secondary">
+                    {getTotalDepartments()} departments selected
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Select atleast one department to include to the report{' '}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="departments"
+                  render={() => (
+                    <FormItem>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {reportDepartmentGroups.map((group) => (
+                          <FormField
+                            control={form.control}
+                            key={group.id}
+                            name="departments"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  className="flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-3 hover:bg-gray-50"
+                                  key={group.id}
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(group.id)}
+                                      onCheckedChange={(checked) => {
+                                        const newValue = checked
+                                          ? [...field.value, group.id]
+                                          : field.value?.filter(
+                                              (value) => value !== group.id
+                                            );
+                                        field.onChange(newValue);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <div className="flex-1">
+                                    <FormLabel className="cursor-pointer font-medium text-sm">
+                                      {group.name}
+                                    </FormLabel>
+                                    <p className="text-gray-500 text-xs">
+                                      {group.count} members
+                                    </p>
+                                  </div>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
             <div className="space-y-4">
               <FormField
                 control={form.control}
