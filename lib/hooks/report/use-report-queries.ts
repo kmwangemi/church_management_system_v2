@@ -1,10 +1,9 @@
 import apiClient from '@/lib/api-client';
-import { errorToastStyle, successToastStyle } from '@/lib/toast-styles';
+import { successToastStyle } from '@/lib/toast-styles';
 import type {
   ReportAddResponse,
-  ReportListResponse,
   ReportDownloadResponse,
-  RecipientGroupsResponse,
+  ReportListResponse,
 } from '@/lib/types/report';
 import type { AddReportPayload } from '@/lib/validations/report';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,17 +21,10 @@ export const useCreateReport = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createReport,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success('Report generation started successfully.', {
         style: successToastStyle,
-      });
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to create report';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
       });
     },
   });
@@ -119,7 +111,6 @@ export const useDownloadReport = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-
       // Get filename from response headers or use default
       const contentDisposition = response.headers['content-disposition'];
       let filename = `report_${reportId}.pdf`;
@@ -129,22 +120,13 @@ export const useDownloadReport = () => {
           filename = filenameMatch[1];
         }
       }
-
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
       toast.success('Report downloaded successfully.', {
         style: successToastStyle,
-      });
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to download report';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
       });
     },
   });
@@ -171,13 +153,6 @@ export const useCancelReport = () => {
         style: successToastStyle,
       });
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to cancel report';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
-      });
-    },
   });
 };
 
@@ -200,13 +175,6 @@ export const useDeleteReport = () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success('Report deleted successfully.', {
         style: successToastStyle,
-      });
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to delete report';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
       });
     },
   });
@@ -259,13 +227,6 @@ export const useDuplicateReport = () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success('Report duplicated successfully.', {
         style: successToastStyle,
-      });
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to duplicate report';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
       });
     },
   });
@@ -353,13 +314,6 @@ export const useRetryReport = () => {
         style: successToastStyle,
       });
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to retry report generation';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
-      });
-    },
   });
 };
 
@@ -388,13 +342,6 @@ export const useBulkDeleteReports = () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(`${data.data.deletedCount} reports deleted successfully.`, {
         style: successToastStyle,
-      });
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || 'Failed to delete reports';
-      toast.error(errorMessage, {
-        style: errorToastStyle,
       });
     },
   });

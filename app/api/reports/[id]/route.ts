@@ -1,4 +1,3 @@
-// /api/reports/[id]/route.ts - Individual report operations
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
@@ -17,7 +16,6 @@ async function getReportHandler(
     { requestId, endpoint: `/api/reports/${params.id}` },
     'api'
   );
-
   try {
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
     if (authResult instanceof Response) {
@@ -28,7 +26,6 @@ async function getReportHandler(
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     if (!user.user?.churchId) {
       return NextResponse.json(
@@ -36,18 +33,14 @@ async function getReportHandler(
         { status: 400 }
       );
     }
-
     await dbConnect();
-
     const report = await Report.findOne({
       _id: new mongoose.Types.ObjectId(params.id),
       churchId: new mongoose.Types.ObjectId(user.user?.churchId),
-    }).populate('createdBy', 'name email');
-
+    }).populate('createdBy', 'firstName lastName email');
     if (!report) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
-
     return NextResponse.json({
       success: true,
       data: report,
@@ -71,7 +64,6 @@ async function cancelReportHandler(
     { requestId, endpoint: `/api/reports/${params.id}/cancel` },
     'api'
   );
-
   try {
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
     if (authResult instanceof Response) {
@@ -82,10 +74,8 @@ async function cancelReportHandler(
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     await dbConnect();
-
     const report = await Report.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(params.id),
@@ -95,16 +85,13 @@ async function cancelReportHandler(
       { status: 'cancelled' },
       { new: true }
     );
-
     if (!report) {
       return NextResponse.json(
         { error: 'Report not found or cannot be cancelled' },
         { status: 404 }
       );
     }
-
     contextLogger.info('Report cancelled', { reportId: params.id });
-
     return NextResponse.json({
       success: true,
       message: 'Report cancelled successfully',
@@ -128,7 +115,6 @@ async function deleteReportHandler(
     { requestId, endpoint: `/api/reports/${params.id}` },
     'api'
   );
-
   try {
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
     if (authResult instanceof Response) {
@@ -139,26 +125,20 @@ async function deleteReportHandler(
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     await dbConnect();
-
     const report = await Report.findOneAndDelete({
       _id: new mongoose.Types.ObjectId(params.id),
       churchId: new mongoose.Types.ObjectId(user.user?.churchId),
     });
-
     if (!report) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
-
     // TODO: Clean up associated files from storage
     // if (report.fileUrl) {
     //   await deleteFileFromStorage(report.fileUrl);
     // }
-
     contextLogger.info('Report deleted', { reportId: params.id });
-
     return NextResponse.json({
       success: true,
       message: 'Report deleted successfully',
@@ -189,6 +169,3 @@ export const DELETE = withApiLogger(deleteReportHandler, {
   logResponses: true,
   logErrors: true,
 });
-
-
-

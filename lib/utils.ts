@@ -498,11 +498,11 @@ export const REPORT_OUTPUT_FORMAT_OPTIONS = [
 ];
 
 export const REPORT_DATE_RANGE_OPTIONS = [
-  { value: 'last-week', label: 'Last Week' },
-  { value: 'last-month', label: 'Last Month' },
-  { value: 'last-quarter', label: 'Last Quarter' },
-  { value: 'last-year', label: 'Last Year' },
-  { value: 'ytd', label: 'Year to Date' },
+  { value: 'last7days', label: 'Last Week' },
+  { value: 'last30days', label: 'Last Month' },
+  { value: 'last3months', label: 'Last Quarter' },
+  { value: 'last6months', label: 'Last 6 Months' },
+  { value: 'lastyear', label: 'Last Year' },
   { value: 'custom', label: 'Custom Range' },
 ];
 
@@ -551,3 +551,41 @@ export const FILE_CONFIGS = {
     resourceType: 'image' as const,
   },
 };
+
+// Helper function to calculate date range
+export function calculateDateRange(
+  dateRange: string,
+  customStartDate?: string,
+  customEndDate?: string
+) {
+  const now = new Date();
+  let startDate: Date;
+  let endDate: Date = now;
+  switch (dateRange) {
+    case 'last7days':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'last30days':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case 'last3months':
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      break;
+    case 'last6months':
+      startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+      break;
+    case 'lastyear':
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      break;
+    case 'custom':
+      if (!(customStartDate && customEndDate)) {
+        throw new Error('Custom start and end dates are required');
+      }
+      startDate = new Date(customStartDate);
+      endDate = new Date(customEndDate);
+      break;
+    default:
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  return { startDate, endDate };
+}

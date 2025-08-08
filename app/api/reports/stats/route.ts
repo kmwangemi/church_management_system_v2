@@ -15,7 +15,6 @@ export async function getReportStatsHandler(
     { requestId, endpoint: '/api/reports/stats' },
     'api'
   );
-
   try {
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
     if (authResult instanceof Response) {
@@ -26,7 +25,6 @@ export async function getReportStatsHandler(
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     if (!user.user?.churchId) {
       return NextResponse.json(
@@ -34,11 +32,8 @@ export async function getReportStatsHandler(
         { status: 400 }
       );
     }
-
     await dbConnect();
-
     const churchId = new mongoose.Types.ObjectId(user.user?.churchId);
-
     // Get aggregated statistics
     const [
       totalReports,
@@ -69,7 +64,6 @@ export async function getReportStatsHandler(
         .limit(5)
         .lean(),
     ]);
-
     return NextResponse.json({
       success: true,
       data: {
@@ -90,3 +84,10 @@ export async function getReportStatsHandler(
     );
   }
 }
+
+// Export handlers with logging middleware
+export const GET = withApiLogger(getReportStatsHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});

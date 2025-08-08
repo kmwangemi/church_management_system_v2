@@ -28,6 +28,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
@@ -265,7 +266,7 @@ export default function DashboardPage() {
                   key={index}
                   variant="outline"
                 >
-                  <a href={action.href}>
+                  <Link href={action.href}>
                     <div className="flex items-start space-x-3">
                       <action.icon className="mt-0.5 h-5 w-5" />
                       <div className="text-left">
@@ -275,7 +276,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                  </a>
+                  </Link>
                 </Button>
               ))}
             </CardContent>
