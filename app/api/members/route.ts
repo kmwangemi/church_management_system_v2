@@ -5,205 +5,146 @@ import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddMemberPayload } from '@/lib/validations/members';
 import User from '@/models/user'; // Only import User model
-import bcrypt from 'bcryptjs'; // For password hashing
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
-// Helper function to generate role-specific IDs
-const generateRoleId = async (
-  role: string,
-  churchId: mongoose.Types.ObjectId,
-  session: mongoose.ClientSession
-) => {
-  let count = 0;
-  let prefix = '';
-  // Count existing users with this role in the church
-  const roleQuery: any = {
-    churchId,
-    roles: role,
-    status: { $ne: 'deleted' }, // Don't count deleted users
-  };
+// Helper function to generate role-specific IDs - UPDATED to match model's approach
+const generateRoleId = (role: string) => {
+  const now = Date.now();
+  const rand = () => Math.random().toString(36).substr(2, 4).toUpperCase();
+  // Use the same format as your model's generateRoleIds function
   switch (role) {
     case 'member':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'MEM';
-      break;
+      return `MEM-${now}-${rand()}`;
     case 'visitor':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'VIS';
-      break;
+      return `VIS-${now}-${rand()}`;
     case 'pastor':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'PAS';
-      break;
+      return `PST-${now}-${rand()}`;
     case 'bishop':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'BIS';
-      break;
+      return `BSH-${now}-${rand()}`;
     case 'staff':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'STA';
-      break;
+      return `STF-${now}-${rand()}`;
     case 'volunteer':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'VOL';
-      break;
+      return `VOL-${now}-${rand()}`;
     case 'admin':
-      count = await User.countDocuments(roleQuery).session(session);
-      prefix = 'ADM';
-      break;
+      return `ADM-${now}-${rand()}`;
+    case 'superadmin':
+      return `SUP-${now}-${rand()}`;
     default:
-      prefix = 'USR';
+      return `USR-${now}-${rand()}`;
   }
-  return `${prefix}${String(count + 1).padStart(4, '0')}`;
 };
 
-// Helper function to prepare role-specific data
-const prepareRoleSpecificData = async (
-  role: string,
-  userData: any,
-  churchId: mongoose.Types.ObjectId,
-  session: mongoose.ClientSession
-) => {
-  const roleId = await generateRoleId(role, churchId, session);
+// Helper function to prepare role-specific data - FIXED to match your model
+const prepareRoleSpecificData = (role: string, userData: any) => {
+  const result: any = {};
   switch (role) {
     case 'member':
-      return {
-        memberDetails: {
-          memberId: roleId,
-          membershipDate: userData.membershipDate || new Date(),
-          membershipStatus: 'active',
-          departmentIds: userData.departmentIds || [],
-          groupIds: userData.groupIds || [],
-          occupation: userData.occupation,
-          baptismDate: userData.baptismDate,
-          joinedDate: userData.joinedDate || new Date(),
-        },
+      result.memberDetails = {
+        memberId: generateRoleId('member'),
+        membershipDate: userData.membershipDate || new Date(),
+        membershipStatus: 'active',
+        departmentIds: userData.departmentIds || [],
+        groupIds: userData.groupIds || [],
+        occupation: userData.occupation,
+        baptismDate: userData.baptismDate,
+        joinedDate: userData.joinedDate || new Date(),
       };
+      break;
     case 'visitor':
-      return {
-        visitorDetails: {
-          visitorId: roleId,
-          visitDate: userData.visitDate || new Date(),
-          invitedBy: userData.invitedBy,
-          howDidYouHear: userData.howDidYouHear || 'other',
-          followUpStatus: 'pending',
-          interestedInMembership: userData.interestedInMembership,
-          occupation: userData.occupation,
-        },
+      result.visitorDetails = {
+        visitorId: generateRoleId('visitor'),
+        visitDate: userData.visitDate || new Date(),
+        invitedBy: userData.invitedBy,
+        howDidYouHear: userData.howDidYouHear || 'other',
+        followUpStatus: 'pending',
+        interestedInMembership: userData.interestedInMembership,
+        servicesAttended: userData.servicesAttended || [],
+        occupation: userData.occupation,
       };
+      break;
     case 'pastor':
-      return {
-        // If pastor, they're also members
-        memberDetails: {
-          memberId: await generateRoleId('member', churchId, session),
-          membershipDate: userData.membershipDate || new Date(),
-          membershipStatus: 'active',
-          joinedDate: userData.joinedDate || new Date(),
-        },
-        pastorDetails: {
-          pastorId: roleId,
-          ordinationDate: userData.ordinationDate,
-          qualifications: userData.qualifications || [],
-          specializations: userData.specializations || [],
-          assignments: userData.assignments || [],
-          sermonCount: 0,
-          counselingSessions: 0,
-          biography: userData.biography,
-        },
+      result.pastorDetails = {
+        pastorId: generateRoleId('pastor'),
+        ordinationDate: userData.ordinationDate,
+        qualifications: userData.qualifications || [],
+        specializations: userData.specializations || [],
+        assignments: userData.assignments || [],
+        sermonCount: 0,
+        counselingSessions: 0,
+        biography: userData.biography,
       };
+      break;
     case 'bishop':
-      return {
-        // If bishop, they're also members
-        memberDetails: {
-          memberId: await generateRoleId('member', churchId, session),
-          membershipDate: userData.membershipDate || new Date(),
-          membershipStatus: 'active',
-          joinedDate: userData.joinedDate || new Date(),
-        },
-        bishopDetails: {
-          bishopId: roleId,
-          appointmentDate: userData.appointmentDate,
-          jurisdictionArea: userData.jurisdictionArea,
-          oversight: userData.oversight || {},
-          qualifications: userData.qualifications || [],
-          achievements: userData.achievements || [],
-          biography: userData.biography,
-        },
+      result.bishopDetails = {
+        bishopId: generateRoleId('bishop'),
+        appointmentDate: userData.appointmentDate,
+        jurisdictionArea: userData.jurisdictionArea,
+        oversight: userData.oversight || { branchIds: [], pastorIds: [] },
+        qualifications: userData.qualifications || [],
+        achievements: userData.achievements || [],
+        biography: userData.biography,
       };
-    case 'staff': {
-      const staffData: any = {
-        staffDetails: {
-          staffId: roleId,
-          jobTitle: userData.jobTitle,
-          department: userData.department,
-          startDate: userData.startDate || new Date(),
-          employmentType: userData.employmentType || 'casual',
-          isActive: true,
-          salary: userData.salary,
-        },
+      break;
+    case 'admin':
+      result.adminDetails = {
+        adminId: generateRoleId('admin'),
+        accessLevel: userData.accessLevel || 'national', // Default per your model
+        assignedBranches: userData.assignedBranches || [],
       };
-      // If staff is also a member
-      if (userData.isMember) {
-        staffData.memberDetails = {
-          memberId: await generateRoleId('member', churchId, session),
-          membershipDate: userData.membershipDate || new Date(),
-          membershipStatus: 'active',
-          joinedDate: userData.joinedDate || new Date(),
-        };
-      }
-      return staffData;
-    }
-    case 'volunteer': {
-      const volunteerData: any = {
-        volunteerDetails: {
-          volunteerId: roleId,
-          volunteerStatus: 'active',
-          availabilitySchedule: userData.availabilitySchedule || {},
-          skills: userData.skills || [],
-          departments: userData.departments || [],
-          ministries: userData.ministries || [],
-          volunteerRoles: userData.volunteerRoles || [],
-          backgroundCheck: userData.backgroundCheck || { completed: false },
-          emergencyContact: userData.emergencyContact,
-          hoursContributed: 0,
+      break;
+    case 'superadmin':
+      result.superAdminDetails = {
+        superAdminId: generateRoleId('superadmin'),
+        accessLevel: 'global',
+        systemSettings: {
+          canCreateChurches: userData.systemSettings?.canCreateChurches ?? true,
+          canDeleteChurches: userData.systemSettings?.canDeleteChurches ?? true,
+          canManageUsers: userData.systemSettings?.canManageUsers ?? true,
+          canAccessAnalytics:
+            userData.systemSettings?.canAccessAnalytics ?? true,
+          canManageSubscriptions:
+            userData.systemSettings?.canManageSubscriptions ?? true,
+          canAccessSystemLogs:
+            userData.systemSettings?.canAccessSystemLogs ?? true,
         },
+        companyInfo: userData.companyInfo || {},
       };
-      // Most volunteers are also members
-      if (userData.isMember !== false) {
-        // Default to true
-        volunteerData.memberDetails = {
-          memberId: await generateRoleId('member', churchId, session),
-          membershipDate: userData.membershipDate || new Date(),
-          membershipStatus: 'active',
-          joinedDate: userData.joinedDate || new Date(),
-        };
-      }
-      return volunteerData;
-    }
-    case 'admin': {
-      const adminData: any = {
-        adminDetails: {
-          adminId: roleId,
-          accessLevel: userData.accessLevel || 'branch',
-          permissions: userData.permissions || [],
-          assignedBranches: userData.assignedBranches || [],
-        },
-      };
-      // If admin is also a member
-      if (userData.isMember) {
-        adminData.memberDetails = {
-          memberId: await generateRoleId('member', churchId, session),
-          membershipDate: userData.membershipDate || new Date(),
-          membershipStatus: 'active',
-          joinedDate: userData.joinedDate || new Date(),
-        };
-      }
-      return adminData;
-    }
+      break;
     default:
       throw new Error(`Unsupported role: ${role}`);
   }
+  // Handle staff details if isStaff is true
+  if (userData.isStaff) {
+    result.staffDetails = {
+      staffId: generateRoleId('staff'),
+      jobTitle: userData.jobTitle,
+      department: userData.department,
+      startDate: userData.startDate || new Date(),
+      employmentType: userData.employmentType || 'casual',
+      isActive: true,
+      salary: userData.salary,
+    };
+  }
+  // Handle volunteer details if isVolunteer is true
+  if (userData.isVolunteer) {
+    result.volunteerDetails = {
+      volunteerId: generateRoleId('volunteer'),
+      volunteerStatus: 'active',
+      availabilitySchedule: userData.availabilitySchedule || {
+        days: [],
+        timeSlots: [],
+        preferredTimes: '',
+      },
+      skills: userData.skills || [],
+      departments: userData.departments || [],
+      ministries: userData.ministries || [],
+      volunteerRoles: userData.volunteerRoles || [],
+      backgroundCheck: userData.backgroundCheck || { completed: false },
+      hoursContributed: 0,
+    };
+  }
+  return result;
 };
 
 async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
@@ -236,11 +177,14 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
     const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
-    const branchId = searchParams.get('branchId') || '';
     const role = searchParams.get('role') || '';
+    const isStaff = searchParams.get('isStaff');
+    const isVolunteer = searchParams.get('isVolunteer');
+    const isMember = searchParams.get('isMember');
+    // Build query based on your model - FIXED to use isDeleted instead of status: 'deleted'
     const query: any = {
       churchId: user.user?.churchId,
-      status: { $ne: 'deleted' }, // Don't show deleted users
+      isDeleted: false, // Use isDeleted field from your model
     };
     // Search across common fields
     if (search) {
@@ -251,17 +195,25 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
         { phoneNumber: { $regex: search, $options: 'i' } },
       ];
     }
-    // Filter by user status
+    // Filter by user status - using the actual status field
     if (status) {
       query.status = status;
     }
-    // Filter by branch
-    if (branchId) {
-      query.branchId = branchId;
-    }
-    // Filter by role
+    // Filter by role (single role system)
     if (role) {
-      query.roles = role;
+      query.role = role;
+    }
+    // Filter by staff status
+    if (isStaff !== null) {
+      query.isStaff = isStaff === 'true';
+    }
+    // Filter by volunteer status
+    if (isVolunteer !== null) {
+      query.isVolunteer = isVolunteer === 'true';
+    }
+    // Filter by member status
+    if (isMember !== null) {
+      query.isMember = isMember === 'true';
     }
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
@@ -270,7 +222,8 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
         .skip(skip)
         .limit(limit)
         .populate('createdBy', 'firstName lastName')
-        .populate('updatedBy', 'firstName lastName'),
+        .populate('updatedBy', 'firstName lastName')
+        .lean(), // Use lean() for better performance
       User.countDocuments(query),
     ]);
     return NextResponse.json({
@@ -318,7 +271,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
     const userData: AddMemberPayload = await request.json();
     // Start the transaction
     await session.startTransaction();
-    // Validate required fields
+    // Validate required fields according to your model
     if (!userData.role) {
       await session.abortTransaction();
       return NextResponse.json({ error: 'Role is required' }, { status: 400 });
@@ -330,13 +283,26 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
-    // Check for duplicate email (if provided)
+    if (!userData.phoneNumber) {
+      await session.abortTransaction();
+      return NextResponse.json(
+        { error: 'Phone number is required' },
+        { status: 400 }
+      );
+    }
+    if (!userData.gender) {
+      await session.abortTransaction();
+      return NextResponse.json(
+        { error: 'Gender is required' },
+        { status: 400 }
+      );
+    }
+    // Check for duplicate email (if provided) - FIXED query
     if (userData.email) {
       const existingUserEmail = await User.findOne({
         email: userData.email,
-        status: { $ne: 'deleted' },
+        isDeleted: false, // Use isDeleted instead of status
       }).session(session);
-
       if (existingUserEmail) {
         await session.abortTransaction();
         return NextResponse.json(
@@ -345,11 +311,11 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
         );
       }
     }
-    // Check for duplicate phone number
+    // Check for duplicate phone number - FIXED query
     if (userData.phoneNumber) {
       const existingUserPhone = await User.findOne({
         phoneNumber: userData.phoneNumber,
-        status: { $ne: 'deleted' },
+        isDeleted: false, // Use isDeleted instead of status
       }).session(session);
       if (existingUserPhone) {
         await session.abortTransaction();
@@ -359,93 +325,113 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
         );
       }
     }
-    // Hash password if provided
-    let hashedPassword: string | undefined;
-    if (userData.password) {
-      hashedPassword = await bcrypt.hash(userData.password, 12);
-    } else {
-      // Generate default password for certain roles
-      if (['admin', 'pastor', 'bishop', 'staff'].includes(userData.role)) {
-        hashedPassword = await bcrypt.hash('User123!', 12);
-      }
-    }
     // Prepare role-specific data
-    const roleSpecificData = await prepareRoleSpecificData(
-      userData.role,
-      userData,
-      user.user?.churchId,
-      session
-    );
-    // Determine roles array (some roles include member)
-    let roles = [userData.role];
-    if (['pastor', 'bishop'].includes(userData.role)) {
-      roles = ['member', userData.role];
-    } else if (
-      userData.isMember &&
-      ['staff', 'volunteer', 'admin'].includes(userData.role)
-    ) {
-      roles = ['member', userData.role];
+    const roleSpecificData = prepareRoleSpecificData(userData.role, userData);
+    // Determine branchId requirement based on your model logic
+    const branchId = userData.branchId;
+    if (!(['admin', 'superadmin'].includes(userData.role) || branchId)) {
+      await session.abortTransaction();
+      return NextResponse.json(
+        { error: 'Branch ID is required for this role' },
+        { status: 400 }
+      );
     }
-    // Create user with embedded role data
+    // Create user with embedded role data - ALIGNED with your model
     const createdUser = new User({
       // Common fields
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
       phoneNumber: userData.phoneNumber,
-      dateOfBirth: userData.dateOfBirth,
       gender: userData.gender,
       address: userData.address,
-      profileImage: userData.profileImage,
-      // Church and role info
-      churchId: user.user?.churchId,
-      roles,
-      primaryRole: userData.role,
+      // Church and branch info
+      churchId:
+        userData.role === 'superadmin' ? undefined : user.user?.churchId,
+      // branchId: ['admin', 'superadmin'].includes(userData.role)
+      //   ? undefined
+      //   : branchId,
+      branchId: ['superadmin'].includes(userData.role)
+        ? undefined
+        : branchId,
+      // Role system
+      role: userData.role,
+      isMember: userData.isMember,
+      // Secondary role flags
+      isStaff: userData.isStaff,
+      isVolunteer: userData.isVolunteer,
       // Role-specific embedded data
-      ...roleSpecificData,
+      memberDetails: roleSpecificData.memberDetails,
+      pastorDetails: roleSpecificData.pastorDetails,
+      bishopDetails: roleSpecificData.bishopDetails,
+      adminDetails: roleSpecificData.adminDetails,
+      superAdminDetails: roleSpecificData.superAdminDetails,
+      visitorDetails: roleSpecificData.visitorDetails,
+      staffDetails: roleSpecificData.staffDetails,
+      volunteerDetails: roleSpecificData.volunteerDetails,
       // Account info
       status: 'active',
-      passwordHash: hashedPassword,
+      passwordHash: userData.password || 'User123!', // Default password if not provided
       isEmailVerified: false,
-      // Audit fields
-      createdBy: user.user?.sub,
+      agreeToTerms: true, // Default as per model
+      // Additional fields that might be provided
+      maritalStatus: userData.maritalStatus,
+      emergencyDetails: userData.emergencyDetails,
+      // Audit fields - conditional based on role
+      createdBy:
+        userData.role === 'superadmin'
+          ? undefined
+          : new mongoose.Types.ObjectId(user.user?.sub),
+      updatedBy:
+        userData.role === 'superadmin'
+          ? undefined
+          : new mongoose.Types.ObjectId(user.user?.sub),
     });
+    // Save the user (pre-save middleware will handle ID generation)
     await createdUser.save({ session });
     // Commit the transaction
     await session.commitTransaction();
     transactionCommitted = true;
-    // Prepare response
+    // Prepare response with all role-specific IDs
     const responseData: any = {
       message: `${userData.role.charAt(0).toUpperCase() + userData.role.slice(1)} created successfully`,
       userId: createdUser._id,
-      roles: createdUser.roles,
-      primaryRole: createdUser.primaryRole,
+      role: createdUser.role,
+      isMember: createdUser.isMember,
+      isStaff: createdUser.isStaff,
+      isVolunteer: createdUser.isVolunteer,
     };
     // Add role-specific IDs to response
-    if (createdUser.memberDetails) {
+    if (createdUser.memberDetails?.memberId) {
       responseData.memberId = createdUser.memberDetails.memberId;
     }
-    if (createdUser.pastorDetails) {
+    if (createdUser.pastorDetails?.pastorId) {
       responseData.pastorId = createdUser.pastorDetails.pastorId;
     }
-    if (createdUser.bishopDetails) {
+    if (createdUser.bishopDetails?.bishopId) {
       responseData.bishopId = createdUser.bishopDetails.bishopId;
     }
-    if (createdUser.staffDetails) {
+    if (createdUser.staffDetails?.staffId) {
       responseData.staffId = createdUser.staffDetails.staffId;
     }
-    if (createdUser.volunteerDetails) {
+    if (createdUser.volunteerDetails?.volunteerId) {
       responseData.volunteerId = createdUser.volunteerDetails.volunteerId;
     }
-    if (createdUser.adminDetails) {
+    if (createdUser.adminDetails?.adminId) {
       responseData.adminId = createdUser.adminDetails.adminId;
     }
-    if (createdUser.visitorDetails) {
+    if (createdUser.superAdminDetails?.superAdminId) {
+      responseData.superAdminId = createdUser.superAdminDetails.superAdminId;
+    }
+    if (createdUser.visitorDetails?.visitorId) {
       responseData.visitorId = createdUser.visitorDetails.visitorId;
     }
     contextLogger.info(`${userData.role} created successfully`, {
       userId: createdUser._id,
-      roles: createdUser.roles,
+      role: createdUser.role,
+      isMember: createdUser.isMember,
+      isStaff: createdUser.isStaff,
+      isVolunteer: createdUser.isVolunteer,
     });
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
