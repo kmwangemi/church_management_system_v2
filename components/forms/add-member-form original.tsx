@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -19,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -41,8 +41,6 @@ import { Church, Loader2, Shield, User } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { BranchListInput } from '../branch-list-input';
-import { CountrySelect } from '../country-list-input';
-import { PasswordInput } from '../password-input';
 
 interface AddMemberFormProps {
   onCloseDialog: () => void;
@@ -61,24 +59,17 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
     defaultValues: {
       firstName: '',
       lastName: '',
-      phoneNumber: '',
-      gender: 'male',
-      role: '',
       email: '',
+      phoneNumber: '',
+      address: '',
+      gender: 'male',
       maritalStatus: 'single',
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'Kenya',
-      },
+      role: '',
+      password: '',
       isMember: true,
       isStaff: false,
       isVolunteer: false,
       branchId: '',
-      password: 'User@123',
-      // Emergency contact details (matching your model structure)
       emergencyDetails: {
         emergencyContactFullName: '',
         emergencyContactEmail: '',
@@ -87,7 +78,6 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
         emergencyContactAddress: '',
         emergencyContactNotes: '',
       },
-      sendWelcomeEmail: false,
     },
   });
   const { reset } = form;
@@ -100,7 +90,6 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
-    setSelectedBranch(null);
   };
   return (
     <>
@@ -190,6 +179,47 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="isMember"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Church Member</FormLabel>
+                      <p className="text-gray-500 text-sm">
+                        Allow all church members to see and pray for this
+                        request
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Address <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter full address"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -258,73 +288,6 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
                   )}
                 />
               </div>
-              <div className="space-y-4">
-                <FormLabel>Address</FormLabel>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="address.street"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Street Address <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main Street" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address.city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          City <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nairobi" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address.country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Country <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <CountrySelect
-                            onChange={field.onChange}
-                            placeholder="Select your country"
-                            value={field.value}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address.zipCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Postal Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="00100" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
             </CardContent>
           </Card>
           {/* Church Information */}
@@ -337,143 +300,64 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
               <CardDescription>Role and branch assignments</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Role <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {MEMBER_ROLE_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="branchId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Branch <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <BranchListInput
-                        className="w-full"
-                        onChange={(branch) => {
-                          setSelectedBranch(branch);
-                          field.onChange(branch?._id || '');
-                        }}
-                        placeholder="Search and select a branch"
-                        value={selectedBranch}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="isMember"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        disabled // Auto-calculated, not user-editable
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Church Member</FormLabel>
-                      <p className="text-gray-500 text-sm">
-                        This person is also a church member
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              {/* Secondary role flags */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="isStaff"
+                  name="branchId"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem>
+                      <FormLabel>
+                        Branch <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                        <BranchListInput
+                          className="w-full"
+                          onChange={(branch) => {
+                            setSelectedBranch(branch);
+                            field.onChange(branch?._id || ''); // ✅ Store only the ID
+                          }}
+                          placeholder="Search and select a branch"
+                          value={selectedBranch} // ✅ Use state for display
                         />
                       </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Staff Member</FormLabel>
-                        <p className="text-gray-500 text-sm">
-                          This person is also a paid staff member
-                        </p>
-                      </div>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="isVolunteer"
+                  name="role"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Volunteer</FormLabel>
-                        <p className="text-gray-500 text-sm">
-                          This person also volunteers in church activities
-                        </p>
-                      </div>
+                    <FormItem>
+                      <FormLabel>
+                        Role <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {MEMBER_ROLE_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Temporary Password</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        disabled
-                        placeholder="Enter temporary password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <p className="text-gray-500 text-sm">
-                      User will be prompted to change this on first login
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
           {/* Emergency Contact */}
@@ -528,7 +412,7 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
                           defaultCountry="KE"
                           onChange={field.onChange}
                           placeholder="Phone number"
-                          value={field.value || ''}
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -542,10 +426,20 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
                     <FormItem>
                       <FormLabel>Relationship</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="e.g., Spouse, Parent, Sibling"
-                          {...field}
-                        />
+                        <Input placeholder="Spouse" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyDetails.emergencyContactAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Physical Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Church Street" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -554,59 +448,18 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
               </div>
               <FormField
                 control={form.control}
-                name="emergencyDetails.emergencyContactAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Physical Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="123 Church Street, Nairobi"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="emergencyDetails.emergencyContactNotes"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Additional Notes</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Additional emergency contact information"
+                        placeholder="Additional notes"
                         rows={3}
                         {...field}
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <FormField
-                control={form.control}
-                name="sendWelcomeEmail"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Send Welcome Email</FormLabel>
-                      <p className="text-gray-500 text-sm">
-                        Send login credentials and welcome information to the
-                        user
-                      </p>
-                    </div>
                   </FormItem>
                 )}
               />

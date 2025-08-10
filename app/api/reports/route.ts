@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
+import { calculateDateRange } from '@/lib/utils';
 import Report from '@/models/report';
 import User from '@/models/user';
 import mongoose from 'mongoose';
@@ -123,98 +124,73 @@ async function getReportsHandler(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-// Helper function to calculate date range
-function calculateDateRange(
-  dateRange: string,
-  customStartDate?: string,
-  customEndDate?: string
-) {
-  const now = new Date();
-  let startDate: Date;
-  let endDate: Date = now;
-  switch (dateRange) {
-    case 'last7days':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'last30days':
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    case 'last3months':
-      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-      break;
-    case 'last6months':
-      startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-      break;
-    case 'lastyear':
-      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      break;
-    case 'custom':
-      if (!(customStartDate && customEndDate)) {
-        throw new Error('Custom start and end dates are required');
-      }
-      startDate = new Date(customStartDate);
-      endDate = new Date(customEndDate);
-      break;
-    default:
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  return { startDate, endDate };
-}
-
 // Helper function to calculate department counts
 async function calculateDepartmentCounts(
   departments: string[],
   churchId: mongoose.Types.ObjectId
 ) {
-  let totalCount = 0;
-  const departmentCounts = [];
-  for (const departmentId of departments) {
-    let count = 0;
-    let departmentName = '';
-    // Parse department ID to determine type and count members
-    if (departmentId === 'all') {
-      count = await User.countDocuments({ churchId, status: 'active' });
-      departmentName = 'All Members';
-    } else if (departmentId === 'leadership') {
-      count = await User.countDocuments({
-        churchId,
-        role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
-        status: 'active',
-      });
-      departmentName = 'Leadership';
-    } else if (departmentId === 'volunteers') {
-      count = await User.countDocuments({
-        churchId,
-        role: 'volunteer',
-        status: 'active',
-      });
-      departmentName = 'Volunteers';
-    } else if (departmentId.startsWith('dept_')) {
-      const deptId = departmentId.replace('dept_', '');
-      count = await User.countDocuments({
-        churchId,
-        departmentId: new mongoose.Types.ObjectId(deptId),
-        status: 'active',
-      });
-      // You might want to populate department name from Department model
-      departmentName = `Department ${deptId}`;
-    } else if (departmentId.startsWith('group_')) {
-      const groupId = departmentId.replace('group_', '');
-      count = await User.countDocuments({
-        churchId,
-        groupId: new mongoose.Types.ObjectId(groupId),
-        status: 'active',
-      });
-      // You might want to populate group name from Group model
-      departmentName = `Group ${groupId}`;
+  // Create an array of promises for all department count queries
+  const countPromises = departments.map(async (departmentId) => {
+    try {
+      let count = 0;
+      let departmentName = '';
+      // Parse department ID to determine type and count members
+      if (departmentId === 'all') {
+        count = await User.countDocuments({ churchId, status: 'active' });
+        departmentName = 'All Members';
+      } else if (departmentId === 'leadership') {
+        count = await User.countDocuments({
+          churchId,
+          role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
+          status: 'active',
+        });
+        departmentName = 'Leadership';
+      } else if (departmentId === 'volunteers') {
+        count = await User.countDocuments({
+          churchId,
+          role: 'volunteer',
+          status: 'active',
+        });
+        departmentName = 'Volunteers';
+      } else if (departmentId.startsWith('dept_')) {
+        const deptId = departmentId.replace('dept_', '');
+        count = await User.countDocuments({
+          churchId,
+          departmentId: new mongoose.Types.ObjectId(deptId),
+          status: 'active',
+        });
+        // You might want to populate department name from Department model
+        departmentName = `Department ${deptId}`;
+      } else if (departmentId.startsWith('group_')) {
+        const groupId = departmentId.replace('group_', '');
+        count = await User.countDocuments({
+          churchId,
+          groupId: new mongoose.Types.ObjectId(groupId),
+          status: 'active',
+        });
+        // You might want to populate group name from Group model
+        departmentName = `Group ${groupId}`;
+      }
+      return {
+        departmentId,
+        departmentName,
+        count,
+      };
+    } catch (_error) {
+      return {
+        departmentId,
+        departmentName: `Error loading ${departmentId}`,
+        count: 0,
+      };
     }
-    departmentCounts.push({
-      departmentId,
-      departmentName,
-      count,
-    });
-    totalCount += count;
-  }
+  });
+  // Execute all promises concurrently
+  const departmentCounts = await Promise.all(countPromises);
+  // Calculate total count from all department counts
+  const totalCount = departmentCounts.reduce(
+    (sum, dept) => sum + dept.count,
+    0
+  );
   return { totalCount, departmentCounts };
 }
 
@@ -327,17 +303,17 @@ async function createReportHandler(
         { status: 400 }
       );
     }
-    // Calculate department counts and validate departments exist
-    const departmentCounts = await calculateDepartmentCounts(
-      reportData.departments,
-      new mongoose.Types.ObjectId(user.user?.churchId)
-    );
-    if (departmentCounts.totalCount === 0) {
-      return NextResponse.json(
-        { error: 'No valid members found for the selected departments' },
-        { status: 400 }
-      );
-    }
+    // // Calculate department counts and validate departments exist
+    // const departmentCounts = await calculateDepartmentCounts(
+    //   reportData.departments,
+    //   new mongoose.Types.ObjectId(user.user?.churchId)
+    // );
+    // if (departmentCounts.totalCount === 0) {
+    //   return NextResponse.json(
+    //     { error: 'No valid members found for the selected departments' },
+    //     { status: 400 }
+    //   );
+    // }
     // Calculate actual date range
     const { startDate, endDate } = calculateDateRange(
       reportData.dateRange,
@@ -352,8 +328,8 @@ async function createReportHandler(
       createdBy: user.user?.sub,
       status: 'generating',
       reportData: {
-        totalRecords: departmentCounts.totalCount,
-        departmentCounts: departmentCounts.departmentCounts,
+        // totalRecords: departmentCounts.totalCount,
+        // departmentCounts: departmentCounts.departmentCounts,
         dateRangeUsed: {
           startDate,
           endDate,
@@ -381,7 +357,7 @@ async function createReportHandler(
       type: savedReport.type,
       dateRange: savedReport.dateRange,
       departmentCount: reportData.departments.length,
-      totalRecords: departmentCounts.totalCount,
+      // totalRecords: departmentCounts.totalCount,
     });
 
     // TODO: Add report generation to a queue for background processing

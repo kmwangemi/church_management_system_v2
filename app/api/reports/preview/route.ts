@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Report from '@/models/report';
+import { calculateDateRange } from '@/lib/utils';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -15,7 +15,6 @@ export async function getReportPreviewHandler(
     { requestId, endpoint: '/api/reports/preview' },
     'api'
   );
-
   try {
     const authResult = await requireAuth(['superadmin', 'admin'])(request);
     if (authResult instanceof Response) {
@@ -26,7 +25,6 @@ export async function getReportPreviewHandler(
         headers: authResult.headers,
       });
     }
-
     const user = authResult;
     if (!user.user?.churchId) {
       return NextResponse.json(
@@ -34,52 +32,41 @@ export async function getReportPreviewHandler(
         { status: 400 }
       );
     }
-
     await dbConnect();
-
     const previewData = await request.json();
     const { type, departments, dateRange, customStartDate, customEndDate } =
       previewData;
-
     // Calculate department counts (reuse helper from main route)
     const departmentCounts = await calculateDepartmentCounts(
       departments,
       new mongoose.Types.ObjectId(user.user?.churchId)
     );
-
     // Calculate date range
     const { startDate, endDate } = calculateDateRange(
       dateRange,
       customStartDate,
       customEndDate
     );
-
     // Estimate file size based on record count and type
     const estimateFileSize = (recordCount: number, reportType: string) => {
-      let baseSize = 50; // KB base size
+      const baseSize = 50; // KB base size
       let recordSize = 0.5; // KB per record
-
       if (reportType === 'financial') recordSize = 1.2;
       if (reportType === 'attendance') recordSize = 0.8;
-
       const totalSizeKB = baseSize + recordCount * recordSize;
-
       if (totalSizeKB < 1024) return `${Math.round(totalSizeKB)} KB`;
       return `${Math.round((totalSizeKB / 1024) * 100) / 100} MB`;
     };
-
     // Estimate generation time
     const estimateGenerationTime = (recordCount: number) => {
       const baseTime = 5; // seconds
       const timePerRecord = 0.01; // seconds per record
       const totalSeconds = baseTime + recordCount * timePerRecord;
-
       if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
       const minutes = Math.floor(totalSeconds / 60);
       const seconds = Math.round(totalSeconds % 60);
       return `${minutes}m ${seconds}s`;
     };
-
     return NextResponse.json({
       success: true,
       data: {
@@ -103,3 +90,10 @@ export async function getReportPreviewHandler(
     );
   }
 }
+
+// Export handlers with logging middleware
+export const GET = withApiLogger(getReportPreviewHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
