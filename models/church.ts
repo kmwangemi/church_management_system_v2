@@ -74,9 +74,6 @@ const AddressSchema = new Schema(
   { _id: false }
 );
 
-const WEBSITE_URL_REGEX = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 const ChurchSchema = new Schema<IChurch>(
   {
     churchName: {
@@ -101,12 +98,6 @@ const ChurchSchema = new Schema<IChurch>(
       trim: true,
       lowercase: true,
       index: true,
-      validate: {
-        validator(v: string) {
-          return EMAIL_REGEX.test(v);
-        },
-        message: 'Please enter a valid email address',
-      },
     },
     phoneNumber: {
       type: String,
@@ -132,13 +123,6 @@ const ChurchSchema = new Schema<IChurch>(
     website: {
       type: String,
       trim: true,
-      validate: {
-        validator(v: string) {
-          if (!v) return true;
-          return WEBSITE_URL_REGEX.test(v);
-        },
-        message: 'Please enter a valid website URL',
-      },
     },
     subscriptionPlan: {
       type: String,
@@ -155,10 +139,6 @@ const ChurchSchema = new Schema<IChurch>(
       type: String,
       required: [true, 'Church size is required'],
       trim: true,
-      enum: {
-        values: ['small', 'medium', 'large', 'mega'],
-        message: 'Church size must be small, medium, large, or mega',
-      },
       index: true,
     },
     numberOfBranches: {
@@ -177,13 +157,6 @@ const ChurchSchema = new Schema<IChurch>(
     churchLogoUrl: {
       type: String,
       trim: true,
-      validate: {
-        validator(v: string) {
-          if (!v) return true;
-          return WEBSITE_URL_REGEX.test(v);
-        },
-        message: 'Please enter a valid logo URL',
-      },
     },
     description: {
       type: String,

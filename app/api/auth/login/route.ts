@@ -15,24 +15,28 @@ function checkUserStatus(
   },
   email: string
 ) {
-  if (!existingUser.isActive) {
+  if (existingUser.status === 'inactive') {
     contextLogger.warn('Login failed - Account is deactivated', { email });
     return NextResponse.json(
       { error: 'Account is deactivated' },
       { status: 401 }
     );
   }
+  if (existingUser.status === 'suspended') {
+    contextLogger.warn('Login failed - Account is suspended', { email });
+    return NextResponse.json(
+      { error: 'Account is suspended' },
+      { status: 401 }
+    );
+  }
+  if (existingUser.status === 'pending') {
+    contextLogger.warn('Login failed - Account is pending', { email });
+    return NextResponse.json({ error: 'Account is pending' }, { status: 401 });
+  }
   if (existingUser.isDeleted) {
     contextLogger.warn('Login failed - Account is deleted', { email });
     return NextResponse.json(
       { error: 'Account does not exist' },
-      { status: 401 }
-    );
-  }
-  if (existingUser.isSuspended) {
-    contextLogger.warn('Login failed - Account is suspended', { email });
-    return NextResponse.json(
-      { error: 'Account is suspended' },
       { status: 401 }
     );
   }

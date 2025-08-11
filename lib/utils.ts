@@ -254,15 +254,6 @@ export const CHURCH_DENOMINATION_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export const NUMBER_OF_CHURCH_BRANCHES_OPTIONS = [
-  { value: '1', label: '1 branch (Main church only)' },
-  { value: '2', label: '2 branches' },
-  { value: '3', label: '3 branches' },
-  { value: '4', label: '4 branches' },
-  { value: '5', label: '5 branches' },
-  { value: '6', label: 'More than 5 branches' },
-];
-
 export const NUMBER_OF_CHURCH_MEMBERS_OPTIONS = [
   { value: '1-50', label: '1-50 Members' },
   { value: '51-100', label: '51-100 Members' },
@@ -275,17 +266,17 @@ export const NUMBER_OF_CHURCH_MEMBERS_OPTIONS = [
 export const SUBSCRIPTION_PLANS = [
   {
     value: 'basic',
-    label: 'Basic - $29/month',
+    label: 'Basic - KES 5,000/Month',
     description: 'Up to 100 members, basic features',
   },
   {
     value: 'standard',
-    label: 'Standard - $79/month',
+    label: 'Standard - KES 10,000/Month',
     description: 'Up to 500 members, advanced features',
   },
   {
     value: 'premium',
-    label: 'Premium - $149/month',
+    label: 'Premium - KES 15,000/Month',
     description: 'Unlimited members, all features',
   },
   {

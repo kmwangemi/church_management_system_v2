@@ -38,7 +38,7 @@ import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,
-  NUMBER_OF_CHURCH_BRANCHES_OPTIONS,
+  GENDER_OPTIONS,
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
@@ -59,6 +59,7 @@ import {
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { NumberInput } from '../number-input';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore complexity
 export function AddChurchForm() {
@@ -93,14 +94,14 @@ export function AddChurchForm() {
         establishedDate: '',
         email: '',
         phoneNumber: '',
-        country: '',
         website: '',
         churchLogoUrl: '',
         address: {
-          address: '',
+          street: '',
           city: '',
           state: '',
           zipCode: '',
+          country: 'Kenya',
         },
         subscriptionPlan: 'basic',
         churchSize: '',
@@ -111,6 +112,7 @@ export function AddChurchForm() {
         lastName: '',
         email: '',
         phoneNumber: '',
+        gender: 'male',
         password: '',
         confirmPassword: '',
         role: 'admin',
@@ -189,9 +191,9 @@ export function AddChurchForm() {
         isValid = await form.trigger([
           'churchData.email',
           'churchData.phoneNumber',
-          'churchData.address.address',
+          'churchData.address.street',
           'churchData.address.city',
-          'churchData.country',
+          'churchData.address.country',
         ]);
         break;
       case 'admin':
@@ -536,7 +538,7 @@ export function AddChurchForm() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <MapPin className="h-5 w-5" />
-                  <span>Contact Information</span>
+                  <span>Church Contact Information</span>
                 </CardTitle>
                 <CardDescription>
                   Church contact details and address information
@@ -586,6 +588,39 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Gender <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {GENDER_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="churchData.website"
                   render={({ field }) => (
                     <FormItem>
@@ -605,7 +640,7 @@ export function AddChurchForm() {
                 />
                 <FormField
                   control={form.control}
-                  name="churchData.country"
+                  name="churchData.address.country"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -667,7 +702,7 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
-                  name="churchData.address.address"
+                  name="churchData.address.street"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -866,7 +901,7 @@ export function AddChurchForm() {
                                   onChange={() => field.onChange(plan.value)}
                                   type="radio"
                                 />
-                                <span className="font-medium">
+                                <span className="font-medium text-sm">
                                   {plan.label}
                                 </span>
                               </div>
@@ -924,27 +959,9 @@ export function AddChurchForm() {
                           Number of Branches{' '}
                           <span className="text-red-500">*</span>
                         </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="cursor-pointer">
-                              <SelectValue placeholder="Select number" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-[400px] overflow-y-auto">
-                            {NUMBER_OF_CHURCH_BRANCHES_OPTIONS.map((option) => (
-                              <SelectItem
-                                className="cursor-pointer"
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <NumberInput placeholder="5" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

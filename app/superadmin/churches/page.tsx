@@ -225,13 +225,12 @@ export default function ChurchesPage() {
               Add Church
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogTitle>Add Church</DialogTitle>
             <AddChurchForm />
           </DialogContent>
         </Dialog>
       </div>
-
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -300,7 +299,6 @@ export default function ChurchesPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters and Search */}
       <Card>
         <CardHeader>
@@ -343,7 +341,6 @@ export default function ChurchesPage() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="rounded-md border">
             <Table>
               <TableHeader>

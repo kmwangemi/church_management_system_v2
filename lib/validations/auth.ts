@@ -1,5 +1,7 @@
 import z from 'zod';
 
+const REGEX = /^\d+(\.\d+)?$/;
+
 export const loginSchema = z.object({
   email: z.email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -21,21 +23,35 @@ export const churchDataSchema = z.object({
     }),
   email: z.email('Please enter a valid email address'),
   phoneNumber: z.string().min(8, 'Please enter a valid phone number'),
-  country: z.string().min(2, 'Please enter country'),
   website: z
     .url('Please enter a valid website URL')
     .optional()
     .or(z.literal('')),
   address: z.object({
-    address: z.string().min(5, 'Please enter a complete address'),
+    street: z.string().min(5, 'Please enter a street address'),
+    country: z.string().min(2, 'Please enter country'),
     city: z.string().min(2, 'Please enter city'),
     state: z.string().optional(),
     zipCode: z.string().optional(),
   }),
   subscriptionPlan: z.enum(['basic', 'standard', 'premium', 'enterprise']),
   // numberOfBranches: z.coerce.number().min(1, 'Please enter number of branches'),
+  numberOfBranches: z
+    .string()
+    .min(1, 'Number of branches is required')
+    .refine((val) => REGEX.test(val.trim()), {
+      message: 'Number of branches must be a valid number',
+    })
+    .refine(
+      (val) => {
+        const num = Number.parseFloat(val.trim());
+        return num >= 1 && num <= 1000;
+      },
+      {
+        message: 'Number of branches must be between 1 and 1,000',
+      }
+    ),
   churchSize: z.string().min(1, 'Please select number of members'),
-  numberOfBranches: z.string().min(1, 'Please enter number of branches'),
 });
 
 // Admin data schema
