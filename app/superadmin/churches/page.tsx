@@ -14,6 +14,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
@@ -62,6 +64,7 @@ import {
 import { useState } from 'react';
 
 export default function ChurchesPage() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
@@ -218,7 +221,7 @@ export default function ChurchesPage() {
             Manage all registered churches and their information
           </p>
         </div>
-        <Dialog>
+        <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -226,8 +229,13 @@ export default function ChurchesPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-            <DialogTitle>Add Church</DialogTitle>
-            <AddChurchForm />
+            <DialogHeader>
+              <DialogTitle>Add New Church</DialogTitle>
+              <DialogDescription>
+                Add a new church to the church database
+              </DialogDescription>
+            </DialogHeader>
+            <AddChurchForm onCloseDialog={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>

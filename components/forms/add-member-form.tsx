@@ -263,14 +263,18 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="address.street"
+                    name="address.country"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Street Address <span className="text-red-500">*</span>
+                          Country <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main Street" {...field} />
+                          <CountrySelect
+                            onChange={field.onChange}
+                            placeholder="Select your country"
+                            value={field.value}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -293,18 +297,14 @@ export function AddMemberForm({ onCloseDialog }: AddMemberFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="address.country"
+                    name="address.street"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Country <span className="text-red-500">*</span>
+                          Street Address <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <CountrySelect
-                            onChange={field.onChange}
-                            placeholder="Select your country"
-                            value={field.value}
-                          />
+                          <Input placeholder="123 Main Street" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

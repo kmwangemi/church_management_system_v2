@@ -61,6 +61,12 @@ export const adminDataSchema = z
     lastName: z.string().min(1, 'Last name is required'),
     email: z.email('Please enter a valid email address'),
     phoneNumber: z.string().min(1, 'Phone number is required'),
+    gender: z.enum(['male', 'female'], {
+      error: 'Gender is required',
+    }),
+    maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed'], {
+      error: 'Marital status is required',
+    }),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')

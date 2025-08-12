@@ -39,6 +39,7 @@ import { errorToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   GENDER_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
@@ -61,8 +62,12 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { NumberInput } from '../number-input';
 
+interface AddChurchFormProps {
+  onCloseDialog: () => void;
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore complexity
-export function AddChurchForm() {
+export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
   const [currentTab, setCurrentTab] = useState('basic');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -113,6 +118,7 @@ export function AddChurchForm() {
         email: '',
         phoneNumber: '',
         gender: 'male',
+        maritalStatus: 'single',
         password: '',
         confirmPassword: '',
         role: 'admin',
@@ -202,6 +208,8 @@ export function AddChurchForm() {
           'adminData.lastName',
           'adminData.email',
           'adminData.phoneNumber',
+          'adminData.gender',
+          'adminData.maritalStatus',
           'adminData.password',
           'adminData.confirmPassword',
         ]);
@@ -266,17 +274,12 @@ export function AddChurchForm() {
       toast.error('Please fix all validation errors');
       return;
     }
-    try {
-      await registerChurchMutation(payload);
-      reset();
-      setLogoFile(null);
-      setLogoPreview(null);
-      setCurrentTab('basic');
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.error('Registration failed:', error);
-      toast.error('Registration failed. Please try again.');
-    }
+    await registerChurchMutation(payload);
+    reset();
+    setLogoFile(null);
+    setLogoPreview(null);
+    setCurrentTab('basic');
+    onCloseDialog();
   };
   return (
     <Form {...form}>
@@ -588,39 +591,6 @@ export function AddChurchForm() {
                 </div>
                 <FormField
                   control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Gender <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="cursor-pointer">
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {GENDER_OPTIONS.map((option) => (
-                            <SelectItem
-                              className="cursor-pointer"
-                              key={option.value}
-                              value={option.value}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="churchData.website"
                   render={({ field }) => (
                     <FormItem>
@@ -638,26 +608,26 @@ export function AddChurchForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="churchData.address.country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Country <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <CountrySelect
-                          onChange={field.onChange}
-                          placeholder="Select your country"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="churchData.address.country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Country <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <CountrySelect
+                            onChange={field.onChange}
+                            placeholder="Select your country"
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="churchData.address.city"
@@ -673,6 +643,8 @@ export function AddChurchForm() {
                       </FormItem>
                     )}
                   />
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="churchData.address.state"
@@ -807,6 +779,74 @@ export function AddChurchForm() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
+                    name="adminData.gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Gender <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {GENDER_OPTIONS.map((option) => (
+                              <SelectItem
+                                className="cursor-pointer"
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="adminData.maritalStatus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Marital Status <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select marital status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {MARITAL_STATUS_OPTIONS.map((option) => (
+                              <SelectItem
+                                className="cursor-pointer"
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
                     name="adminData.password"
                     render={({ field }) => (
                       <FormItem>
@@ -882,23 +922,31 @@ export function AddChurchForm() {
                       <FormControl>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           {SUBSCRIPTION_PLANS.map((plan) => (
-                            // biome-ignore lint/nursery/noNoninteractiveElementInteractions: ignore
-                            // biome-ignore lint/a11y/noStaticElementInteractions: ignore
-                            // biome-ignore lint/a11y/useKeyWithClickEvents: ignore
-                            <div
-                              className={`cursor-pointer rounded-lg border p-4 transition-colors ${
+                            <button
+                              aria-pressed={field.value === plan.value}
+                              className={`w-full cursor-pointer rounded-lg border p-4 text-left transition-colors ${
                                 field.value === plan.value
                                   ? 'border-blue-500 bg-blue-50'
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
                               key={plan.value}
                               onClick={() => field.onChange(plan.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  field.onChange(plan.value);
+                                }
+                              }}
+                              tabIndex={0}
+                              type="button"
                             >
                               <div className="mb-2 flex items-center space-x-2">
                                 <input
+                                  aria-hidden="true"
                                   checked={field.value === plan.value}
                                   className="text-blue-600"
                                   onChange={() => field.onChange(plan.value)}
+                                  tabIndex={-1}
                                   type="radio"
                                 />
                                 <span className="font-medium text-sm">
@@ -908,7 +956,7 @@ export function AddChurchForm() {
                               <p className="text-gray-600 text-sm">
                                 {plan.description}
                               </p>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </FormControl>

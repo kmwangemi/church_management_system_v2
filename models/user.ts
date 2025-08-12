@@ -166,6 +166,7 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   // Additional fields
+  isPasswordUpdated: boolean;
   agreeToTerms: boolean;
   isDeleted: boolean;
   resetPasswordToken?: string;
@@ -468,6 +469,7 @@ const UserSchema = new Schema<IUser>(
         return this.role !== 'superadmin';
       },
     },
+    isPasswordUpdated: { type: Boolean, required: true, default: false },
     agreeToTerms: { type: Boolean, default: true },
     isDeleted: { type: Boolean, required: true, default: false },
     resetPasswordToken: { type: String },
