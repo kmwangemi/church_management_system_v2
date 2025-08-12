@@ -160,7 +160,6 @@ async function performRegistrationTransaction(
       establishedDate: new Date(churchData.establishedDate),
       email: churchData.email,
       phoneNumber: churchData.phoneNumber,
-      country: churchData.country,
       website: churchData.website,
       address: churchData.address,
       subscriptionPlan: churchData.subscriptionPlan,
@@ -171,22 +170,30 @@ async function performRegistrationTransaction(
     await church.save({ session });
     contextLogger.info('Church created successfully', {
       churchId: church._id.toString(),
-      churchName: church.name,
+      churchName: church.churchName,
     });
     const admin = new User({
       churchId: church._id,
       email: adminData.email,
-      password: adminData.password,
+      passwordHash: adminData.password,
       firstName: adminData.firstName,
       lastName: adminData.lastName,
       role: 'admin',
       phoneNumber: adminData.phoneNumber,
+      gender: adminData.gender,
+      maritalStatus: adminData.maritalStatus,
+      adminDetails: {
+        adminId: '',
+        accessLevel: 'national',
+      },
       agreeToTerms: true,
       isActive: true,
+      isMember: true,
       isSuspended: false,
       isDeleted: false,
       loginAttempts: 0,
       createdBy: user.sub,
+      updatedBy: user.sub,
     });
     await admin.save({ session });
     contextLogger.info('Admin user created successfully', {
@@ -205,7 +212,7 @@ async function performRegistrationTransaction(
           message: 'Church and admin user created successfully',
           church: {
             id: church._id,
-            name: church.name,
+            name: church.churchName,
             email: church.email,
           },
           admin: {

@@ -11,7 +11,6 @@ dotenv.config({ path: '.env' });
 
 // Import your models with proper paths
 import dbConnect from '@/lib/mongodb';
-import SuperAdmin from '@/models/superadmin';
 import User from '@/models/user';
 
 // Initialize prompt
@@ -24,6 +23,7 @@ interface SuperadminData {
   lastName: string;
   phoneNumber: string;
   superAdminId: string;
+  gender: string;
   companyInfo?: {
     position?: string;
     department?: string;
@@ -91,6 +91,7 @@ const superadminData: SuperadminData = {
   firstName: process.env.SUPERADMIN_FIRST_NAME || 'Super',
   lastName: process.env.SUPERADMIN_LAST_NAME || 'Admin',
   phoneNumber: process.env.SUPERADMIN_PHONE || '+1234567890',
+  gender: process.env.SUPERADMIN_GENDER || 'male',
   superAdminId: process.env.SUPERADMIN_ID || 'SA001',
   companyInfo: {
     position: process.env.SUPERADMIN_POSITION || 'System Administrator',
@@ -117,10 +118,10 @@ async function createSystemUser() {
       lastName: 'User',
       phoneNumber: '+0000000000',
       role: 'superadmin',
+      gender: 'male',
       // churchId and branchId are optional for superadmin
       agreeToTerms: true,
-      isActive: true,
-      isSuspended: false,
+      status: 'active',
       isDeleted: false,
       createdBy: null, // Will be set after creation
     });
@@ -141,35 +142,20 @@ async function seedSuperAdmin() {
     const systemUser = await createSystemUser();
     // Check if superadmin user already exists
     const existingUser = await User.findOne({ email: superadminData.email });
+    // If user already exists, log a warning and exit
     if (existingUser) {
       console.log('⚠️  Superadmin user already exists');
       console.log(`📧 Email: ${superadminData.email}`);
-      // Check if SuperAdmin record exists for this user
-      const existingSuperAdmin = await SuperAdmin.findOne({
-        userId: existingUser._id,
-      });
-      if (existingSuperAdmin) {
-        console.log('⚠️  SuperAdmin record already exists');
-        return;
-      }
-      // Create SuperAdmin record if it doesn't exist
-      console.log('🔧 Creating SuperAdmin record for existing user...');
-      const superAdminRecord = new SuperAdmin({
-        userId: existingUser._id,
-        superAdminId: superadminData.superAdminId,
-        companyInfo: superadminData.companyInfo,
-      });
-      await superAdminRecord.save();
-      console.log('✅ SuperAdmin record created successfully');
       return;
     }
     // Create superadmin user with new model structure
     const superadmin = new User({
       email: superadminData.email,
-      password: superadminData.password, // Will be hashed automatically by pre-save middleware
+      passwordHash: superadminData.password, // Will be hashed automatically by pre-save middleware
       firstName: superadminData.firstName,
       lastName: superadminData.lastName,
       phoneNumber: superadminData.phoneNumber,
+      gender: superadminData.gender,
       role: 'superadmin', // Direct string value instead of ObjectId reference
       // churchId and branchId are intentionally omitted for superadmin (optional)
       createdBy: systemUser._id, // Reference to system user
@@ -177,19 +163,15 @@ async function seedSuperAdmin() {
       isActive: true,
       isSuspended: false,
       isDeleted: false,
+      superAdminDetails: {
+        superAdminId: superadminData.superAdminId,
+        companyInfo: superadminData.companyInfo,
+      },
       // Rate limiting fields will be set to default values
       loginAttempts: 0,
       // lockUntil is optional and will be undefined initially
     });
     await superadmin.save();
-    console.log('✅ Successfully created superadmin user');
-    // Create SuperAdmin record
-    const superAdminRecord = new SuperAdmin({
-      userId: superadmin._id,
-      superAdminId: superadminData.superAdminId,
-      companyInfo: superadminData.companyInfo,
-    });
-    await superAdminRecord.save();
     console.log('✅ Successfully created SuperAdmin record');
     console.log(`📧 Email: ${superadminData.email}`);
     console.log(`🔑 Password: ${superadminData.password}`);

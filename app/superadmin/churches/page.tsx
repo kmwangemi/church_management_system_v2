@@ -14,6 +14,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
@@ -62,6 +64,7 @@ import {
 import { useState } from 'react';
 
 export default function ChurchesPage() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
@@ -218,20 +221,24 @@ export default function ChurchesPage() {
             Manage all registered churches and their information
           </p>
         </div>
-        <Dialog>
+        <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Add Church
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogTitle>Add Church</DialogTitle>
-            <AddChurchForm />
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Church</DialogTitle>
+              <DialogDescription>
+                Add a new church to the church database
+              </DialogDescription>
+            </DialogHeader>
+            <AddChurchForm onCloseDialog={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
-
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -300,7 +307,6 @@ export default function ChurchesPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters and Search */}
       <Card>
         <CardHeader>
@@ -343,7 +349,6 @@ export default function ChurchesPage() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="rounded-md border">
             <Table>
               <TableHeader>
