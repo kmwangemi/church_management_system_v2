@@ -10,7 +10,6 @@ export interface IChurch extends Document {
   churchLogoUrl?: string;
   churchSize: string;
   numberOfBranches: number;
-  subscriptionPlan: 'basic' | 'standard' | 'premium' | 'enterprise';
   createdBy: mongoose.Types.ObjectId;
   address: {
     street: string;
@@ -28,16 +27,12 @@ export interface IChurch extends Document {
   suspend(reason?: string): Promise<IChurch>;
   restore(): Promise<IChurch>;
   softDelete(): Promise<IChurch>;
-  updateSubscription(
-    plan: 'basic' | 'standard' | 'premium' | 'enterprise'
-  ): Promise<IChurch>;
 }
 
 // Extend the Model interface for static methods
 interface IChurchModel extends mongoose.Model<IChurch> {
   findActive(): mongoose.Query<IChurch[], IChurch>;
   findSuspended(): mongoose.Query<IChurch[], IChurch>;
-  findBySubscriptionPlan(plan: string): mongoose.Query<IChurch[], IChurch>;
   findByCreator(
     creatorId: mongoose.Types.ObjectId
   ): mongoose.Query<IChurch[], IChurch>;
@@ -124,17 +119,6 @@ const ChurchSchema = new Schema<IChurch>(
       type: String,
       trim: true,
     },
-    subscriptionPlan: {
-      type: String,
-      required: [true, 'Subscription plan is required'],
-      enum: {
-        values: ['basic', 'standard', 'premium', 'enterprise'],
-        message:
-          'Subscription plan must be basic, standard, premium, or enterprise',
-      },
-      default: 'basic',
-      index: true,
-    },
     churchSize: {
       type: String,
       required: [true, 'Church size is required'],
@@ -195,7 +179,6 @@ const ChurchSchema = new Schema<IChurch>(
 
 // Compound indexes for better query performance
 ChurchSchema.index({ isSuspended: 1, isDeleted: 1 });
-ChurchSchema.index({ subscriptionPlan: 1, isSuspended: 1 });
 ChurchSchema.index({ createdBy: 1, isDeleted: 1 });
 ChurchSchema.index({ denomination: 1, churchSize: 1 });
 
@@ -264,14 +247,6 @@ ChurchSchema.methods.softDelete = function (this: IChurch) {
   return this.save();
 };
 
-ChurchSchema.methods.updateSubscription = function (
-  this: IChurch,
-  plan: 'basic' | 'standard' | 'premium' | 'enterprise'
-) {
-  this.subscriptionPlan = plan;
-  return this.save();
-};
-
 // Static methods
 ChurchSchema.statics.findActive = function () {
   return this.find({ isSuspended: false, isDeleted: false });
@@ -279,14 +254,6 @@ ChurchSchema.statics.findActive = function () {
 
 ChurchSchema.statics.findSuspended = function () {
   return this.find({ isSuspended: true, isDeleted: false });
-};
-
-ChurchSchema.statics.findBySubscriptionPlan = function (plan: string) {
-  return this.find({
-    subscriptionPlan: plan,
-    isSuspended: false,
-    isDeleted: false,
-  });
 };
 
 ChurchSchema.statics.findByCreator = function (

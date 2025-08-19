@@ -59,8 +59,13 @@ const SubscriptionSchema = new Schema<ISubscription>(
     },
     plan: {
       type: String,
-      enum: ['basic', 'standard', 'premium', 'enterprise'],
-      required: true,
+      enum: {
+        values: ['basic', 'standard', 'premium', 'enterprise'],
+        message:
+          'Subscription plan must be basic, standard, premium, or enterprise',
+      },
+      required: [true, 'Subscription plan is required'],
+      index: true,
     },
     status: {
       type: String,
@@ -76,6 +81,7 @@ const SubscriptionSchema = new Schema<ISubscription>(
       type: Number,
       required: true,
       min: 0,
+      default: 0,
     },
     paidAmount: {
       type: Number,

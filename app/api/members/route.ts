@@ -4,36 +4,9 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddMemberPayload } from '@/lib/validations/members';
-import User from '@/models/user'; // Only import User model
+import UserModel from '@/models/user'; // Only import User model
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
-
-// Helper function to generate role-specific IDs - UPDATED to match model's approach
-const generateRoleId = (role: string) => {
-  const now = Date.now();
-  const rand = () => Math.random().toString(36).substr(2, 4).toUpperCase();
-  // Use the same format as your model's generateRoleIds function
-  switch (role) {
-    case 'member':
-      return `MEM-${now}-${rand()}`;
-    case 'visitor':
-      return `VIS-${now}-${rand()}`;
-    case 'pastor':
-      return `PST-${now}-${rand()}`;
-    case 'bishop':
-      return `BSH-${now}-${rand()}`;
-    case 'staff':
-      return `STF-${now}-${rand()}`;
-    case 'volunteer':
-      return `VOL-${now}-${rand()}`;
-    case 'admin':
-      return `ADM-${now}-${rand()}`;
-    case 'superadmin':
-      return `SUP-${now}-${rand()}`;
-    default:
-      return `USR-${now}-${rand()}`;
-  }
-};
 
 // Helper function to prepare role-specific data - FIXED to match your model
 const prepareRoleSpecificData = (role: string, userData: any) => {
@@ -41,7 +14,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
   switch (role) {
     case 'member':
       result.memberDetails = {
-        memberId: generateRoleId('member'),
+        memberId: '',
         membershipDate: userData.membershipDate || new Date(),
         membershipStatus: 'active',
         departmentIds: userData.departmentIds || [],
@@ -53,7 +26,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
       break;
     case 'visitor':
       result.visitorDetails = {
-        visitorId: generateRoleId('visitor'),
+        visitorId: '',
         visitDate: userData.visitDate || new Date(),
         invitedBy: userData.invitedBy,
         howDidYouHear: userData.howDidYouHear || 'other',
@@ -65,7 +38,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
       break;
     case 'pastor':
       result.pastorDetails = {
-        pastorId: generateRoleId('pastor'),
+        pastorId: '',
         ordinationDate: userData.ordinationDate,
         qualifications: userData.qualifications || [],
         specializations: userData.specializations || [],
@@ -77,7 +50,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
       break;
     case 'bishop':
       result.bishopDetails = {
-        bishopId: generateRoleId('bishop'),
+        bishopId: '',
         appointmentDate: userData.appointmentDate,
         jurisdictionArea: userData.jurisdictionArea,
         oversight: userData.oversight || { branchIds: [], pastorIds: [] },
@@ -88,14 +61,14 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
       break;
     case 'admin':
       result.adminDetails = {
-        adminId: generateRoleId('admin'),
+        adminId: '',
         accessLevel: userData.accessLevel || 'national', // Default per your model
         assignedBranches: userData.assignedBranches || [],
       };
       break;
     case 'superadmin':
       result.superAdminDetails = {
-        superAdminId: generateRoleId('superadmin'),
+        superAdminId: '',
         accessLevel: 'global',
         systemSettings: {
           canCreateChurches: userData.systemSettings?.canCreateChurches ?? true,
@@ -117,7 +90,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
   // Handle staff details if isStaff is true
   if (userData.isStaff) {
     result.staffDetails = {
-      staffId: generateRoleId('staff'),
+      staffId: '',
       jobTitle: userData.jobTitle,
       department: userData.department,
       startDate: userData.startDate || new Date(),
@@ -129,7 +102,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
   // Handle volunteer details if isVolunteer is true
   if (userData.isVolunteer) {
     result.volunteerDetails = {
-      volunteerId: generateRoleId('volunteer'),
+      volunteerId: '',
       volunteerStatus: 'active',
       availabilitySchedule: userData.availabilitySchedule || {
         days: [],
@@ -217,14 +190,14 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
     }
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
-      User.find(query)
+      UserModel.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate('createdBy', 'firstName lastName')
         .populate('updatedBy', 'firstName lastName')
         .lean(), // Use lean() for better performance
-      User.countDocuments(query),
+      UserModel.countDocuments(query),
     ]);
     return NextResponse.json({
       users,
@@ -299,7 +272,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
     }
     // Check for duplicate email (if provided) - FIXED query
     if (userData.email) {
-      const existingUserEmail = await User.findOne({
+      const existingUserEmail = await UserModel.findOne({
         email: userData.email,
         isDeleted: false, // Use isDeleted instead of status
       }).session(session);
@@ -313,7 +286,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
     }
     // Check for duplicate phone number - FIXED query
     if (userData.phoneNumber) {
-      const existingUserPhone = await User.findOne({
+      const existingUserPhone = await UserModel.findOne({
         phoneNumber: userData.phoneNumber,
         isDeleted: false, // Use isDeleted instead of status
       }).session(session);
@@ -337,7 +310,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
       );
     }
     // Create user with embedded role data - ALIGNED with your model
-    const createdUser = new User({
+    const createdUser = new UserModel({
       // Common fields
       firstName: userData.firstName,
       lastName: userData.lastName,
@@ -351,9 +324,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
       // branchId: ['admin', 'superadmin'].includes(userData.role)
       //   ? undefined
       //   : branchId,
-      branchId: ['superadmin'].includes(userData.role)
-        ? undefined
-        : branchId,
+      branchId: ['superadmin'].includes(userData.role) ? undefined : branchId,
       // Role system
       role: userData.role,
       isMember: userData.isMember,

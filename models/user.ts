@@ -120,7 +120,7 @@ interface IVisitorDetails {
 }
 
 // Main User interface - Fixed inconsistencies
-export interface IUser extends Document {
+export interface IUserModel extends Document {
   // Common fields
   firstName: string;
   lastName: string;
@@ -372,7 +372,7 @@ const VisitorDetailsSchema = new Schema<IVisitorDetails>(
 );
 
 // Main User Schema - Fixed all issues
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUserModel>(
   {
     // Common fields
     firstName: { type: String, required: true, trim: true },
@@ -402,14 +402,14 @@ const UserSchema = new Schema<IUser>(
     churchId: {
       type: Schema.Types.ObjectId,
       ref: 'Church',
-      required(this: IUser) {
+      required(this: IUserModel) {
         return this.role !== 'superadmin';
       },
     },
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
-      required(this: IUser) {
+      required(this: IUserModel) {
         return !['admin', 'superadmin'].includes(this.role);
       },
     },
@@ -458,14 +458,14 @@ const UserSchema = new Schema<IUser>(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required(this: IUser) {
+      required(this: IUserModel) {
         return this.role !== 'superadmin';
       },
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required(this: IUser) {
+      required(this: IUserModel) {
         return this.role !== 'superadmin';
       },
     },
@@ -482,6 +482,7 @@ const UserSchema = new Schema<IUser>(
       enum: ['single', 'married', 'divorced', 'widowed'],
       trim: true,
       lowercase: true,
+      default: 'single',
     },
     emergencyDetails: {
       emergencyContactFullName: { type: String, trim: true, lowercase: true },
@@ -524,17 +525,17 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
 // Virtual property for checking if account is locked
-UserSchema.virtual('isLocked').get(function (this: IUser) {
+UserSchema.virtual('isLocked').get(function (this: IUserModel) {
   return !!(this.lockUntil && this.lockUntil > new Date());
 });
 
 // Virtual for full name
-UserSchema.virtual('fullName').get(function (this: IUser) {
+UserSchema.virtual('fullName').get(function (this: IUserModel) {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Rate limiting methods
-UserSchema.methods.incLoginAttempts = function (this: IUser) {
+UserSchema.methods.incLoginAttempts = function (this: IUserModel) {
   // If we have a previous lock that has expired, restart at 1
   if (this.lockUntil && this.lockUntil < new Date()) {
     return this.updateOne({
@@ -553,7 +554,7 @@ UserSchema.methods.incLoginAttempts = function (this: IUser) {
   return this.updateOne(updates);
 };
 
-UserSchema.methods.resetLoginAttempts = function (this: IUser) {
+UserSchema.methods.resetLoginAttempts = function (this: IUserModel) {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 },
   });
@@ -587,15 +588,18 @@ UserSchema.methods.comparePassword = async function (
 };
 
 // Methods - Updated to work with simple string role system
-UserSchema.methods.hasRole = function (this: IUser, roleName: string): boolean {
+UserSchema.methods.hasRole = function (
+  this: IUserModel,
+  roleName: string
+): boolean {
   return this.role === roleName.toLowerCase();
 };
 
-UserSchema.methods.isStaffMember = function (this: IUser): boolean {
+UserSchema.methods.isStaffMember = function (this: IUserModel): boolean {
   return this.isStaff;
 };
 
-UserSchema.methods.isVolunteerMember = function (this: IUser): boolean {
+UserSchema.methods.isVolunteerMember = function (this: IUserModel): boolean {
   return this.isVolunteer;
 };
 
@@ -615,65 +619,97 @@ UserSchema.pre('save', async function (next) {
   }
 });
 
-// ✅ Enhanced ID generation helper
-function generateRoleIds(user: IUser) {
-  const now = Date.now();
-  const rand = () => Math.random().toString(36).substr(2, 4).toUpperCase();
+// ✅ Enhanced ID generation helper with church-based incremental IDs
+async function generateRoleIds(user: IUserModel) {
+  // const churchId = user.churchId?.toString() || 'DEFAULT';
+  // Helper function to get next incremental number for a role
+  const getNextNumber = async (role: string): Promise<string> => {
+    const UserModel = mongoose.model<IUserModel>('User');
+    // Count existing users of this role in this church
+    const query: any = {
+      churchId: user.churchId,
+      isDeleted: false,
+    };
+    // For primary roles, count by role
+    if (
+      ['member', 'pastor', 'bishop', 'admin', 'superadmin', 'visitor'].includes(
+        role
+      )
+    ) {
+      query.role = role;
+    }
+    // For secondary roles, count by flag
+    else if (role === 'staff') {
+      query.isStaff = true;
+    } else if (role === 'volunteer') {
+      query.isVolunteer = true;
+    }
+    const count = await UserModel.countDocuments(query);
+    return (count + 1).toString().padStart(4, '0'); // Pad with zeros for consistent format
+  };
   if (
     user.role === 'member' &&
     user.memberDetails &&
     !user.memberDetails.memberId
   ) {
-    user.memberDetails.memberId = `MEM-${now}-${rand()}`;
+    const nextNum = await getNextNumber('member');
+    user.memberDetails.memberId = `MEM-${nextNum}`;
   }
   if (
     user.role === 'pastor' &&
     user.pastorDetails &&
     !user.pastorDetails.pastorId
   ) {
-    user.pastorDetails.pastorId = `PST-${now}-${rand()}`;
+    const nextNum = await getNextNumber('pastor');
+    user.pastorDetails.pastorId = `PST-${nextNum}`;
   }
   if (
     user.role === 'bishop' &&
     user.bishopDetails &&
     !user.bishopDetails.bishopId
   ) {
-    user.bishopDetails.bishopId = `BSH-${now}-${rand()}`;
+    const nextNum = await getNextNumber('bishop');
+    user.bishopDetails.bishopId = `BSH-${nextNum}`;
   }
   if (
     user.role === 'admin' &&
     user.adminDetails &&
     !user.adminDetails.adminId
   ) {
-    user.adminDetails.adminId = `ADM-${now}-${rand()}`;
+    const nextNum = await getNextNumber('admin');
+    user.adminDetails.adminId = `ADM-${nextNum}`;
   }
   if (
     user.role === 'superadmin' &&
     user.superAdminDetails &&
     !user.superAdminDetails.superAdminId
   ) {
-    user.superAdminDetails.superAdminId = `SUP-${now}-${rand()}`;
+    const nextNum = await getNextNumber('superadmin');
+    user.superAdminDetails.superAdminId = `SUP-${nextNum}`;
   }
   if (
     user.role === 'visitor' &&
     user.visitorDetails &&
     !user.visitorDetails.visitorId
   ) {
-    user.visitorDetails.visitorId = `VIS-${now}-${rand()}`;
+    const nextNum = await getNextNumber('visitor');
+    user.visitorDetails.visitorId = `VIS-${nextNum}`;
   }
   if (user.isStaff && user.staffDetails && !user.staffDetails.staffId) {
-    user.staffDetails.staffId = `STF-${now}-${rand()}`;
+    const nextNum = await getNextNumber('staff');
+    user.staffDetails.staffId = `STF-${nextNum}`;
   }
   if (
     user.isVolunteer &&
     user.volunteerDetails &&
     !user.volunteerDetails.volunteerId
   ) {
-    user.volunteerDetails.volunteerId = `VOL-${now}-${rand()}`;
+    const nextNum = await getNextNumber('volunteer');
+    user.volunteerDetails.volunteerId = `VOL-${nextNum}`;
   }
 }
 
-function clearRoleDetails(user: IUser) {
+function clearRoleDetails(user: IUserModel) {
   if (user.role !== 'member') user.memberDetails = undefined;
   if (user.role !== 'pastor') user.pastorDetails = undefined;
   if (user.role !== 'bishop') user.bishopDetails = undefined;
@@ -684,7 +720,7 @@ function clearRoleDetails(user: IUser) {
   if (!user.isVolunteer) user.volunteerDetails = undefined;
 }
 
-// function setIsMemberFlag(user: IUser) {
+// function setIsMemberFlag(user: IUserModel) {
 //   if (['member', 'pastor', 'bishop'].includes(user.role)) {
 //     user.isMember = true;
 //   } else if (user.role === 'visitor') {
@@ -693,15 +729,19 @@ function clearRoleDetails(user: IUser) {
 // }
 
 // ✅ Enhanced pre-save middleware
-UserSchema.pre('save', function (this: IUser, next) {
-  generateRoleIds(this);
-  clearRoleDetails(this);
-  // setIsMemberFlag(this);
-  next();
+UserSchema.pre('save', async function (this: IUserModel, next) {
+  try {
+    await generateRoleIds(this);
+    clearRoleDetails(this);
+    // setIsMemberFlag(this);
+    next();
+  } catch (error) {
+    next(error as CallbackError);
+  }
 });
 
 // ✅ Relaxed validation - only validate if role details exist
-UserSchema.pre('validate', function (this: IUser, next) {
+UserSchema.pre('validate', function (this: IUserModel, next) {
   // Only validate required fields for role details if they're provided
   // This allows for gradual data collection
   // Validate staff details if isStaff is true and staffDetails exist
@@ -767,7 +807,7 @@ UserSchema.statics.findVolunteers = function () {
 };
 
 export default mongoose.models.User ||
-  mongoose.model<IUser>('User', UserSchema);
+  mongoose.model<IUserModel>('User', UserSchema);
 
 // Usage Examples:
 /*

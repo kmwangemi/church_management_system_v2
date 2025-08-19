@@ -10,8 +10,9 @@ import {
 } from '@/lib/validation';
 import type { AdminPayload, ChurchPayload } from '@/lib/validations/auth';
 import { churchRegistrationSchema } from '@/lib/validations/auth';
-import Church from '@/models/church';
-import User from '@/models/user';
+import ChurchModel from '@/models/church';
+import SubscriptionModel from '@/models/church-subscription';
+import UserModel from '@/models/user';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -20,7 +21,7 @@ async function checkChurchExists(
   session: mongoose.ClientSession,
   contextLogger: ContextLogger
 ) {
-  const existingChurchEmail = await Church.findOne({
+  const existingChurchEmail = await ChurchModel.findOne({
     email: churchData.email,
   }).session(session);
   if (existingChurchEmail) {
@@ -29,7 +30,7 @@ async function checkChurchExists(
     });
     return { error: 'Church with this email already exists' };
   }
-  const existingChurchPhone = await Church.findOne({
+  const existingChurchPhone = await ChurchModel.findOne({
     phoneNumber: churchData.phoneNumber,
   }).session(session);
   if (existingChurchPhone) {
@@ -49,7 +50,7 @@ async function checkUserExists(
   session: mongoose.ClientSession,
   contextLogger: ContextLogger
 ) {
-  const existingUserEmail = await User.findOne({
+  const existingUserEmail = await UserModel.findOne({
     email: adminData.email,
   }).session(session);
   if (existingUserEmail) {
@@ -58,7 +59,7 @@ async function checkUserExists(
     });
     return { error: 'User with this email already exists' };
   }
-  const existingUserPhone = await User.findOne({
+  const existingUserPhone = await UserModel.findOne({
     phoneNumber: adminData.phoneNumber,
   }).session(session);
   if (existingUserPhone) {
@@ -152,7 +153,7 @@ async function performRegistrationTransaction(
         ),
       };
     }
-    const church = new Church({
+    const church = new ChurchModel({
       churchName: churchData.churchName,
       denomination: churchData.denomination,
       description: churchData.description,
@@ -162,17 +163,30 @@ async function performRegistrationTransaction(
       phoneNumber: churchData.phoneNumber,
       website: churchData.website,
       address: churchData.address,
-      subscriptionPlan: churchData.subscriptionPlan,
       churchSize: churchData.churchSize,
       numberOfBranches: churchData.numberOfBranches,
       createdBy: user.sub,
     });
     await church.save({ session });
     contextLogger.info('Church created successfully', {
-      churchId: church._id.toString(),
+      churchId: church._id as mongoose.Types.ObjectId,
       churchName: church.churchName,
     });
-    const admin = new User({
+    const startDate = new Date();
+    const endDate = startDate.setDate(startDate.getDate() + 30); // add 30 days
+    const subscription = new SubscriptionModel({
+      churchId: church._id,
+      plan: churchData.subscriptionPlan,
+      startDate,
+      endDate,
+      invoiceAmount: 0.00,
+    });
+    await subscription.save({ session });
+    contextLogger.info('Church subscription created successfully', {
+      churchId: church._id as mongoose.Types.ObjectId,
+      churchName: church.churchName,
+    });
+    const admin = new UserModel({
       churchId: church._id,
       email: adminData.email,
       passwordHash: adminData.password,
@@ -181,14 +195,16 @@ async function performRegistrationTransaction(
       role: 'admin',
       phoneNumber: adminData.phoneNumber,
       gender: adminData.gender,
-      maritalStatus: adminData.maritalStatus,
       adminDetails: {
         adminId: '',
         accessLevel: 'national',
       },
+      memberDetails: adminData.isMember === true
+        ? { memberId: '', membershipStatus: 'active' }
+        : null,
       agreeToTerms: true,
       isActive: true,
-      isMember: true,
+      isMember: adminData.isMember,
       isSuspended: false,
       isDeleted: false,
       loginAttempts: 0,
@@ -203,7 +219,7 @@ async function performRegistrationTransaction(
     await session.commitTransaction();
     transactionCommitted = true;
     contextLogger.info('Church registration completed successfully', {
-      churchId: church._id.toString(),
+      churchId: church._id as mongoose.Types.ObjectId,
       userId: admin._id.toString(),
     });
     return {
