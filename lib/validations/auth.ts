@@ -64,9 +64,7 @@ export const adminDataSchema = z
     gender: z.enum(['male', 'female'], {
       error: 'Gender is required',
     }),
-    maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed'], {
-      error: 'Marital status is required',
-    }),
+    isMember: z.boolean(),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
@@ -78,7 +76,7 @@ export const adminDataSchema = z
         'Password must contain at least one special character'
       ),
     confirmPassword: z.string(),
-    role: z.enum(['admin', 'superadmin']),
+    role: z.enum(['admin']),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

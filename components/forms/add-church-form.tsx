@@ -3,6 +3,7 @@
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
 import { DatePicker } from '@/components/date-picker';
+import { NumberInput } from '@/components/number-input';
 import { PasswordInput } from '@/components/password-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -39,7 +41,6 @@ import { errorToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   GENDER_OPTIONS,
-  MARITAL_STATUS_OPTIONS,
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
@@ -60,7 +61,6 @@ import {
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { NumberInput } from '../number-input';
 
 interface AddChurchFormProps {
   onCloseDialog: () => void;
@@ -118,7 +118,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
         email: '',
         phoneNumber: '',
         gender: 'male',
-        maritalStatus: 'single',
+        isMember: true,
         password: '',
         confirmPassword: '',
         role: 'admin',
@@ -209,7 +209,6 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
           'adminData.email',
           'adminData.phoneNumber',
           'adminData.gender',
-          'adminData.maritalStatus',
           'adminData.password',
           'adminData.confirmPassword',
         ]);
@@ -812,34 +811,21 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="adminData.maritalStatus"
+                    name="adminData.isMember"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Marital Status <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="cursor-pointer">
-                              <SelectValue placeholder="Select marital status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-[400px] overflow-y-auto">
-                            {MARITAL_STATUS_OPTIONS.map((option) => (
-                              <SelectItem
-                                className="cursor-pointer"
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
+                      <FormItem className="mt-4 flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Church Member</FormLabel>
+                          <p className="text-gray-500 text-sm">
+                            This person is also a church member
+                          </p>
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -1044,8 +1030,8 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
               Next
             </Button>
           ) : (
-            <Button disabled={isPending || logoUploading} type="submit">
-              {isPending ? 'Registering...' : 'Register Church'}
+            <Button disabled={isPending || isUploading} type="submit">
+              {isPending || isUploading ? 'Registering...' : 'Register Church'}
             </Button>
           )}
         </div>
