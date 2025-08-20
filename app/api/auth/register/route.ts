@@ -11,7 +11,7 @@ import {
 import type { AdminPayload, ChurchPayload } from '@/lib/validations/auth';
 import { churchRegistrationSchema } from '@/lib/validations/auth';
 import ChurchModel from '@/models/church';
-import SubscriptionModel from '@/models/church-subscription';
+import ChurchSubscriptionModel from '@/models/church-subscription';
 import UserModel from '@/models/user';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -174,12 +174,12 @@ async function performRegistrationTransaction(
     });
     const startDate = new Date();
     const endDate = startDate.setDate(startDate.getDate() + 30); // add 30 days
-    const subscription = new SubscriptionModel({
+    const subscription = new ChurchSubscriptionModel({
       churchId: church._id,
       plan: churchData.subscriptionPlan,
       startDate,
       endDate,
-      invoiceAmount: 0.00,
+      invoiceAmount: 0.0,
     });
     await subscription.save({ session });
     contextLogger.info('Church subscription created successfully', {
@@ -199,9 +199,10 @@ async function performRegistrationTransaction(
         adminId: '',
         accessLevel: 'national',
       },
-      memberDetails: adminData.isMember === true
-        ? { memberId: '', membershipStatus: 'active' }
-        : null,
+      memberDetails:
+        adminData.isMember === true
+          ? { memberId: '', membershipStatus: 'active' }
+          : null,
       agreeToTerms: true,
       isActive: true,
       isMember: adminData.isMember,

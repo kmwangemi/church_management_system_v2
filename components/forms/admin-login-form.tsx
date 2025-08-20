@@ -23,7 +23,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-export default function LoginForm() {
+export default function AdminLoginForm() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
   const form = useForm<LoginPayload>({
