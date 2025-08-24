@@ -580,3 +580,18 @@ export function calculateDateRange(
   }
   return { startDate, endDate };
 }
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\+?[\d\s\-()]+$/;
+export const isEmail = (input: string): boolean => {
+  return emailRegex.test(input);
+};
+
+export const isPhoneNumber = (input: string): boolean => {
+  // Basic phone number validation - adjust regex based on your requirements
+  return phoneRegex.test(input) && input.replace(/\D/g, '').length >= 10;
+};
+
+export const generateVerificationCode = (): string => {
+  return Math.floor(100_000 + Math.random() * 900_000).toString();
+};
