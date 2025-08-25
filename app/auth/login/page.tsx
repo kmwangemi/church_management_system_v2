@@ -1,7 +1,7 @@
 'use client';
 
 import AdminLoginForm from '@/components/forms/admin-login-form';
-import MemberLoginForm from '@/components/forms/member-login-form';
+import MemberLoginForm from '@/components/forms/user-login-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import {
   Card,

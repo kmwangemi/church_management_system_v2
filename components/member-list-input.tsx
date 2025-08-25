@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore complexity */
 import { Input } from '@/components/ui/input';
-import { useFetchMembers } from '@/lib/hooks/member/use-member-queries';
+import { useFetchMembers } from '@/lib/hooks/user/use-user-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
 import type { Member } from '@/lib/types';
 import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';

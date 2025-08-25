@@ -2,9 +2,8 @@
 
 import {
   Activity,
-  BarChart3,
   Building,
-  Edit,
+  Eye,
   MapPin,
   // Phone,
   Plus,
@@ -56,6 +55,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
 import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -532,18 +532,19 @@ export default function BranchesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button size="sm" variant="ghost">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost">
-                            <BarChart3 className="h-4 w-4" />
-                          </Button>
+                          <Link href={`/dashboard/branches/${branch._id}`}>
+                            <Button size="sm" variant="ghost">
+                              <Eye className="h-4 w-4" />
+                              View
+                            </Button>
+                          </Link>
                           <Button
                             className="text-red-600"
                             size="sm"
                             variant="ghost"
                           >
                             <Trash2 className="h-4 w-4" />
+                            Delete
                           </Button>
                         </div>
                       </TableCell>

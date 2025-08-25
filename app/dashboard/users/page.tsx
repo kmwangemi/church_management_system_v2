@@ -1,6 +1,6 @@
 'use client';
 
-import { AddMemberForm } from '@/components/forms/add-member-form';
+import { AddUserForm } from '@/components/forms/add-user-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,11 +34,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Crown,
   Download,
-  Edit,
+  Eye,
   Filter,
   Mail,
   MoreHorizontal,
-  Phone,
   Search,
   Trash2,
   Upload,
@@ -47,16 +46,17 @@ import {
   Users,
   UserX,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 // Mock data
-const members = [
+const users = [
   {
     id: 1,
     name: 'John Smith',
     email: 'john.smith@email.com',
     phone: '+1 (555) 123-4567',
-    role: 'Member',
+    role: 'User',
     status: 'Active',
     joinDate: '2023-01-15',
     department: 'Choir',
@@ -98,7 +98,7 @@ const members = [
     name: 'Emily Davis',
     email: 'emily.davis@email.com',
     phone: '+1 (555) 456-7890',
-    role: 'Member',
+    role: 'User',
     status: 'Inactive',
     joinDate: '2022-11-10',
     department: 'Youth',
@@ -149,33 +149,31 @@ const getRoleBadgeVariant = (role: string) => {
   }
 };
 
-export default function MembersPage() {
+export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const filteredMembers = members.filter((member) => {
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.department.toLowerCase().includes(searchTerm.toLowerCase());
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.department.toLowerCase().includes(searchTerm.toLowerCase());
     if (selectedTab === 'all') return matchesSearch;
     if (selectedTab === 'active')
-      return matchesSearch && member.status === 'Active';
+      return matchesSearch && user.status === 'Active';
     if (selectedTab === 'inactive')
-      return matchesSearch && member.status === 'Inactive';
+      return matchesSearch && user.status === 'Inactive';
     if (selectedTab === 'staff')
-      return (
-        matchesSearch && (member.role === 'Pastor' || member.role === 'Admin')
-      );
+      return matchesSearch && (user.role === 'Pastor' || user.role === 'Admin');
     return matchesSearch;
   });
 
   const stats = {
-    total: members.length,
-    active: members.filter((m) => m.status === 'Active').length,
-    inactive: members.filter((m) => m.status === 'Inactive').length,
-    staff: members.filter((m) => m.role === 'Pastor' || m.role === 'Admin')
+    total: users.length,
+    active: users.filter((m) => m.status === 'Active').length,
+    inactive: users.filter((m) => m.status === 'Inactive').length,
+    staff: users.filter((m) => m.role === 'Pastor' || m.role === 'Admin')
       .length,
   };
 
@@ -184,11 +182,9 @@ export default function MembersPage() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="font-bold text-3xl text-gray-900">
-            Member Management
-          </h1>
+          <h1 className="font-bold text-3xl text-gray-900">User Management</h1>
           <p className="mt-1 text-gray-600">
-            Manage church members, roles, and information
+            Manage church users, roles, and information
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -204,17 +200,17 @@ export default function MembersPage() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Member
+                Add User
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Member</DialogTitle>
+                <DialogTitle>Add New User</DialogTitle>
                 <DialogDescription>
-                  Add a new member to the church database
+                  Add a new user to the church database
                 </DialogDescription>
               </DialogHeader>
-              <AddMemberForm onCloseDialog={() => setIsDialogOpen(false)} />
+              <AddUserForm onCloseDialog={() => setIsDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
@@ -224,7 +220,7 @@ export default function MembersPage() {
         <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-gray-600 text-sm">
-              Total Members
+              Total Users
             </CardTitle>
             <div className="rounded-lg bg-blue-100 p-2">
               <Users className="h-5 w-5 text-blue-600" />
@@ -234,13 +230,13 @@ export default function MembersPage() {
             <div className="font-bold text-2xl text-gray-900">
               {stats.total}
             </div>
-            <p className="mt-1 text-gray-500 text-xs">All registered members</p>
+            <p className="mt-1 text-gray-500 text-xs">All registered users</p>
           </CardContent>
         </Card>
         <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-gray-600 text-sm">
-              Active Members
+              Active Users
             </CardTitle>
             <div className="rounded-lg bg-green-100 p-2">
               <UserCheck className="h-5 w-5 text-green-600" />
@@ -256,7 +252,7 @@ export default function MembersPage() {
         <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-gray-600 text-sm">
-              Inactive Members
+              Inactive Users
             </CardTitle>
             <div className="rounded-lg bg-red-100 p-2">
               <UserX className="h-5 w-5 text-red-600" />
@@ -272,7 +268,7 @@ export default function MembersPage() {
         <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-gray-600 text-sm">
-              Staff Members
+              Staff Users
             </CardTitle>
             <div className="rounded-lg bg-purple-100 p-2">
               <Crown className="h-5 w-5 text-purple-600" />
@@ -295,7 +291,7 @@ export default function MembersPage() {
               <Input
                 className="pl-10"
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search members by name, email, or department..."
+                placeholder="Search users by name, email, or department..."
                 value={searchTerm}
               />
             </div>
@@ -322,7 +318,7 @@ export default function MembersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Member</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Status</TableHead>
@@ -331,17 +327,17 @@ export default function MembersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredMembers.map((member) => (
-                      <TableRow className="hover:bg-gray-50" key={member.id}>
+                    {filteredUsers.map((user) => (
+                      <TableRow className="hover:bg-gray-50" key={user.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-10 w-10">
                               <AvatarImage
-                                alt={member.name}
-                                src={member.avatar || '/placeholder.svg'}
+                                alt={user.name}
+                                src={user.avatar || '/placeholder.svg'}
                               />
                               <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {member.name
+                                {user.name
                                   .split(' ')
                                   .map((n) => n[0])
                                   .join('')}
@@ -349,13 +345,13 @@ export default function MembersPage() {
                             </Avatar>
                             <div>
                               <div className="font-medium text-gray-900">
-                                {member.name}
+                                {user.name}
                               </div>
                               <div className="text-gray-500 text-sm">
-                                {member.email}
+                                {user.email}
                               </div>
                               <div className="text-gray-500 text-sm">
-                                {member.phone}
+                                {user.phone}
                               </div>
                             </div>
                           </div>
@@ -363,31 +359,29 @@ export default function MembersPage() {
                         <TableCell>
                           <Badge
                             className="flex w-fit items-center gap-1"
-                            variant={getRoleBadgeVariant(member.role)}
+                            variant={getRoleBadgeVariant(user.role)}
                           >
-                            {getRoleIcon(member.role)}
-                            {member.role}
+                            {getRoleIcon(user.role)}
+                            {user.role}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <span className="text-gray-900 text-sm">
-                            {member.department}
+                            {user.department}
                           </span>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant={
-                              member.status === 'Active'
-                                ? 'default'
-                                : 'secondary'
+                              user.status === 'Active' ? 'default' : 'secondary'
                             }
                           >
-                            {member.status}
+                            {user.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <span className="text-gray-900 text-sm">
-                            {new Date(member.joinDate).toLocaleDateString()}
+                            {new Date(user.joinDate).toLocaleDateString()}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
@@ -399,22 +393,25 @@ export default function MembersPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Profile
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/users/${user.id}`}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View User
+                                </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Mail className="mr-2 h-4 w-4" />
-                                Send Email
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Phone className="mr-2 h-4 w-4" />
-                                Call Member
+                              <DropdownMenuItem asChild>
+                                <Link href={`/send-email/${user.id}`}>
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Send Email
+                                </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                // onClick={() => handleRemoveUser(user.id)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Remove Member
+                                Remove User
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -424,11 +421,11 @@ export default function MembersPage() {
                   </TableBody>
                 </Table>
               </div>
-              {filteredMembers.length === 0 && (
+              {filteredUsers.length === 0 && (
                 <div className="py-12 text-center">
                   <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                   <h3 className="mb-2 font-medium text-gray-900 text-lg">
-                    No members found
+                    No users found
                   </h3>
                   <p className="text-gray-500">
                     Try adjusting your search or filter criteria.

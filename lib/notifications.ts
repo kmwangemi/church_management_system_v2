@@ -96,25 +96,20 @@ function generateEmailContent(
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
             <h1 style="color: #333; text-align: center;">Login Verification Code</h1>
-            
             <p style="color: #666; font-size: 16px;">
               Hello ${data.firstName || 'there'},
             </p>
-            
             <p style="color: #666; font-size: 16px;">
               Your login verification code is:
             </p>
-            
             <div style="text-align: center; margin: 30px 0;">
               <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #007bff; background-color: #e9f4ff; padding: 20px 30px; border-radius: 8px; display: inline-block;">
                 ${data.verificationCode}
               </span>
             </div>
-            
             <p style="color: #666; font-size: 16px;">
               This code will expire in ${data.expiryMinutes || 10} minutes.
             </p>
-            
             <p style="color: #666; font-size: 14px; margin-top: 30px;">
               If you didn't request this code, please ignore this email.
             </p>

@@ -41,7 +41,7 @@ export default function AdminLoginForm() {
     // Reset form before navigation
     reset();
     // Determine redirect path
-    let redirectPath = '/member'; // default
+    let redirectPath = '/dashboard'; // default
     if (result.user.role === 'superadmin') {
       redirectPath = '/superadmin';
     } else if (result.user.role === 'admin') {

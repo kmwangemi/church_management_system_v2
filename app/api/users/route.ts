@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import type { AddMemberPayload } from '@/lib/validations/members';
+import type { AddUserPayload } from '@/lib/validations/users';
 import UserModel from '@/models/user'; // Only import User model
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -241,7 +241,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
     await dbConnect();
     // Start a session for the transaction
     session = await mongoose.startSession();
-    const userData: AddMemberPayload = await request.json();
+    const userData: AddUserPayload = await request.json();
     // Start the transaction
     await session.startTransaction();
     // Validate required fields according to your model

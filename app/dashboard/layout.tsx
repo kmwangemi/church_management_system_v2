@@ -48,7 +48,7 @@ import { useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, badge: null },
-  { name: 'Members', href: '/dashboard/members', icon: Users, badge: null },
+  { name: 'Users', href: '/dashboard/users', icon: Users, badge: null },
   {
     name: 'Branches',
     href: '/dashboard/branches',

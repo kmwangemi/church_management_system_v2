@@ -1,10 +1,10 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Users } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import RenderApiError from '@/components/api-error';
+import { BranchListInput } from '@/components/branch-list-input';
+import { CountrySelect } from '@/components/country-list-input';
+import { PasswordInput } from '@/components/password-input';
+import { PhoneInput } from '@/components/phone-number-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,313 +30,599 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-const userSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.email('Please enter a valid email address'),
-  role: z.string().min(1, 'Please select a role'),
-  permissions: z
-    .array(z.string())
-    .min(1, 'Please select at least one permission'),
-  sendWelcomeEmail: z.boolean().default(true),
-  temporaryPassword: z
-    .string()
-    .min(8, 'Password must be at least 8 characters'),
-});
-
-type UserForm = z.infer<typeof userSchema>;
+import { Textarea } from '@/components/ui/textarea';
+import { useRegisterUser } from '@/lib/hooks/user/use-user-queries';
+import type { Branch } from '@/lib/types';
+import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
+import { type AddUserPayload, userSchema } from '@/lib/validations/users';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Church, Loader2, Shield, User } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 interface AddUserFormProps {
   onCloseDialog: () => void;
 }
 
-const permissions = [
-  {
-    id: 'members',
-    name: 'Member Management',
-    description: 'Add, edit, and manage church members',
-  },
-  {
-    id: 'finance',
-    name: 'Financial Management',
-    description: 'Manage offerings, tithes, and expenses',
-  },
-  {
-    id: 'events',
-    name: 'Event Management',
-    description: 'Create and manage church events',
-  },
-  {
-    id: 'attendance',
-    name: 'Attendance Tracking',
-    description: 'Track and manage attendance records',
-  },
-  {
-    id: 'communication',
-    name: 'Communication',
-    description: 'Send messages and manage announcements',
-  },
-  {
-    id: 'content',
-    name: 'Content Management',
-    description: 'Manage sermons, documents, and media',
-  },
-  {
-    id: 'reports',
-    name: 'Reports & Analytics',
-    description: 'Generate and view reports',
-  },
-  {
-    id: 'settings',
-    name: 'System Settings',
-    description: 'Manage system configuration',
-  },
-];
-
 export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<UserForm>({
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const {
+    mutateAsync: registerUserMutation,
+    isPending,
+    isError,
+    error,
+  } = useRegisterUser();
+  const form = useForm<AddUserPayload>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
-      email: '',
+      phoneNumber: '',
+      gender: 'male',
       role: '',
-      permissions: [],
-      sendWelcomeEmail: true,
-      temporaryPassword: '',
+      email: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'Kenya',
+      },
+      isMember: true,
+      isStaff: false,
+      isVolunteer: false,
+      branchId: '',
+      password: 'User@123',
+      // Emergency contact details (matching your model structure)
+      emergencyDetails: {
+        emergencyContactFullName: '',
+        emergencyContactEmail: '',
+        emergencyContactPhoneNumber: '',
+        emergencyContactRelationship: '',
+        emergencyContactAddress: '',
+        emergencyContactNotes: '',
+      },
+      sendWelcomeEmail: false,
     },
   });
-
-  const onSubmit = async (data: UserForm) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      // biome-ignore lint/suspicious/noConsole: ignore
-      console.log('User data:', data);
-      onCloseDialog();
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: ignore
-      console.error('Error adding user:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const { reset } = form;
+  // Handle form submission
+  const onSubmit = async (payload: AddUserPayload) => {
+    await registerUserMutation(payload);
+    onCloseDialog();
+    reset();
   };
-
+  const handleCancelDialog = () => {
+    onCloseDialog();
+    reset();
+    setSelectedBranch(null);
+  };
   return (
-    <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="h-5 w-5" />
-              <span>User Information</span>
-            </CardTitle>
-            <CardDescription>
-              Create a new user account with specific permissions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <>
+      {isError && <RenderApiError error={error} />}
+      <Form {...form}>
+        <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
+          {/* Personal Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span>Personal Information</span>
+              </CardTitle>
+              <CardDescription>
+                Basic member details and contact information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        First Name <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter first name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Last Name <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter last name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter email address"
+                          type="email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Phone Number <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <PhoneInput
+                          defaultCountry="KE"
+                          onChange={field.onChange}
+                          placeholder="Enter phone number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="firstName"
+                name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter first name" {...field} />
-                    </FormControl>
+                    <FormLabel>
+                      Gender <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {GENDER_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter last name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter email address"
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select user role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="finance-manager">
-                        Finance Manager
-                      </SelectItem>
-                      <SelectItem value="content-manager">
-                        Content Manager
-                      </SelectItem>
-                      <SelectItem value="event-coordinator">
-                        Event Coordinator
-                      </SelectItem>
-                      <SelectItem value="volunteer">Volunteer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="temporaryPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Temporary Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter temporary password"
-                      type="password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <p className="text-gray-500 text-sm">
-                    User will be prompted to change this on first login
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Permissions</CardTitle>
-            <CardDescription>
-              Select the permissions this user should have
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormField
-              control={form.control}
-              name="permissions"
-              render={() => (
-                <FormItem>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {permissions.map((permission) => (
-                      <FormField
-                        control={form.control}
-                        key={permission.id}
-                        name="permissions"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border p-3 hover:bg-gray-50"
-                              key={permission.id}
+              {/* <FormField
+                  control={form.control}
+                  name="maritalStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Marital Status <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select marital status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {MARITAL_STATUS_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
                             >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(permission.id)}
-                                  onCheckedChange={(checked) => {
-                                    const newValue = checked
-                                      ? [...field.value, permission.id]
-                                      : field.value?.filter(
-                                          (value) => value !== permission.id
-                                        );
-                                    field.onChange(newValue);
-                                  }}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="cursor-pointer font-medium text-sm">
-                                  {permission.name}
-                                </FormLabel>
-                                <p className="text-gray-500 text-xs">
-                                  {permission.description}
-                                </p>
-                              </div>
-                            </FormItem>
-                          );
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                /> */}
+              <div className="space-y-4">
+                <FormLabel>Address</FormLabel>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="address.country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Country <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <CountrySelect
+                            onChange={field.onChange}
+                            placeholder="Select your country"
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address.city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          City <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nairobi" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address.street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Street Address <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main Street" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address.zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Postal Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="00100" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Church Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Church className="h-5 w-5" />
+                <span>Church Information</span>
+              </CardTitle>
+              <CardDescription>Role and branch assignments</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Role <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {MEMBER_ROLE_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="branchId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Branch <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <BranchListInput
+                        className="w-full"
+                        onChange={(branch) => {
+                          setSelectedBranch(branch);
+                          field.onChange(branch?._id || '');
                         }}
+                        placeholder="Search and select a branch"
+                        value={selectedBranch}
                       />
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <FormField
-              control={form.control}
-              name="sendWelcomeEmail"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Send Welcome Email</FormLabel>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isMember"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        disabled // Auto-calculated, not user-editable
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Church Member</FormLabel>
+                      <p className="text-gray-500 text-sm">
+                        This person is also a church member
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              {/* Secondary role flags */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="isStaff"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Staff Member</FormLabel>
+                        <p className="text-gray-500 text-sm">
+                          This person is also a paid staff member
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                {/* <FormField
+                  control={form.control}
+                  name="isVolunteer"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Volunteer</FormLabel>
+                        <p className="text-gray-500 text-sm">
+                          This person also volunteers in church activities
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                /> */}
+              </div>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Temporary Password</FormLabel>
+                    <FormControl>
+                      <PasswordInput
+                        disabled
+                        placeholder="Enter temporary password"
+                        {...field}
+                      />
+                    </FormControl>
                     <p className="text-gray-500 text-sm">
-                      Send login credentials and welcome information to the user
+                      User will be prompted to change this on first login
                     </p>
-                  </div>
-                </FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+          {/* Emergency Contact */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5" />
+                <span>Emergency Contact</span>
+              </CardTitle>
+              <CardDescription>Emergency contact information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="emergencyDetails.emergencyContactFullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Contact full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyDetails.emergencyContactEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Contact email"
+                          type="email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyDetails.emergencyContactPhoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Phone Number</FormLabel>
+                      <FormControl>
+                        <PhoneInput
+                          defaultCountry="KE"
+                          onChange={field.onChange}
+                          placeholder="Phone number"
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyDetails.emergencyContactRelationship"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Relationship</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Spouse, Parent, Sibling"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="emergencyDetails.emergencyContactAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Physical Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="123 Church Street, Nairobi"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="emergencyDetails.emergencyContactNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Additional emergency contact information"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <FormField
+                control={form.control}
+                name="sendWelcomeEmail"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Send Welcome Email</FormLabel>
+                      <p className="text-gray-500 text-sm">
+                        Send login credentials and welcome information to the
+                        user
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+          <div className="flex justify-end space-x-4 pt-6">
+            <Button
+              onClick={handleCancelDialog}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={isPending} type="submit">
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding Member...
+                </>
+              ) : (
+                'Add Member'
               )}
-            />
-          </CardContent>
-        </Card>
-        <div className="flex justify-end space-x-4">
-          <Button onClick={onCloseDialog} type="button" variant="outline">
-            Cancel
-          </Button>
-          <Button disabled={isLoading} type="submit">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating User...
-              </>
-            ) : (
-              'Create User'
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 }

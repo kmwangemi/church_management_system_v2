@@ -4,7 +4,7 @@ import type { LoginPayload } from '@/lib/validations/auth';
 import { useMutation } from '@tanstack/react-query';
 
 const login = async (payload: LoginPayload): Promise<LoginResponse> => {
-  const { data } = await apiClient.post('/auth/login', payload);
+  const { data } = await apiClient.post('/auth/login/admin', payload);
   return data;
 };
 

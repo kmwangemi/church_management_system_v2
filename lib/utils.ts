@@ -184,6 +184,10 @@ export const formatNotificationCount = (count: number) => {
   return count.toString();
 };
 
+export const ADMIN_ROLE_OPTIONS = [
+  { value: 'admin', label: 'Admin' },
+];
+
 export const MEMBER_ROLE_OPTIONS = [
   { value: 'visitor', label: 'Visitor' },
   { value: 'member', label: 'Member' },

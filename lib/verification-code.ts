@@ -107,60 +107,6 @@ export function generateMultipleCodes(count: number): string[] {
   return Array.from(codes);
 }
 
-/**
- * Rate-limited code generator with memory cache
- * Prevents generating multiple codes for same identifier within cooldown period
- */
-class CodeGenerator {
-  private static cache = new Map<string, { timestamp: number; code: string }>();
-  private static cooldownMs = 60_000; // 1 minute default
-
-  static generateWithRateLimit(
-    identifier: string,
-    cooldownMs?: number
-  ): {
-    success: boolean;
-    code?: string;
-    remainingTime?: number;
-  } {
-    const now = Date.now();
-    const currentCooldown = cooldownMs || CodeGenerator.cooldownMs;
-    const cached = CodeGenerator.cache.get(identifier);
-
-    if (cached && now - cached.timestamp < currentCooldown) {
-      const remainingTime = Math.ceil(
-        (currentCooldown - (now - cached.timestamp)) / 1000
-      );
-      return {
-        success: false,
-        remainingTime,
-      };
-    }
-
-    const code = generateSecureVerificationCode();
-    CodeGenerator.cache.set(identifier, { timestamp: now, code });
-
-    // Clean up old entries periodically
-    CodeGenerator.cleanupCache();
-
-    return {
-      success: true,
-      code,
-    };
-  }
-
-  private static cleanupCache(): void {
-    const now = Date.now();
-    for (const [key, value] of CodeGenerator.cache.entries()) {
-      if (now - value.timestamp > CodeGenerator.cooldownMs * 2) {
-        CodeGenerator.cache.delete(key);
-      }
-    }
-  }
-}
-
-export { CodeGenerator };
-
 // Example usage:
 /*
 // Basic 6-digit code
