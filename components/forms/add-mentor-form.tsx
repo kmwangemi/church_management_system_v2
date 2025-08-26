@@ -37,13 +37,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Award, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
-interface AddMilestoneFormProps {
+interface AddMentorFormProps {
   onCloseDialog: () => void;
 }
 
-export function AddMilestoneForm({ onCloseDialog }: AddMilestoneFormProps) {
+export function AddMentorForm({ onCloseDialog }: AddMentorFormProps) {
   const {
-    mutateAsync: registerMilestoneMutation,
+    mutateAsync: registerMentorMutation,
     isPending,
     isError,
     error,
@@ -61,7 +61,7 @@ export function AddMilestoneForm({ onCloseDialog }: AddMilestoneFormProps) {
   const { reset } = form;
   // Handle form submission
   const onSubmit = async (payload: AddMilestonePayload) => {
-    await registerMilestoneMutation(payload);
+    await registerMentorMutation(payload);
     onCloseDialog();
     reset();
   };

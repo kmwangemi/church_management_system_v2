@@ -89,6 +89,12 @@ const navigation = [
     badge: null,
   },
   {
+    name: 'Volunteers',
+    href: '/dashboard/volunteers',
+    icon: UserCheck,
+    badge: null,
+  },
+  {
     name: 'Prayer Requests',
     href: '/dashboard/prayer',
     icon: Headphones,
@@ -299,12 +305,14 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <Button className="relative" size="sm" variant="ghost">
-              <Bell className="h-5 w-5" />
-              <span className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs">
-                3
-              </span>
-            </Button>
+            <Link href="/dashboard/notifications">
+              <Button className="relative" size="sm" variant="ghost">
+                <Bell className="h-4 w-4" />
+                <span className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs">
+                  3
+                </span>
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

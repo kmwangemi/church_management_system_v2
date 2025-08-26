@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore complexity */
 import { Input } from '@/components/ui/input';
-import { useFetchMembers } from '@/lib/hooks/user/use-user-queries';
+import { useFetchUsers } from '@/lib/hooks/user/use-user-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
-import type { Member } from '@/lib/types';
+import type { User as Member } from '@/lib/types';
 import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
 import {
   ArrowUp,
@@ -29,7 +29,7 @@ interface RecentSearch {
   searchedAt: Date;
 }
 
-interface MemberListInputProps {
+interface UserListInputProps {
   value?: Member | null;
   onChange?: (member: Member | null) => void;
   placeholder?: string;
@@ -39,9 +39,9 @@ interface MemberListInputProps {
   maxRecentSearches?: number;
 }
 
-const MemberListInputComponent = React.forwardRef<
+const UserListInputComponent = React.forwardRef<
   HTMLDivElement,
-  MemberListInputProps
+  UserListInputProps
 >(
   (
     {
@@ -128,7 +128,7 @@ const MemberListInputComponent = React.forwardRef<
       return () => clearTimeout(timer);
     }, [searchTerm]);
     // Fetch members using the provided hook
-    const { data, isLoading, error } = useFetchMembers(1, debouncedSearchTerm);
+    const { data, isLoading, error } = useFetchUsers(1, debouncedSearchTerm);
     // Extract members array from the API response
     const members: Member[] = useMemo(() => {
       if (!data?.users) return [];
@@ -461,6 +461,6 @@ const MemberListInputComponent = React.forwardRef<
   }
 );
 
-MemberListInputComponent.displayName = 'MemberListInput';
+UserListInputComponent.displayName = 'UserListInput';
 
-export { MemberListInputComponent as MemberListInput };
+export { UserListInputComponent as UserListInput };

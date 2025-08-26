@@ -2,7 +2,6 @@
 
 import RenderApiError from '@/components/api-error';
 import { DatePicker } from '@/components/date-picker';
-import { MemberListInput } from '@/components/member-list-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,8 +26,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { UserListInput } from '@/components/user-list-input';
 import { useRegisterDisciple } from '@/lib/hooks/disciple/use-disciple-queries';
-import type { Member } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { DISCIPLE_LEVEL_OPTIONS, getRelativeYear } from '@/lib/utils';
 import {
   type AddDisciplePayload,
@@ -44,8 +44,8 @@ interface AddDiscipleFormProps {
 }
 
 export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [selectedMentor, setSelectedMentor] = useState<Member | null>(null);
+  const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  const [selectedMentor, setSelectedMentor] = useState<User | null>(null);
   const {
     mutateAsync: registerDiscipleMutation,
     isPending,
@@ -100,7 +100,7 @@ export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <MemberListInput
+                        <UserListInput
                           className="w-full"
                           onChange={(member) => {
                             setSelectedMember(member);
@@ -123,7 +123,7 @@ export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
                         Mentor <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <MemberListInput
+                        <UserListInput
                           className="w-full"
                           onChange={(mentor) => {
                             setSelectedMentor(mentor);
