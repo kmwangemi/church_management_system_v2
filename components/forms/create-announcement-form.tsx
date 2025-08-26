@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterAnnouncement } from '@/lib/hooks/announcement/use-announcement-queries';
 import {
@@ -62,9 +64,11 @@ export function CreateAnnouncementForm({
       content: '',
       category: '',
       priority: '',
+      targetAudience: '',
       publishDate: new Date().toISOString().split('T')[0],
       expiryDate: '',
       status: 'draft',
+      isPinned: false,
     },
   });
   const { reset } = form;
@@ -165,6 +169,25 @@ export function CreateAnnouncementForm({
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="targetAudience">
+                    Audience
+                  </Label>
+                  <Select>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select audience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Members</SelectItem>
+                      <SelectItem value="youth">Youth & Parents</SelectItem>
+                      <SelectItem value="adults">Adults</SelectItem>
+                      <SelectItem value="volunteers">Volunteers</SelectItem>
+                      <SelectItem value="leaders">Leaders</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="priority"
@@ -283,6 +306,10 @@ export function CreateAnnouncementForm({
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="isPinned" />
+                <Label htmlFor="isPinned">Pin this announcement</Label>
               </div>
             </CardContent>
           </Card>
