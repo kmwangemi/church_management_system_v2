@@ -3,7 +3,6 @@
 import RenderApiError from '@/components/api-error';
 import { BranchListInput } from '@/components/branch-list-input';
 import { CountrySelect } from '@/components/country-list-input';
-import { PasswordInput } from '@/components/password-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,13 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useRegisterUser } from '@/lib/hooks/user/use-user-queries';
 import type { Branch } from '@/lib/types';
 import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Church, Loader2, Shield, User } from 'lucide-react';
+import { Church, Loader2, User } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -70,19 +68,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
       },
       isMember: true,
       isStaff: false,
-      isVolunteer: false,
       branchId: '',
-      password: 'User@123',
-      // Emergency contact details (matching your model structure)
-      emergencyDetails: {
-        emergencyContactFullName: '',
-        emergencyContactEmail: '',
-        emergencyContactPhoneNumber: '',
-        emergencyContactRelationship: '',
-        emergencyContactAddress: '',
-        emergencyContactNotes: '',
-      },
-      sendWelcomeEmail: false,
     },
   });
   const { reset } = form;
@@ -110,7 +96,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                 <span>Personal Information</span>
               </CardTitle>
               <CardDescription>
-                Basic member details and contact information
+                Basic user details and contact information
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -215,39 +201,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                   </FormItem>
                 )}
               />
-              {/* <FormField
-                  control={form.control}
-                  name="maritalStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Marital Status <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="cursor-pointer">
-                            <SelectValue placeholder="Select marital status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {MARITAL_STATUS_OPTIONS.map((option) => (
-                            <SelectItem
-                              className="cursor-pointer"
-                              key={option.value}
-                              value={option.value}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                /> */}
               <div className="space-y-4">
                 <FormLabel>Address</FormLabel>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -388,7 +341,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                     <FormControl>
                       <Checkbox
                         checked={field.value}
-                        disabled // Auto-calculated, not user-editable
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -423,183 +375,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                     </FormItem>
                   )}
                 />
-                {/* <FormField
-                  control={form.control}
-                  name="isVolunteer"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Volunteer</FormLabel>
-                        <p className="text-gray-500 text-sm">
-                          This person also volunteers in church activities
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                /> */}
               </div>
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Temporary Password</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        disabled
-                        placeholder="Enter temporary password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <p className="text-gray-500 text-sm">
-                      User will be prompted to change this on first login
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-          {/* Emergency Contact */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="h-5 w-5" />
-                <span>Emergency Contact</span>
-              </CardTitle>
-              <CardDescription>Emergency contact information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="emergencyDetails.emergencyContactFullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Contact full name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emergencyDetails.emergencyContactEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Contact email"
-                          type="email"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emergencyDetails.emergencyContactPhoneNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Phone Number</FormLabel>
-                      <FormControl>
-                        <PhoneInput
-                          defaultCountry="KE"
-                          onChange={field.onChange}
-                          placeholder="Phone number"
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emergencyDetails.emergencyContactRelationship"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Relationship</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Spouse, Parent, Sibling"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="emergencyDetails.emergencyContactAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Physical Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="123 Church Street, Nairobi"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="emergencyDetails.emergencyContactNotes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Additional Notes</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Additional emergency contact information"
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <FormField
-                control={form.control}
-                name="sendWelcomeEmail"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Send Welcome Email</FormLabel>
-                      <p className="text-gray-500 text-sm">
-                        Send login credentials and welcome information to the
-                        user
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
           <div className="flex justify-end space-x-4 pt-6">
@@ -610,14 +386,17 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
             >
               Cancel
             </Button>
-            <Button disabled={isPending} type="submit">
+            <Button
+              disabled={!form.formState.isValid || isPending}
+              type="submit"
+            >
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding Member...
+                  Adding User...
                 </>
               ) : (
-                'Add Member'
+                'Add User'
               )}
             </Button>
           </div>

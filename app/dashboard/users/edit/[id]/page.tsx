@@ -1,7 +1,10 @@
 'use client';
 
+import { BranchListInput } from '@/components/branch-list-input';
+import { CountrySelect } from '@/components/country-list-input';
+import { DatePicker } from '@/components/date-picker';
+import { PhoneInput } from '@/components/phone-number-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -11,8 +14,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
@@ -28,66 +39,715 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import type { Branch } from '@/lib/types';
+import {
+  GENDER_OPTIONS,
+  getRelativeYear,
+  MARITAL_STATUS_OPTIONS,
+  MEMBER_ROLE_OPTIONS,
+} from '@/lib/utils';
+import type { IUserModel } from '@/models/user';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
   CalendarIcon,
-  Clock,
-  DollarSign,
-  Heart,
+  Church,
   Save,
+  Shield,
   Upload,
-  User,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 
-export default function EditMemberPage({ params }: { params: { id: string } }) {
-  const [birthDate, setBirthDate] = useState<Date>();
-  const [joinDate, setJoinDate] = useState<Date>();
+const formSchema = z.object({
+  // Basic fields
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  email: z.email().optional(),
+  phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
+  address: z.object({
+    street: z.string().min(2, 'Street address must be at least 2 characters'),
+    city: z.string().min(2, 'City name must be at least 2 characters'),
+    state: z.string().optional(),
+    zipCode: z.string().optional(),
+    country: z.string().min(2, 'Country name must be at least 2 characters'),
+  }),
+  dateOfBirth: z.date().optional(),
+  gender: z.enum(['male', 'female'], {
+    error: 'Gender is required',
+  }),
+  maritalStatus: z
+    .enum(['single', 'married', 'divorced', 'widowed'])
+    .optional(),
+  occupation: z.string().optional(),
+  emergencyDetails: z.object({
+    emergencyContactFullName: z.string().optional(),
+    emergencyContactEmail: z.email().optional(),
+    emergencyContactPhoneNumber: z.string().optional(),
+    emergencyContactRelationship: z.string().optional(),
+    emergencyContactAddress: z.string().optional(),
+    emergencyContactNotes: z.string().optional(),
+  }),
+  // Role-specific fields
+  role: z.enum([
+    'member',
+    'pastor',
+    'bishop',
+    'admin',
+    'superadmin',
+    'visitor',
+  ]),
+  branchId: z.string().min(1, 'Please select a branch'),
+  isMember: z.boolean(),
+  isStaff: z.boolean(),
+  isVolunteer: z.boolean(),
+  // Member fields
+  memberId: z.string().optional(),
+  membershipDate: z.date().optional(),
+  membershipStatus: z
+    .enum(['active', 'inactive', 'transferred', 'deceased'])
+    .optional(),
+  baptismDate: z.date().optional(),
+  joinedDate: z.date().optional(),
+  // Pastor fields
+  pastorId: z.string().optional(),
+  ordinationDate: z.date().optional(),
+  qualifications: z.array(z.string()).optional(),
+  specializations: z.array(z.string()).optional(),
+  sermonCount: z.number().optional(),
+  counselingSessions: z.number().optional(),
+  biography: z.string().optional(),
+  // Bishop fields
+  bishopId: z.string().optional(),
+  appointmentDate: z.date().optional(),
+  jurisdictionArea: z.string().optional(),
+  achievements: z.array(z.string()).optional(),
+  // Staff fields
+  staffId: z.string().optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+  salary: z.number().optional(),
+  employmentType: z
+    .enum(['full-time', 'part-time', 'contract', 'casual'])
+    .optional(),
+  isActive: z.boolean().optional(),
+  // Volunteer fields
+  volunteerId: z.string().optional(),
+  volunteerStatus: z
+    .enum(['active', 'inactive', 'on_hold', 'suspended'])
+    .optional(),
+  skills: z.array(z.string()).optional(),
+  hoursContributed: z.number().optional(),
+  // Admin fields
+  adminId: z.string().optional(),
+  accessLevel: z.enum(['branch', 'regional', 'national', 'global']).optional(),
+  // Visitor fields
+  visitorId: z.string().optional(),
+  visitDate: z.date().optional(),
+  howDidYouHear: z
+    .enum(['friend', 'family', 'online', 'flyer', 'other'])
+    .optional(),
+  followUpStatus: z
+    .enum(['pending', 'contacted', 'interested', 'not_interested'])
+    .optional(),
+  interestedInMembership: z.boolean().optional(),
+});
 
-  // Mock member data - in real app, fetch based on params.id
-  const member = {
-    id: params.id,
-    name: 'Sarah Johnson',
+type FormData = z.infer<typeof formSchema>;
+
+export default function EditMemberPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = React.use(params); // 👈 unwrap the promise
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const mockMember: Partial<IUserModel> = {
+    id,
+    firstName: 'Sarah',
+    lastName: 'Johnson',
     email: 'sarah.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Main St, Anytown, ST 12345',
-    birthDate: '1985-06-15',
-    joinDate: '2020-03-10',
-    membershipStatus: 'Active',
-    membershipType: 'Full Member',
-    maritalStatus: 'Married',
-    occupation: 'Teacher',
-    emergencyContact: 'John Johnson - +1 (555) 987-6543',
-    ministries: ["Children's Ministry", 'Worship Team'],
-    skills: ['Music', 'Teaching', 'Administration'],
-    notes: "Very active in children's ministry. Has leadership potential.",
-    baptized: true,
-    confirmed: true,
-    smallGroup: 'Young Adults Group',
-    servingAreas: ['Sunday School', 'Choir'],
+    phoneNumber: '',
+    address: {
+      street: '123 Main St, Anytown, ST 12345',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'Kenya',
+    },
+    dateOfBirth: new Date('1985-06-15'),
+    maritalStatus: 'single',
+    // occupation: 'Teacher',
+    emergencyDetails: {
+      emergencyContactFullName: 'John Johnson',
+      emergencyContactEmail: '',
+      emergencyContactPhoneNumber: '',
+      emergencyContactRelationship: '',
+      emergencyContactAddress: '',
+      emergencyContactNotes: '',
+    },
+    role: 'member',
+    isStaff: true,
+    isVolunteer: true,
+    memberDetails: {
+      memberId: 'MEM001',
+      membershipDate: new Date('2020-03-10'),
+      membershipStatus: 'active',
+      baptismDate: new Date('2020-04-15'),
+      joinedDate: new Date('2020-03-10'),
+    },
+  };
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: mockMember.firstName || '',
+      lastName: mockMember.lastName || '',
+      email: mockMember.email || '',
+      phoneNumber: mockMember.phoneNumber || '',
+      address: mockMember.address || {},
+      dateOfBirth: mockMember.dateOfBirth,
+      maritalStatus: mockMember.maritalStatus,
+      // occupation: mockMember.occupation || '',
+      emergencyDetails: mockMember.emergencyDetails || {},
+      role: mockMember.role || 'member',
+      memberId: mockMember.memberDetails?.memberId || '',
+      membershipDate: mockMember.memberDetails?.membershipDate,
+      membershipStatus: mockMember.memberDetails?.membershipStatus || 'active',
+      baptismDate: mockMember.memberDetails?.baptismDate,
+      joinedDate: mockMember.memberDetails?.joinedDate,
+    },
+  });
+
+  const currentRole = form.watch('role');
+
+  const onSubmit = (data: FormData) => {
+    // biome-ignore lint/suspicious/noConsole: ignore
+    console.log('[v0] Form submitted:', data);
+    // Handle form submission
   };
 
-  const attendanceHistory = [
-    { date: '2024-12-15', service: 'Sunday Service', status: 'Present' },
-    { date: '2024-12-12', service: 'Bible Study', status: 'Present' },
-    { date: '2024-12-08', service: 'Sunday Service', status: 'Present' },
-    { date: '2024-12-05', service: 'Prayer Meeting', status: 'Absent' },
-    { date: '2024-12-01', service: 'Sunday Service', status: 'Present' },
-  ];
-
-  const givingHistory = [
-    { date: '2024-12-15', type: 'Tithe', amount: 250, method: 'Online' },
-    { date: '2024-12-08', type: 'Offering', amount: 50, method: 'Cash' },
-    { date: '2024-12-01', type: 'Tithe', amount: 250, method: 'Online' },
-    {
-      date: '2024-11-24',
-      type: 'Special Offering',
-      amount: 100,
-      method: 'Check',
-    },
-  ];
+  const renderRoleSpecificFields = () => {
+    switch (currentRole) {
+      case 'member':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Member Details</CardTitle>
+              <CardDescription>Member-specific information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="memberId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Member ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="membershipDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Membership Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            className="w-full justify-start bg-transparent text-left font-normal"
+                            variant="outline"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value
+                              ? format(field.value, 'PPP')
+                              : 'Select date'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          initialFocus
+                          mode="single"
+                          onSelect={field.onChange}
+                          selected={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="membershipStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Membership Status</FormLabel>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="transferred">Transferred</SelectItem>
+                        <SelectItem value="deceased">Deceased</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="baptismDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Baptism Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            className="w-full justify-start bg-transparent text-left font-normal"
+                            variant="outline"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value
+                              ? format(field.value, 'PPP')
+                              : 'Select date'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          initialFocus
+                          mode="single"
+                          onSelect={field.onChange}
+                          selected={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        );
+      case 'pastor':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pastor Details</CardTitle>
+              <CardDescription>Pastor-specific information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="pastorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pastor ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ordinationDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ordination Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            className="w-full justify-start bg-transparent text-left font-normal"
+                            variant="outline"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value
+                              ? format(field.value, 'PPP')
+                              : 'Select date'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          initialFocus
+                          mode="single"
+                          onSelect={field.onChange}
+                          selected={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sermonCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sermon Count</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="counselingSessions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Counseling Sessions</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="biography"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Biography</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={4} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        );
+      case 'bishop':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Bishop Details</CardTitle>
+              <CardDescription>Bishop-specific information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="bishopId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bishop ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="appointmentDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Appointment Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            className="w-full justify-start bg-transparent text-left font-normal"
+                            variant="outline"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value
+                              ? format(field.value, 'PPP')
+                              : 'Select date'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          initialFocus
+                          mode="single"
+                          onSelect={field.onChange}
+                          selected={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="jurisdictionArea"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Jurisdiction Area</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="biography"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Biography</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={4} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        );
+      case 'admin':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Details</CardTitle>
+              <CardDescription>Admin-specific information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="adminId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Admin ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="accessLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access Level</FormLabel>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="branch">Branch</SelectItem>
+                        <SelectItem value="regional">Regional</SelectItem>
+                        <SelectItem value="national">National</SelectItem>
+                        <SelectItem value="global">Global</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        );
+      case 'superadmin':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Super Admin Details</CardTitle>
+              <CardDescription>
+                Super admin-specific information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="adminId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Super Admin ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="accessLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access Level</FormLabel>
+                    <Select
+                      defaultValue="global"
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="global">Global</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        );
+      case 'visitor':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Visitor Details</CardTitle>
+              <CardDescription>Visitor-specific information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="visitorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Visitor ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="visitDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Visit Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            className="w-full justify-start bg-transparent text-left font-normal"
+                            variant="outline"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value
+                              ? format(field.value, 'PPP')
+                              : 'Select date'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          initialFocus
+                          mode="single"
+                          onSelect={field.onChange}
+                          selected={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="howDidYouHear"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>How Did You Hear About Us?</FormLabel>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="friend">Friend</SelectItem>
+                        <SelectItem value="family">Family</SelectItem>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="flyer">Flyer</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="interestedInMembership"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Interested in Membership
+                      </FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -97,542 +757,774 @@ export default function EditMemberPage({ params }: { params: { id: string } }) {
           <Link href="/dashboard/users">
             <Button size="sm" variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Users
+              Back to Members
             </Button>
           </Link>
           <div>
-            <h1 className="font-bold text-3xl tracking-tight">Edit User</h1>
+            <h1 className="font-bold text-3xl tracking-tight">Edit Member</h1>
             <p className="text-muted-foreground">
-              Update user information and settings
+              Update member information and settings
             </p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline">Cancel</Button>
-          <Button>
+          <Button onClick={form.handleSubmit(onSubmit)}>
             <Save className="mr-2 h-4 w-4" />
             Save Changes
           </Button>
         </div>
       </div>
-
-      <Tabs className="space-y-4" defaultValue="personal">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="personal">Personal Info</TabsTrigger>
-          <TabsTrigger value="church">Church Details</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-          <TabsTrigger value="giving">Giving</TabsTrigger>
-        </TabsList>
-
-        <TabsContent className="space-y-6" value="personal">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Profile Photo */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Photo</CardTitle>
-                <CardDescription>
-                  Update member's profile picture
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center space-y-4">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage
-                    alt={member.name}
-                    src="/placeholder.svg?height=96&width=96"
-                  />
-                  <AvatarFallback className="text-lg">SJ</AvatarFallback>
-                </Avatar>
-                <Button variant="outline">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Photo
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Information</CardTitle>
-                <CardDescription>
-                  Personal details and contact information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input defaultValue="Sarah" id="firstName" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input defaultValue="Johnson" id="lastName" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input defaultValue={member.email} id="email" type="email" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input defaultValue={member.phone} id="phone" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea defaultValue={member.address} id="address" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Personal Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Details</CardTitle>
-                <CardDescription>
-                  Additional personal information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Birth Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        className="w-full justify-start text-left font-normal"
-                        variant="outline"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {birthDate ? format(birthDate, 'PPP') : 'Select date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        initialFocus
-                        mode="single"
-                        onSelect={setBirthDate}
-                        selected={birthDate}
+      <Form {...form}>
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <Tabs className="space-y-4" defaultValue="personal">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="role">Role Details</TabsTrigger>
+              <TabsTrigger value="church">Church Details</TabsTrigger>
+            </TabsList>
+            <TabsContent className="space-y-6" value="personal">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Profile Photo */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Profile Photo</CardTitle>
+                    <CardDescription>
+                      Update member's profile picture
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center space-y-4">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage
+                        alt={`${form.watch('firstName')} ${form.watch('lastName')}`}
+                        src="/placeholder.svg?height=96&width=96"
                       />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maritalStatus">Marital Status</Label>
-                  <Select defaultValue={member.maritalStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Single">Single</SelectItem>
-                      <SelectItem value="Married">Married</SelectItem>
-                      <SelectItem value="Divorced">Divorced</SelectItem>
-                      <SelectItem value="Widowed">Widowed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="occupation">Occupation</Label>
-                  <Input defaultValue={member.occupation} id="occupation" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emergencyContact">Emergency Contact</Label>
-                  <Input
-                    defaultValue={member.emergencyContact}
-                    id="emergencyContact"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Skills & Interests */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Skills & Interests</CardTitle>
-                <CardDescription>
-                  Member's skills and areas of interest
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Current Skills</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {member.skills.map((skill, index) => (
-                      <Badge key={index} variant="secondary">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newSkill">Add New Skill</Label>
-                  <div className="flex space-x-2">
-                    <Input id="newSkill" placeholder="Enter skill" />
-                    <Button variant="outline">Add</Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea defaultValue={member.notes} id="notes" rows={4} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="church">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Membership Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Membership Information</CardTitle>
-                <CardDescription>
-                  Church membership details and status
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Join Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        className="w-full justify-start text-left font-normal"
-                        variant="outline"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {joinDate ? format(joinDate, 'PPP') : 'Select date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        initialFocus
-                        mode="single"
-                        onSelect={setJoinDate}
-                        selected={joinDate}
+                      <AvatarFallback className="text-lg">
+                        {form.watch('firstName')?.[0]}
+                        {form.watch('lastName')?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button variant="outline">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Photo
+                    </Button>
+                  </CardContent>
+                </Card>
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>
+                      Personal details and contact information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="membershipStatus">Membership Status</Label>
-                  <Select defaultValue={member.membershipStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                      <SelectItem value="Visitor">Visitor</SelectItem>
-                      <SelectItem value="New Member">New Member</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="membershipType">Membership Type</Label>
-                  <Select defaultValue={member.membershipType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Full Member">Full Member</SelectItem>
-                      <SelectItem value="Associate Member">
-                        Associate Member
-                      </SelectItem>
-                      <SelectItem value="Youth Member">Youth Member</SelectItem>
-                      <SelectItem value="Child Member">Child Member</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="smallGroup">Small Group</Label>
-                  <Select defaultValue={member.smallGroup}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Young Adults Group">
-                        Young Adults Group
-                      </SelectItem>
-                      <SelectItem value="Couples Group">
-                        Couples Group
-                      </SelectItem>
-                      <SelectItem value="Seniors Group">
-                        Seniors Group
-                      </SelectItem>
-                      <SelectItem value="Bible Study Group">
-                        Bible Study Group
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Spiritual Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Spiritual Status</CardTitle>
-                <CardDescription>
-                  Baptism, confirmation, and spiritual milestones
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="baptized">Baptized</Label>
-                  <Switch defaultChecked={member.baptized} id="baptized" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="confirmed">Confirmed</Label>
-                  <Switch defaultChecked={member.confirmed} id="confirmed" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Baptism Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        className="w-full justify-start text-left font-normal"
-                        variant="outline"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        Select date
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar initialFocus mode="single" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label>Confirmation Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        className="w-full justify-start text-left font-normal"
-                        variant="outline"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        Select date
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar initialFocus mode="single" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Ministry Involvement */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Ministry Involvement</CardTitle>
-                <CardDescription>
-                  Current and past ministry participation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Current Ministries</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {member.ministries.map((ministry, index) => (
-                      <Badge key={index} variant="default">
-                        {ministry}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newMinistry">Add Ministry</Label>
-                  <div className="flex space-x-2">
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ministry" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="worship">Worship Team</SelectItem>
-                        <SelectItem value="children">
-                          Children's Ministry
-                        </SelectItem>
-                        <SelectItem value="youth">Youth Ministry</SelectItem>
-                        <SelectItem value="outreach">Outreach</SelectItem>
-                        <SelectItem value="prayer">Prayer Ministry</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline">Add</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Serving Areas */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Serving Areas</CardTitle>
-                <CardDescription>
-                  Areas where member serves regularly
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Current Serving Areas</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {member.servingAreas.map((area, index) => (
-                      <Badge key={index} variant="outline">
-                        {area}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newServingArea">Add Serving Area</Label>
-                  <div className="flex space-x-2">
-                    <Input
-                      id="newServingArea"
-                      placeholder="Enter serving area"
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <Button variant="outline">Add</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Member History</CardTitle>
-              <CardDescription>
-                Timeline of important events and changes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4 rounded-lg border p-4">
-                  <div className="flex-shrink-0">
-                    <User className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">Joined Church</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Became a full member
-                    </p>
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    March 10, 2020
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 rounded-lg border p-4">
-                  <div className="flex-shrink-0">
-                    <Heart className="h-5 w-5 text-purple-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">Joined Children's Ministry</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Started serving in children's ministry
-                    </p>
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    June 15, 2020
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 rounded-lg border p-4">
-                  <div className="flex-shrink-0">
-                    <DollarSign className="h-5 w-5 text-green-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">Started Regular Giving</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Began monthly tithe contributions
-                    </p>
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    August 1, 2020
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="attendance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Attendance History</CardTitle>
-              <CardDescription>
-                Recent attendance records and patterns
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {attendanceHistory.map((record, index) => (
-                  <div
-                    className="flex items-center justify-between rounded-lg border p-4"
-                    key={index}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <Clock className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{record.service}</h4>
-                        <p className="text-muted-foreground text-sm">
-                          {record.date}
-                        </p>
+                    <FormField
+                      control={form.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <PhoneInput
+                              defaultCountry="KE"
+                              onChange={field.onChange}
+                              placeholder="Enter phone number"
+                              value={field.value}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="space-y-4">
+                      <FormLabel>Address</FormLabel>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="address.country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Country <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <CountrySelect
+                                  onChange={field.onChange}
+                                  placeholder="Select your country"
+                                  value={field.value}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="address.city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                City <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Nairobi" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="address.street"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Street Address{' '}
+                                <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="123 Main Street"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="address.zipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Postal Code</FormLabel>
+                              <FormControl>
+                                <Input placeholder="00100" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
-                    <Badge
-                      variant={
-                        record.status === 'Present' ? 'default' : 'secondary'
-                      }
-                    >
-                      {record.status}
-                    </Badge>
-                  </div>
-                ))}
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="giving">
-          <Card>
-            <CardHeader>
-              <CardTitle>Giving History</CardTitle>
-              <CardDescription>
-                Contribution records and giving patterns
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {givingHistory.map((record, index) => (
-                  <div
-                    className="flex items-center justify-between rounded-lg border p-4"
-                    key={index}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <DollarSign className="h-5 w-5 text-green-500" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{record.type}</h4>
-                        <p className="text-muted-foreground text-sm">
-                          {record.date} • {record.method}
-                        </p>
-                      </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Personal Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Personal Details</CardTitle>
+                    <CardDescription>
+                      Additional personal information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Gender <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="cursor-pointer">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-[400px] overflow-y-auto">
+                              {GENDER_OPTIONS.map((option) => (
+                                <SelectItem
+                                  className="cursor-pointer"
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date of Birth</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              format="long"
+                              maxDate={getRelativeYear(1)}
+                              minDate={getRelativeYear(-100)}
+                              onChange={(date) =>
+                                field.onChange(date ? date.toISOString() : '')
+                              }
+                              placeholder="Select date of birth"
+                              value={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Marital Status{' '}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="cursor-pointer">
+                                <SelectValue placeholder="Select marital status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-[400px] overflow-y-auto">
+                              {MARITAL_STATUS_OPTIONS.map((option) => (
+                                <SelectItem
+                                  className="cursor-pointer"
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="occupation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Occupation</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+                {/* Emergency Contact */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Shield className="h-5 w-5" />
+                      <span>Emergency Contact</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Emergency contact information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="emergencyDetails.emergencyContactFullName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contact Full Name</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Contact full name"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="emergencyDetails.emergencyContactEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contact Email</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Contact email"
+                                type="email"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="emergencyDetails.emergencyContactPhoneNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contact Phone Number</FormLabel>
+                            <FormControl>
+                              <PhoneInput
+                                defaultCountry="KE"
+                                onChange={field.onChange}
+                                placeholder="Phone number"
+                                value={field.value || ''}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="emergencyDetails.emergencyContactRelationship"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Relationship</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g., Spouse, Parent, Sibling"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <div className="text-right">
-                      <div className="font-medium">${record.amount}</div>
-                    </div>
-                  </div>
-                ))}
+                    <FormField
+                      control={form.control}
+                      name="emergencyDetails.emergencyContactAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Physical Address</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="123 Church Street, Nairobi"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="emergencyDetails.emergencyContactNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Notes</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Additional emergency contact information"
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="role">
+              {renderRoleSpecificFields()}
+            </TabsContent>
+            <TabsContent className="space-y-6" value="church">
+              {/* Church Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Church className="h-5 w-5" />
+                    <span>Church Information</span>
+                  </CardTitle>
+                  <CardDescription>Role and branch assignments</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Role <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {MEMBER_ROLE_OPTIONS.map((option) => (
+                              <SelectItem
+                                className="cursor-pointer"
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="branchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Branch <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <BranchListInput
+                            className="w-full"
+                            onChange={(branch) => {
+                              setSelectedBranch(branch);
+                              field.onChange(branch?._id || '');
+                            }}
+                            placeholder="Search and select a branch"
+                            value={selectedBranch}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Secondary role flags */}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="isMember"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Church Member</FormLabel>
+                            <p className="text-gray-500 text-sm">
+                              This person is also a church member
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="isStaff"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Staff Member</FormLabel>
+                            <p className="text-gray-500 text-sm">
+                              This person is also a paid staff member
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="isVolunteer"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Volunteer</FormLabel>
+                            <p className="text-gray-500 text-sm">
+                              This person also volunteers in church activities
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  {/* <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Temporary Password</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              disabled
+                              placeholder="Enter temporary password"
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-gray-500 text-sm">
+                            User will be prompted to change this on first login
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    /> */}
+                  {mockMember.isStaff && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Staff Details</CardTitle>
+                        <CardDescription>
+                          Staff-specific information
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="staffId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Staff ID</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="jobTitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Job Title</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="department"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Department</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="employmentType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Employment Type</FormLabel>
+                              <Select
+                                defaultValue={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="full-time">
+                                    Full-time
+                                  </SelectItem>
+                                  <SelectItem value="part-time">
+                                    Part-time
+                                  </SelectItem>
+                                  <SelectItem value="contract">
+                                    Contract
+                                  </SelectItem>
+                                  <SelectItem value="casual">Casual</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="salary"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Salary</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) =>
+                                    field.onChange(Number(e.target.value))
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                  {mockMember.isVolunteer && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Volunteer Details</CardTitle>
+                        <CardDescription>
+                          Volunteer-specific information
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="volunteerId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Volunteer ID</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="volunteerStatus"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Volunteer Status</FormLabel>
+                              <Select
+                                defaultValue={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="active">Active</SelectItem>
+                                  <SelectItem value="inactive">
+                                    Inactive
+                                  </SelectItem>
+                                  <SelectItem value="on_hold">
+                                    On Hold
+                                  </SelectItem>
+                                  <SelectItem value="suspended">
+                                    Suspended
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="hoursContributed"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hours Contributed</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) =>
+                                    field.onChange(Number(e.target.value))
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </form>
+      </Form>
     </div>
   );
 }
