@@ -2,7 +2,6 @@
 
 import RenderApiError from '@/components/api-error';
 import { DatePicker } from '@/components/date-picker';
-import { MemberListInput } from '@/components/member-list-input';
 import { NumberInput } from '@/components/number-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { MemberListInput } from '@/components/user-list-input';
 import { useRegisterOffering } from '@/lib/hooks/offering/use-offering-queries';
 import type { Member } from '@/lib/types';
 import {

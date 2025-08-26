@@ -160,6 +160,10 @@ export interface IUserModel extends Document {
   isEmailVerified: boolean;
   lastLogin?: Date;
   passwordHash?: string; // ✅ Fixed: Made optional since not all users may have passwords
+  verificationCode?: string;
+  verificationCodeExpiresAt?: Date;
+  lastCodeSentAt?: Date;
+  failedVerificationAttempts?: number;
   // Audit fields
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
@@ -380,7 +384,7 @@ const UserSchema = new Schema<IUserModel>(
     email: {
       type: String,
       unique: true,
-      sparse: true,
+      sparse: true, // Allows multiple null values but enforces uniqueness for non-null values
       trim: true,
       lowercase: true,
     },
@@ -468,6 +472,27 @@ const UserSchema = new Schema<IUserModel>(
       required(this: IUserModel) {
         return this.role !== 'superadmin';
       },
+    },
+    // Verification code for passwordless login
+    verificationCode: {
+      type: String,
+      select: false, // Don't include in queries by default for security
+    },
+    // When the verification code expires
+    verificationCodeExpiresAt: {
+      type: Date,
+      select: false, // Don't include in queries by default
+    },
+    // Track when the last code was sent (for rate limiting)
+    lastCodeSentAt: {
+      type: Date,
+      select: false,
+    },
+    // Track failed verification attempts
+    failedVerificationAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
     },
     isPasswordUpdated: { type: Boolean, required: true, default: false },
     agreeToTerms: { type: Boolean, default: true },

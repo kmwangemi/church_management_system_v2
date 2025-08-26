@@ -1,25 +1,6 @@
 'use client';
 
-import {
-  Bell,
-  Database,
-  Download,
-  Edit,
-  Globe,
-  Key,
-  Mail,
-  MoreHorizontal,
-  Plus,
-  Save,
-  Settings,
-  Shield,
-  Smartphone,
-  Trash2,
-  Upload,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
-import { AddUserForm } from '@/components/forms/add-user-form';
+import { AddAdminForm } from '@/components/forms/add-admin-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,6 +41,25 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Bell,
+  Database,
+  Download,
+  Edit,
+  Globe,
+  Key,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  Save,
+  Settings,
+  Shield,
+  Smartphone,
+  Trash2,
+  Upload,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const users = [
@@ -138,7 +138,7 @@ const roles = [
 
 export default function SettingsPage() {
   const [selectedTab, setSelectedTab] = useState('general');
-  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [isAddAdminDialogOpen, setIsAddAdminDialogOpen] = useState(false);
   const [settings, setSettings] = useState({
     churchName: 'Grace Community Church',
     address: '123 Church Street, City, State 12345',
@@ -222,10 +222,10 @@ export default function SettingsPage() {
                 </TabsTrigger>
                 <TabsTrigger
                   className="flex items-center space-x-2 py-3"
-                  value="users"
+                  value="admins"
                 >
                   <Users className="h-4 w-4" />
-                  <span>Users</span>
+                  <span>Admins</span>
                 </TabsTrigger>
                 <TabsTrigger
                   className="flex items-center space-x-2 py-3"
@@ -415,33 +415,33 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent className="p-6" value="users">
+            <TabsContent className="p-6" value="admins">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg">User Management</h3>
+                  <h3 className="font-semibold text-lg">Admin Management</h3>
                   <p className="text-gray-600">
-                    Manage system users and their access
+                    Manage system admins and their access
                   </p>
                 </div>
                 <Dialog
-                  onOpenChange={setIsAddUserDialogOpen}
-                  open={isAddUserDialogOpen}
+                  onOpenChange={setIsAddAdminDialogOpen}
+                  open={isAddAdminDialogOpen}
                 >
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Add User
+                      Add Admin
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Add New User</DialogTitle>
+                      <DialogTitle>Add New Admin</DialogTitle>
                       <DialogDescription>
-                        Create a new user account with specific permissions
+                        Create a new admin account with specific permissions
                       </DialogDescription>
                     </DialogHeader>
-                    <AddUserForm
-                      onCloseDialog={() => setIsAddUserDialogOpen(false)}
+                    <AddAdminForm
+                      onCloseDialog={() => setIsAddAdminDialogOpen(false)}
                     />
                   </DialogContent>
                 </Dialog>

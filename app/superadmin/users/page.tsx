@@ -1,23 +1,6 @@
 'use client';
 
-import {
-  Activity,
-  Building2,
-  Edit,
-  Eye,
-  Mail,
-  MoreHorizontal,
-  Phone,
-  Plus,
-  Search,
-  Shield,
-  Trash2,
-  UserCheck,
-  Users,
-  UserX,
-} from 'lucide-react';
-import { useState } from 'react';
-import { AddUserForm } from '@/components/forms/add-user-form';
+import { AddUserForm } from '@/components/forms/add-admin-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,6 +36,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Activity,
+  Building2,
+  Edit,
+  Eye,
+  Mail,
+  MoreHorizontal,
+  Phone,
+  Plus,
+  Search,
+  Shield,
+  Trash2,
+  UserCheck,
+  Users,
+  UserX,
+} from 'lucide-react';
+import { useState } from 'react';
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');

@@ -44,8 +44,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -281,7 +290,7 @@ export default function BranchesPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="branches">Branches</TabsTrigger>
+          <TabsTrigger value="management">Management</TabsTrigger>
         </TabsList>
         <TabsContent className="space-y-6" value="overview">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -431,75 +440,100 @@ export default function BranchesPage() {
             </Card>
           </div>
         </TabsContent>
-        <TabsContent className="space-y-4" value="branches">
+        <TabsContent className="space-y-6" value="management">
+          {/* Search and Filter */}
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <SearchInput
+              handleSubmit={handleSubmit}
+              placeholder="Search branches..."
+              register={register}
+            />
+            <Select onValueChange={setSelectedStatus} value={selectedStatus}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="growing">Growing</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Branches Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Church Branches</CardTitle>
+              <CardTitle>Branch Directory</CardTitle>
               <CardDescription>
                 Manage all church branch locations
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-                <SearchInput
-                  handleSubmit={handleSubmit}
-                  placeholder="Search branches..."
-                  register={register}
-                />
-                <Select
-                  onValueChange={setSelectedStatus}
-                  value={selectedStatus}
-                >
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="growing">Growing</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {branches?.branches?.map((branch) => (
-                  <Card key={branch._id}>
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-lg">
-                            {branch.branchName}
-                          </h3>
-                          <Badge
-                            variant={branch?.isActive ? 'default' : 'secondary'}
-                          >
-                            {branch?.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <div className="space-y-2 text-muted-foreground text-sm">
-                          <div className="flex items-center">
-                            <MapPin className="mr-2 h-4 w-4" />
-                            {branch.address}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Branch</TableHead>
+                    {/* <TableHead>Pastor</TableHead> */}
+                    {/* <TableHead>Members</TableHead> */}
+                    <TableHead>Capacity</TableHead>
+                    {/* <TableHead>Growth</TableHead> */}
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {branches?.branches?.map((branch) => (
+                    <TableRow key={branch._id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {capitalizeFirstLetterOfEachWord(branch.branchName)}
                           </div>
-                          {/* <div className="flex items-center">
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            {branch.pastor}
-                          </div> */}
-                          {/* <div className="flex items-center">
-                            <Users className="mr-2 h-4 w-4" />
-                            {branch.members} members
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <MapPin className="mr-1 h-3 w-3" />
+                            {capitalizeFirstLetterOfEachWord(branch.address)}
                           </div>
-                          <div className="flex items-center">
-                            <Building2 className="mr-2 h-4 w-4" />
-                            {branch.departments} departments
-                          </div> */}
                         </div>
-                        <div className="text-muted-foreground text-xs">
-                          Established: {branch.establishedDate}
+                      </TableCell>
+                      {/* <TableCell>
+                        <div>
+                          <div className="font-medium">{branch?.pastor}</div>
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <Phone className="mr-1 h-3 w-3" />
+                            {branch?.phone}
+                          </div>
                         </div>
-                        <div className="flex space-x-2">
+                      </TableCell> */}
+                      {/* <TableCell>{branch?.members}</TableCell> */}
+                      <TableCell>{branch?.capacity}</TableCell>
+                      {/* <TableCell>
+                        <div
+                          className={`flex items-center ${
+                            branch.growth >= 0
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {branch.growth >= 0 ? (
+                            <TrendingUp className="mr-1 h-4 w-4" />
+                          ) : (
+                            <TrendingDown className="mr-1 h-4 w-4" />
+                          )}
+                          {branch.growth > 0 ? '+' : ''}
+                          {branch.growth}%
+                        </div>
+                      </TableCell> */}
+                      <TableCell>
+                        <Badge
+                          variant={branch?.isActive ? 'default' : 'secondary'}
+                        >
+                          {branch?.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
                           <Link href={`/dashboard/branches/${branch._id}`}>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="ghost">
                               <Eye className="h-4 w-4" />
                               View
                             </Button>
@@ -507,17 +541,17 @@ export default function BranchesPage() {
                           <Button
                             className="text-red-600"
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                           >
                             <Trash2 className="h-4 w-4" />
                             Delete
                           </Button>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>

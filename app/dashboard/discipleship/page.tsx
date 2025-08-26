@@ -1,11 +1,17 @@
 'use client';
 
 import { AddDiscipleForm } from '@/components/forms/add-disciple-form';
-import { AddMilestoneForm } from '@/components/forms/add-milestone-form';
+import { AddMentorForm } from '@/components/forms/add-mentor-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +29,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -33,18 +47,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Award,
+  BookOpen,
   Calendar,
-  Download,
   Edit,
-  Eye,
   Heart,
   MoreHorizontal,
   Plus,
   Search,
-  Star,
-  TrendingUp,
   Users,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -65,6 +77,8 @@ const disciples = [
     lastActivity: '2024-01-05',
     milestones: ['Baptism', 'Bible Study Completion'],
     status: 'Active',
+    followUpCount: 3,
+    lastContact: '2024-12-18',
   },
   {
     id: 2,
@@ -80,6 +94,8 @@ const disciples = [
     lastActivity: '2024-01-07',
     milestones: ['First Prayer'],
     status: 'Active',
+    followUpCount: 3,
+    lastContact: '2024-12-18',
   },
   {
     id: 3,
@@ -100,83 +116,99 @@ const disciples = [
       'Ministry Assignment',
     ],
     status: 'Graduated',
+    followUpCount: 3,
+    lastContact: '2024-12-18',
   },
 ];
 
 const classes = [
   {
     id: 1,
-    title: 'New Believers Class',
-    description: 'Foundation class for new converts',
+    name: 'New Believers Class',
+    instructor: 'Pastor Sarah',
     level: 'Beginner',
     duration: '8 weeks',
-    instructor: 'Pastor Michael Brown',
-    enrolled: 15,
-    capacity: 20,
-    nextSession: '2024-01-15',
-    status: 'Open',
+    currentStudents: 12,
+    maxCapacity: 15,
+    startDate: '2024-01-15',
+    endDate: '2024-03-10',
+    status: 'Active',
+    progress: 75,
   },
   {
     id: 2,
-    title: 'Bible Study Fundamentals',
-    description: 'Deep dive into Bible study methods',
+    name: 'Growing in Faith',
+    instructor: 'Elder Mike',
     level: 'Intermediate',
     duration: '12 weeks',
-    instructor: 'David Wilson',
-    enrolled: 12,
-    capacity: 15,
-    nextSession: '2024-01-20',
-    status: 'Open',
+    currentStudents: 8,
+    maxCapacity: 12,
+    startDate: '2024-02-01',
+    endDate: '2024-04-25',
+    status: 'Active',
+    progress: 60,
   },
   {
     id: 3,
-    title: 'Leadership Development',
-    description: 'Training for future church leaders',
+    name: 'Leadership Development',
+    instructor: 'Pastor John',
     level: 'Advanced',
     duration: '16 weeks',
-    instructor: 'Pastor Michael Brown',
-    enrolled: 8,
-    capacity: 10,
-    nextSession: '2024-02-01',
-    status: 'Full',
-  },
-];
-
-const milestones = [
-  {
-    id: 1,
-    name: 'First Prayer',
-    description: 'First public prayer',
-    category: 'Spiritual',
-    points: 10,
-  },
-  {
-    id: 2,
-    name: 'Baptism',
-    description: 'Water baptism ceremony',
-    category: 'Sacrament',
-    points: 50,
-  },
-  {
-    id: 3,
-    name: 'Bible Study Completion',
-    description: 'Completed foundational Bible study',
-    category: 'Education',
-    points: 30,
+    currentStudents: 6,
+    maxCapacity: 10,
+    startDate: '2024-03-01',
+    endDate: '2024-06-20',
+    status: 'Active',
+    progress: 40,
   },
   {
     id: 4,
-    name: 'Ministry Assignment',
-    description: 'Assigned to a ministry role',
-    category: 'Service',
-    points: 40,
+    name: 'Bible Study Foundations',
+    instructor: 'Teacher Anna',
+    level: 'Beginner',
+    duration: '6 weeks',
+    currentStudents: 0,
+    maxCapacity: 20,
+    startDate: '2025-01-15',
+    endDate: '2025-02-25',
+    status: 'Scheduled',
+    progress: 0,
+  },
+];
+
+const mentors = [
+  {
+    id: 1,
+    name: 'Mary Wilson',
+    email: 'mary@email.com',
+    phone: '+1234567893',
+    experience: '5 years',
+    currentMentees: 3,
+    maxCapacity: 5,
+    specialization: 'New Converts',
+    status: 'Active',
   },
   {
-    id: 5,
-    name: 'Leadership Training',
-    description: 'Completed leadership development',
-    category: 'Leadership',
-    points: 60,
+    id: 2,
+    name: 'David Smith',
+    email: 'david@email.com',
+    phone: '+1234567894',
+    experience: '8 years',
+    currentMentees: 4,
+    maxCapacity: 6,
+    specialization: 'Youth Ministry',
+    status: 'Active',
+  },
+  {
+    id: 3,
+    name: 'Linda Johnson',
+    email: 'linda@email.com',
+    phone: '+1234567895',
+    experience: '3 years',
+    currentMentees: 2,
+    maxCapacity: 4,
+    specialization: "Women's Ministry",
+    status: 'Active',
   },
 ];
 
@@ -184,7 +216,7 @@ export default function DiscipleshipPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('disciples');
   const [isAddDiscipleDialogOpen, setIsAddDiscipleDialogOpen] = useState(false);
-  const [isAddMilestoneDialogOpen, setIsAddMilestoneDialogOpen] = useState(false);
+  const [isAddMentorDialogOpen, setIsAddMentorDialogOpen] = useState(false);
 
   const filteredDisciples = disciples.filter(
     (disciple) =>
@@ -220,6 +252,34 @@ export default function DiscipleshipPage() {
   //   );
   // };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-100 text-green-800';
+      case 'Graduated':
+        return 'bg-blue-100 text-blue-800';
+      case 'Scheduled':
+        return 'bg-purple-100 text-purple-800';
+      case 'Inactive':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'Beginner':
+        return 'bg-green-100 text-green-800';
+      case 'Intermediate':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Advanced':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const stats = {
     totalDisciples: disciples.length,
     activeDisciples: disciples.filter((d) => d.status === 'Active').length,
@@ -235,37 +295,120 @@ export default function DiscipleshipPage() {
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-bold text-3xl text-gray-900">
-            Discipleship Tracking
+            Discipleship & Follow-up
           </h1>
           <p className="mt-1 text-gray-600">
-            Track spiritual growth and discipleship progress
+            Track new converts, spiritual growth and manage discipleship
+            programs
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button size="sm" variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
-          </Button>
           <Dialog
-            onOpenChange={setIsAddMilestoneDialogOpen}
-            open={isAddMilestoneDialogOpen}
+            onOpenChange={setIsAddMentorDialogOpen}
+            open={isAddMentorDialogOpen}
           >
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Award className="mr-2 h-4 w-4" />
-                Add Milestone
+                Add Mentor
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add Milestone</DialogTitle>
+                <DialogTitle>Add Mentor</DialogTitle>
                 <DialogDescription>
-                  Create a new discipleship milestone
+                  Create a new discipleship mentor
                 </DialogDescription>
               </DialogHeader>
-              <AddMilestoneForm
-                onCloseDialog={() => setIsAddMilestoneDialogOpen(false)}
+              <AddMentorForm
+                onCloseDialog={() => setIsAddMentorDialogOpen(false)}
               />
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Class
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create Discipleship Class</DialogTitle>
+                <DialogDescription>
+                  Set up a new discipleship class or program.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="className">
+                    Class Name
+                  </Label>
+                  <Input className="col-span-3" id="className" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="instructor">
+                    Instructor
+                  </Label>
+                  <Select>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select instructor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pastor1">Pastor John</SelectItem>
+                      <SelectItem value="pastor2">Pastor Sarah</SelectItem>
+                      <SelectItem value="elder1">Elder Mike</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="level">
+                    Level
+                  </Label>
+                  <Select>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="duration">
+                    Duration
+                  </Label>
+                  <Input
+                    className="col-span-3"
+                    id="duration"
+                    placeholder="e.g., 8 weeks"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="capacity">
+                    Max Capacity
+                  </Label>
+                  <Input className="col-span-3" id="capacity" type="number" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="startDate">
+                    Start Date
+                  </Label>
+                  <Input className="col-span-3" id="startDate" type="date" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right" htmlFor="classDescription">
+                    Description
+                  </Label>
+                  <Textarea className="col-span-3" id="classDescription" />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline">Cancel</Button>
+                <Button>Create Class</Button>
+              </div>
             </DialogContent>
           </Dialog>
           <Dialog
@@ -293,11 +436,11 @@ export default function DiscipleshipPage() {
         </div>
       </div>
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-gray-600 text-sm">
-              Total Disciples
+              New Converts
             </CardTitle>
             <div className="rounded-lg bg-blue-100 p-2">
               <Users className="h-5 w-5 text-blue-600" />
@@ -307,9 +450,23 @@ export default function DiscipleshipPage() {
             <div className="font-bold text-2xl text-gray-900">
               {stats.totalDisciples}
             </div>
-            <p className="mt-1 text-gray-500 text-xs">
-              In discipleship program
-            </p>
+            <p className="mt-1 text-gray-500 text-xs">This year</p>
+          </CardContent>
+        </Card>
+        <Card className="transition-shadow hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-medium text-gray-600 text-sm">
+              Active Classes
+            </CardTitle>
+            <div className="rounded-lg bg-blue-100 p-2">
+              <BookOpen className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl text-gray-900">
+              {stats.totalDisciples}
+            </div>
+            <p className="mt-1 text-gray-500 text-xs">Currently running</p>
           </CardContent>
         </Card>
         <Card className="transition-shadow hover:shadow-lg">
@@ -347,390 +504,424 @@ export default function DiscipleshipPage() {
         <Card className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-gray-600 text-sm">
-              Average Progress
+              Active Mentors
             </CardTitle>
             <div className="rounded-lg bg-orange-100 p-2">
-              <TrendingUp className="h-5 w-5 text-orange-600" />
+              <Users className="h-5 w-5 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl text-orange-600">
-              {stats.averageProgress}%
+              {stats.averageProgress}
             </div>
-            <p className="mt-1 text-gray-500 text-xs">Overall progress</p>
+            <p className="mt-1 text-gray-500 text-xs">Available mentors</p>
           </CardContent>
         </Card>
       </div>
       {/* Main Content */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-gray-400" />
-              <Input
-                className="pl-10"
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search disciples, mentors, or classes..."
-                value={searchTerm}
-              />
-            </div>
-          </div>
-        </CardHeader>
+        <CardHeader />
         <CardContent>
           <Tabs onValueChange={setSelectedTab} value={selectedTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="disciples">Disciples</TabsTrigger>
-              <TabsTrigger value="classes">Classes</TabsTrigger>
-              <TabsTrigger value="milestones">Milestones</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="classes">Discipleship Classes</TabsTrigger>
+              <TabsTrigger value="mentors">Mentors</TabsTrigger>
+              <TabsTrigger value="progress">Progress Tracking</TabsTrigger>
             </TabsList>
             <TabsContent className="mt-6" value="disciples">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Disciple</TableHead>
-                      <TableHead>Mentor</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>Progress</TableHead>
-                      <TableHead>Classes</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDisciples.map((disciple) => (
-                      <TableRow className="hover:bg-gray-50" key={disciple.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                alt={disciple.name}
-                                src={disciple.avatar || '/placeholder.svg'}
-                              />
-                              <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {disciple.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {disciple.name}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Discipleship Tracking</CardTitle>
+                  <CardDescription>
+                    Monitor and follow up with discipleship
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4 flex items-center space-x-2">
+                    <div className="relative flex-1">
+                      <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-gray-400" />
+                      <Input
+                        className="pl-10"
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search disciples, mentors, or classes..."
+                        value={searchTerm}
+                      />
+                    </div>
+                    <Select>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="graduated">Graduated</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Disciple</TableHead>
+                          <TableHead>Mentor</TableHead>
+                          <TableHead>Level</TableHead>
+                          <TableHead>Follow-ups</TableHead>
+                          <TableHead>Last Contact</TableHead>
+                          <TableHead>Classes</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDisciples.map((disciple) => (
+                          <TableRow
+                            className="hover:bg-gray-50"
+                            key={disciple.id}
+                          >
+                            <TableCell>
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage
+                                    alt={disciple.name}
+                                    src={disciple.avatar || '/placeholder.svg'}
+                                  />
+                                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                                    {disciple.name
+                                      .split(' ')
+                                      .map((n) => n[0])
+                                      .join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {disciple.name}
+                                  </div>
+                                  <div className="text-gray-500 text-sm">
+                                    {disciple.email}
+                                  </div>
+                                  <div className="text-gray-500 text-sm">
+                                    Started:{' '}
+                                    {new Date(
+                                      disciple.startDate
+                                    ).toLocaleDateString()}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-gray-500 text-sm">
-                                {disciple.email}
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium text-sm">
+                                {disciple.mentor}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {getLevelBadge(disciple.currentLevel)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {disciple.followUpCount} visits
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{disciple.lastContact}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <span className="font-medium">
+                                  {disciple.completedClasses}/
+                                  {disciple.totalClasses}
+                                </span>
+                                <p className="text-gray-500">
+                                  classes completed
+                                </p>
                               </div>
-                              <div className="text-gray-500 text-sm">
-                                Started:{' '}
-                                {new Date(
-                                  disciple.startDate
-                                ).toLocaleDateString()}
+                            </TableCell>
+                            {/* <TableCell>{getStatusBadge(disciple.status)}</TableCell> */}
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    className="h-8 w-8 p-0"
+                                    variant="ghost"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Update
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="text-red-600">
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Remove from Program
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent className="space-y-4" value="classes">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Discipleship Classes</CardTitle>
+                  <CardDescription>
+                    Manage discipleship programs and class progression
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {classes.map((classItem) => (
+                      <Card key={classItem.id}>
+                        <CardContent className="p-6">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <h3 className="font-semibold text-lg">
+                                  {classItem.name}
+                                </h3>
+                                <Badge
+                                  className={getLevelColor(classItem.level)}
+                                >
+                                  {classItem.level}
+                                </Badge>
+                                <Badge
+                                  className={getStatusColor(classItem.status)}
+                                >
+                                  {classItem.status}
+                                </Badge>
+                              </div>
+                              <p className="text-muted-foreground text-sm">
+                                Instructor: {classItem.instructor} • Duration:{' '}
+                                {classItem.duration}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium text-sm">
+                                {classItem.currentStudents}/
+                                {classItem.maxCapacity} students
+                              </div>
+                              <div className="text-muted-foreground text-xs">
+                                {classItem.startDate} - {classItem.endDate}
                               </div>
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium text-sm">
-                            {disciple.mentor}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {getLevelBadge(disciple.currentLevel)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
-                              <span>{disciple.progress}%</span>
+                              <span>Progress</span>
+                              <span>{classItem.progress}%</span>
                             </div>
                             <Progress
                               className="h-2"
-                              value={disciple.progress}
+                              value={classItem.progress}
                             />
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <span className="font-medium">
-                              {disciple.completedClasses}/
-                              {disciple.totalClasses}
-                            </span>
-                            <p className="text-gray-500">classes completed</p>
+                          <div className="mt-4 flex justify-end space-x-2">
+                            <Button size="sm" variant="outline">
+                              <Users className="mr-2 h-4 w-4" />
+                              View Students
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <Calendar className="mr-2 h-4 w-4" />
+                              Schedule
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
                           </div>
-                        </TableCell>
-                        {/* <TableCell>{getStatusBadge(disciple.status)}</TableCell> */}
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button className="h-8 w-8 p-0" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Progress
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Update Progress
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Award className="mr-2 h-4 w-4" />
-                                Add Milestone
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
-                                <Users className="mr-2 h-4 w-4" />
-                                Remove from Program
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
-            <TabsContent className="mt-6" value="classes">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>Instructor</TableHead>
-                      <TableHead>Enrollment</TableHead>
-                      <TableHead>Next Session</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {classes.map((classItem) => (
-                      <TableRow className="hover:bg-gray-50" key={classItem.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {classItem.title}
+            <TabsContent className="space-y-4" value="mentors">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mentor Management</CardTitle>
+                  <CardDescription>
+                    Manage mentors and their assignments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mentor</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Experience</TableHead>
+                        <TableHead>Specialization</TableHead>
+                        <TableHead>Current Load</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mentors.map((mentor) => (
+                        <TableRow key={mentor.id}>
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src="/placeholder.svg" />
+                                <AvatarFallback>
+                                  {mentor.name
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{mentor.name}</span>
                             </div>
-                            <div className="text-gray-500 text-sm">
-                              {classItem.description}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1 text-sm">
+                              <div>{mentor.email}</div>
+                              <div className="text-muted-foreground">
+                                {mentor.phone}
+                              </div>
                             </div>
-                            <div className="text-gray-500 text-sm">
-                              Duration: {classItem.duration}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{classItem.level}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium text-sm">
-                            {classItem.instructor}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <span className="font-medium">
-                              {classItem.enrolled}/{classItem.capacity}
-                            </span>
-                            <div className="mt-1 h-1 w-16 rounded-full bg-gray-200">
-                              <div
-                                className="h-1 rounded-full bg-blue-600"
-                                style={{
-                                  width: `${(classItem.enrolled / classItem.capacity) * 100}%`,
-                                }}
+                          </TableCell>
+                          <TableCell>{mentor.experience}</TableCell>
+                          <TableCell>{mentor.specialization}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                {mentor.currentMentees}/{mentor.maxCapacity}{' '}
+                                mentees
+                              </div>
+                              <Progress
+                                className="h-1"
+                                value={
+                                  (mentor.currentMentees / mentor.maxCapacity) *
+                                  100
+                                }
                               />
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm">
-                              {new Date(
-                                classItem.nextSession
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={
-                              classItem.status === 'Open'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }
-                            variant={
-                              classItem.status === 'Open'
-                                ? 'default'
-                                : 'secondary'
-                            }
-                          >
-                            {classItem.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button className="h-8 w-8 p-0" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Users className="mr-2 h-4 w-4" />
-                                Manage Enrollment
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Class
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-            <TabsContent className="mt-6" value="milestones">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {milestones.map((milestone) => (
-                  <Card
-                    className="transition-shadow hover:shadow-lg"
-                    key={milestone.id}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div className="rounded-lg bg-yellow-100 p-2">
-                            <Star className="h-5 w-5 text-yellow-600" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">
-                              {milestone.name}
-                            </CardTitle>
-                            <Badge className="mt-1" variant="outline">
-                              {milestone.category}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(mentor.status)}>
+                              {mentor.status}
                             </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-blue-600 text-lg">
-                            {milestone.points}
-                          </div>
-                          <div className="text-gray-500 text-xs">points</div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600 text-sm">
-                        {milestone.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button size="sm" variant="ghost">
+                                Assign
+                              </Button>
+                              <Button size="sm" variant="ghost">
+                                Edit
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </TabsContent>
-            <TabsContent className="mt-6" value="analytics">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <TabsContent className="space-y-4" value="progress">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Progress Distribution</CardTitle>
+                    <CardTitle>Class Progress Overview</CardTitle>
+                    <CardDescription>
+                      Track progress across all discipleship classes
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">
-                          New Converts
-                        </span>
-                        <span className="text-gray-600 text-sm">1 person</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-blue-600"
-                          style={{ width: '33%' }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">Growing</span>
-                        <span className="text-gray-600 text-sm">1 person</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-green-600"
-                          style={{ width: '33%' }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">Mature</span>
-                        <span className="text-gray-600 text-sm">1 person</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-purple-600"
-                          style={{ width: '33%' }}
-                        />
-                      </div>
+                      {classes
+                        .filter((c) => c.status === 'Active')
+                        .map((classItem) => (
+                          <div className="space-y-2" key={classItem.id}>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {classItem.name}
+                              </span>
+                              <span className="text-muted-foreground text-sm">
+                                {classItem.progress}%
+                              </span>
+                            </div>
+                            <Progress
+                              className="h-2"
+                              value={classItem.progress}
+                            />
+                            <div className="text-muted-foreground text-xs">
+                              {classItem.currentStudents} students •{' '}
+                              {classItem.instructor}
+                            </div>
+                          </div>
+                        ))}
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle>Milestone Achievements</CardTitle>
+                    <CardTitle>Follow-up Statistics</CardTitle>
+                    <CardDescription>
+                      Disciple follow-up metrics
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">Baptisms</span>
-                        <span className="text-gray-600 text-sm">
-                          2 this month
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-blue-600"
-                          style={{ width: '67%' }}
-                        />
+                        <span>Total Disciples</span>
+                        <span className="font-bold">{disciples.length}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">
-                          Class Completions
+                        <span>Active Follow-ups</span>
+                        <span className="font-bold">
+                          {
+                            disciples.filter((c) => c.status === 'Active')
+                              .length
+                          }
                         </span>
-                        <span className="text-gray-600 text-sm">
-                          1 this month
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-green-600"
-                          style={{ width: '33%' }}
-                        />
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">
-                          Ministry Assignments
-                        </span>
-                        <span className="text-gray-600 text-sm">
-                          1 this month
+                        <span>Graduated</span>
+                        <span className="font-bold">
+                          {
+                            disciples.filter((c) => c.status === 'Graduated')
+                              .length
+                          }
                         </span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-purple-600"
-                          style={{ width: '33%' }}
-                        />
+                      <div className="flex items-center justify-between">
+                        <span>Average Follow-ups</span>
+                        <span className="font-bold">
+                          {Math.round(
+                            disciples.reduce(
+                              (sum, c) => sum + c.followUpCount,
+                              0
+                            ) / disciples.length
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Mentor Utilization</span>
+                        <span className="font-bold">
+                          {Math.round(
+                            (mentors.reduce(
+                              (sum, m) => sum + m.currentMentees,
+                              0
+                            ) /
+                              mentors.reduce(
+                                (sum, m) => sum + m.maxCapacity,
+                                0
+                              )) *
+                              100
+                          )}
+                          %
+                        </span>
                       </div>
                     </div>
                   </CardContent>

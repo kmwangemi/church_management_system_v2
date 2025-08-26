@@ -124,7 +124,7 @@ export interface DepartmentAddResponse {
   __v: number;
 }
 
-export interface MemberAddResponse {
+export interface UserAddResponse {
   message: string;
   memberId: string;
   branchId: string;
@@ -146,7 +146,7 @@ export interface Branch {
   country: string;
   capacity: number;
   pastorId?: string; // Optional, if not always present
-  members?: number; // Optional, if not always present
+  users?: number; // Optional, if not always present
   establishedDate: string; // ISO string; use `Date` if you parse it
   isActive: boolean;
   createdAt: string;
@@ -183,7 +183,7 @@ export interface DepartmentListResponse {
   pagination: Pagination;
 }
 
-export interface Member {
+export interface User {
   _id: string;
   churchId: string;
   branchId?: string;
@@ -209,8 +209,8 @@ export interface Member {
   __v: number;
 }
 
-export interface MemberListResponse {
-  users: Member[];
+export interface UserListResponse {
+  users: User[];
   pagination: Pagination;
 }
 

@@ -23,7 +23,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-export default function LoginForm() {
+export default function AdminLoginForm() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
   const form = useForm<LoginPayload>({
@@ -41,7 +41,7 @@ export default function LoginForm() {
     // Reset form before navigation
     reset();
     // Determine redirect path
-    let redirectPath = '/member'; // default
+    let redirectPath = '/dashboard'; // default
     if (result.user.role === 'superadmin') {
       redirectPath = '/superadmin';
     } else if (result.user.role === 'admin') {

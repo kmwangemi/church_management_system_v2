@@ -1,7 +1,6 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
-import { MemberListInput } from '@/components/member-list-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -28,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { MemberListInput } from '@/components/user-list-input';
 import { useCreatePrayerRequest } from '@/lib/hooks/prayer-request/use-prayer-request-queries';
 import type { Member } from '@/lib/types';
 import { PRAYER_CATEGORY_OPTIONS, PRAYER_PRIORITY_OPTIONS } from '@/lib/utils';

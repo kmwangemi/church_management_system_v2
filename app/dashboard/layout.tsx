@@ -48,7 +48,7 @@ import { useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, badge: null },
-  { name: 'Members', href: '/dashboard/members', icon: Users, badge: null },
+  { name: 'Users', href: '/dashboard/users', icon: Users, badge: null },
   {
     name: 'Branches',
     href: '/dashboard/branches',
@@ -86,6 +86,12 @@ const navigation = [
     name: 'Discipleship',
     href: '/dashboard/discipleship',
     icon: Heart,
+    badge: null,
+  },
+  {
+    name: 'Volunteers',
+    href: '/dashboard/volunteers',
+    icon: UserCheck,
     badge: null,
   },
   {
@@ -299,12 +305,14 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <Button className="relative" size="sm" variant="ghost">
-              <Bell className="h-5 w-5" />
-              <span className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs">
-                3
-              </span>
-            </Button>
+            <Link href="/dashboard/notifications">
+              <Button className="relative" size="sm" variant="ghost">
+                <Bell className="h-4 w-4" />
+                <span className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs">
+                  3
+                </span>
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

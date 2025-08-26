@@ -1,6 +1,6 @@
 import z from 'zod';
 
-export const memberSchema = z.object({
+export const userSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.email().optional(),
@@ -35,4 +35,4 @@ export const memberSchema = z.object({
   }),
 });
 
-export type AddMemberPayload = z.infer<typeof memberSchema>;
+export type AddUserPayload = z.infer<typeof userSchema>;

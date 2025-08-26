@@ -1,6 +1,8 @@
 import z from 'zod';
 
 const REGEX = /^\d+(\.\d+)?$/;
+export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\+?[\d\s\-()]+$/;
 
 export const loginSchema = z.object({
   email: z.email('Please enter a valid email address'),
@@ -8,6 +10,37 @@ export const loginSchema = z.object({
 });
 
 export type LoginPayload = z.infer<typeof loginSchema>;
+
+// Schema for the initial login request (email or phone number)
+export const sendLoginCodeSchema = z.object({
+  emailOrPhoneNumber: z
+    .string()
+    .min(1, 'Email or phone number is required')
+    .refine(
+      (value) => {
+        return (
+          emailRegex.test(value) ||
+          (phoneRegex.test(value) && value.replace(/\D/g, '').length >= 10)
+        );
+      },
+      {
+        message: 'Please provide a valid email address or phone number',
+      }
+    ),
+});
+
+// Schema for verifying the login code
+export const loginVerificationSchema = z.object({
+  emailOrPhoneNumber: z.string().min(1, 'Email or phone number is required'),
+  verification_code: z
+    .string()
+    .length(6, 'Verification code must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'Verification code must contain only numbers'),
+});
+
+// Type exports
+export type SendLoginCodePayload = z.infer<typeof sendLoginCodeSchema>;
+export type LoginVerificationPayload = z.infer<typeof loginVerificationSchema>;
 
 // Church data schema
 export const churchDataSchema = z.object({
