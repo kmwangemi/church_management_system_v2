@@ -186,7 +186,7 @@ export interface DepartmentListResponse {
 export interface User {
   _id: string;
   churchId: string;
-  branchId?: string;
+  branchId?: Branch;
   email: string;
   password: string;
   firstName: string;

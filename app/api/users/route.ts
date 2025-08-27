@@ -209,6 +209,7 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
         .limit(limit)
         .populate('createdBy', 'firstName lastName')
         .populate('updatedBy', 'firstName lastName')
+        .populate('branchId', 'branchName')
         .lean(), // Use lean() for better performance
       UserModel.countDocuments(query),
     ]);

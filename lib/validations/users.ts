@@ -17,9 +17,6 @@ export const userSchema = z.object({
   gender: z.enum(['male', 'female'], {
     error: 'Gender is required',
   }),
-  // maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed'], {
-  //   error: 'Marital status is required',
-  // }),
   role: z.string().min(1, 'Please select a role'),
   branchId: z.string().min(1, 'Please select a branch'),
 });
