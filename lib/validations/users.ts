@@ -4,7 +4,7 @@ export const userSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.email().optional(),
-  phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
+  phoneNumber: z.string().min(8, 'Please enter a valid phone number'),
   isMember: z.boolean(),
   isStaff: z.boolean(),
   address: z.object({
@@ -17,9 +17,9 @@ export const userSchema = z.object({
   gender: z.enum(['male', 'female'], {
     error: 'Gender is required',
   }),
-  maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed'], {
-    error: 'Marital status is required',
-  }),
+  // maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed'], {
+  //   error: 'Marital status is required',
+  // }),
   role: z.string().min(1, 'Please select a role'),
   branchId: z.string().min(1, 'Please select a branch'),
 });
