@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddBranchPayload } from '@/lib/validations/branch';
-import Branch from '@/models/branch';
+import BranchModel from '@/models/branch';
 import { type NextRequest, NextResponse } from 'next/server';
 
 async function getBranchHandler(request: NextRequest): Promise<NextResponse> {
@@ -48,12 +48,12 @@ async function getBranchHandler(request: NextRequest): Promise<NextResponse> {
     }
     const skip = (page - 1) * limit;
     const [branches, total] = await Promise.all([
-      Branch.find(query)
+      BranchModel.find(query)
         // .populate('pastorId', 'firstName lastName')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      Branch.countDocuments(query),
+      BranchModel.countDocuments(query),
     ]);
     return NextResponse.json({
       branches,
@@ -112,10 +112,10 @@ async function registerBranchHandler(
     }
     await dbConnect();
     const branchData: AddBranchPayload = await request.json();
-    const existingChurchBranch = await Branch.findOne({
+    const existingChurchBranch = await BranchModel.findOne({
       branchName: branchData.branchName,
       churchId: user.user?.churchId,
-      country: branchData.country,
+      country: branchData.address.country,
     });
     if (existingChurchBranch) {
       return NextResponse.json(
@@ -123,7 +123,7 @@ async function registerBranchHandler(
         { status: 400 }
       );
     }
-    const branch = new Branch({
+    const branch = new BranchModel({
       ...branchData,
       churchId: user.user?.churchId,
     });
