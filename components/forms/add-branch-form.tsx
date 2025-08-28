@@ -6,6 +6,13 @@ import { DatePicker } from '@/components/date-picker';
 import { NumberInput } from '@/components/number-input';
 import { Button } from '@/components/ui/button';
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
   Form,
   FormControl,
   FormField,
@@ -15,11 +22,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useRegisterBranch } from '@/lib/hooks/branch/use-branch-queries';
+import { getRelativeYear } from '@/lib/utils';
 import {
   type AddBranchPayload,
   addBranchSchema,
 } from '@/lib/validations/branch';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Church, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 interface AddBranchFormProps {
@@ -37,9 +46,14 @@ export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
     resolver: zodResolver(addBranchSchema),
     defaultValues: {
       branchName: '',
-      country: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'Kenya',
+      },
       capacity: '',
-      address: '',
       establishedDate: '',
     },
   });
@@ -62,94 +76,147 @@ export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
           className="space-y-4"
           onSubmit={branchForm.handleSubmit(onSubmitBranchForm)}
         >
-          <FormField
-            control={branchForm.control}
-            name="branchName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Branch Name <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input placeholder="Kibra" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={branchForm.control}
-            name="country"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Country <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <CountrySelect
-                    onChange={field.onChange}
-                    placeholder="Select country"
-                    value={field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={branchForm.control}
-            name="capacity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Capacity (1-100,000 Members){' '}
-                  <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <NumberInput placeholder="300" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={branchForm.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Physical Address <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input placeholder="Kawangware 46" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={branchForm.control}
-            name="establishedDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Established Date <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <DatePicker
-                    format="long"
-                    maxDate={new Date()}
-                    onChange={(date) =>
-                      field.onChange(date ? date.toISOString() : '')
-                    }
-                    placeholder="Select established date"
-                    value={field.value ? new Date(field.value) : undefined}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Church className="h-5 w-5" />
+                <span>Branch Information</span>
+              </CardTitle>
+              <CardDescription>Branch information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={branchForm.control}
+                name="branchName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Branch Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Kawangware" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={branchForm.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Capacity (1-100,000 Members){' '}
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <NumberInput placeholder="300" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={branchForm.control}
+                name="establishedDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Established Date <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={new Date()}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Select established date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MapPin className="h-5 w-5" />
+                <span>Address Information</span>
+              </CardTitle>
+              <CardDescription>Branch address information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={branchForm.control}
+                  name="address.country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Country <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <CountrySelect
+                          onChange={field.onChange}
+                          placeholder="Select your country"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={branchForm.control}
+                  name="address.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        City <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nairobi" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={branchForm.control}
+                  name="address.street"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Street Address <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main Street" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={branchForm.control}
+                  name="address.zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="00100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
           <div className="flex justify-end space-x-2">
             <Button
               onClick={handleCancelDialog}

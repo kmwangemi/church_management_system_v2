@@ -479,7 +479,7 @@ export default function BranchesPage() {
                         <div className="space-y-2 text-muted-foreground text-sm">
                           <div className="flex items-center">
                             <MapPin className="mr-2 h-4 w-4" />
-                            {branch.address}
+                            {branch?.address?.street}
                           </div>
                           {/* <div className="flex items-center">
                             <UserCheck className="mr-2 h-4 w-4" />

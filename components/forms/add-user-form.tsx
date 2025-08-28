@@ -34,8 +34,8 @@ import type { Branch } from '@/lib/types';
 import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Church, Loader2, User } from 'lucide-react';
-import { useState } from 'react';
+import { Church, Loader2, MapPin, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddUserFormProps {
@@ -66,12 +66,21 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
         zipCode: '',
         country: 'Kenya',
       },
-      isMember: true,
+      isMember: false,
       isStaff: false,
       branchId: '',
     },
   });
-  const { reset } = form;
+  const { reset, watch, setValue } = form;
+  const watchRole = watch('role');
+  // Handle role changes and update isMember accordingly
+  useEffect(() => {
+    if (watchRole === 'member') {
+      setValue('isMember', true);
+    } else {
+      setValue('isMember', false);
+    }
+  }, [watchRole, setValue]);
   // Handle form submission
   const onSubmit = async (payload: AddUserPayload) => {
     await registerUserMutation(payload);
@@ -82,6 +91,14 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
     onCloseDialog();
     reset();
     setSelectedBranch(null);
+  };
+  // Helper function to determine if isMember checkbox should be shown
+  const shouldShowIsMemberCheckbox = () => {
+    return watchRole && watchRole !== 'member' && watchRole !== 'visitor';
+  };
+  // Helper function to determine if isStaff checkbox should be shown
+  const shouldShowIsStaffCheckbox = () => {
+    return watchRole && watchRole !== null;
   };
   return (
     <>
@@ -201,72 +218,81 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                   </FormItem>
                 )}
               />
-              <div className="space-y-4">
-                <FormLabel>Address</FormLabel>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="address.country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Country <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <CountrySelect
-                            onChange={field.onChange}
-                            placeholder="Select your country"
-                            value={field.value}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address.city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          City <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nairobi" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address.street"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Street Address <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main Street" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address.zipCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Postal Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="00100" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+            </CardContent>
+          </Card>
+          {/* Address Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MapPin className="h-5 w-5" />
+                <span>Address Information</span>
+              </CardTitle>
+              <CardDescription>User address information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="address.country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Country <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <CountrySelect
+                          onChange={field.onChange}
+                          placeholder="Select your country"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        City <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nairobi" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.street"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Street Address <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main Street" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="00100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </CardContent>
           </Card>
@@ -333,28 +359,30 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="isMember"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Church Member</FormLabel>
-                      <p className="text-gray-500 text-sm">
-                        This person is also a church member
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              {/* Secondary role flags */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Conditionally show isMember checkbox */}
+              {shouldShowIsMemberCheckbox() && (
+                <FormField
+                  control={form.control}
+                  name="isMember"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Church Member</FormLabel>
+                        <p className="text-gray-500 text-sm">
+                          This person is also a church member
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
+              {shouldShowIsStaffCheckbox() && (
                 <FormField
                   control={form.control}
                   name="isStaff"
@@ -367,15 +395,15 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Staff Member</FormLabel>
+                        <FormLabel>Staff Church Member</FormLabel>
                         <p className="text-gray-500 text-sm">
-                          This person is also a paid staff member
+                          This person is also a paid church staff member
                         </p>
                       </div>
                     </FormItem>
                   )}
                 />
-              </div>
+              )}
             </CardContent>
           </Card>
           <div className="flex justify-end space-x-4 pt-6">

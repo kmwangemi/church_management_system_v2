@@ -96,11 +96,18 @@ export interface ChurchRegistrationResponse {
   userId: string;
 }
 
+export interface Address {
+  street: string;
+  city: string;
+  state?: string;
+  zipCode?: string;
+  country: string;
+}
+
 export interface BranchAddResponse {
   churchId: string;
   branchName: string;
-  address: string;
-  country: string;
+  address: Address;
   capacity: number;
   establishedDate: string;
   isActive: boolean;
@@ -142,8 +149,7 @@ export interface Branch {
   _id: string;
   churchId: string;
   branchName: string;
-  address: string;
-  country: string;
+  address: Address;
   capacity: number;
   pastorId?: string; // Optional, if not always present
   users?: number; // Optional, if not always present
@@ -186,7 +192,7 @@ export interface DepartmentListResponse {
 export interface User {
   _id: string;
   churchId: string;
-  branchId?: string;
+  branchId?: Branch;
   email: string;
   password: string;
   firstName: string;
@@ -202,7 +208,7 @@ export interface User {
   loginAttempts: number;
   gender?: 'male' | 'female' | string;
   maritalStatus?: 'single' | 'married' | string;
-  address?: string;
+  address: Address;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;

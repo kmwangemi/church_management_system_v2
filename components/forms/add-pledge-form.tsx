@@ -27,9 +27,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { MemberListInput } from '@/components/user-list-input';
+import { UserListInput } from '@/components/user-list-input';
 import { useRegisterPledge } from '@/lib/hooks/pledge/use-pledge-queries';
-import type { Member } from '@/lib/types';
+import type { User } from '@/lib/types';
 import {
   getRelativeYear,
   PLEDGE_FREQUENCY_OPTIONS,
@@ -49,7 +49,7 @@ interface AddPledgeFormProps {
 }
 
 export function AddPledgeForm({ onCloseDialog }: AddPledgeFormProps) {
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const {
     mutateAsync: registerPledgeMutation,
     isPending,
@@ -104,7 +104,7 @@ export function AddPledgeForm({ onCloseDialog }: AddPledgeFormProps) {
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <MemberListInput
+                        <UserListInput
                           className="w-full"
                           onChange={(member) => {
                             setSelectedMember(member);

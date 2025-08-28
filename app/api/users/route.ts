@@ -12,18 +12,18 @@ import { type NextRequest, NextResponse } from 'next/server';
 const prepareRoleSpecificData = (role: string, userData: any) => {
   const result: any = {};
   switch (role) {
-    case 'member':
-      result.memberDetails = {
-        memberId: '',
-        membershipDate: userData.membershipDate || new Date(),
-        membershipStatus: 'active',
-        departmentIds: userData.departmentIds || [],
-        groupIds: userData.groupIds || [],
-        occupation: userData.occupation,
-        baptismDate: userData.baptismDate,
-        joinedDate: userData.joinedDate || new Date(),
-      };
-      break;
+    // case 'member':
+    //   result.memberDetails = {
+    //     memberId: '',
+    //     membershipDate: userData.membershipDate || new Date(),
+    //     membershipStatus: 'active',
+    //     departmentIds: userData.departmentIds || [],
+    //     groupIds: userData.groupIds || [],
+    //     occupation: userData.occupation,
+    //     baptismDate: userData.baptismDate,
+    //     joinedDate: userData.joinedDate || new Date(),
+    //   };
+    //   break;
     case 'visitor':
       result.visitorDetails = {
         visitorId: '',
@@ -86,6 +86,19 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
       break;
     default:
       throw new Error(`Unsupported role: ${role}`);
+  }
+  // Handle member details if isMember is true
+  if (userData.isMember) {
+    result.memberDetails = {
+      memberId: '',
+      membershipDate: userData.membershipDate || new Date(),
+      membershipStatus: 'active',
+      departmentIds: userData.departmentIds || [],
+      groupIds: userData.groupIds || [],
+      occupation: userData.occupation,
+      baptismDate: userData.baptismDate,
+      joinedDate: userData.joinedDate || new Date(),
+    };
   }
   // Handle staff details if isStaff is true
   if (userData.isStaff) {
@@ -196,6 +209,7 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
         .limit(limit)
         .populate('createdBy', 'firstName lastName')
         .populate('updatedBy', 'firstName lastName')
+        .populate('branchId', 'branchName')
         .lean(), // Use lean() for better performance
       UserModel.countDocuments(query),
     ]);
@@ -330,7 +344,6 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
       isMember: userData.isMember,
       // Secondary role flags
       isStaff: userData.isStaff,
-      isVolunteer: userData.isVolunteer,
       // Role-specific embedded data
       memberDetails: roleSpecificData.memberDetails,
       pastorDetails: roleSpecificData.pastorDetails,
@@ -342,12 +355,8 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
       volunteerDetails: roleSpecificData.volunteerDetails,
       // Account info
       status: 'active',
-      passwordHash: userData.password || 'User123!', // Default password if not provided
       isEmailVerified: false,
       agreeToTerms: true, // Default as per model
-      // Additional fields that might be provided
-      maritalStatus: userData.maritalStatus,
-      emergencyDetails: userData.emergencyDetails,
       // Audit fields - conditional based on role
       createdBy:
         userData.role === 'superadmin'

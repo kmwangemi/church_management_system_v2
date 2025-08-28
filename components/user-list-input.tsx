@@ -325,7 +325,7 @@ const UserListInputComponent = React.forwardRef<
                 {member.branchId && (
                   <>
                     {member.email && <span>•</span>}
-                    <span>{member.branchId}</span>
+                    <span>{member?.branchId?.branchName}</span>
                   </>
                 )}
               </div>
