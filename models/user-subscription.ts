@@ -302,14 +302,11 @@ UserSubscriptionSchema.statics.findByPlan = function (plan: string) {
   return this.find({ plan, status: 'active' });
 };
 
-const UserSubscriptionModel =
-  (mongoose.models.UserSubscription as IUserSubscriptionModel) ||
+export default (mongoose.models.UserSubscription as IUserSubscriptionModel) ||
   mongoose.model<IUserSubscription, IUserSubscriptionModel>(
     'UserSubscription',
     UserSubscriptionSchema
   );
-
-export default UserSubscriptionModel;
 
 // Usage Examples:
 // // Create a subscription

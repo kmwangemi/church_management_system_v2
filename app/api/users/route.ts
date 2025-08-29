@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddUserPayload } from '@/lib/validations/users';
-import UserModel from '@/models/user'; // Only import User model
+import { UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -136,7 +136,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
 async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: '/api/members' },
+    { requestId, endpoint: '/api/users' },
     'api'
   );
   try {

@@ -280,7 +280,6 @@ ReportSchema.pre('save', function (next) {
     const extension = this.format === 'excel' ? 'xlsx' : this.format;
     this.fileName = `${this.name.replace(/\s+/g, '_').toLowerCase()}_${timestamp}.${extension}`;
   }
-
   next();
 });
 
@@ -334,7 +333,6 @@ ReportSchema.virtual('dateRangeDisplay').get(function () {
   ) {
     return `${this.customStartDate.toLocaleDateString()} - ${this.customEndDate.toLocaleDateString()}`;
   }
-
   const ranges = {
     last7days: 'Last 7 days',
     last30days: 'Last 30 days',

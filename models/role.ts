@@ -52,5 +52,5 @@ const RoleSchema = new Schema<IRole>(
 // Compound index to ensure unique role names per church (or globally for system roles)
 RoleSchema.index({ name: 1, churchId: 1 }, { unique: true });
 
-export const Role =
-  mongoose.models.Role || mongoose.model<IRole>('Role', RoleSchema);
+export default mongoose.models.Role ||
+  mongoose.model<IRole>('Role', RoleSchema);

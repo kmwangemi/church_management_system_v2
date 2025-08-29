@@ -1,4 +1,4 @@
-import mongoose, { type Document, Schema } from 'mongoose';
+import mongoose, { Schema, type Document, type Model } from 'mongoose';
 
 export interface IChurch extends Document {
   churchName: string;
@@ -23,14 +23,10 @@ export interface IChurch extends Document {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-  // Instance methods
-  suspend(reason?: string): Promise<IChurch>;
-  restore(): Promise<IChurch>;
-  softDelete(): Promise<IChurch>;
 }
 
-// Extend the Model interface for static methods
-interface IChurchModel extends mongoose.Model<IChurch> {
+// Define the interface for the static methods
+export interface IChurchModel extends Model<IChurch> {
   findActive(): mongoose.Query<IChurch[], IChurch>;
   findSuspended(): mongoose.Query<IChurch[], IChurch>;
   findByCreator(
@@ -190,7 +186,7 @@ ChurchSchema.index({
 });
 
 // Virtual to get full address as string
-ChurchSchema.virtual('fullAddress').get(function (this: IChurch) {
+ChurchSchema.virtual('fullAddress').get(function () {
   const addr = this.address;
   const parts = [addr.street, addr.city];
   if (addr.state) parts.push(addr.state);
@@ -200,12 +196,12 @@ ChurchSchema.virtual('fullAddress').get(function (this: IChurch) {
 });
 
 // Virtual to check if church is active
-ChurchSchema.virtual('isActive').get(function (this: IChurch) {
+ChurchSchema.virtual('isActive').get(function () {
   return !(this.isSuspended || this.isDeleted);
 });
 
 // Virtual to get church age in years
-ChurchSchema.virtual('ageInYears').get(function (this: IChurch) {
+ChurchSchema.virtual('ageInYears').get(function () {
   const now = new Date();
   const established = new Date(this.establishedDate);
   return Math.floor(
@@ -214,7 +210,7 @@ ChurchSchema.virtual('ageInYears').get(function (this: IChurch) {
 });
 
 // Pre-save middleware
-ChurchSchema.pre('save', function (this: IChurch) {
+ChurchSchema.pre('save', function (next) {
   // Ensure suspended churches cannot be active
   if (this.isSuspended) {
     this.isDeleted = false; // Can't be both suspended and deleted
@@ -223,10 +219,11 @@ ChurchSchema.pre('save', function (this: IChurch) {
   if (this.phoneNumber) {
     this.phoneNumber = this.phoneNumber.replace(/[\s\-()]/g, '');
   }
+  next();
 });
 
 // Instance methods
-ChurchSchema.methods.suspend = function (this: IChurch, reason?: string) {
+ChurchSchema.methods.suspend = function (reason?: string) {
   this.isSuspended = true;
   this.isDeleted = false;
   if (reason && this.description) {
@@ -235,13 +232,13 @@ ChurchSchema.methods.suspend = function (this: IChurch, reason?: string) {
   return this.save();
 };
 
-ChurchSchema.methods.restore = function (this: IChurch) {
+ChurchSchema.methods.restore = function () {
   this.isSuspended = false;
   this.isDeleted = false;
   return this.save();
 };
 
-ChurchSchema.methods.softDelete = function (this: IChurch) {
+ChurchSchema.methods.softDelete = function () {
   this.isDeleted = true;
   this.isSuspended = false;
   return this.save();
@@ -278,8 +275,6 @@ ChurchSchema.statics.search = function (query: string) {
   }).sort({ score: { $meta: 'textScore' } });
 };
 
-const ChurchModel =
-  (mongoose.models.Church as IChurchModel) ||
+// Export the Church model
+export default (mongoose.models.Church as IChurchModel) ||
   mongoose.model<IChurch, IChurchModel>('Church', ChurchSchema);
-
-export default ChurchModel;
