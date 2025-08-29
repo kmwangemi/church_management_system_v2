@@ -375,7 +375,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
     // Prepare response with all role-specific IDs
     const responseData: any = {
       message: `${userData.role.charAt(0).toUpperCase() + userData.role.slice(1)} created successfully`,
-      userId: createdUser._id,
+      userId: createdUser._id?.toString(),
       role: createdUser.role,
       isMember: createdUser.isMember,
       isStaff: createdUser.isStaff,
@@ -407,7 +407,7 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
       responseData.visitorId = createdUser.visitorDetails.visitorId;
     }
     contextLogger.info(`${userData.role} created successfully`, {
-      userId: createdUser._id,
+      userId: createdUser._id?.toString(),
       role: createdUser.role,
       isMember: createdUser.isMember,
       isStaff: createdUser.isStaff,

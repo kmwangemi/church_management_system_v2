@@ -4,7 +4,7 @@
 /** biome-ignore-all lint/style/useConsistentMemberAccessibility: ignore lint issue */
 /** biome-ignore-all lint/suspicious/noExplicitAny: ignore lint issue */
 import dbConnect from '@/lib/mongodb';
-import { Log } from '@/models/log';
+import { LogModel } from '@/models';
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -65,7 +65,7 @@ class Logger {
         environment: this.environment,
       };
 
-      const log = new Log(logEntry);
+      const log = new LogModel(logEntry);
       await log.save();
     } catch (dbError) {
       // Fallback to console if database logging fails
