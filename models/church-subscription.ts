@@ -1,4 +1,4 @@
-import mongoose, { type Document, Schema } from 'mongoose';
+import mongoose, { Schema, type Document, type Model } from 'mongoose';
 
 export interface IChurchSubscription extends Document {
   churchId: mongoose.Types.ObjectId;
@@ -21,27 +21,31 @@ export interface IChurchSubscription extends Document {
   cancelReason?: string;
   createdAt: Date;
   updatedAt: Date;
-  // Virtual properties
-  readonly isExpired: boolean;
-  readonly daysRemaining: number;
-  readonly isNearExpiry: boolean;
-  readonly isOverUserLimit: boolean;
-  readonly usagePercentage: number;
-  // Instance methods
-  cancel(reason?: string): Promise<IChurchSubscription>;
-  renew(months?: number): Promise<IChurchSubscription>;
 }
 
-// Extend the Model interface for static methods
-interface IChurchSubscriptionModel extends mongoose.Model<IChurchSubscription> {
-  findActiveSubscriptions(): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
-  findExpiredSubscriptions(): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
-  findNearExpiry(days?: number): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
+// Define the interface for the static methods
+export interface IChurchSubscriptionModel extends Model<IChurchSubscription> {
+  findActiveSubscriptions(): mongoose.Query<
+    IChurchSubscription[],
+    IChurchSubscription
+  >;
+  findExpiredSubscriptions(): mongoose.Query<
+    IChurchSubscription[],
+    IChurchSubscription
+  >;
+  findNearExpiry(
+    days?: number
+  ): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
   findByChurch(
     churchId: mongoose.Types.ObjectId
   ): mongoose.Query<IChurchSubscription | null, IChurchSubscription>;
-  findByPlan(plan: string): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
-  findOverUserLimit(): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
+  findByPlan(
+    plan: string
+  ): mongoose.Query<IChurchSubscription[], IChurchSubscription>;
+  findOverUserLimit(): mongoose.Query<
+    IChurchSubscription[],
+    IChurchSubscription
+  >;
   updateUserCount(
     churchId: mongoose.Types.ObjectId,
     userCount: number
@@ -154,12 +158,12 @@ ChurchSubscriptionSchema.index({ plan: 1, status: 1 });
 ChurchSubscriptionSchema.index({ nextBillingDate: 1, isAutoRenew: 1 });
 
 // Virtual to check if subscription is expired
-ChurchSubscriptionSchema.virtual('isExpired').get(function (this: IChurchSubscription) {
+ChurchSubscriptionSchema.virtual('isExpired').get(function () {
   return new Date() > this.endDate;
 });
 
 // Virtual to check days remaining
-ChurchSubscriptionSchema.virtual('daysRemaining').get(function (this: IChurchSubscription) {
+ChurchSubscriptionSchema.virtual('daysRemaining').get(function () {
   const now = new Date();
   if (now > this.endDate) return 0;
   const diffTime = this.endDate.getTime() - now.getTime();
@@ -167,15 +171,13 @@ ChurchSubscriptionSchema.virtual('daysRemaining').get(function (this: IChurchSub
 });
 
 // Virtual to check if approaching renewal
-ChurchSubscriptionSchema.virtual('isNearExpiry').get(function (this: IChurchSubscription) {
-  const daysRemaining = this.daysRemaining;
+ChurchSubscriptionSchema.virtual('isNearExpiry').get(function () {
+  const daysRemaining = this.get('daysRemaining');
   return daysRemaining <= 7 && daysRemaining > 0;
 });
 
 // Virtual to check if over user limit
-ChurchSubscriptionSchema.virtual('isOverUserLimit').get(function (
-  this: IChurchSubscription
-) {
+ChurchSubscriptionSchema.virtual('isOverUserLimit').get(function () {
   return (
     this.currentUsers != null &&
     this.maxUsers != null &&
@@ -184,9 +186,7 @@ ChurchSubscriptionSchema.virtual('isOverUserLimit').get(function (
 });
 
 // Virtual to get usage percentage
-ChurchSubscriptionSchema.virtual('usagePercentage').get(function (
-  this: IChurchSubscription
-) {
+ChurchSubscriptionSchema.virtual('usagePercentage').get(function () {
   if (this.currentUsers == null || this.maxUsers == null) return 0;
   return Math.round((this.currentUsers / this.maxUsers) * 100);
 });
@@ -282,20 +282,18 @@ function setDefaultFeatures(doc: IChurchSubscription) {
 }
 
 // Pre-save middleware
-ChurchSubscriptionSchema.pre('save', function (this: IChurchSubscription) {
+ChurchSubscriptionSchema.pre('save', function (next) {
   setDefaultMaxUsers(this);
   calculateBalanceAndPaidStatus(this);
   updateStatusIfExpired(this);
   setNextBillingDate(this);
   setCanceledTimestamp(this);
   setDefaultFeatures(this);
+  next();
 });
 
 // Instance methods
-ChurchSubscriptionSchema.methods.cancel = function (
-  this: IChurchSubscription,
-  reason?: string
-) {
+ChurchSubscriptionSchema.methods.cancel = function (reason?: string) {
   this.status = 'canceled';
   this.canceledAt = new Date();
   this.isAutoRenew = false;
@@ -303,7 +301,7 @@ ChurchSubscriptionSchema.methods.cancel = function (
   return this.save();
 };
 
-ChurchSubscriptionSchema.methods.renew = function (this: IChurchSubscription, months = 1) {
+ChurchSubscriptionSchema.methods.renew = function (months = 1) {
   const newEndDate = new Date(this.endDate);
   newEndDate.setMonth(newEndDate.getMonth() + months);
   this.endDate = newEndDate;
@@ -360,11 +358,10 @@ ChurchSubscriptionSchema.statics.updateUserCount = function (
   );
 };
 
-const ChurchSubscriptionModel =
-  (mongoose.models.Subscription as IChurchSubscriptionModel) ||
+// Export the ChurchSubscription model
+export default (mongoose.models
+  .ChurchSubscription as IChurchSubscriptionModel) ||
   mongoose.model<IChurchSubscription, IChurchSubscriptionModel>(
     'ChurchSubscription',
     ChurchSubscriptionSchema
   );
-
-export default ChurchSubscriptionModel;

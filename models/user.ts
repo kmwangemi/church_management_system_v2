@@ -1,6 +1,11 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 import bcrypt from 'bcryptjs';
-import mongoose, { type CallbackError, type Document, Schema } from 'mongoose';
+import mongoose, {
+  Schema,
+  type CallbackError,
+  type Document,
+  type Model,
+} from 'mongoose';
 
 // Role-specific interfaces (keep these for embedded data)
 interface IMemberDetails {
@@ -120,7 +125,7 @@ interface IVisitorDetails {
 }
 
 // Main User interface - Fixed inconsistencies
-export interface IUserModel extends Document {
+export interface IUser extends Document {
   // Common fields
   firstName: string;
   lastName: string;
@@ -197,6 +202,14 @@ export interface IUserModel extends Document {
   resetLoginAttempts(): Promise<this>;
   fullName: string;
   isLocked: boolean;
+}
+
+// Define the interface for the static methods
+export interface IUserModel extends Model<IUser> {
+  // findByChurch(churchId: mongoose.Types.ObjectId): Promise<IUser[]>;
+  // findActiveUseres(churchId: mongoose.Types.ObjectId): Promise<IUser[]>;
+  // findByPastor(pastorId: mongoose.Types.ObjectId): Promise<IUser[]>;
+  // getTotalCapacity(churchId: mongoose.Types.ObjectId): Promise<number>;
 }
 
 // Subdocument schemas
@@ -376,7 +389,7 @@ const VisitorDetailsSchema = new Schema<IVisitorDetails>(
 );
 
 // Main User Schema - Fixed all issues
-const UserSchema = new Schema<IUserModel>(
+const UserSchema = new Schema<IUser>(
   {
     // Common fields
     firstName: { type: String, required: true, trim: true },
@@ -406,14 +419,14 @@ const UserSchema = new Schema<IUserModel>(
     churchId: {
       type: Schema.Types.ObjectId,
       ref: 'Church',
-      required(this: IUserModel) {
+      required(this: IUser) {
         return this.role !== 'superadmin';
       },
     },
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
-      required(this: IUserModel) {
+      required(this: IUser) {
         return !['admin', 'superadmin'].includes(this.role);
       },
     },
@@ -462,14 +475,14 @@ const UserSchema = new Schema<IUserModel>(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required(this: IUserModel) {
+      required(this: IUser) {
         return this.role !== 'superadmin';
       },
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required(this: IUserModel) {
+      required(this: IUser) {
         return this.role !== 'superadmin';
       },
     },
@@ -550,17 +563,17 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
 // Virtual property for checking if account is locked
-UserSchema.virtual('isLocked').get(function (this: IUserModel) {
+UserSchema.virtual('isLocked').get(function (this: IUser) {
   return !!(this.lockUntil && this.lockUntil > new Date());
 });
 
 // Virtual for full name
-UserSchema.virtual('fullName').get(function (this: IUserModel) {
+UserSchema.virtual('fullName').get(function (this: IUser) {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Rate limiting methods
-UserSchema.methods.incLoginAttempts = function (this: IUserModel) {
+UserSchema.methods.incLoginAttempts = function (this: IUser) {
   // If we have a previous lock that has expired, restart at 1
   if (this.lockUntil && this.lockUntil < new Date()) {
     return this.updateOne({
@@ -579,7 +592,7 @@ UserSchema.methods.incLoginAttempts = function (this: IUserModel) {
   return this.updateOne(updates);
 };
 
-UserSchema.methods.resetLoginAttempts = function (this: IUserModel) {
+UserSchema.methods.resetLoginAttempts = function (this: IUser) {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 },
   });
@@ -613,18 +626,15 @@ UserSchema.methods.comparePassword = async function (
 };
 
 // Methods - Updated to work with simple string role system
-UserSchema.methods.hasRole = function (
-  this: IUserModel,
-  roleName: string
-): boolean {
+UserSchema.methods.hasRole = function (this: IUser, roleName: string): boolean {
   return this.role === roleName.toLowerCase();
 };
 
-UserSchema.methods.isStaffMember = function (this: IUserModel): boolean {
+UserSchema.methods.isStaffMember = function (this: IUser): boolean {
   return this.isStaff;
 };
 
-UserSchema.methods.isVolunteerMember = function (this: IUserModel): boolean {
+UserSchema.methods.isVolunteerMember = function (this: IUser): boolean {
   return this.isVolunteer;
 };
 
@@ -645,7 +655,7 @@ UserSchema.pre('save', async function (next) {
 });
 
 // ✅ Enhanced ID generation helper with church-based incremental IDs
-async function generateRoleIds(user: IUserModel) {
+async function generateRoleIds(user: IUser) {
   // const churchId = user.churchId?.toString() || 'DEFAULT';
   // Helper function to get next incremental number for a role
   const getNextNumber = async (role: string): Promise<string> => {
@@ -734,7 +744,7 @@ async function generateRoleIds(user: IUserModel) {
   }
 }
 
-function clearRoleDetails(user: IUserModel) {
+function clearRoleDetails(user: IUser) {
   if (user.role !== 'member') user.memberDetails = undefined;
   if (user.role !== 'pastor') user.pastorDetails = undefined;
   if (user.role !== 'bishop') user.bishopDetails = undefined;
@@ -754,7 +764,7 @@ function clearRoleDetails(user: IUserModel) {
 // }
 
 // ✅ Enhanced pre-save middleware
-UserSchema.pre('save', async function (this: IUserModel, next) {
+UserSchema.pre('save', async function (this: IUser, next) {
   try {
     await generateRoleIds(this);
     clearRoleDetails(this);
@@ -766,7 +776,7 @@ UserSchema.pre('save', async function (this: IUserModel, next) {
 });
 
 // ✅ Relaxed validation - only validate if role details exist
-UserSchema.pre('validate', function (this: IUserModel, next) {
+UserSchema.pre('validate', function (this: IUser, next) {
   // Only validate required fields for role details if they're provided
   // This allows for gradual data collection
   // Validate staff details if isStaff is true and staffDetails exist
@@ -831,8 +841,8 @@ UserSchema.statics.findVolunteers = function () {
   });
 };
 
-export default mongoose.models.User ||
-  mongoose.model<IUserModel>('User', UserSchema);
+export default (mongoose.models.User as IUserModel) ||
+  mongoose.model<IUser, IUserModel>('User', UserSchema);
 
 // Usage Examples:
 /*

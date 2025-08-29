@@ -153,7 +153,7 @@ export default function DashboardPage() {
       title: 'Add New Member',
       description: 'Register a new church member',
       icon: UserPlus,
-      href: '/dashboard/members',
+      href: '/dashboard/users',
       color: 'bg-blue-50 hover:bg-blue-100 border-blue-200',
     },
     {

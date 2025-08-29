@@ -29,6 +29,7 @@ export interface IMessageRecipient extends Document {
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  calculateMemberCount: () => Promise<number>;
 }
 
 // Define the interface for static methods
@@ -53,7 +54,7 @@ const MessageRecipientSchema = new Schema<IMessageRecipient>(
     branchId: {
       type: Schema.Types.ObjectId,
       ref: 'Branch',
-      default: null
+      default: null,
     },
     id: {
       type: String,
@@ -195,14 +196,12 @@ MessageRecipientSchema.pre('save', function (next) {
   ) {
     return next(new Error('Minimum age cannot be greater than maximum age'));
   }
-
   // Validate targetId is required for department and group types
   if ((this.type === 'department' || this.type === 'group') && !this.targetId) {
     return next(
       new Error('Target ID is required for department and group types')
     );
   }
-
   next();
 });
 
@@ -222,7 +221,6 @@ MessageRecipientSchema.statics.getDefaultRecipientGroups = async (
   const User = mongoose.model('User');
   const Department = mongoose.model('Department');
   const Group = mongoose.model('Group');
-
   const [allUsersCount, activeUsersCount, departments, groups] =
     await Promise.all([
       User.countDocuments({ churchId }),
@@ -232,8 +230,14 @@ MessageRecipientSchema.statics.getDefaultRecipientGroups = async (
       ),
       Group.find({ churchId, isActive: true }).select('_id groupName category'),
     ]);
-
-  const defaultGroups = [
+  const defaultGroups: Array<{
+    id: string;
+    name: string;
+    count: number;
+    type: string;
+    targetModel: string;
+    targetId?: mongoose.Types.ObjectId;
+  }> = [
     {
       id: 'all-users',
       name: 'All Members',
@@ -249,7 +253,6 @@ MessageRecipientSchema.statics.getDefaultRecipientGroups = async (
       targetModel: 'User',
     },
   ];
-
   // Add departments
   departments.forEach((dept) => {
     defaultGroups.push({
@@ -261,7 +264,6 @@ MessageRecipientSchema.statics.getDefaultRecipientGroups = async (
       targetId: dept._id,
     });
   });
-
   // Add groups
   groups.forEach((group) => {
     defaultGroups.push({
@@ -273,7 +275,6 @@ MessageRecipientSchema.statics.getDefaultRecipientGroups = async (
       targetId: group._id,
     });
   });
-
   return defaultGroups;
 };
 
@@ -285,36 +286,30 @@ MessageRecipientSchema.statics.updateMemberCounts = async function (
     autoUpdate: true,
     isActive: true,
   });
-
-  for (const group of groups) {
+  const updatePromises = groups.map(async (group: IMessageRecipient) => {
     const count = await group.calculateMemberCount();
     group.memberCount = count;
     group.lastUpdated = new Date();
     await group.save();
-  }
+  });
+  await Promise.all(updatePromises);
 };
 
 // Instance methods
 MessageRecipientSchema.methods.calculateMemberCount = async function () {
   const User = mongoose.model('User');
-  const Department = mongoose.model('Department');
-  const Group = mongoose.model('Group');
-
   try {
     let count = 0;
-
     switch (this.type) {
       case 'all-users':
         count = await User.countDocuments({ churchId: this.churchId });
         break;
-
       case 'active-users':
         count = await User.countDocuments({
           churchId: this.churchId,
           status: 'active',
         });
         break;
-
       case 'department':
         if (this.targetId) {
           // Count users assigned to this department
@@ -325,7 +320,6 @@ MessageRecipientSchema.methods.calculateMemberCount = async function () {
           });
         }
         break;
-
       case 'group':
         if (this.targetId) {
           // Count users assigned to this group
@@ -336,40 +330,36 @@ MessageRecipientSchema.methods.calculateMemberCount = async function () {
           });
         }
         break;
-
       case 'custom': {
         const query = this.buildUserQuery();
         count = await User.countDocuments(query);
         break;
       }
+      default:
+        // Unknown type, return current memberCount
+        return this.memberCount;
     }
-
     return count;
-  } catch (error) {
-    console.error('Error calculating member count for group:', this.id, error);
+  } catch (_error) {
+    // console.error('Error calculating member count for group:', this.id, error);
     return this.memberCount;
   }
 };
 
 MessageRecipientSchema.methods.buildUserQuery = function () {
   const query: any = { churchId: this.churchId };
-
   if (this.branchId) {
     query.branchId = this.branchId;
   }
-
   if (this.criteria.userStatus?.length) {
     query.status = { $in: this.criteria.userStatus };
   }
-
   if (this.criteria.roles?.length) {
     query.role = { $in: this.criteria.roles };
   }
-
   if (this.criteria.ageRange?.min || this.criteria.ageRange?.max) {
     const now = new Date();
     const ageQuery: any = {};
-
     if (this.criteria.ageRange.max) {
       const minBirthDate = new Date(
         now.getFullYear() - this.criteria.ageRange.max - 1,
@@ -378,7 +368,6 @@ MessageRecipientSchema.methods.buildUserQuery = function () {
       );
       ageQuery.$gte = minBirthDate;
     }
-
     if (this.criteria.ageRange.min) {
       const maxBirthDate = new Date(
         now.getFullYear() - this.criteria.ageRange.min,
@@ -387,49 +376,44 @@ MessageRecipientSchema.methods.buildUserQuery = function () {
       );
       ageQuery.$lte = maxBirthDate;
     }
-
     query.dateOfBirth = ageQuery;
   }
-
   if (this.criteria.gender) {
     query.gender = this.criteria.gender;
   }
-
   if (this.criteria.departmentIds?.length) {
     query.departmentId = { $in: this.criteria.departmentIds };
   }
-
   if (this.criteria.groupIds?.length) {
     query.groupId = { $in: this.criteria.groupIds };
   }
-
   if (this.criteria.customQuery) {
     Object.assign(query, this.criteria.customQuery);
   }
-
   return query;
 };
 
 MessageRecipientSchema.methods.getMembers = async function () {
   const User = mongoose.model('User');
-
   try {
-    let users = [];
-
+    let users: Array<{
+      _id: mongoose.Types.ObjectId;
+      name: string;
+      email: string;
+      phone: string;
+    }> = [];
     switch (this.type) {
       case 'all-users':
         users = await User.find({ churchId: this.churchId }).select(
           '_id name email phone'
         );
         break;
-
       case 'active-users':
         users = await User.find({
           churchId: this.churchId,
           status: 'active',
         }).select('_id name email phone');
         break;
-
       case 'department':
         if (this.targetId) {
           users = await User.find({
@@ -439,7 +423,6 @@ MessageRecipientSchema.methods.getMembers = async function () {
           }).select('_id name email phone');
         }
         break;
-
       case 'group':
         if (this.targetId) {
           users = await User.find({
@@ -449,51 +432,46 @@ MessageRecipientSchema.methods.getMembers = async function () {
           }).select('_id name email phone');
         }
         break;
-
       case 'custom': {
         const query = this.buildUserQuery();
         users = await User.find(query).select('_id name email phone');
         break;
       }
+      default:
+        // Unknown type, return empty array
+        users = [];
+        break;
     }
-
     return users;
-  } catch (error) {
-    console.error('Error getting members for group:', this.id, error);
+  } catch (_error) {
+    // Error getting members for group; optionally handle with a logger or rethrow
     return [];
   }
 };
 
 // Virtual for criteria summary
 MessageRecipientSchema.virtual('criteriaSummary').get(function () {
-  const summary = [];
-
+  const summary: string[] = [];
   if (this.type === 'department' && this.targetId) {
     summary.push('Department-based');
   }
-
   if (this.type === 'group' && this.targetId) {
     summary.push('Group-based');
   }
-
   if (this.criteria.userStatus?.length) {
     summary.push(`Status: ${this.criteria.userStatus.join(', ')}`);
   }
-
   if (this.criteria.ageRange?.min || this.criteria.ageRange?.max) {
     const min = this.criteria.ageRange.min || 0;
     const max = this.criteria.ageRange.max || '∞';
     summary.push(`Age: ${min}-${max}`);
   }
-
   if (this.criteria.gender) {
     summary.push(`Gender: ${this.criteria.gender}`);
   }
-
   if (this.criteria.roles?.length) {
     summary.push(`Roles: ${this.criteria.roles.join(', ')}`);
   }
-
   return summary.join(' | ');
 });
 
