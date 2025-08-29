@@ -1,6 +1,9 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 'use client';
 
+import RenderApiError from '@/components/api-error';
 import { AddUserForm } from '@/components/forms/add-user-form';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -62,80 +65,6 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-// Mock data
-// const users = [
-//   {
-//     id: 1,
-//     name: 'John Smith',
-//     email: 'john.smith@email.com',
-//     phone: '+1 (555) 123-4567',
-//     role: 'User',
-//     status: 'Active',
-//     joinDate: '2023-01-15',
-//     department: 'Choir',
-//     avatar: '/placeholder.svg?height=40&width=40',
-//     address: '123 Main St, City, State',
-//     dateOfBirth: '1985-06-15',
-//     maritalStatus: 'Married',
-//   },
-//   {
-//     id: 2,
-//     name: 'Sarah Johnson',
-//     email: 'sarah.j@email.com',
-//     phone: '+1 (555) 234-5678',
-//     role: 'Volunteer',
-//     status: 'Active',
-//     joinDate: '2023-03-22',
-//     department: 'Ushering',
-//     avatar: '/placeholder.svg?height=40&width=40',
-//     address: '456 Oak Ave, City, State',
-//     dateOfBirth: '1990-09-22',
-//     maritalStatus: 'Single',
-//   },
-//   {
-//     id: 3,
-//     name: 'Pastor Michael Brown',
-//     email: 'pastor.mike@church.com',
-//     phone: '+1 (555) 345-6789',
-//     role: 'Pastor',
-//     status: 'Active',
-//     joinDate: '2020-06-01',
-//     department: 'Leadership',
-//     avatar: '/placeholder.svg?height=40&width=40',
-//     address: '789 Church St, City, State',
-//     dateOfBirth: '1975-12-10',
-//     maritalStatus: 'Married',
-//   },
-//   {
-//     id: 4,
-//     name: 'Emily Davis',
-//     email: 'emily.davis@email.com',
-//     phone: '+1 (555) 456-7890',
-//     role: 'User',
-//     status: 'Inactive',
-//     joinDate: '2022-11-10',
-//     department: 'Youth',
-//     avatar: '/placeholder.svg?height=40&width=40',
-//     address: '321 Pine St, City, State',
-//     dateOfBirth: '1995-03-18',
-//     maritalStatus: 'Single',
-//   },
-//   {
-//     id: 5,
-//     name: 'David Wilson',
-//     email: 'david.w@email.com',
-//     phone: '+1 (555) 567-8901',
-//     role: 'Admin',
-//     status: 'Active',
-//     joinDate: '2021-08-15',
-//     department: 'Administration',
-//     avatar: '/placeholder.svg?height=40&width=40',
-//     address: '654 Elm St, City, State',
-//     dateOfBirth: '1980-07-25',
-//     maritalStatus: 'Married',
-//   },
-// ];
-
 const getRoleIcon = (role: string) => {
   switch (role.toLowerCase()) {
     case 'pastor':
@@ -178,12 +107,11 @@ export default function UsersPage() {
       query: searchQuery,
     },
   });
-
   const {
     data: users,
-    // isLoading: isLoadingUsers,
-    // isError: isErrorUsers,
-    // error: errorUsers,
+    isLoading: isLoadingUsers,
+    isError: isErrorUsers,
+    error: errorUsers,
   } = useFetchUsers(page, searchQuery);
 
   // const filteredUsers = users.filter((user) => {
@@ -355,125 +283,136 @@ export default function UsersPage() {
               <TabsTrigger value="inactive">Inactive ({0})</TabsTrigger>
               <TabsTrigger value="staff">Staff ({0})</TabsTrigger>
             </TabsList>
-            <TabsContent className="mt-6" value={selectedTab}>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Branch</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users?.users.map((user) => (
-                      <TableRow className="hover:bg-gray-50" key={user._id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                alt={user?.firstName || 'User'}
-                                src={user?.profilePictureUrl ?? ''}
-                              />
-                              <AvatarFallback className="bg-blue-100 text-blue-600">{`${getFirstLetter(
-                                user?.firstName || ''
-                              )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {`${capitalizeFirstLetter(
-                                  user?.firstName || 'N/A'
-                                )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
-                              </div>
-                              <div className="text-gray-500 text-sm">
-                                {user.email || 'N/A'}
-                              </div>
-                              <div className="text-gray-500 text-sm">
-                                {user.phoneNumber || 'N/A'}
+            {isErrorUsers && <RenderApiError error={errorUsers} />}
+            {isLoadingUsers ? (
+              <SpinnerLoader description="Loading users..." />
+            ) : (
+              <TabsContent className="mt-6" value={selectedTab}>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Gender</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Branch</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users?.users.map((user) => (
+                        <TableRow className="hover:bg-gray-50" key={user._id}>
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage
+                                  alt={user?.firstName || 'User'}
+                                  src={user?.profilePictureUrl ?? ''}
+                                />
+                                <AvatarFallback className="bg-blue-100 text-blue-600">{`${getFirstLetter(
+                                  user?.firstName || ''
+                                )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium text-gray-900">
+                                  {`${capitalizeFirstLetter(
+                                    user?.firstName || 'N/A'
+                                  )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                                </div>
+                                <div className="text-gray-500 text-sm">
+                                  {user.email || 'N/A'}
+                                </div>
+                                <div className="text-gray-500 text-sm">
+                                  {user.phoneNumber || 'N/A'}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className="flex w-fit items-center gap-1"
-                            variant={getRoleBadgeVariant(user.role)}
-                          >
-                            {getRoleIcon(user.role)}
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-gray-900 text-sm">
-                            {capitalizeFirstLetterOfEachWord(
-                              user.branchId?.branchName || 'N/A'
-                            )}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={user.isActive ? 'default' : 'secondary'}
-                          >
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-gray-900 text-sm">
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button className="h-8 w-8 p-0" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/users/${user._id}`}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View User
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/send-email/${user._id}`}>
-                                  <Mail className="mr-2 h-4 w-4" />
-                                  Send Email
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-red-600"
-                                // onClick={() => handleRemoveUser(user.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Remove User
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {users?.users?.length === 0 && (
-                <div className="py-12 text-center">
-                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
-                    No users found
-                  </h3>
-                  <p className="text-gray-500">
-                    Try adjusting your search or filter criteria.
-                  </p>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-900 text-sm">
+                              {capitalizeFirstLetter(user.gender || 'N/A')}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className="flex w-fit items-center gap-1"
+                              variant={getRoleBadgeVariant(user.role)}
+                            >
+                              {getRoleIcon(user.role)}
+                              {user.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-900 text-sm">
+                              {capitalizeFirstLetterOfEachWord(
+                                user.branchId?.branchName || 'N/A'
+                              )}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={user.isActive ? 'default' : 'secondary'}
+                            >
+                              {user.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-900 text-sm">
+                              {new Date(user.createdAt).toLocaleDateString()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button className="h-8 w-8 p-0" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/dashboard/users/${user._id}`}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View User
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/send-email/${user._id}`}>
+                                    <Mail className="mr-2 h-4 w-4" />
+                                    Send Email
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-red-600"
+                                  // onClick={() => handleRemoveUser(user.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Remove User
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
-            </TabsContent>
+                {users?.users?.length === 0 && (
+                  <div className="py-12 text-center">
+                    <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                    <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                      No users found
+                    </h3>
+                    <p className="text-gray-500">
+                      Try adjusting your search or filter criteria.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            )}
           </Tabs>
         </CardContent>
       </Card>
