@@ -12,18 +12,18 @@ import { type NextRequest, NextResponse } from 'next/server';
 const prepareRoleSpecificData = (role: string, userData: any) => {
   const result: any = {};
   switch (role) {
-    // case 'member':
-    //   result.memberDetails = {
-    //     memberId: '',
-    //     membershipDate: userData.membershipDate || new Date(),
-    //     membershipStatus: 'active',
-    //     departmentIds: userData.departmentIds || [],
-    //     groupIds: userData.groupIds || [],
-    //     occupation: userData.occupation,
-    //     baptismDate: userData.baptismDate,
-    //     joinedDate: userData.joinedDate || new Date(),
-    //   };
-    //   break;
+    case 'member':
+      result.memberDetails = {
+        memberId: '',
+        membershipDate: userData.membershipDate || new Date(),
+        membershipStatus: 'active',
+        departmentIds: userData.departmentIds || [],
+        groupIds: userData.groupIds || [],
+        occupation: userData.occupation,
+        baptismDate: userData.baptismDate,
+        joinedDate: userData.joinedDate || new Date(),
+      };
+      break;
     case 'visitor':
       result.visitorDetails = {
         visitorId: '',
