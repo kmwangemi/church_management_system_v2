@@ -133,7 +133,7 @@ const prepareRoleSpecificData = (role: string, userData: any) => {
   return result;
 };
 
-async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
+async function getUserHandler(request: NextRequest): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
     { requestId, endpoint: '/api/users' },
@@ -231,7 +231,7 @@ async function getMemberHandler(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-async function registerHandler(request: NextRequest): Promise<NextResponse> {
+async function registerUserHandler(request: NextRequest): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
     { requestId, endpoint: '/api/members' },
@@ -441,13 +441,13 @@ async function registerHandler(request: NextRequest): Promise<NextResponse> {
 }
 
 // Export handlers with logging middleware
-export const GET = withApiLogger(getMemberHandler, {
+export const GET = withApiLogger(getUserHandler, {
   logRequests: true,
   logResponses: true,
   logErrors: true,
 });
 
-export const POST = withApiLogger(registerHandler, {
+export const POST = withApiLogger(registerUserHandler, {
   logRequests: true,
   logResponses: true,
   logErrors: true,

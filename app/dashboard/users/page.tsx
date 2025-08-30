@@ -45,6 +45,7 @@ import { useFetchUsers } from '@/lib/hooks/user/use-user-queries';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
+  formatToNewDate,
   getFirstLetter,
 } from '@/lib/utils';
 import {
@@ -353,14 +354,18 @@ export default function UsersPage() {
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={user.isActive ? 'default' : 'secondary'}
+                              variant={
+                                user.status === 'active'
+                                  ? 'default'
+                                  : 'secondary'
+                              }
                             >
-                              {user.isActive ? 'Active' : 'Inactive'}
+                              {user.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <span className="text-gray-900 text-sm">
-                              {new Date(user.createdAt).toLocaleDateString()}
+                              {formatToNewDate(user.createdAt)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">

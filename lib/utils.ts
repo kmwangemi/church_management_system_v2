@@ -10,6 +10,7 @@ export function cn(...inputs: ClassValue[]) {
 export type FormatToNewDate = (date: Date | number) => string;
 
 export const formatToNewDate: FormatToNewDate = (date) => {
+  if (!date) return '';
   return formatDate(date, 'dd/MM/yyyy');
 };
 

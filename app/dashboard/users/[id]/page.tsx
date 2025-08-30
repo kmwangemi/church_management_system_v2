@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import RenderApiError from '@/components/api-error';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +16,13 @@ import {
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { IUserModel } from '@/models/user';
+import { useFetchUserById } from '@/lib/hooks/user/use-user-queries';
+import {
+  capitalizeFirstLetter,
+  capitalizeFirstLetterOfEachWord,
+  formatToNewDate,
+  getFirstLetter,
+} from '@/lib/utils';
 import {
   ArrowLeft,
   Award,
@@ -23,15 +31,11 @@ import {
   Clock,
   DollarSign,
   Edit,
-  Eye,
-  EyeOff,
   Gift,
   Heart,
   Mail,
   MapPin,
-  MessageSquare,
   Phone,
-  Shield,
   Star,
   UserCheck,
   Users,
@@ -52,211 +56,18 @@ import {
   YAxis,
 } from 'recharts';
 
-type UserRole =
-  | 'visitor'
-  | 'member'
-  | 'pastor'
-  | 'bishop'
-  | 'admin'
-  | 'superadmin';
-
-interface CurrentUser {
-  id: string;
-  role: UserRole;
-  isStaff: boolean;
-  isVolunteer: boolean;
-}
-
-// Mock current user - in real app, get from auth context
-const currentUser: CurrentUser = {
-  id: 'current-user-id',
-  role: 'pastor', // Change this to test different role permissions
-  isStaff: false,
-  isVolunteer: false,
-};
-
-const canViewPersonalDetails = (userRole: UserRole): boolean => {
-  return ['member', 'pastor', 'bishop', 'admin', 'superadmin'].includes(
-    userRole
-  );
-};
-
-const canViewFinancialData = (userRole: UserRole): boolean => {
-  return ['pastor', 'bishop', 'admin', 'superadmin'].includes(userRole);
-};
-
-const canViewSensitiveData = (userRole: UserRole): boolean => {
-  return ['bishop', 'admin', 'superadmin'].includes(userRole);
-};
-
-const canEditMember = (userRole: UserRole): boolean => {
-  return ['pastor', 'bishop', 'admin', 'superadmin'].includes(userRole);
-};
-
-const canViewAttendanceDetails = (userRole: UserRole): boolean => {
-  return ['pastor', 'bishop', 'admin', 'superadmin'].includes(userRole);
-};
-
 export default function MemberDetailsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
-  const mockMember: Partial<IUserModel> = {
-    id,
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    email: 'sarah.johnson@email.com',
-    phoneNumber: '+1 (555) 123-4567',
-    address: {
-      street: '123 Main St, Anytown, ST 12345',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: 'Kenya',
-    },
-    dateOfBirth: 'June 15, 1985',
-    joinDate: 'March 10, 2020',
-    membershipStatus: 'Active',
-    membershipType: 'Full Member',
-    maritalStatus: 'single',
-    occupation: 'Teacher',
-    emergencyDetails: {
-      emergencyContactFullName: 'John Johnson',
-      emergencyContactEmail: '',
-      emergencyContactPhoneNumber: '',
-      emergencyContactRelationship: '',
-      emergencyContactAddress: '',
-      emergencyContactNotes: '',
-    },
-    ministries: ["Children's Ministry", 'Worship Team'],
-    skills: ['Music', 'Teaching', 'Administration'],
-    notes: "Very active in children's ministry. Has leadership potential.",
-    baptized: true,
-    confirmed: true,
-    isStaff: true,
-    isVolunteer: true,
-    smallGroup: 'Young Adults Group',
-    servingAreas: ['Sunday School', 'Choir'],
-    totalGiving: 3250,
-    averageAttendance: 85,
-    volunteerHours: 120,
-    role: 'member' as UserRole,
-    // Role-specific details
-    memberDetails: {
-      memberId: 'MEM-2020-001',
-      membershipDate: new Date('2020-03-10'),
-      membershipStatus: 'active' as const,
-      departmentIds: ['children-ministry', 'worship'],
-      groupIds: ['young-adults'],
-      occupation: 'Teacher',
-      baptismDate: new Date('2020-04-15'),
-      joinedDate: new Date('2020-03-10'),
-    },
-    pastorDetails: {
-      pastorId: 'PST-2018-001',
-      ordinationDate: new Date('2018-06-15'),
-      qualifications: ['Master of Divinity', 'Biblical Counseling Certificate'],
-      specializations: ['Youth Ministry', 'Biblical Counseling'],
-      assignments: [
-        {
-          branchId: 'branch-001',
-          position: 'Associate Pastor',
-          startDate: new Date('2018-07-01'),
-          isActive: true,
-        },
-      ],
-      sermonCount: 45,
-      counselingSessions: 120,
-      biography: 'Passionate about youth ministry and biblical counseling.',
-    },
-    bishopDetails: {
-      bishopId: 'BSP-2015-001',
-      appointmentDate: new Date('2015-01-01'),
-      jurisdictionArea: 'Northern Region',
-      oversight: {
-        branchIds: ['branch-001', 'branch-002', 'branch-003'],
-        pastorIds: ['pastor-001', 'pastor-002'],
-      },
-      qualifications: ['Doctor of Theology', 'Leadership Certificate'],
-      achievements: [
-        'Church Growth Award 2022',
-        'Community Service Recognition',
-      ],
-      biography: 'Dedicated to church growth and community outreach.',
-    },
-    staffDetails: {
-      staffId: 'STF-2021-005',
-      jobTitle: 'Administrative Assistant',
-      department: 'Administration',
-      startDate: new Date('2021-01-15'),
-      salary: 35_000,
-      employmentType: 'full-time' as const,
-      isActive: true,
-    },
-    volunteerDetails: {
-      volunteerId: 'VOL-2020-025',
-      volunteerStatus: 'active' as const,
-      availabilitySchedule: {
-        days: ['Sunday', 'Wednesday'],
-        timeSlots: ['Morning', 'Evening'],
-        preferredTimes: 'Sunday mornings and Wednesday evenings',
-      },
-      skills: ['Music', 'Teaching', 'Event Planning'],
-      departments: ['children-ministry', 'worship'],
-      ministries: ['sunday-school', 'choir'],
-      volunteerRoles: [
-        {
-          role: 'Sunday School Teacher',
-          department: "Children's Ministry",
-          startDate: new Date('2020-04-01'),
-          isActive: true,
-        },
-      ],
-      backgroundCheck: {
-        completed: true,
-        completedDate: new Date('2020-03-01'),
-        expiryDate: new Date('2025-03-01'),
-        clearanceLevel: 'children_ministry' as const,
-      },
-      hoursContributed: 120,
-    },
-    adminDetails: {
-      adminId: 'ADM-2019-002',
-      accessLevel: 'branch' as const,
-      assignedBranches: ['branch-001'],
-    },
-    superAdminDetails: {
-      superAdminId: 'SA-2018-001',
-      accessLevel: 'global' as const,
-      systemSettings: {
-        canCreateChurches: true,
-        canDeleteChurches: true,
-        canManageUsers: true,
-        canAccessAnalytics: true,
-        canManageSubscriptions: true,
-        canAccessSystemLogs: true,
-      },
-      companyInfo: {
-        position: 'System Administrator',
-        department: 'IT',
-        startDate: new Date('2018-01-01'),
-      },
-    },
-    visitorDetails: {
-      visitorId: 'VIS-2024-150',
-      visitDate: new Date('2024-12-01'),
-      invitedBy: 'member-001',
-      howDidYouHear: 'friend' as const,
-      followUpStatus: 'interested' as const,
-      followUpDate: new Date('2024-12-08'),
-      followUpNotes: 'Interested in joining small group',
-      interestedInMembership: true,
-      servicesAttended: ['Sunday Service', 'Bible Study'],
-      occupation: 'Teacher',
-    },
-  };
+  const {
+    data: user,
+    isLoading: isLoadingUser,
+    isError: isErrorUser,
+    error: errorUser,
+  } = useFetchUserById(id);
 
   const attendanceData = [
     { month: 'Jan', attendance: 4, services: 4 },
@@ -321,162 +132,171 @@ export default function MemberDetailsPage({
     }
   };
 
-  const getAvailableTabs = () => {
-    const baseTabs = [{ value: 'overview', label: 'Overview' }];
+  const availableTabs = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'attendance', label: 'Attendance' },
+    { value: 'giving', label: 'Giving' },
+    { value: 'involvement', label: 'Involvement' },
+    { value: 'activity', label: 'Activity' },
+  ];
 
-    if (canViewAttendanceDetails(currentUser.role)) {
-      baseTabs.push({ value: 'attendance', label: 'Attendance' });
-    }
-
-    if (canViewFinancialData(currentUser.role)) {
-      baseTabs.push({ value: 'giving', label: 'Giving' });
-    }
-
-    if (canViewPersonalDetails(currentUser.role)) {
-      baseTabs.push({ value: 'involvement', label: 'Involvement' });
-      baseTabs.push({ value: 'activity', label: 'Activity' });
-    }
-
-    return baseTabs;
-  };
-
-  const availableTabs = getAvailableTabs();
-
-  const currentRole = mockMember.role;
+  const currentRole = user?.role;
 
   const renderRoleSpecificInfo = () => {
     switch (currentRole) {
       case 'member':
         return (
-          mockMember.memberDetails && (
+          user?.memberDetails && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label className="font-medium text-sm">Member ID</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Member ID
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.memberDetails.memberId}
+                  {user.memberDetails.memberId}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Membership Date</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Membership Date
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.memberDetails.membershipDate?.toLocaleDateString()}
+                  {formatToNewDate(user.memberDetails.membershipDate)}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Membership Status</Label>
+                <Label className="mr-2 font-medium text-sm" htmlFor={''}>
+                  Membership Status
+                </Label>
                 <Badge
                   variant={
-                    mockMember.memberDetails.membershipStatus === 'active'
+                    user.memberDetails.membershipStatus === 'active'
                       ? 'default'
                       : 'secondary'
                   }
                 >
-                  {mockMember.memberDetails.membershipStatus}
+                  {user.memberDetails.membershipStatus}
                 </Badge>
               </div>
-              {mockMember.memberDetails.baptismDate && (
+              {user?.memberDetails?.baptismDate && (
                 <div>
-                  <Label className="font-medium text-sm">Baptism Date</Label>
+                  <Label className="font-medium text-sm" htmlFor={''}>
+                    Baptism Date
+                  </Label>
                   <p className="text-muted-foreground text-sm">
-                    {mockMember.memberDetails.baptismDate.toLocaleDateString()}
+                    {formatToNewDate(user.memberDetails.baptismDate)}
                   </p>
                 </div>
               )}
             </div>
           )
         );
-
       case 'pastor':
         return (
-          mockMember.pastorDetails && (
+          user?.pastorDetails && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label className="font-medium text-sm">Pastor ID</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Pastor ID
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.pastorDetails.pastorId}
+                  {user.pastorDetails.pastorId}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Ordination Date</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Ordination Date
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.pastorDetails.ordinationDate?.toLocaleDateString()}
+                  {formatToNewDate(user.pastorDetails.ordinationDate)}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Sermon Count</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Sermon Count
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.pastorDetails.sermonCount}
+                  {user.pastorDetails.sermonCount}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">
+                <Label className="font-medium text-sm" htmlFor={''}>
                   Counseling Sessions
                 </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.pastorDetails.counselingSessions}
+                  {user.pastorDetails.counselingSessions}
                 </p>
               </div>
               <div className="md:col-span-2">
-                <Label className="font-medium text-sm">Qualifications</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Qualifications
+                </Label>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {mockMember.pastorDetails.qualifications?.map(
-                    (qual, index) => (
-                      <Badge key={index} variant="outline">
-                        {qual}
-                      </Badge>
-                    )
-                  )}
+                  {user.pastorDetails.qualifications?.map((qual, index) => (
+                    <Badge key={index} variant="outline">
+                      {qual}
+                    </Badge>
+                  ))}
                 </div>
               </div>
               <div className="md:col-span-2">
-                <Label className="font-medium text-sm">Specializations</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Specializations
+                </Label>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {mockMember.pastorDetails.specializations?.map(
-                    (spec, index) => (
-                      <Badge key={index} variant="secondary">
-                        {spec}
-                      </Badge>
-                    )
-                  )}
+                  {user.pastorDetails.specializations?.map((spec, index) => (
+                    <Badge key={index} variant="secondary">
+                      {spec}
+                    </Badge>
+                  ))}
                 </div>
               </div>
             </div>
           )
         );
-
       case 'bishop':
         return (
-          mockMember.bishopDetails && (
+          user?.bishopDetails && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label className="font-medium text-sm">Bishop ID</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Bishop ID
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.bishopDetails.bishopId}
+                  {user.bishopDetails.bishopId}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Appointment Date</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Appointment Date
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.bishopDetails.appointmentDate?.toLocaleDateString()}
+                  {formatToNewDate(user?.bishopDetails?.appointmentDate)}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Jurisdiction Area</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Jurisdiction Area
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.bishopDetails.jurisdictionArea}
+                  {user.bishopDetails.jurisdictionArea}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Branches Overseen</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Branches Overseen
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.bishopDetails.oversight?.branchIds?.length || 0}{' '}
+                  {user.bishopDetails.oversight?.branchIds?.length || 0}{' '}
                   branches
                 </p>
               </div>
               <div className="md:col-span-2">
-                <Label className="font-medium text-sm">Achievements</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Achievements
+                </Label>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {mockMember.bishopDetails.achievements?.map(
+                  {user.bishopDetails.achievements?.map(
                     (achievement, index) => (
                       <Badge key={index} variant="default">
                         {achievement}
@@ -490,59 +310,69 @@ export default function MemberDetailsPage({
         );
       case 'admin':
         return (
-          mockMember.adminDetails && (
+          user?.adminDetails && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label className="font-medium text-sm">Admin ID</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Admin ID
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.adminDetails.adminId}
+                  {user.adminDetails.adminId}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Access Level</Label>
-                <Badge variant="outline">
-                  {mockMember.adminDetails.accessLevel}
-                </Badge>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Access Level
+                </Label>
+                <Badge variant="outline">{user.adminDetails.accessLevel}</Badge>
               </div>
               <div>
-                <Label className="font-medium text-sm">Assigned Branches</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Assigned Branches
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.adminDetails.assignedBranches?.length || 0}{' '}
-                  branches
+                  {user.adminDetails.assignedBranches?.length || 0} branches
                 </p>
               </div>
             </div>
           )
         );
-
       case 'superadmin':
         return (
-          mockMember.superAdminDetails && (
+          user?.superAdminDetails && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label className="font-medium text-sm">Super Admin ID</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Super Admin ID
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.superAdminDetails.superAdminId}
+                  {user.superAdminDetails.superAdminId}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Access Level</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Access Level
+                </Label>
                 <Badge variant="default">
-                  {mockMember.superAdminDetails.accessLevel}
+                  {user.superAdminDetails.accessLevel}
                 </Badge>
               </div>
-              {mockMember.superAdminDetails.companyInfo && (
+              {user.superAdminDetails.companyInfo && (
                 <>
                   <div>
-                    <Label className="font-medium text-sm">Position</Label>
+                    <Label className="font-medium text-sm" htmlFor={''}>
+                      Position
+                    </Label>
                     <p className="text-muted-foreground text-sm">
-                      {mockMember.superAdminDetails.companyInfo.position}
+                      {user.superAdminDetails.companyInfo.position}
                     </p>
                   </div>
                   <div>
-                    <Label className="font-medium text-sm">Department</Label>
+                    <Label className="font-medium text-sm" htmlFor={''}>
+                      Department
+                    </Label>
                     <p className="text-muted-foreground text-sm">
-                      {mockMember.superAdminDetails.companyInfo.department}
+                      {user.superAdminDetails.companyInfo.department}
                     </p>
                   </div>
                 </>
@@ -550,61 +380,68 @@ export default function MemberDetailsPage({
             </div>
           )
         );
-
       case 'visitor':
         return (
-          mockMember.visitorDetails && (
+          user?.visitorDetails && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label className="font-medium text-sm">Visitor ID</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Visitor ID
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.visitorDetails.visitorId}
+                  {user.visitorDetails.visitorId}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">Visit Date</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Visit Date
+                </Label>
                 <p className="text-muted-foreground text-sm">
-                  {mockMember.visitorDetails.visitDate?.toLocaleDateString()}
+                  {formatToNewDate(user?.visitorDetails?.visitDate)}
                 </p>
               </div>
               <div>
-                <Label className="font-medium text-sm">How Did You Hear</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  How Did You Hear
+                </Label>
                 <Badge variant="outline">
-                  {mockMember.visitorDetails.howDidYouHear}
+                  {user.visitorDetails.howDidYouHear}
                 </Badge>
               </div>
               <div>
-                <Label className="font-medium text-sm">Follow-up Status</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Follow-up Status
+                </Label>
                 <Badge
                   variant={
-                    mockMember.visitorDetails.followUpStatus === 'interested'
+                    user.visitorDetails.followUpStatus === 'interested'
                       ? 'default'
                       : 'secondary'
                   }
                 >
-                  {mockMember.visitorDetails.followUpStatus}
+                  {user.visitorDetails.followUpStatus}
                 </Badge>
               </div>
               <div>
-                <Label className="font-medium text-sm">
+                <Label className="font-medium text-sm" htmlFor={''}>
                   Interested in Membership
                 </Label>
                 <Badge
                   variant={
-                    mockMember.visitorDetails.interestedInMembership
+                    user.visitorDetails.interestedInMembership
                       ? 'default'
                       : 'secondary'
                   }
                 >
-                  {mockMember.visitorDetails.interestedInMembership
-                    ? 'Yes'
-                    : 'No'}
+                  {user.visitorDetails.interestedInMembership ? 'Yes' : 'No'}
                 </Badge>
               </div>
               <div>
-                <Label className="font-medium text-sm">Services Attended</Label>
+                <Label className="font-medium text-sm" htmlFor={''}>
+                  Services Attended
+                </Label>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {mockMember.visitorDetails.servicesAttended?.map(
+                  {user.visitorDetails.servicesAttended?.map(
                     (service, index) => (
                       <Badge key={index} variant="outline">
                         {service}
@@ -616,14 +453,12 @@ export default function MemberDetailsPage({
             </div>
           )
         );
-
       default:
         return null;
     }
   };
-
   const renderStaffInfo = () => {
-    if (!(mockMember.staffDetails)) {
+    if (!user?.staffDetails) {
       return null;
     }
     return (
@@ -635,43 +470,53 @@ export default function MemberDetailsPage({
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label className="font-medium text-sm">Staff ID</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Staff ID
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {mockMember.staffDetails.staffId}
+                {user.staffDetails.staffId}
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm">Job Title</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Job Title
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {mockMember.staffDetails.jobTitle}
+                {user.staffDetails.jobTitle}
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm">Department</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Department
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {mockMember.staffDetails.department}
+                {user.staffDetails.department}
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm">Employment Type</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Employment Type
+              </Label>
               <Badge variant="outline">
-                {mockMember.staffDetails.employmentType}
+                {user.staffDetails.employmentType}
               </Badge>
             </div>
             <div>
-              <Label className="font-medium text-sm">Start Date</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Start Date
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {mockMember.staffDetails.startDate?.toLocaleDateString()}
+                {formatToNewDate(user?.staffDetails?.startDate)}
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm">Status</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Status
+              </Label>
               <Badge
-                variant={
-                  mockMember.staffDetails.isActive ? 'default' : 'secondary'
-                }
+                variant={user.staffDetails.isActive ? 'default' : 'secondary'}
               >
-                {mockMember.staffDetails.isActive ? 'Active' : 'Inactive'}
+                {user.staffDetails.isActive ? 'Active' : 'Inactive'}
               </Badge>
             </div>
           </div>
@@ -679,12 +524,10 @@ export default function MemberDetailsPage({
       </Card>
     );
   };
-
   const renderVolunteerInfo = () => {
-    if (!mockMember.volunteerDetails) {
+    if (!user?.volunteerDetails) {
       return null;
     }
-
     return (
       <Card>
         <CardHeader>
@@ -694,56 +537,65 @@ export default function MemberDetailsPage({
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label className="font-medium text-sm">Volunteer ID</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Volunteer ID
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {mockMember.volunteerDetails.volunteerId}
+                {user.volunteerDetails.volunteerId}
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm">Status</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Status
+              </Label>
               <Badge
                 variant={
-                  mockMember.volunteerDetails.volunteerStatus === 'active'
+                  user.volunteerDetails.volunteerStatus === 'active'
                     ? 'default'
                     : 'secondary'
                 }
               >
-                {mockMember.volunteerDetails.volunteerStatus}
+                {user.volunteerDetails.volunteerStatus}
               </Badge>
             </div>
             <div>
-              <Label className="font-medium text-sm">Hours Contributed</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Hours Contributed
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {mockMember.volunteerDetails.hoursContributed}
+                {user.volunteerDetails.hoursContributed}
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm">Background Check</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Background Check
+              </Label>
               <Badge
                 variant={
-                  mockMember.volunteerDetails.backgroundCheck?.completed
+                  user.volunteerDetails.backgroundCheck?.completed
                     ? 'default'
                     : 'secondary'
                 }
               >
-                {mockMember.volunteerDetails.backgroundCheck?.completed
+                {user.volunteerDetails.backgroundCheck?.completed
                   ? 'Completed'
                   : 'Pending'}
               </Badge>
             </div>
             <div className="md:col-span-2">
-              <Label className="font-medium text-sm">Availability</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Availability
+              </Label>
               <p className="text-muted-foreground text-sm">
-                {
-                  mockMember.volunteerDetails.availabilitySchedule
-                    ?.preferredTimes
-                }
+                {user.volunteerDetails.availabilitySchedule?.preferredTimes}
               </p>
             </div>
             <div className="md:col-span-2">
-              <Label className="font-medium text-sm">Current Roles</Label>
+              <Label className="font-medium text-sm" htmlFor={''}>
+                Current Roles
+              </Label>
               <div className="mt-2 flex flex-wrap gap-2">
-                {mockMember.volunteerDetails.volunteerRoles
+                {user.volunteerDetails.volunteerRoles
                   ?.filter((role) => role.isActive)
                   .map((role, index) => (
                     <Badge key={index} variant="default">
@@ -757,576 +609,578 @@ export default function MemberDetailsPage({
       </Card>
     );
   };
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/dashboard/users">
-            <Button size="sm" variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Users
-            </Button>
-          </Link>
-          <div>
-            <h1 className="font-bold text-3xl tracking-tight">
-              {mockMember.name}
-            </h1>
-            <p className="text-muted-foreground">
-              User profile and analytics
-              <Badge className="ml-2" variant="outline">
-                <Shield className="mr-1 h-3 w-3" />
-                Viewing as {currentUser.role}
-              </Badge>
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          {canViewPersonalDetails(currentUser.role) && (
-            <Button variant="outline">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Contact
-            </Button>
-          )}
-          {canEditMember(currentUser.role) && (
-            <Link href={`/dashboard/users/edit/${mockMember.id}`}>
-              <Button>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Profile
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Member Overview */}
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card className="md:col-span-1">
-          <CardContent className="flex flex-col items-center space-y-4 p-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage
-                alt={mockMember.name}
-                src="/placeholder.svg?height=96&width=96"
-              />
-              <AvatarFallback className="text-lg">SJ</AvatarFallback>
-            </Avatar>
-            <div className="text-center">
-              <h3 className="font-semibold text-lg">{mockMember.name}</h3>
-              <p className="text-muted-foreground text-sm">
-                {mockMember.membershipType}
-              </p>
-              <Badge className="mt-2" variant="default">
-                {mockMember.membershipStatus}
-              </Badge>
+      {isErrorUser && <RenderApiError error={errorUser} />}
+      {isLoadingUser ? (
+        <SpinnerLoader description="Loading user data..." />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/dashboard/users">
+                <Button size="sm" variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Users
+                </Button>
+              </Link>
+              <div>
+                <h1 className="font-bold text-3xl tracking-tight">
+                  {`${capitalizeFirstLetter(
+                    user?.firstName || 'N/A'
+                  )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                </h1>
+                <p className="text-muted-foreground">
+                  User profile and analytics
+                </p>
+              </div>
             </div>
-            <div className="w-full space-y-2 text-sm">
-              {canViewPersonalDetails(currentUser.role) ? (
-                <>
+            <div className="flex items-center space-x-2">
+              <Link href={`/dashboard/users/edit/${user?._id}`}>
+                <Button>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </Link>
+            </div>
+          </div>
+          {/* Member Overview */}
+          <div className="grid gap-6 md:grid-cols-4">
+            <Card className="md:col-span-1">
+              <CardContent className="flex flex-col items-center space-y-4 p-6">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage
+                    alt={user?.firstName || 'User'}
+                    src={user?.profilePictureUrl ?? ''}
+                  />
+                  <AvatarFallback className="text-lg">{`${getFirstLetter(
+                    user?.firstName || ''
+                  )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                </Avatar>
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg">{`${capitalizeFirstLetter(
+                    user?.firstName || 'N/A'
+                  )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {capitalizeFirstLetter(user?.role || 'N/A')}
+                  </p>
+                  <Badge className="mt-2" variant="default">
+                    {capitalizeFirstLetter(user?.status || 'N/A')}
+                  </Badge>
+                </div>
+                <div className="w-full space-y-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">{mockMember.email}</span>
+                    <span className="truncate">{user?.email}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{mockMember.phoneNumber}</span>
+                    <span>{user?.phoneNumber}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs">
-                      {mockMember.address?.country}
-                    </span>
+                    <span className="text-xs">{`${capitalizeFirstLetter(
+                      user?.address?.country || 'N/A'
+                    )}, ${capitalizeFirstLetter(user?.address?.city || 'N/A')}, ${capitalizeFirstLetter(user?.address?.street || 'N/A')}`}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs">
-                      {mockMember.address?.city}
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      Joined {''}
+                      {user?.memberDetails?.joinedDate
+                        ? typeof user.memberDetails.joinedDate === 'string'
+                          ? formatToNewDate(user.memberDetails.joinedDate)
+                          : formatToNewDate(user.memberDetails.joinedDate)
+                        : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs">
-                      {mockMember.address?.street}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-2 text-muted-foreground">
-                  <EyeOff className="h-4 w-4" />
-                  <span className="text-xs">Contact details restricted</span>
                 </div>
-              )}
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Joined {mockMember.joinDate}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Key Metrics */}
-        <div className="grid gap-4 md:col-span-3 md:grid-cols-3">
-          {canViewFinancialData(currentUser.role) ? (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-medium text-sm">
-                  Total Giving
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="font-bold text-2xl">
-                  ${mockMember.totalGiving.toLocaleString()}
-                </div>
-                <p className="text-muted-foreground text-xs">This year</p>
               </CardContent>
             </Card>
-          ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-medium text-sm">
-                  Giving Data
-                </CardTitle>
-                <EyeOff className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="font-bold text-2xl text-muted-foreground">
-                  Restricted
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  Access level required
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {canViewAttendanceDetails(currentUser.role) ? (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-medium text-sm">
-                  Attendance Rate
-                </CardTitle>
-                <UserCheck className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="font-bold text-2xl">
-                  {mockMember.averageAttendance}%
-                </div>
-                <p className="text-muted-foreground text-xs">Last 6 months</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-medium text-sm">
-                  Attendance
-                </CardTitle>
-                <Eye className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="font-bold text-2xl">Active</div>
-                <p className="text-muted-foreground text-xs">
-                  Regular attendee
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-medium text-sm">
-                Volunteer Hours
-              </CardTitle>
-              <Heart className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="font-bold text-2xl">
-                {mockMember.volunteerHours}
-              </div>
-              <p className="text-muted-foreground text-xs">This year</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Tabs className="space-y-4" defaultValue="overview">
-        <TabsList className={`grid w-full grid-cols-${availableTabs.length}`}>
-          {availableTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent className="space-y-6" value="overview">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Personal Information */}
-            {canViewPersonalDetails(currentUser.role) ? (
+            {/* Key Metrics */}
+            <div className="grid gap-4 md:col-span-3 md:grid-cols-3">
               <Card>
-                <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>
-                    Basic member details and role-specific information
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="font-medium text-sm">
+                    Total Giving
+                  </CardTitle>
+                  <DollarSign className="h-4 w-4 text-green-500" />
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <Label className="font-medium text-sm">Birth Date</Label>
-                      <p className="text-muted-foreground text-sm">
-                        {mockMember.birthDate}
-                      </p>
+                <CardContent>
+                  <div className="font-bold text-2xl">
+                    {/* ${user.totalGiving.toLocaleString()} */}${0}
+                  </div>
+                  <p className="text-muted-foreground text-xs">This year</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="font-medium text-sm">
+                    Attendance Rate
+                  </CardTitle>
+                  <UserCheck className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="font-bold text-2xl">
+                    {/* {user.averageAttendance}% */}
+                    {0}%
+                  </div>
+                  <p className="text-muted-foreground text-xs">Last 6 months</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="font-medium text-sm">
+                    Volunteer Hours
+                  </CardTitle>
+                  <Heart className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="font-bold text-2xl">
+                    {user?.volunteerDetails?.hoursContributed ?? 0}
+                  </div>
+                  <div className="font-bold text-2xl">{0}</div>
+                  <p className="text-muted-foreground text-xs">This year</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <Tabs className="space-y-4" defaultValue="overview">
+            <TabsList
+              className={`grid w-full grid-cols-${availableTabs.length}`}
+            >
+              {availableTabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent className="space-y-6" value="overview">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Personal Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Personal Information</CardTitle>
+                    <CardDescription>
+                      Basic member details and role-specific information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label className="font-medium text-sm" htmlFor={''}>
+                          Birth Date
+                        </Label>
+                        <p className="text-muted-foreground text-sm">
+                          {user?.dateOfBirth
+                            ? typeof user.dateOfBirth === 'string'
+                              ? formatToNewDate(user.dateOfBirth)
+                              : formatToNewDate(user.dateOfBirth)
+                            : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="font-medium text-sm" htmlFor={''}>
+                          Marital Status
+                        </Label>
+                        <p className="text-muted-foreground text-sm">
+                          {capitalizeFirstLetter(user?.maritalStatus || 'N/A')}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="font-medium text-sm" htmlFor={''}>
+                          Occupation
+                        </Label>
+                        <p className="text-muted-foreground text-sm">
+                          {capitalizeFirstLetter(user?.occupation || 'N/A')}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="font-medium text-sm" htmlFor={''}>
+                          Small Groups
+                        </Label>
+                        {user?.memberDetails?.groupIds.map((group, index) => (
+                          <p
+                            className="text-muted-foreground text-sm"
+                            key={index}
+                          >
+                            {capitalizeFirstLetter(group || 'N/A')}
+                          </p>
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <Label className="font-medium text-sm">
-                        Marital Status
+                    {/* Role-Specific Information */}
+                    <div className="border-t pt-4">
+                      <Label
+                        className="mb-3 block font-medium text-sm"
+                        htmlFor={''}
+                      >
+                        Role-Specific Information
                       </Label>
-                      <p className="text-muted-foreground text-sm">
-                        {mockMember.maritalStatus}
-                      </p>
+                      {renderRoleSpecificInfo()}
                     </div>
                     <div>
-                      <Label className="font-medium text-sm">Occupation</Label>
-                      <p className="text-muted-foreground text-sm">
-                        {mockMember.occupation}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium text-sm">Small Group</Label>
-                      <p className="text-muted-foreground text-sm">
-                        {mockMember.smallGroup}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Role-Specific Information */}
-                  <div className="border-t pt-4">
-                    <Label className="mb-3 block font-medium text-sm">
-                      Role-Specific Information
-                    </Label>
-                    {renderRoleSpecificInfo()}
-                  </div>
-
-                  {canViewSensitiveData(currentUser.role) && (
-                    <div>
-                      <Label className="font-medium text-sm">
+                      <Label className="font-medium text-sm" htmlFor={''}>
                         Emergency Contact
                       </Label>
                       <p className="text-muted-foreground text-sm">
-                        {mockMember.emergencyContact}
+                        <span className="mr-2 text-gray-900 text-sm">
+                          Name:
+                        </span>
+                        {capitalizeFirstLetterOfEachWord(
+                          user?.emergencyDetails?.emergencyContactFullName ||
+                            'N/A'
+                        )}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        <span className="mr-2 text-gray-900 text-sm">
+                          Email:
+                        </span>
+                        {user?.emergencyDetails?.emergencyContactEmail || 'N/A'}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        <span className="mr-2 text-gray-900 text-sm">
+                          Phone Number:
+                        </span>
+                        {user?.emergencyDetails?.emergencyContactPhoneNumber ||
+                          'N/A'}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        <span className="mr-2 text-gray-900 text-sm">
+                          Relationship:
+                        </span>
+                        {capitalizeFirstLetterOfEachWord(
+                          user?.emergencyDetails
+                            ?.emergencyContactRelationship || 'N/A'
+                        )}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        <span className="mr-2 text-gray-900 text-sm">
+                          Address:
+                        </span>
+                        {capitalizeFirstLetterOfEachWord(
+                          user?.emergencyDetails?.emergencyContactAddress ||
+                            'N/A'
+                        )}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        <span className="mr-2 text-gray-900 text-sm">
+                          Notes:
+                        </span>
+                        {capitalizeFirstLetterOfEachWord(
+                          user?.emergencyDetails?.emergencyContactNotes || 'N/A'
+                        )}
                       </p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
+                  </CardContent>
+                </Card>
+                {/* Spiritual Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Spiritual Status</CardTitle>
+                    <CardDescription>
+                      Baptism and confirmation status
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">Baptized</span>
+                      <Badge
+                        variant={
+                          user?.memberDetails?.baptismDate
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {user?.memberDetails?.baptismDate ? 'Yes' : 'No'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">Confirmed</span>
+                      <Badge
+                        variant={
+                          user?.status === 'active' ? 'default' : 'secondary'
+                        }
+                      >
+                        {user?.status === 'active' ? 'Yes' : 'No'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label className="font-medium text-sm" htmlFor={''}>
+                        Member Since
+                      </Label>
+                      <p className="text-muted-foreground text-sm">
+                        {user?.memberDetails?.joinedDate
+                          ? typeof user?.memberDetails?.joinedDate === 'string'
+                            ? formatToNewDate(user?.memberDetails?.joinedDate)
+                            : formatToNewDate(user?.memberDetails?.joinedDate)
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="font-medium text-sm" htmlFor={''}>
+                        Membership Type
+                      </Label>
+                      <p className="text-muted-foreground text-sm">
+                        {capitalizeFirstLetter(user?.role || 'N/A')}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              {/* Staff and Volunteer Information */}
+              <div className="grid gap-6 md:grid-cols-2">
+                {renderStaffInfo()}
+                {renderVolunteerInfo()}
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Ministry Involvement */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ministry Involvement</CardTitle>
+                    <CardDescription>
+                      Current ministry participation
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="font-medium text-sm" htmlFor={''}>
+                        Active Departments
+                      </Label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {user?.memberDetails?.departmentIds.map(
+                          (department, index) => (
+                            <Badge key={index} variant="default">
+                              {capitalizeFirstLetter(
+                                department?.departmentName || 'N/A'
+                              )}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="font-medium text-sm" htmlFor={''}>
+                        Active Groups
+                      </Label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {user?.memberDetails?.groupIds.map((group, index) => (
+                          <Badge key={index} variant="outline">
+                            {capitalizeFirstLetter(group || 'N/A')}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                {/* Skills & Notes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Skills & Notes</CardTitle>
+                    <CardDescription>
+                      Member skills and additional information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="font-medium text-sm" htmlFor={''}>
+                        Skills
+                      </Label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {user?.skills?.map((skill, index) => (
+                          <Badge key={index} variant="secondary">
+                            {capitalizeFirstLetter(skill || 'N/A')}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="font-medium text-sm" htmlFor={''}>
+                        Notes
+                      </Label>
+                      <p className="text-muted-foreground text-sm">
+                        {capitalizeFirstLetter(user?.notes || 'N/A')}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="attendance">
               <Card>
                 <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Access restricted</CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center justify-center py-8">
-                  <div className="text-center">
-                    <EyeOff className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-2 text-muted-foreground">
-                      Higher access level required to view personal details
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Spiritual Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Spiritual Status</CardTitle>
-                <CardDescription>
-                  Baptism and confirmation status
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">Baptized</span>
-                  <Badge
-                    variant={mockMember.baptized ? 'default' : 'secondary'}
-                  >
-                    {mockMember.baptized ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">Confirmed</span>
-                  <Badge
-                    variant={mockMember.confirmed ? 'default' : 'secondary'}
-                  >
-                    {mockMember.confirmed ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div>
-                  <Label className="font-medium text-sm">Member Since</Label>
-                  <p className="text-muted-foreground text-sm">
-                    {mockMember.joinDate}
-                  </p>
-                </div>
-                <div>
-                  <Label className="font-medium text-sm">Membership Type</Label>
-                  <p className="text-muted-foreground text-sm">
-                    {mockMember.membershipType}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Staff and Volunteer Information */}
-          <div className="grid gap-6 md:grid-cols-2">
-            {renderStaffInfo()}
-            {renderVolunteerInfo()}
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Ministry Involvement */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Ministry Involvement</CardTitle>
-                <CardDescription>
-                  Current ministry participation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="font-medium text-sm">
-                    Active Ministries
-                  </Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {mockMember.ministries.map((ministry, index) => (
-                      <Badge key={index} variant="default">
-                        {ministry}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label className="font-medium text-sm">Serving Areas</Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {mockMember.servingAreas.map((area, index) => (
-                      <Badge key={index} variant="outline">
-                        {area}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Skills & Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Skills & Notes</CardTitle>
-                <CardDescription>
-                  Member skills and additional information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="font-medium text-sm">Skills</Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {mockMember.skills.map((skill, index) => (
-                      <Badge key={index} variant="secondary">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                {canViewSensitiveData(currentUser.role) && (
-                  <div>
-                    <Label className="font-medium text-sm">Notes</Label>
-                    <p className="text-muted-foreground text-sm">
-                      {mockMember.notes}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {canViewAttendanceDetails(currentUser.role) && (
-          <TabsContent className="space-y-6" value="attendance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance Analytics</CardTitle>
-                <CardDescription>
-                  Monthly attendance patterns and trends
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer height={300} width="100%">
-                  <BarChart data={attendanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="attendance" fill="#8884d8" name="Attended" />
-                    <Bar
-                      dataKey="services"
-                      fill="#82ca9d"
-                      name="Total Services"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendance Summary</CardTitle>
+                  <CardTitle>Attendance Analytics</CardTitle>
                   <CardDescription>
-                    Overall attendance statistics
+                    Monthly attendance patterns and trends
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">
-                      Average Attendance
-                    </span>
-                    <span className="font-bold text-2xl">
-                      {mockMember.averageAttendance}%
-                    </span>
-                  </div>
-                  <Progress
-                    className="w-full"
-                    value={mockMember.averageAttendance}
-                  />
-                  <div className="grid gap-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Services Attended</span>
-                      <span>22/26</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Consecutive Weeks</span>
-                      <span>4</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Best Month</span>
-                      <span>March (100%)</span>
-                    </div>
-                  </div>
+                <CardContent>
+                  <ResponsiveContainer height={300} width="100%">
+                    <BarChart data={attendanceData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar
+                        dataKey="attendance"
+                        fill="#8884d8"
+                        name="Attended"
+                      />
+                      <Bar
+                        dataKey="services"
+                        fill="#82ca9d"
+                        name="Total Services"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
-
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Attendance Summary</CardTitle>
+                    <CardDescription>
+                      Overall attendance statistics
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">
+                        Average Attendance
+                      </span>
+                      <span className="font-bold text-2xl">
+                        {/* {user?.averageAttendance}% */}
+                        {0}%
+                      </span>
+                    </div>
+                    {/* <Progress className="w-full" value={user?.averageAttendance} /> */}
+                    <Progress className="w-full" value={0} />
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Services Attended</span>
+                        <span>22/26</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Consecutive Weeks</span>
+                        <span>4</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Best Month</span>
+                        <span>March (100%)</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Service Preferences</CardTitle>
+                    <CardDescription>
+                      Most attended service types
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Sunday Morning Service</span>
+                        <div className="flex items-center space-x-2">
+                          <Progress className="w-20" value={95} />
+                          <span className="font-medium text-sm">95%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Bible Study</span>
+                        <div className="flex items-center space-x-2">
+                          <Progress className="w-20" value={80} />
+                          <span className="font-medium text-sm">80%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Prayer Meeting</span>
+                        <div className="flex items-center space-x-2">
+                          <Progress className="w-20" value={60} />
+                          <span className="font-medium text-sm">60%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Youth Service</span>
+                        <div className="flex items-center space-x-2">
+                          <Progress className="w-20" value={40} />
+                          <span className="font-medium text-sm">40%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="giving">
               <Card>
                 <CardHeader>
-                  <CardTitle>Service Preferences</CardTitle>
-                  <CardDescription>Most attended service types</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Sunday Morning Service</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress className="w-20" value={95} />
-                        <span className="font-medium text-sm">95%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Bible Study</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress className="w-20" value={80} />
-                        <span className="font-medium text-sm">80%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Prayer Meeting</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress className="w-20" value={60} />
-                        <span className="font-medium text-sm">60%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Youth Service</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress className="w-20" value={40} />
-                        <span className="font-medium text-sm">40%</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        )}
-
-        {canViewFinancialData(currentUser.role) && (
-          <TabsContent className="space-y-6" value="giving">
-            <Card>
-              <CardHeader>
-                <CardTitle>Giving History</CardTitle>
-                <CardDescription>
-                  Monthly giving patterns and trends
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer height={300} width="100%">
-                  <LineChart data={givingData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      dataKey="amount"
-                      stroke="#8884d8"
-                      strokeWidth={2}
-                      type="monotone"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Total Giving</CardTitle>
-                  <CardDescription>Year to date</CardDescription>
+                  <CardTitle>Giving History</CardTitle>
+                  <CardDescription>
+                    Monthly giving patterns and trends
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="font-bold text-3xl">
-                    ${mockMember.totalGiving.toLocaleString()}
-                  </div>
-                  <p className="text-muted-foreground text-sm">
-                    +15% from last year
-                  </p>
+                  <ResponsiveContainer height={300} width="100%">
+                    <LineChart data={givingData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line
+                        dataKey="amount"
+                        stroke="#8884d8"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Average Monthly</CardTitle>
-                  <CardDescription>Regular giving</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="font-bold text-3xl">
-                    ${Math.round(mockMember.totalGiving / 6).toLocaleString()}
-                  </div>
-                  <p className="text-muted-foreground text-sm">Last 6 months</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Giving Consistency</CardTitle>
-                  <CardDescription>Regular contributor</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="font-bold text-3xl">100%</div>
-                  <p className="text-muted-foreground text-sm">6/6 months</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        )}
-
-        {canViewPersonalDetails(currentUser.role) && (
-          <>
+              <div className="grid gap-6 md:grid-cols-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Total Giving</CardTitle>
+                    <CardDescription>Year to date</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="font-bold text-3xl">
+                      {/* ${user?.totalGiving.toLocaleString()} */}${0}$
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                      +15% from last year
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Average Monthly</CardTitle>
+                    <CardDescription>Regular giving</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="font-bold text-3xl">
+                      {/* ${Math.round(user?.totalGiving / 6).toLocaleString()} */}
+                      $ ${0}
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                      Last 6 months
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Giving Consistency</CardTitle>
+                    <CardDescription>Regular contributor</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="font-bold text-3xl">100%</div>
+                    <p className="text-muted-foreground text-sm">6/6 months</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
             <TabsContent className="space-y-6" value="involvement">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
@@ -1346,7 +1200,7 @@ export default function MemberDetailsPage({
                           dataKey="hours"
                           fill="#8884d8"
                           label={({ name, percent }) =>
-                            `${name} ${(percent * 100).toFixed(0)}%`
+                            `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                           }
                           labelLine={false}
                           outerRadius={80}
@@ -1360,7 +1214,6 @@ export default function MemberDetailsPage({
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle>Leadership & Recognition</CardTitle>
@@ -1411,7 +1264,6 @@ export default function MemberDetailsPage({
                 </Card>
               </div>
             </TabsContent>
-
             <TabsContent className="space-y-6" value="activity">
               <Card>
                 <CardHeader>
@@ -1443,9 +1295,9 @@ export default function MemberDetailsPage({
                 </CardContent>
               </Card>
             </TabsContent>
-          </>
-        )}
-      </Tabs>
+          </Tabs>
+        </>
+      )}
     </div>
   );
 }
@@ -1453,14 +1305,20 @@ export default function MemberDetailsPage({
 function Label({
   className,
   children,
+  htmlFor,
   ...props
 }: {
   className?: string;
   children: React.ReactNode;
+  htmlFor: string;
   [key: string]: any;
 }) {
   return (
-    <label className={`font-medium text-sm ${className || ''}`} {...props}>
+    <label
+      className={`font-medium text-sm ${className || ''}`}
+      htmlFor={htmlFor}
+      {...props}
+    >
       {children}
     </label>
   );

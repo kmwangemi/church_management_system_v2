@@ -68,9 +68,7 @@ interface IVolunteerDetails {
     timeSlots?: string[];
     preferredTimes?: string;
   };
-  skills?: string[];
   departments?: mongoose.Types.ObjectId[];
-  ministries?: mongoose.Types.ObjectId[];
   volunteerRoles?: {
     role: string;
     department?: string;
@@ -124,7 +122,7 @@ interface IVisitorDetails {
   occupation?: string;
 }
 
-// Main User interface - Fixed inconsistencies
+// Main User interface - Enhanced with occupation field
 export interface IUser extends Document {
   // Common fields
   firstName: string;
@@ -141,6 +139,7 @@ export interface IUser extends Document {
   dateOfBirth?: Date;
   gender?: 'male' | 'female';
   profilePictureUrl?: string;
+  occupation?: string; // ✅ Added occupation field
   // Church association - Optional for superadmin
   churchId?: mongoose.Types.ObjectId;
   // Branch association - Optional for admin/superadmin
@@ -193,6 +192,7 @@ export interface IUser extends Document {
     emergencyContactNotes?: string;
   };
   notes?: string;
+  skills?: string[];
   // Methods
   hasRole(roleName: string): boolean;
   isStaffMember(): boolean;
@@ -204,12 +204,17 @@ export interface IUser extends Document {
   isLocked: boolean;
 }
 
-// Define the interface for the static methods
+// Define the interface for the static methods - ✅ Uncommented the methods
 export interface IUserModel extends Model<IUser> {
-  // findByChurch(churchId: mongoose.Types.ObjectId): Promise<IUser[]>;
-  // findActiveUseres(churchId: mongoose.Types.ObjectId): Promise<IUser[]>;
-  // findByPastor(pastorId: mongoose.Types.ObjectId): Promise<IUser[]>;
-  // getTotalCapacity(churchId: mongoose.Types.ObjectId): Promise<number>;
+  findByChurch(churchId: mongoose.Types.ObjectId): Promise<IUser[]>;
+  findActiveUsers(churchId: mongoose.Types.ObjectId): Promise<IUser[]>;
+  findByPastor(pastorId: mongoose.Types.ObjectId): Promise<IUser[]>;
+  getTotalCapacity(churchId: mongoose.Types.ObjectId): Promise<number>;
+  findByRole(roleName: string): Promise<IUser[]>;
+  findMembers(): Promise<IUser[]>;
+  findVisitors(): Promise<IUser[]>;
+  findStaff(): Promise<IUser[]>;
+  findVolunteers(): Promise<IUser[]>;
 }
 
 // Subdocument schemas
@@ -300,9 +305,7 @@ const VolunteerDetailsSchema = new Schema<IVolunteerDetails>(
       timeSlots: [{ type: String, trim: true }],
       preferredTimes: { type: String, trim: true },
     },
-    skills: [{ type: String, trim: true, lowercase: true }],
     departments: [{ type: Schema.Types.ObjectId, ref: 'Department' }],
-    ministries: [{ type: Schema.Types.ObjectId, ref: 'Ministry' }],
     volunteerRoles: [
       {
         role: { type: String, required: true, trim: true },
@@ -388,7 +391,7 @@ const VisitorDetailsSchema = new Schema<IVisitorDetails>(
   { _id: false }
 );
 
-// Main User Schema - Fixed all issues
+// Main User Schema - Enhanced with occupation field
 const UserSchema = new Schema<IUser>(
   {
     // Common fields
@@ -416,6 +419,7 @@ const UserSchema = new Schema<IUser>(
       required: true,
     },
     profilePictureUrl: { type: String, trim: true },
+    occupation: { type: String, trim: true }, // ✅ Added occupation field
     churchId: {
       type: Schema.Types.ObjectId,
       ref: 'Church',
@@ -535,6 +539,7 @@ const UserSchema = new Schema<IUser>(
       emergencyContactNotes: { type: String, trim: true, lowercase: true },
     },
     notes: { type: String, trim: true, lowercase: true },
+    skills: [{ type: String, trim: true, lowercase: true }],
   },
   {
     timestamps: true,
@@ -557,6 +562,7 @@ UserSchema.index({ 'pastorDetails.pastorId': 1 }, { sparse: true });
 UserSchema.index({ 'bishopDetails.bishopId': 1 }, { sparse: true });
 UserSchema.index({ 'visitorDetails.visitorId': 1 }, { sparse: true });
 UserSchema.index({ isDeleted: 1 }); // ✅ Added index for soft delete
+UserSchema.index({ occupation: 1 }, { sparse: true }); // ✅ Added index for occupation
 
 // Constants for rate limiting
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -755,20 +761,11 @@ function clearRoleDetails(user: IUser) {
   if (!user.isVolunteer) user.volunteerDetails = undefined;
 }
 
-// function setIsMemberFlag(user: IUserModel) {
-//   if (['member', 'pastor', 'bishop'].includes(user.role)) {
-//     user.isMember = true;
-//   } else if (user.role === 'visitor') {
-//     user.isMember = false;
-//   }
-// }
-
 // ✅ Enhanced pre-save middleware
 UserSchema.pre('save', async function (this: IUser, next) {
   try {
     await generateRoleIds(this);
     clearRoleDetails(this);
-    // setIsMemberFlag(this);
     next();
   } catch (error) {
     next(error as CallbackError);
@@ -800,12 +797,58 @@ UserSchema.pre('validate', function (this: IUser, next) {
   next();
 });
 
-// Static methods - Updated for simple role system
+// Static methods - Enhanced with the uncommented methods
+UserSchema.statics.findStaff = function () {
+  return this.find({
+    isStaff: true,
+    status: 'active',
+    isDeleted: false,
+  });
+};
+
+UserSchema.statics.findVolunteers = function () {
+  return this.find({
+    isVolunteer: true,
+    status: 'active',
+    isDeleted: false,
+  });
+};
+
+// ✅ Added the static methods you requested
+UserSchema.statics.findByChurch = function (churchId: mongoose.Types.ObjectId) {
+  return this.find({
+    churchId,
+    status: 'active',
+    isDeleted: false,
+  });
+};
+
+UserSchema.statics.findActiveUsers = function (
+  churchId: mongoose.Types.ObjectId
+) {
+  return this.find({
+    churchId,
+    status: 'active',
+    isDeleted: false,
+  });
+};
+
+UserSchema.statics.findByPastor = function (pastorId: mongoose.Types.ObjectId) {
+  return this.find({
+    $or: [
+      { 'pastorDetails.assignments.pastorId': pastorId },
+      { 'bishopDetails.oversight.pastorIds': pastorId },
+    ],
+    status: 'active',
+    isDeleted: false,
+  });
+};
+
 UserSchema.statics.findByRole = function (roleName: string) {
   return this.find({
     role: roleName.toLowerCase(),
     status: 'active',
-    isDeleted: false, // ✅ Added soft delete filter
+    isDeleted: false,
   });
 };
 
@@ -825,20 +868,15 @@ UserSchema.statics.findVisitors = function () {
   });
 };
 
-UserSchema.statics.findStaff = function () {
-  return this.find({
-    isStaff: true,
+UserSchema.statics.getTotalCapacity = async function (
+  churchId: mongoose.Types.ObjectId
+) {
+  const totalUsers = await this.countDocuments({
+    churchId,
     status: 'active',
     isDeleted: false,
   });
-};
-
-UserSchema.statics.findVolunteers = function () {
-  return this.find({
-    isVolunteer: true,
-    status: 'active',
-    isDeleted: false,
-  });
+  return totalUsers;
 };
 
 export default (mongoose.models.User as IUserModel) ||
@@ -849,28 +887,63 @@ export default (mongoose.models.User as IUserModel) ||
 // Check if user has a specific role
 const isPastor = user.hasRole('pastor');
 
-Clear hierarchy: Visitor → Member → Pastor → Bishop → Admin → SuperAdmin
-
+// Clear hierarchy: Visitor → Member → Pastor → Bishop → Admin → SuperAdmin
 user.role === 'pastor'
 
 // Find users with specific role
 const pastors = await User.findByRole('pastor');
 
-// Create user with role
+// Find users by church
+const churchUsers = await User.findByChurch(churchId);
+
+// Find active users in a church
+const activeUsers = await User.findActiveUsers(churchId);
+
+// Find users by pastor (members under pastoral care or oversight)
+const pastoralUsers = await User.findByPastor(pastorId);
+
+// Get total capacity of a church
+const totalCapacity = await User.getTotalCapacity(churchId);
+
+// Create user with role and occupation
 const user = new User({
   firstName: 'John',
   lastName: 'Doe',
+  phoneNumber: '+254712345678',
+  gender: 'male',
   role: 'pastor', // Simple string role
+  occupation: 'Software Engineer', // ✅ New occupation field
   isMember: true,
   isStaff: true,
-  // ... other fields
+  churchId: new mongoose.Types.ObjectId(),
+  branchId: new mongoose.Types.ObjectId(),
+  pastorDetails: {
+    // Will auto-generate pastorId: 'PST-0001'
+    ordinationDate: new Date(),
+    qualifications: ['Theology Degree', 'Leadership Certificate'],
+    specializations: ['Youth Ministry', 'Counseling']
+  }
 });
 
-// Simple and clean
+// Query examples with occupation
+const teachers = await User.find({ 
+  occupation: { $regex: /teacher/i }, 
+  isDeleted: false 
+});
+
+const engineersInChurch = await User.find({
+  churchId: specificChurchId,
+  occupation: { $regex: /engineer/i },
+  status: 'active',
+  isDeleted: false
+});
+
+// Cross-role functionality
 const user = {
-  role: 'pastor',
-  isStaff: true,     // Cross-cutting: can be staff + any role
-  isVolunteer: false
+  role: 'pastor',           // Primary role
+  occupation: 'Teacher',    // Professional occupation
+  isStaff: true,           // Cross-cutting: can be staff + any role
+  isVolunteer: false       // Can also volunteer regardless of primary role
 }
 
 // Easy permission checking in your frontend/API
@@ -881,5 +954,24 @@ if (user.role === 'pastor' || user.role === 'bishop') {
 if (user.isStaff) {
   // Can access staff-specific features
 }
+
+if (user.occupation?.toLowerCase().includes('teacher')) {
+  // Education ministry assignments
+}
+
+// Advanced queries
+const pastorsWhoAreTeachers = await User.find({
+  role: 'pastor',
+  occupation: { $regex: /teacher/i },
+  status: 'active',
+  isDeleted: false
+});
+
+const staffVolunteers = await User.find({
+  isStaff: true,
+  isVolunteer: true,
+  status: 'active',
+  isDeleted: false
+});
 
 */
