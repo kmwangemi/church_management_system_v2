@@ -1,10 +1,15 @@
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
-import type { UserAddResponse, UserListResponse } from '@/lib/types';
+import type {
+  UserAddResponse,
+  UserListResponse,
+  UserResponse,
+} from '@/lib/types/user';
 import type { AddUserPayload } from '@/lib/validations/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+/* ========== CREATE USER ========== */
 const registerUser = async (
   payload: AddUserPayload
 ): Promise<UserAddResponse> => {
@@ -25,13 +30,9 @@ export const useRegisterUser = () => {
   });
 };
 
-const fetchUsers = async (
-  page = 1,
-  search = ''
-): Promise<UserListResponse> => {
-  const { data } = await apiClient.get(
-    `/users?page=${page}&search=${search}`
-  );
+/* ========== FETCH ALL USERS ========== */
+const fetchUsers = async (page = 1, search = ''): Promise<UserListResponse> => {
+  const { data } = await apiClient.get(`/users?page=${page}&search=${search}`);
   return data;
 };
 
@@ -39,5 +40,66 @@ export const useFetchUsers = (page = 1, search = '') => {
   return useQuery({
     queryKey: ['users', page, search],
     queryFn: () => fetchUsers(page, search),
+  });
+};
+
+/* ========== FETCH USER BY ID ========== */
+const fetchUserById = async (userId: string): Promise<UserResponse> => {
+  const {
+    data: { user },
+  } = await apiClient.get(`/users/${userId}`);
+  return user;
+};
+
+export const useFetchUserById = (userId: string) => {
+  return useQuery({
+    queryKey: ['user', userId],
+    queryFn: () => fetchUserById(userId),
+    enabled: !!userId, // only fetch if id is provided
+  });
+};
+
+/* ========== UPDATE USER BY ID ========== */
+const updateUserById = async ({
+  userId,
+  payload,
+}: {
+  userId: string;
+  payload: Partial<AddUserPayload>;
+}): Promise<UserResponse> => {
+  const { data } = await apiClient.put(`/users/${userId}`, payload);
+  return data;
+};
+
+export const useUpdateUserById = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateUserById,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
+      toast.success('User has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== DELETE USER BY ID ========== */
+const deleteUserById = async (userId: string): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete(`/users/${userId}`);
+  return data;
+};
+
+export const useDeleteUserById = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteUserById,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User has been deleted successfully.', {
+        style: successToastStyle,
+      });
+    },
   });
 };
