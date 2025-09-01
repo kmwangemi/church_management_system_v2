@@ -14,7 +14,6 @@ export type UserRole =
   | 'pastor'
   | 'bishop'
   | 'staff'
-  | 'volunteer'
   | 'admin'
   | 'superadmin'
   | 'visitor';

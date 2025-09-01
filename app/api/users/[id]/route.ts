@@ -81,9 +81,10 @@ async function getUserByIdHandler(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { id } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/users/${params.id}` },
+    { requestId, endpoint: `/api/users/${id}` },
     'api'
   );
   try {
@@ -104,7 +105,7 @@ async function getUserByIdHandler(
     }
     const currentUser = authResult;
     // Validate user ID
-    if (!(params.id && mongoose.Types.ObjectId.isValid(params.id))) {
+    if (!(id && mongoose.Types.ObjectId.isValid(id))) {
       return NextResponse.json(
         { error: 'Valid user ID is required' },
         { status: 400 }
@@ -113,7 +114,7 @@ async function getUserByIdHandler(
     await dbConnect();
     // Build query based on user permissions
     const query: any = {
-      _id: params.id,
+      _id: id,
       isDeleted: false, // Use isDeleted field from your model
     };
     // Authorization logic - superadmin can see all, others limited to their church
@@ -135,7 +136,6 @@ async function getUserByIdHandler(
       .populate('memberDetails.departmentIds', 'name description')
       .populate('memberDetails.groupIds', 'name category leaderId')
       .populate('volunteerDetails.departments', 'name description')
-      .populate('volunteerDetails.ministries', 'name description')
       .lean();
     if (!foundUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -161,9 +161,10 @@ async function updateUserByIdHandler(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { id } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/users/${params.id}` },
+    { requestId, endpoint: `/api/users/${id}` },
     'api'
   );
   let session: mongoose.ClientSession | null = null;
@@ -181,7 +182,7 @@ async function updateUserByIdHandler(
     }
     const currentUser = authResult;
     // Validate user ID
-    if (!(params.id && mongoose.Types.ObjectId.isValid(params.id))) {
+    if (!(id && mongoose.Types.ObjectId.isValid(id))) {
       return NextResponse.json(
         { error: 'Valid user ID is required' },
         { status: 400 }
@@ -193,7 +194,7 @@ async function updateUserByIdHandler(
     await session.startTransaction();
     // Find existing user
     const existingUser = await UserModel.findOne({
-      _id: params.id,
+      _id: id,
       isDeleted: false,
     }).session(session);
     if (!existingUser) {
