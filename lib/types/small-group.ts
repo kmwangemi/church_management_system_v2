@@ -1,6 +1,6 @@
 import type { Pagination } from '@/lib/types';
 
-export interface DepartmentAddResponse {
+export interface GroupAddResponse {
   churchId: string;
   branchId: string;
   departmentName: string;
@@ -9,12 +9,12 @@ export interface DepartmentAddResponse {
   description: string;
   isActive: boolean;
   _id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   __v: number;
 }
 
-export interface Department {
+export interface Group {
   _id: string;
   churchId: string;
   branchId: {
@@ -23,17 +23,21 @@ export interface Department {
     address: string;
     country: string;
   };
-  departmentName: string;
+  groupName: string;
+  leaderId: string;
   meetingDay: string[];
-  meetingTime: string;
+  meetingTime: string[];
   description: string;
+  category: string;
+  capacity: number;
+  location: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   __v: number;
 }
 
-export interface DepartmentListResponse {
-  departments: Department[];
+export interface GroupListResponse {
+  groups: Group[];
   pagination: Pagination;
 }

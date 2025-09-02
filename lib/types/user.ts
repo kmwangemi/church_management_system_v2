@@ -1,6 +1,7 @@
 import type { Address, Pagination } from '@/lib/types';
 import type { Branch } from '@/lib/types/branch';
 import type { Department } from '@/lib/types/department';
+import type { Group } from '@/lib/types/small-group';
 
 export interface UserAddResponse {
   message: string;
@@ -35,9 +36,9 @@ export interface EmergencyDetails {
 export interface MemberDetails {
   memberId: string;
   membershipDate: Date;
-  membershipStatus: 'active' | 'inactive' | 'suspended';
+  membershipStatus: 'active' | 'inactive' | 'transferred' | 'deceased';
   departmentIds: Department[];
-  groupIds: string[];
+  groupIds: Group[];
   occupation: string;
   baptismDate?: Date;
   joinedDate?: Date;
@@ -84,7 +85,7 @@ export interface StaffDetails {
 
 export interface VolunteerDetails {
   volunteerId: string;
-  volunteerStatus: 'active' | 'inactive' | 'pending';
+  volunteerStatus: 'active' | 'inactive' | 'on_hold' | 'suspended';
   availabilitySchedule: {
     days: string[];
     timeSlots: string[];
@@ -134,13 +135,12 @@ export interface VisitorDetails {
   visitorId: string;
   visitDate: Date;
   invitedBy: string;
-  howDidYouHear: 'friend' | 'family' | 'event' | 'advertisement' | 'other';
+  howDidYouHear: 'friend' | 'family' | 'online' | 'flyer' | 'other';
   followUpStatus: 'interested' | 'not_interested' | 'pending';
   followUpDate?: Date;
   followUpNotes?: string;
   interestedInMembership: boolean;
   servicesAttended: string[];
-  occupation: string;
 }
 
 export interface UserResponse {

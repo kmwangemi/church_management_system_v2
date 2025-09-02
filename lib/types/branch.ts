@@ -8,8 +8,8 @@ export interface BranchAddResponse {
   establishedDate: string;
   isActive: boolean;
   _id: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   __v: number;
 }
 
@@ -21,10 +21,10 @@ export interface Branch {
   capacity: number;
   pastorId?: string; // Optional, if not always present
   users?: number; // Optional, if not always present
-  establishedDate: string; // ISO string; use `Date` if you parse it
+  establishedDate: Date; // ISO string; use `Date` if you parse it
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   __v: number;
 }
 

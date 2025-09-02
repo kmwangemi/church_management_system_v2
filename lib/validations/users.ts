@@ -39,8 +39,8 @@ const memberDetailsSchema = z.object({
         meetingTime: z.string().optional(),
         description: z.string().optional(),
         isActive: z.boolean().optional(),
-        createdAt: z.string().optional(),
-        updatedAt: z.string().optional(),
+        createdAt: z.date().optional(),
+        updatedAt: z.date().optional(),
       })
     )
     .optional(),
@@ -172,9 +172,8 @@ export const userUpdateSchema = z.object({
   gender: z.enum(['male', 'female']),
   profilePictureUrl: z.string().optional(),
   occupation: z.string().optional(),
-  churchId: z.string().optional(),
   branchId: z
-    .union([z.string(), z.object({ _id: z.string().optional() })])
+    .union([z.string(), z.object({ branchName: z.string().optional() })])
     .optional(),
   isMember: z.boolean(),
   role: z.enum([
@@ -189,15 +188,13 @@ export const userUpdateSchema = z.object({
   isStaff: z.boolean(),
   isVolunteer: z.boolean(),
   status: z.enum(['active', 'inactive', 'suspended', 'pending']),
-  isEmailVerified: z.boolean().default(false),
   lastLogin: z.date().optional(),
   maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed']),
   emergencyDetails: emergencyDetailsSchema,
   notes: z.string().optional(),
   skills: z.array(z.string()).optional(),
   createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-  // Attach role-based details
+  // role-based details
   memberDetails: memberDetailsSchema.optional(),
   pastorDetails: pastorDetailsSchema.optional(),
   bishopDetails: bishopDetailsSchema.optional(),

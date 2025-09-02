@@ -119,7 +119,6 @@ interface IVisitorDetails {
   followUpNotes?: string;
   interestedInMembership: boolean;
   servicesAttended?: string[];
-  occupation?: string;
 }
 
 // Main User interface - Enhanced with occupation field
@@ -386,7 +385,6 @@ const VisitorDetailsSchema = new Schema<IVisitorDetails>(
     followUpNotes: { type: String, trim: true },
     interestedInMembership: { type: Boolean, default: false },
     servicesAttended: [{ type: String, trim: true }],
-    occupation: { type: String, trim: true },
   },
   { _id: false }
 );
