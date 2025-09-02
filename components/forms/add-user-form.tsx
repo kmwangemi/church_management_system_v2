@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRegisterUser } from '@/lib/hooks/user/use-user-queries';
-import type { Branch } from '@/lib/types';
+import type { Branch } from '@/lib/types/branch';
 import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';

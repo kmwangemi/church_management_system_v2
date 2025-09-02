@@ -45,7 +45,6 @@ import { useFetchUserById } from '@/lib/hooks/user/use-user-queries';
 import type { Branch } from '@/lib/types/branch';
 import {
   GENDER_OPTIONS,
-  getFirstLetter,
   getRelativeYear,
   MARITAL_STATUS_OPTIONS,
   MEMBER_ROLE_OPTIONS,
@@ -68,12 +67,110 @@ import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+// const formSchema = z.object({
+//   // Basic fields
+//   firstName: z.string().min(2, 'First name must be at least 2 characters'),
+//   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+//   email: z.email().optional(),
+//   phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
+//   address: z.object({
+//     street: z.string().min(2, 'Street address must be at least 2 characters'),
+//     city: z.string().min(2, 'City name must be at least 2 characters'),
+//     state: z.string().optional(),
+//     zipCode: z.string().optional(),
+//     country: z.string().min(2, 'Country name must be at least 2 characters'),
+//   }),
+//   dateOfBirth: z.date().optional(),
+//   gender: z.enum(['male', 'female'], {
+//     error: 'Gender is required',
+//   }),
+//   maritalStatus: z
+//     .enum(['single', 'married', 'divorced', 'widowed'])
+//     .optional(),
+//   occupation: z.string().optional(),
+//   emergencyDetails: z.object({
+//     emergencyContactFullName: z.string().optional(),
+//     emergencyContactEmail: z.email().optional(),
+//     emergencyContactPhoneNumber: z.string().optional(),
+//     emergencyContactRelationship: z.string().optional(),
+//     emergencyContactAddress: z.string().optional(),
+//     emergencyContactNotes: z.string().optional(),
+//   }),
+//   // Role-specific fields
+//   role: z.enum([
+//     'member',
+//     'pastor',
+//     'bishop',
+//     'admin',
+//     'superadmin',
+//     'visitor',
+//   ]),
+//   branchId: z.string().min(1, 'Please select a branch'),
+//   isMember: z.boolean(),
+//   isStaff: z.boolean(),
+//   isVolunteer: z.boolean(),
+//   // Member fields
+//   memberId: z.string().optional(),
+//   membershipDate: z.date().optional(),
+//   membershipStatus: z
+//     .enum(['active', 'inactive', 'transferred', 'deceased'])
+//     .optional(),
+//   baptismDate: z.date().optional(),
+//   joinedDate: z.date().optional(),
+//   // Pastor fields
+//   pastorId: z.string().optional(),
+//   ordinationDate: z.date().optional(),
+//   qualifications: z.array(z.string()).optional(),
+//   specializations: z.array(z.string()).optional(),
+//   sermonCount: z.number().optional(),
+//   counselingSessions: z.number().optional(),
+//   biography: z.string().optional(),
+//   // Bishop fields
+//   bishopId: z.string().optional(),
+//   appointmentDate: z.date().optional(),
+//   jurisdictionArea: z.string().optional(),
+//   achievements: z.array(z.string()).optional(),
+//   // Staff fields
+//   staffId: z.string().optional(),
+//   jobTitle: z.string().optional(),
+//   department: z.string().optional(),
+//   startDate: z.date().optional(),
+//   endDate: z.date().optional(),
+//   salary: z.number().optional(),
+//   employmentType: z
+//     .enum(['full-time', 'part-time', 'contract', 'casual'])
+//     .optional(),
+//   isActive: z.boolean().optional(),
+//   // Volunteer fields
+//   volunteerId: z.string().optional(),
+//   volunteerStatus: z
+//     .enum(['active', 'inactive', 'on_hold', 'suspended'])
+//     .optional(),
+//   skills: z.array(z.string()).optional(),
+//   hoursContributed: z.number().optional(),
+//   // Admin fields
+//   adminId: z.string().optional(),
+//   accessLevel: z.enum(['branch', 'regional', 'national', 'global']).optional(),
+//   // Visitor fields
+//   visitorId: z.string().optional(),
+//   visitDate: z.date().optional(),
+//   howDidYouHear: z
+//     .enum(['friend', 'family', 'online', 'flyer', 'other'])
+//     .optional(),
+//   followUpStatus: z
+//     .enum(['pending', 'contacted', 'interested', 'not_interested'])
+//     .optional(),
+//   interestedInMembership: z.boolean().optional(),
+// });
+
+// type FormData = z.infer<typeof formSchema>;
+
 export default function EditMemberPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = React.use(params);
+  const { id } = React.use(params); // 👈 unwrap the promise
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const {
     data: user,
@@ -81,6 +178,132 @@ export default function EditMemberPage({
     isError: isErrorUser,
     error: errorUser,
   } = useFetchUserById(id);
+
+  const Address = {
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+  };
+  const BranchId = {
+    _id: '',
+    churchId: '',
+    branchName: '',
+    address: Address,
+    capacity: 0,
+    pastorId: '',
+    users: 0,
+    establishedDate: '',
+    isActive: false,
+    createdAt: false,
+    updatedAt: false,
+  };
+  const Department = {
+    _id: '',
+    churchId: '',
+    branchId: BranchId,
+    departmentName: '',
+    meetingDay: [],
+    meetingTime: '',
+    description: '',
+    isActive: false,
+    createdAt: '',
+    updatedAt: '',
+  };
+  const GroupId = {
+    churchId: '',
+    groupName: '',
+    leaderId: '',
+    meetingDay: [],
+    meetingTime: [],
+    description: '',
+    category: 'youth',
+    location: '',
+    capacity: 0,
+    isActive: false,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
+  const EmergencyDetails = {
+    emergencyContactFullName: '',
+    emergencyContactEmail: '',
+    emergencyContactPhoneNumber: '',
+    emergencyContactRelationship: '',
+    emergencyContactAddress: '',
+    emergencyContactNotes: '',
+  };
+  const MemberDetails = {
+    memberId: '',
+    membershipDate: undefined,
+    membershipStatus: 'active' as const,
+    departmentIds: [Department],
+    groupIds: [GroupId],
+    occupation: '',
+    baptismDate: undefined,
+    joinedDate: undefined,
+  };
+  const PastorDetails = {
+    pastorId: '',
+    ordinationDate: undefined,
+    qualifications: [],
+    specializations: [],
+    assignments: [],
+    sermonCount: 0,
+    counselingSessions: 0,
+    biography: '',
+  };
+  const BishopDetails = {
+    bishopId: '',
+    appointmentDate: undefined,
+    jurisdictionArea: '',
+    oversight: {},
+    qualifications: [],
+    achievements: [],
+    biography: '',
+  };
+  const StaffDetails = {
+    staffId: '',
+    jobTitle: '',
+    department: '',
+    startDate: undefined,
+    salary: 0,
+    employmentType: 'full-time' as const,
+    isActive: false,
+  };
+  const VolunteerDetails = {
+    volunteerId: '',
+    volunteerStatus: 'active' as const,
+    availabilitySchedule: {},
+    departments: [],
+    volunteerRoles: [{}],
+    backgroundCheck: {},
+    hoursContributed: 0,
+  };
+  const AdminDetails = {
+    adminId: '',
+    accessLevel: 'national' as const,
+    assignedBranches: [],
+  };
+  const SuperAdminDetails = {
+    superAdminId: '',
+    accessLevel: 'global' as const,
+    systemSettings: {},
+    companyInfo: {},
+  };
+  const VisitorDetails = {
+    visitorId: '',
+    visitDate: undefined,
+    invitedBy: '',
+    howDidYouHear: 'friend' as const,
+    followUpStatus: 'interested' as const,
+    followUpDate: undefined,
+    followUpNotes: '',
+    interestedInMembership: false,
+    servicesAttended: [],
+    occupation: '',
+  };
+
   const form = useForm<UpdateUserPayload>({
     resolver: zodResolver(userUpdateSchema),
     defaultValues: {
@@ -88,151 +311,70 @@ export default function EditMemberPage({
       lastName: '',
       email: '',
       phoneNumber: '',
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: '',
-      },
+      address: Address,
       dateOfBirth: undefined,
       gender: 'male',
       profilePictureUrl: undefined,
       occupation: '',
-      branchId: {
-        branchName: '',
-      },
+      churchId: '',
+      branchId: BranchId,
       isMember: false,
       role: 'member',
       isStaff: false,
       isVolunteer: false,
+      /* Role-specific */
+      memberDetails: MemberDetails,
+      pastorDetails: PastorDetails,
+      bishopDetails: BishopDetails,
+      staffDetails: StaffDetails,
+      volunteerDetails: VolunteerDetails,
+      adminDetails: AdminDetails,
+      superAdminDetails: SuperAdminDetails,
+      visitorDetails: VisitorDetails,
       status: 'active',
+      isEmailVerified: false,
       lastLogin: undefined,
       maritalStatus: 'single',
-      emergencyDetails: {
-        emergencyContactFullName: '',
-        emergencyContactEmail: '',
-        emergencyContactPhoneNumber: '',
-        emergencyContactRelationship: '',
-        emergencyContactAddress: '',
-        emergencyContactNotes: '',
-      },
+      emergencyDetails: EmergencyDetails,
       notes: '',
       skills: [],
       createdAt: undefined,
-      memberDetails: {
-        memberId: '',
-        membershipDate: undefined,
-        membershipStatus: 'active',
-        departmentIds: [],
-        groupIds: [],
-        occupation: '',
-        baptismDate: undefined,
-        joinedDate: undefined,
-      },
-      pastorDetails: {
-        pastorId: '',
-        ordinationDate: undefined,
-        qualifications: [],
-        specializations: [],
-        assignments: [],
-        sermonCount: 0,
-        counselingSessions: 0,
-        biography: '',
-      },
-      bishopDetails: {
-        bishopId: '',
-        appointmentDate: undefined,
-        jurisdictionArea: '',
-        oversight: {},
-        qualifications: [],
-        achievements: [],
-        biography: '',
-      },
-      staffDetails: {
-        staffId: '',
-        jobTitle: '',
-        department: '',
-        startDate: undefined,
-        salary: 0,
-        employmentType: 'full-time',
-        isActive: false,
-      },
-      volunteerDetails: {
-        volunteerId: '',
-        volunteerStatus: 'active',
-        availabilitySchedule: {},
-        departments: [],
-        volunteerRoles: [],
-        backgroundCheck: {},
-        hoursContributed: 0,
-      },
-      adminDetails: {
-        adminId: '',
-        accessLevel: 'national',
-        assignedBranches: [],
-      },
-      superAdminDetails: {
-        superAdminId: '',
-        accessLevel: 'global',
-        systemSettings: {},
-        companyInfo: {},
-      },
-      visitorDetails: {
-        visitorId: '',
-        visitDate: undefined,
-        invitedBy: '',
-        howDidYouHear: 'friend',
-        followUpStatus: 'pending',
-        followUpDate: undefined,
-        followUpNotes: '',
-        interestedInMembership: false,
-        servicesAttended: [],
-        occupation: '',
-      },
+      updatedAt: undefined,
     },
   });
   useEffect(() => {
     if (user) {
       form.reset({
+        // Basic
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         email: user?.email || '',
         phoneNumber: user?.phoneNumber || '',
-        address: user?.address || {
-          street: '',
-          city: '',
-          state: '',
-          zipCode: '',
-          country: '',
-        },
+        address: user?.address || Address,
         dateOfBirth: user?.dateOfBirth,
         gender: user?.gender || 'male',
         profilePictureUrl: user?.profilePictureUrl || undefined,
         occupation: user?.occupation || '',
-        branchId: user?.branchId || { branchName: '' },
-        isMember: user?.isMember,
+        churchId: user?.churchId || '',
+        branchId: user?.branchId || BranchId,
+        isMember: user?.isMember ?? false,
         role: user?.role || 'member',
-        isStaff: user?.isStaff,
-        isVolunteer: user?.isVolunteer,
+        isStaff: user?.isStaff ?? false,
+        isVolunteer: user?.isVolunteer ?? false,
         status: user?.status || 'active',
+        isEmailVerified: user?.isEmailVerified ?? false,
         lastLogin: user?.lastLogin,
         maritalStatus: user?.maritalStatus || 'single',
-        emergencyDetails: user?.emergencyDetails || {
-          emergencyContactFullName: '',
-          emergencyContactEmail: '',
-          emergencyContactPhoneNumber: '',
-          emergencyContactRelationship: '',
-          emergencyContactAddress: '',
-          emergencyContactNotes: '',
-        },
+        emergencyDetails: user?.emergencyDetails || EmergencyDetails,
         notes: user?.notes || '',
         skills: user?.skills || [],
         createdAt: user?.createdAt,
+        updatedAt: user?.updatedAt,
+
         // Member details
         memberDetails: {
           memberId: user?.memberDetails?.memberId || '',
-          membershipDate: user?.memberDetails?.membershipDate || undefined,
+          membershipDate: user?.memberDetails?.membershipDate,
           membershipStatus: user?.memberDetails?.membershipStatus || 'active',
           departmentIds: user?.memberDetails?.departmentIds || [],
           groupIds: user?.memberDetails?.groupIds || [],
@@ -240,6 +382,7 @@ export default function EditMemberPage({
           baptismDate: user?.memberDetails?.baptismDate,
           joinedDate: user?.memberDetails?.joinedDate,
         },
+
         // Pastor details
         pastorDetails: {
           pastorId: user?.pastorDetails?.pastorId || '',
@@ -251,6 +394,7 @@ export default function EditMemberPage({
           counselingSessions: user?.pastorDetails?.counselingSessions || 0,
           biography: user?.pastorDetails?.biography || '',
         },
+
         // Bishop details
         bishopDetails: {
           bishopId: user?.bishopDetails?.bishopId || '',
@@ -261,6 +405,7 @@ export default function EditMemberPage({
           achievements: user?.bishopDetails?.achievements || [],
           biography: user?.bishopDetails?.biography || '',
         },
+
         // Staff details
         staffDetails: {
           staffId: user?.staffDetails?.staffId || '',
@@ -269,8 +414,9 @@ export default function EditMemberPage({
           startDate: user?.staffDetails?.startDate,
           salary: user?.staffDetails?.salary || 0,
           employmentType: user?.staffDetails?.employmentType || 'full-time',
-          isActive: user?.staffDetails?.isActive,
+          isActive: user?.staffDetails?.isActive ?? false,
         },
+
         // Volunteer details
         volunteerDetails: {
           volunteerId: user?.volunteerDetails?.volunteerId || '',
@@ -282,12 +428,14 @@ export default function EditMemberPage({
           backgroundCheck: user?.volunteerDetails?.backgroundCheck || {},
           hoursContributed: user?.volunteerDetails?.hoursContributed || 0,
         },
+
         // Admin details
         adminDetails: {
           adminId: user?.adminDetails?.adminId || '',
           accessLevel: user?.adminDetails?.accessLevel || 'national',
           assignedBranches: user?.adminDetails?.assignedBranches || [],
         },
+
         // Super admin details
         superAdminDetails: {
           superAdminId: user?.superAdminDetails?.superAdminId || '',
@@ -295,6 +443,7 @@ export default function EditMemberPage({
           systemSettings: user?.superAdminDetails?.systemSettings || {},
           companyInfo: user?.superAdminDetails?.companyInfo || {},
         },
+
         // Visitor details
         visitorDetails: {
           visitorId: user?.visitorDetails?.visitorId || '',
@@ -304,18 +453,21 @@ export default function EditMemberPage({
           followUpStatus: user?.visitorDetails?.followUpStatus || 'pending',
           followUpDate: user?.visitorDetails?.followUpDate,
           followUpNotes: user?.visitorDetails?.followUpNotes || '',
-          interestedInMembership: user?.visitorDetails?.interestedInMembership,
+          interestedInMembership:
+            user?.visitorDetails?.interestedInMembership ?? false,
           servicesAttended: user?.visitorDetails?.servicesAttended || [],
+          occupation: user?.visitorDetails?.occupation || '',
         },
       });
     }
-  }, [form, user]);
+  }, [form.reset, user]);
+
 
   const currentRole = form.watch('role');
 
-  const onSubmit = (data: UpdateUserPayload) => {
+  const onSubmit = (data: FormData) => {
     // biome-ignore lint/suspicious/noConsole: ignore
-    console.log('Form submitted:', data);
+    console.log('[v0] Form submitted:', data);
     // Handle form submission
   };
 
@@ -331,7 +483,7 @@ export default function EditMemberPage({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="memberDetails.memberId"
+                name="memberId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Member ID</FormLabel>
@@ -344,7 +496,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="memberDetails.membershipDate"
+                name="membershipDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Membership Date</FormLabel>
@@ -377,7 +529,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="memberDetails.membershipStatus"
+                name="membershipStatus"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Membership Status</FormLabel>
@@ -403,7 +555,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="memberDetails.baptismDate"
+                name="baptismDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Baptism Date</FormLabel>
@@ -434,52 +586,6 @@ export default function EditMemberPage({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="memberDetails.joinedDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Joined Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="memberDetails.occupation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Member Occupation</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
         );
@@ -493,7 +599,7 @@ export default function EditMemberPage({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="pastorDetails.pastorId"
+                name="pastorId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Pastor ID</FormLabel>
@@ -506,7 +612,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="pastorDetails.ordinationDate"
+                name="ordinationDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ordination Date</FormLabel>
@@ -540,7 +646,7 @@ export default function EditMemberPage({
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="pastorDetails.sermonCount"
+                  name="sermonCount"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Sermon Count</FormLabel>
@@ -559,7 +665,7 @@ export default function EditMemberPage({
                 />
                 <FormField
                   control={form.control}
-                  name="pastorDetails.counselingSessions"
+                  name="counselingSessions"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Counseling Sessions</FormLabel>
@@ -579,7 +685,7 @@ export default function EditMemberPage({
               </div>
               <FormField
                 control={form.control}
-                name="pastorDetails.biography"
+                name="biography"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Biography</FormLabel>
@@ -603,7 +709,7 @@ export default function EditMemberPage({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="bishopDetails.bishopId"
+                name="bishopId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Bishop ID</FormLabel>
@@ -616,7 +722,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="bishopDetails.appointmentDate"
+                name="appointmentDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Appointment Date</FormLabel>
@@ -649,7 +755,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="bishopDetails.jurisdictionArea"
+                name="jurisdictionArea"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Jurisdiction Area</FormLabel>
@@ -662,7 +768,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="bishopDetails.biography"
+                name="biography"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Biography</FormLabel>
@@ -686,7 +792,7 @@ export default function EditMemberPage({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="adminDetails.adminId"
+                name="adminId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Admin ID</FormLabel>
@@ -699,7 +805,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="adminDetails.accessLevel"
+                name="accessLevel"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Access Level</FormLabel>
@@ -738,7 +844,7 @@ export default function EditMemberPage({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="superAdminDetails.superAdminId"
+                name="adminId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Super Admin ID</FormLabel>
@@ -751,7 +857,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="superAdminDetails.accessLevel"
+                name="accessLevel"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Access Level</FormLabel>
@@ -766,7 +872,6 @@ export default function EditMemberPage({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="global">Global</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -786,7 +891,7 @@ export default function EditMemberPage({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="visitorDetails.visitorId"
+                name="visitorId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Visitor ID</FormLabel>
@@ -799,7 +904,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="visitorDetails.visitDate"
+                name="visitDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Visit Date</FormLabel>
@@ -832,7 +937,7 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="visitorDetails.howDidYouHear"
+                name="howDidYouHear"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>How Did You Hear About Us?</FormLabel>
@@ -859,200 +964,12 @@ export default function EditMemberPage({
               />
               <FormField
                 control={form.control}
-                name="visitorDetails.followUpStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Follow Up Status</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="contacted">Contacted</SelectItem>
-                        <SelectItem value="interested">Interested</SelectItem>
-                        <SelectItem value="not_interested">
-                          Not Interested
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.interestedInMembership"
+                name="interestedInMembership"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
                         Interested in Membership
-                      </FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.invitedBy"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Invited By</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      case 'staff':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Staff Details</CardTitle>
-              <CardDescription>Staff-specific information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="staffDetails.staffId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Staff ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="staffDetails.jobTitle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job Title</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="staffDetails.department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Department</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="staffDetails.employmentType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Employment Type</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="full-time">Full-time</SelectItem>
-                        <SelectItem value="part-time">Part-time</SelectItem>
-                        <SelectItem value="contract">Contract</SelectItem>
-                        <SelectItem value="casual">Casual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="staffDetails.startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="staffDetails.salary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Salary</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="staffDetails.isActive"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">
-                        Currently Active
                       </FormLabel>
                     </div>
                     <FormControl>
@@ -1126,12 +1043,13 @@ export default function EditMemberPage({
                       <CardContent className="flex flex-col items-center space-y-4">
                         <Avatar className="h-24 w-24">
                           <AvatarImage
-                            alt={user?.firstName || 'User'}
-                            src={user?.profilePictureUrl || ''}
+                            alt={`${form.watch('firstName')} ${form.watch('lastName')}`}
+                            src="/placeholder.svg?height=96&width=96"
                           />
-                          <AvatarFallback className="text-lg">{`${getFirstLetter(
-                            user?.firstName || ''
-                          )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                          <AvatarFallback className="text-lg">
+                            {form.watch('firstName')?.[0]}
+                            {form.watch('lastName')?.[0]}
+                          </AvatarFallback>
                         </Avatar>
                         <Button variant="outline">
                           <Upload className="mr-2 h-4 w-4" />
@@ -1405,19 +1323,9 @@ export default function EditMemberPage({
                           name="skills"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Skills (comma-separated)</FormLabel>
+                              <FormLabel>Skills (Array of strings)</FormLabel>
                               <FormControl>
-                                <Input
-                                  onChange={(e) => {
-                                    const skillsArray = e.target.value
-                                      .split(',')
-                                      .map((skill) => skill.trim())
-                                      .filter((skill) => skill.length > 0);
-                                    field.onChange(skillsArray);
-                                  }}
-                                  placeholder="e.g., Teaching, Music, Administration"
-                                  value={field.value?.join(', ') || ''}
-                                />
+                                <Input {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1542,83 +1450,6 @@ export default function EditMemberPage({
                       </CardContent>
                     </Card>
                   </div>
-                  {/* Additional Notes Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Additional Information</CardTitle>
-                      <CardDescription>
-                        General notes and status information
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Notes</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Additional notes about this member"
-                                rows={4}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Status</FormLabel>
-                            <Select
-                              defaultValue={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">
-                                  Inactive
-                                </SelectItem>
-                                <SelectItem value="suspended">
-                                  Suspended
-                                </SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {/* <FormField
-                        control={form.control}
-                        name="isEmailVerified"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Email Verified
-                              </FormLabel>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      /> */}
-                    </CardContent>
-                  </Card>
                 </TabsContent>
                 <TabsContent className="space-y-6" value="role">
                   {renderRoleSpecificFields()}
@@ -1693,7 +1524,7 @@ export default function EditMemberPage({
                         )}
                       />
                       {/* Secondary role flags */}
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <FormField
                           control={form.control}
                           name="isMember"
@@ -1756,6 +1587,210 @@ export default function EditMemberPage({
                           )}
                         />
                       </div>
+                      {/* <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Temporary Password</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              disabled
+                              placeholder="Enter temporary password"
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-gray-500 text-sm">
+                            User will be prompted to change this on first login
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    /> */}
+                      {user?.isStaff && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Staff Details</CardTitle>
+                            <CardDescription>
+                              Staff-specific information
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="staffId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Staff ID</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name="jobTitle"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Job Title</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="department"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Department</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <FormField
+                              control={form.control}
+                              name="employmentType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Employment Type</FormLabel>
+                                  <Select
+                                    defaultValue={field.value}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="full-time">
+                                        Full-time
+                                      </SelectItem>
+                                      <SelectItem value="part-time">
+                                        Part-time
+                                      </SelectItem>
+                                      <SelectItem value="contract">
+                                        Contract
+                                      </SelectItem>
+                                      <SelectItem value="casual">
+                                        Casual
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="salary"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Salary</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      {...field}
+                                      onChange={(e) =>
+                                        field.onChange(Number(e.target.value))
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </CardContent>
+                        </Card>
+                      )}
+                      {user?.isVolunteer && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Volunteer Details</CardTitle>
+                            <CardDescription>
+                              Volunteer-specific information
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="volunteerId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Volunteer ID</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="volunteerStatus"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Volunteer Status</FormLabel>
+                                  <Select
+                                    defaultValue={field.value}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="active">
+                                        Active
+                                      </SelectItem>
+                                      <SelectItem value="inactive">
+                                        Inactive
+                                      </SelectItem>
+                                      <SelectItem value="on_hold">
+                                        On Hold
+                                      </SelectItem>
+                                      <SelectItem value="suspended">
+                                        Suspended
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="hoursContributed"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Hours Contributed</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      {...field}
+                                      onChange={(e) =>
+                                        field.onChange(Number(e.target.value))
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </CardContent>
+                        </Card>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
