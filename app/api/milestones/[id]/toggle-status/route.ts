@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Milestone from '@/models/milestone';
+import { MilestoneModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -43,7 +43,7 @@ async function toggleMilestoneStatusHandler(
       );
     }
     // Find the milestone and toggle its active status
-    const milestone = await Milestone.findOne({
+    const milestone = await MilestoneModel.findOne({
       _id: params.id,
       churchId: user.user?.churchId,
     });
@@ -56,7 +56,7 @@ async function toggleMilestoneStatusHandler(
     // Toggle the active status
     milestone.isActive = !milestone.isActive;
     await milestone.save();
-    const updatedMilestone = await Milestone.findById(milestone._id)
+    const updatedMilestone = await MilestoneModel.findById(milestone._id)
       .populate('prerequisiteMilestones', 'name points category level')
       .lean();
     return NextResponse.json({

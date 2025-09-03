@@ -1,9 +1,8 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import PrayerRequest from '@/models/prayer-request';
+import { PrayerRequestModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -104,14 +103,14 @@ async function getPrayerRequestsHandler(
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [prayerRequests, total] = await Promise.all([
-      PrayerRequest.find(query)
+      PrayerRequestModel.find(query)
         .populate('memberId', 'firstName lastName') // Populate member info
         .populate('submittedBy', 'firstName lastName') // Populate submitter info
         .sort({ priority: -1, createdAt: -1 }) // Sort by priority then creation date
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance
-      PrayerRequest.countDocuments(query),
+      PrayerRequestModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -213,7 +212,7 @@ async function createPrayerRequestHandler(
       );
     }
     // Create and save the prayer request
-    const prayerRequest = new PrayerRequest({
+    const prayerRequest = new PrayerRequestModel({
       ...prayerRequestData,
       churchId: user.user?.churchId,
       branchId: user.user?.branchId, // Assuming user has branchId
@@ -223,7 +222,7 @@ async function createPrayerRequestHandler(
     });
     const savedPrayerRequest = await prayerRequest.save();
     // Populate the saved prayer request for response
-    const populatedPrayerRequest = await PrayerRequest.findById(
+    const populatedPrayerRequest = await PrayerRequestModel.findById(
       savedPrayerRequest._id
     )
       .populate('memberId', 'firstName lastName')

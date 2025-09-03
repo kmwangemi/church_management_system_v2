@@ -65,19 +65,19 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get('limit') || '100', 10);
     const page = Number.parseInt(searchParams.get('page') || '1', 10);
     // Import Log model dynamically to avoid circular dependencies
-    const { Log } = await import('@/models/log');
+    const { LogModel } = await import('@/models');
     await (await import('@/lib/mongodb')).default();
     // Build query
     const query: any = {};
     if (level) query.level = level;
     if (source) query.source = source;
     // Get logs with pagination
-    const logs = await Log.find(query)
+    const logs = await LogModel.find(query)
       .sort({ timestamp: -1 })
       .limit(limit)
       .skip((page - 1) * limit)
       .lean();
-    const totalCount = await Log.countDocuments(query);
+    const totalCount = await LogModel.countDocuments(query);
     return NextResponse.json({
       logs,
       pagination: {

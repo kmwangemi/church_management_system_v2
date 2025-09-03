@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore complexity */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';

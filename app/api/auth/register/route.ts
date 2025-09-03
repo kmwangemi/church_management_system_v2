@@ -10,9 +10,7 @@ import {
 } from '@/lib/validation';
 import type { AdminPayload, ChurchPayload } from '@/lib/validations/auth';
 import { churchRegistrationSchema } from '@/lib/validations/auth';
-import ChurchModel from '@/models/church';
-import ChurchSubscriptionModel from '@/models/church-subscription';
-import UserModel from '@/models/user';
+import { ChurchModel, ChurchSubscriptionModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 

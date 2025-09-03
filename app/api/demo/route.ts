@@ -11,7 +11,7 @@ import {
   type ChurchDemoPayload,
   type UserDemoPayload,
 } from '@/lib/validations/demo';
-import Demo from '@/models/demo';
+import { DemoModel } from '@/models';
 import { NextResponse, type NextRequest } from 'next/server';
 
 async function validateData(
@@ -51,7 +51,7 @@ async function performRegistrationTransaction(
       churchName: churchData.churchName,
       userEmail: userData.email,
     });
-    const church = new Demo({
+    const church = new DemoModel({
       churchData: {
         churchName: churchData.churchName,
         denomination: churchData.denomination,

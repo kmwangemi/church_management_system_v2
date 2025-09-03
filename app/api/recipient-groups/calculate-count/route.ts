@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/user';
+import { UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -49,31 +49,31 @@ async function calculateMemberCountHandler(
       const query: any = { churchId, status: 'active' };
       // Parse recipient ID to determine type and target
       if (recipientId === 'all') {
-        count = await User.countDocuments({ churchId });
+        count = await UserModel.countDocuments({ churchId });
       } else if (recipientId === 'active') {
-        count = await User.countDocuments({ churchId, status: 'active' });
+        count = await UserModel.countDocuments({ churchId, status: 'active' });
       } else if (recipientId.startsWith('dept_')) {
         const departmentId = recipientId.replace('dept_', '');
-        count = await User.countDocuments({
+        count = await UserModel.countDocuments({
           churchId,
           departmentId: new mongoose.Types.ObjectId(departmentId),
           status: 'active',
         });
       } else if (recipientId.startsWith('group_')) {
         const groupId = recipientId.replace('group_', '');
-        count = await User.countDocuments({
+        count = await UserModel.countDocuments({
           churchId,
           groupId: new mongoose.Types.ObjectId(groupId),
           status: 'active',
         });
       } else if (recipientId === 'leadership') {
-        count = await User.countDocuments({
+        count = await UserModel.countDocuments({
           churchId,
           role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
           status: 'active',
         });
       } else if (recipientId === 'volunteers') {
-        count = await User.countDocuments({
+        count = await UserModel.countDocuments({
           churchId,
           role: 'volunteer',
           status: 'active',

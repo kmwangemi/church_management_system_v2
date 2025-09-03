@@ -3,13 +3,13 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import { getUserId, isEmail } from '@/lib/utils';
-import type { IUserModel } from '@/models/user';
-import User from '@/models/user';
+import { UserModel } from '@/models';
+import type { IUser } from '@/models/user';
 import { SignJWT } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
 
 function checkUserStatus(
-  existingUser: IUserModel,
+  existingUser: IUser,
   contextLogger: {
     warn: (message: string, meta?: Record<string, unknown>) => void;
   },
@@ -81,12 +81,12 @@ async function verifyLoginCodeHandler(request: NextRequest) {
     const identifier = emailOrPhoneNumber.toLowerCase().trim();
     const isEmailAddress = isEmail(identifier);
     // Find user by email or phone number
-    let existingUser: IUserModel | null = null;
+    let existingUser: IUser | null = null;
     if (isEmailAddress) {
-      existingUser = await User.findOne({ email: identifier });
+      existingUser = await UserModel.findOne({ email: identifier });
     } else {
       // Assuming you have a phoneNumber field in your User model
-      existingUser = await User.findOne({ phoneNumber: identifier });
+      existingUser = await UserModel.findOne({ phoneNumber: identifier });
     }
     if (!existingUser) {
       contextLogger.warn('Login verification failed - User not found', {

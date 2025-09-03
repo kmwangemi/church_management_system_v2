@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/user';
+import { UserModel } from '@/models';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // Connect to MongoDB
     await dbConnect();
     // Fetch additional user data from your database
-    const userProfile = await User.findById(userId).select(
+    const userProfile = await UserModel.findById(userId).select(
       'firstName lastName email profilePictureUrl churchId branchId role'
     );
     if (!userProfile) {

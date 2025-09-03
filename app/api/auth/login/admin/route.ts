@@ -3,13 +3,13 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import { getUserId } from '@/lib/utils';
-import type { IUserModel } from '@/models/user';
-import User from '@/models/user';
+import { UserModel } from '@/models';
+import type { IUser } from '@/models/user';
 import { SignJWT } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
 
 function checkUserStatus(
-  existingUser: IUserModel,
+  existingUser: IUser,
   contextLogger: {
     warn: (message: string, meta?: Record<string, unknown>) => void;
   },
@@ -44,7 +44,7 @@ function checkUserStatus(
 }
 
 async function validatePassword(
-  existingUser: IUserModel,
+  existingUser: IUser,
   password: string,
   contextLogger: {
     warn: (message: string, meta?: Record<string, unknown>) => void;
@@ -132,7 +132,7 @@ async function loginHandler(request: NextRequest) {
         { status: 400 }
       );
     }
-    const existingUser = await User.findOne({
+    const existingUser = await UserModel.findOne({
       email: email.toLowerCase().trim(),
     });
     if (!existingUser) {

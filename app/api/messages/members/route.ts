@@ -2,9 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Department from '@/models/department';
-import Group from '@/models/group';
-import User from '@/models/user';
+import { DepartmentModel, GroupModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -67,7 +65,7 @@ async function getMessageMembersHandler(
       try {
         // Parse recipient ID to determine type and get members
         if (recipientId === 'all') {
-          members = await User.find({
+          members = await UserModel.find({
             churchId,
             ...(messageType === 'email'
               ? { email: { $exists: true, $ne: '' } }
@@ -76,7 +74,7 @@ async function getMessageMembersHandler(
             .select(selectFields)
             .lean();
         } else if (recipientId === 'active') {
-          members = await User.find({
+          members = await UserModel.find({
             churchId,
             status: 'active',
             ...(messageType === 'email'
@@ -88,7 +86,7 @@ async function getMessageMembersHandler(
         } else if (recipientId.startsWith('dept_')) {
           const departmentId = recipientId.replace('dept_', '');
           // Validate department exists
-          const department = await Department.findOne({
+          const department = await DepartmentModel.findOne({
             _id: new mongoose.Types.ObjectId(departmentId),
             churchId,
             isActive: true,
@@ -97,7 +95,7 @@ async function getMessageMembersHandler(
             contextLogger.warn(`Department not found: ${departmentId}`);
             continue;
           }
-          members = await User.find({
+          members = await UserModel.find({
             churchId,
             departmentId: new mongoose.Types.ObjectId(departmentId),
             ...statusQuery,
@@ -110,7 +108,7 @@ async function getMessageMembersHandler(
         } else if (recipientId.startsWith('group_')) {
           const groupId = recipientId.replace('group_', '');
           // Validate group exists
-          const group = await Group.findOne({
+          const group = await GroupModel.findOne({
             _id: new mongoose.Types.ObjectId(groupId),
             churchId,
             isActive: true,
@@ -119,7 +117,7 @@ async function getMessageMembersHandler(
             contextLogger.warn(`Group not found: ${groupId}`);
             continue;
           }
-          members = await User.find({
+          members = await UserModel.find({
             churchId,
             groupId: new mongoose.Types.ObjectId(groupId),
             ...statusQuery,
@@ -130,7 +128,7 @@ async function getMessageMembersHandler(
             .select(selectFields)
             .lean();
         } else if (recipientId === 'leadership') {
-          members = await User.find({
+          members = await UserModel.find({
             churchId,
             role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
             ...statusQuery,
@@ -141,7 +139,7 @@ async function getMessageMembersHandler(
             .select(selectFields)
             .lean();
         } else if (recipientId === 'volunteers') {
-          members = await User.find({
+          members = await UserModel.find({
             churchId,
             role: 'volunteer',
             ...statusQuery,

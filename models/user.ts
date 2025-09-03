@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 import bcrypt from 'bcryptjs';
 import mongoose, {
   Schema,
@@ -549,7 +548,6 @@ const UserSchema = new Schema<IUser>(
 // Indexes
 UserSchema.index({ churchId: 1, isMember: 1, status: 1 });
 UserSchema.index({ role: 1, status: 1 });
-UserSchema.index({ email: 1 });
 UserSchema.index({ firstName: 1, lastName: 1 });
 UserSchema.index({ isMember: 1, status: 1 });
 UserSchema.index({ isStaff: 1, status: 1 });

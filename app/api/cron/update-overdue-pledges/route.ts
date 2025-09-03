@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
-import Pledge, { type IPledgeModel } from '@/models/pledge';
+import { PledgeModel } from '@/models';
+import type { IPledgeModel } from '@/models/pledge';
 import { headers } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -15,7 +16,7 @@ export async function GET(_request: NextRequest) {
     // Connect to database
     await dbConnect();
     // Update overdue pledges - Cast Pledge to IPledgeModel
-    const result = await (Pledge as IPledgeModel).updateOverdueStatuses();
+    const result = await (PledgeModel as IPledgeModel).updateOverdueStatuses();
     // console.log(`Updated ${result.modifiedCount} pledges to overdue status`);
     return NextResponse.json({
       success: true,

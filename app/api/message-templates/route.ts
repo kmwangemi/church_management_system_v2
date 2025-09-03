@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import MessageTemplate from '@/models/message-template';
+import { MessageTemplateModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -70,7 +70,7 @@ async function getTemplatesHandler(
       ];
     }
     // Fetch templates
-    const templates = await MessageTemplate.find(query)
+    const templates = await MessageTemplateModel.find(query)
       .populate('createdBy', 'name email')
       .sort({ usageCount: -1, name: 1 })
       .lean();
@@ -149,7 +149,7 @@ async function createTemplateHandler(
       );
     }
     // Check for duplicate template name
-    const existingTemplate = await MessageTemplate.findOne({
+    const existingTemplate = await MessageTemplateModel.findOne({
       churchId: new mongoose.Types.ObjectId(user.user?.churchId),
       name: templateData.name,
     });
@@ -160,14 +160,14 @@ async function createTemplateHandler(
       );
     }
     // Create template
-    const template = new MessageTemplate({
+    const template = new MessageTemplateModel({
       ...templateData,
       churchId: user.user?.churchId,
       createdBy: user.user?.sub,
     });
     const savedTemplate = await template.save();
     // Populate the saved template for response
-    const populatedTemplate = await MessageTemplate.findById(
+    const populatedTemplate = await MessageTemplateModel.findById(
       savedTemplate._id
     ).populate('createdBy', 'firstName lastName email');
     contextLogger.info('Template created successfully', {

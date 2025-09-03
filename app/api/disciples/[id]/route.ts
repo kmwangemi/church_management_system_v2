@@ -2,8 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Disciple from '@/models/disciple';
-import DiscipleProgress from '@/models/disciple-progress';
+import { DiscipleModel, DiscipleProgressModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -44,7 +43,7 @@ async function getDiscipleHandler(
       );
     }
     // Find the disciple
-    const disciple = await Disciple.findOne({
+    const disciple = await DiscipleModel.findOne({
       _id: params.id,
       churchId: user.user?.churchId,
     })
@@ -59,7 +58,7 @@ async function getDiscipleHandler(
       );
     }
     // Get progress records for this disciple
-    const progressRecords = await DiscipleProgress.find({
+    const progressRecords = await DiscipleProgressModel.find({
       discipleId: params.id,
       churchId: user.user?.churchId,
     })
@@ -68,7 +67,7 @@ async function getDiscipleHandler(
       .sort({ completedDate: -1 })
       .lean();
     // Calculate total points
-    const totalPoints = await DiscipleProgress.calculateTotalPoints(
+    const totalPoints = await DiscipleProgressModel.calculateTotalPoints(
       new mongoose.Types.ObjectId(params.id)
     );
     return NextResponse.json({
@@ -143,7 +142,7 @@ async function updateDiscipleHandler(
       ...allowedUpdates
     } = updateData;
     // Find and update the disciple
-    const updatedDisciple = await Disciple.findOneAndUpdate(
+    const updatedDisciple = await DiscipleModel.findOneAndUpdate(
       {
         _id: params.id,
         churchId: user.user?.churchId,
@@ -221,7 +220,7 @@ async function deleteDiscipleHandler(
       );
     }
     // Find and delete the disciple
-    const deletedDisciple = await Disciple.findOneAndDelete({
+    const deletedDisciple = await DiscipleModel.findOneAndDelete({
       _id: params.id,
       churchId: user.user?.churchId,
     });
@@ -232,7 +231,7 @@ async function deleteDiscipleHandler(
       );
     }
     // Also delete associated progress records
-    await DiscipleProgress.deleteMany({
+    await DiscipleProgressModel.deleteMany({
       discipleId: params.id,
       churchId: user.user?.churchId,
     });

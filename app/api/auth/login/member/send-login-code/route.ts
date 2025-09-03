@@ -5,12 +5,12 @@ import dbConnect from '@/lib/mongodb';
 import { sendEmail, sendSMS } from '@/lib/notifications';
 import { isEmail, isPhoneNumber } from '@/lib/utils';
 import { generateVerificationCode } from '@/lib/verification-code';
-import type { IUserModel } from '@/models/user';
-import User from '@/models/user';
+import { UserModel } from '@/models';
+import type { IUser } from '@/models/user';
 import { type NextRequest, NextResponse } from 'next/server';
 
 function checkUserStatus(
-  existingUser: IUserModel,
+  existingUser: IUser,
   contextLogger: {
     warn: (message: string, meta?: Record<string, unknown>) => void;
   },
@@ -81,12 +81,12 @@ async function sendLoginCodeHandler(request: NextRequest) {
       );
     }
     // Find user by email or phone number
-    let existingUser: IUserModel | null = null;
+    let existingUser: IUser | null = null;
     if (isEmailAddress) {
-      existingUser = await User.findOne({ email: identifier });
+      existingUser = await UserModel.findOne({ email: identifier });
     } else {
       // Assuming you have a phoneNumber field in your User model
-      existingUser = await User.findOne({ phoneNumber: identifier });
+      existingUser = await UserModel.findOne({ phoneNumber: identifier });
     }
     if (!existingUser) {
       contextLogger.warn('Send login code failed - User not found', {

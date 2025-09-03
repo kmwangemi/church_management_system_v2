@@ -2,9 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Message from '@/models/message';
-import MessageTemplate from '@/models/message-template';
-import User from '@/models/user';
+import { MessageModel, MessageTemplateModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -73,14 +71,14 @@ async function getMessagesHandler(request: NextRequest): Promise<NextResponse> {
     const skip = (page - 1) * limit;
     // Execute queries
     const [messages, total] = await Promise.all([
-      Message.find(query)
+      MessageModel.find(query)
         .populate('templateId', 'name category')
         .populate('createdBy', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Message.countDocuments(query),
+      MessageModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -116,31 +114,31 @@ async function calculateRecipientCounts(
     let count = 0;
     // Parse recipient ID to determine type and count members
     if (recipientId === 'all') {
-      count = await User.countDocuments({ churchId });
+      count = await UserModel.countDocuments({ churchId });
     } else if (recipientId === 'active') {
-      count = await User.countDocuments({ churchId, status: 'active' });
+      count = await UserModel.countDocuments({ churchId, status: 'active' });
     } else if (recipientId.startsWith('dept_')) {
       const departmentId = recipientId.replace('dept_', '');
-      count = await User.countDocuments({
+      count = await UserModel.countDocuments({
         churchId,
         departmentId: new mongoose.Types.ObjectId(departmentId),
         status: 'active',
       });
     } else if (recipientId.startsWith('group_')) {
       const groupId = recipientId.replace('group_', '');
-      count = await User.countDocuments({
+      count = await UserModel.countDocuments({
         churchId,
         groupId: new mongoose.Types.ObjectId(groupId),
         status: 'active',
       });
     } else if (recipientId === 'leadership') {
-      count = await User.countDocuments({
+      count = await UserModel.countDocuments({
         churchId,
         role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
         status: 'active',
       });
     } else if (recipientId === 'volunteers') {
-      count = await User.countDocuments({
+      count = await UserModel.countDocuments({
         churchId,
         role: 'volunteer',
         status: 'active',
@@ -241,7 +239,7 @@ async function createMessageHandler(
     // Validate template if provided
     let template = null;
     if (messageData.template) {
-      template = await MessageTemplate.findOne({
+      template = await MessageTemplateModel.findOne({
         churchId: new mongoose.Types.ObjectId(user.user?.churchId),
         category: messageData.template,
         type: messageData.type,
@@ -282,10 +280,10 @@ async function createMessageHandler(
       }
     }
     // Create and save message
-    const message = new Message(messageObj);
+    const message = new MessageModel(messageObj);
     const savedMessage = await message.save();
     // Populate the saved message for response
-    const populatedMessage = await Message.findById(savedMessage._id)
+    const populatedMessage = await MessageModel.findById(savedMessage._id)
       .populate('templateId', 'name category')
       .populate('createdBy', 'name email');
     contextLogger.info('Message created successfully', {

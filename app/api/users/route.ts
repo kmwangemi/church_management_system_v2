@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore complexity */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
@@ -231,7 +230,9 @@ async function getUserHandler(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-async function registerUserHandler(request: NextRequest): Promise<NextResponse> {
+async function registerUserHandler(
+  request: NextRequest
+): Promise<NextResponse> {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
     { requestId, endpoint: '/api/members' },

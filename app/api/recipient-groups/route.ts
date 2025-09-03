@@ -2,9 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Department from '@/models/department';
-import Group from '@/models/group';
-import User from '@/models/user';
+import { DepartmentModel, GroupModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -43,14 +41,16 @@ async function getRecipientGroupsHandler(
     // Get counts for different user groups
     const [allUsersCount, activeUsersCount, departments, groups] =
       await Promise.all([
-        withCounts ? User.countDocuments({ churchId }) : Promise.resolve(0),
         withCounts
-          ? User.countDocuments({ churchId, status: 'active' })
+          ? UserModel.countDocuments({ churchId })
           : Promise.resolve(0),
-        Department.find({ churchId, isActive: true })
+        withCounts
+          ? UserModel.countDocuments({ churchId, status: 'active' })
+          : Promise.resolve(0),
+        DepartmentModel.find({ churchId, isActive: true })
           .select('_id departmentName description')
           .lean(),
-        Group.find({ churchId, isActive: true })
+        GroupModel.find({ churchId, isActive: true })
           .select('_id groupName category description')
           .lean(),
       ]);
@@ -80,7 +80,7 @@ async function getRecipientGroupsHandler(
       let memberCount = 0;
       if (withCounts) {
         // Assuming User model has departmentId field
-        memberCount = await User.countDocuments({
+        memberCount = await UserModel.countDocuments({
           churchId,
           departmentId: dept._id,
           status: 'active',
@@ -103,7 +103,7 @@ async function getRecipientGroupsHandler(
       let memberCount = 0;
       if (withCounts) {
         // Assuming User model has groupId field or groups array
-        memberCount = await User.countDocuments({
+        memberCount = await UserModel.countDocuments({
           churchId,
           groupId: group._id,
           status: 'active',
@@ -125,12 +125,16 @@ async function getRecipientGroupsHandler(
     // Add some common role-based groups
     if (withCounts) {
       const [leaderCount, volunteerCount] = await Promise.all([
-        User.countDocuments({
+        UserModel.countDocuments({
           churchId,
           role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
           status: 'active',
         }),
-        User.countDocuments({ churchId, role: 'volunteer', status: 'active' }),
+        UserModel.countDocuments({
+          churchId,
+          role: 'volunteer',
+          status: 'active',
+        }),
       ]);
       recipientGroups.push(
         {

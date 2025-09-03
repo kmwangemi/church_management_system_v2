@@ -3,8 +3,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddGroupPayload } from '@/lib/validations/small-group';
-import Group from '@/models/group';
-import Member from '@/models/member';
+import { GroupModel, UserModel } from '@/models';
 import { type NextRequest, NextResponse } from 'next/server';
 
 async function getGroupHandler(request: NextRequest): Promise<NextResponse> {
@@ -53,17 +52,17 @@ async function getGroupHandler(request: NextRequest): Promise<NextResponse> {
     }
     const skip = (page - 1) * limit;
     const [groups, total] = await Promise.all([
-      Group.find(query)
+      GroupModel.find(query)
         .populate('leaderId', 'firstName lastName')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      Group.countDocuments(query),
+      GroupModel.countDocuments(query),
     ]);
     // Get member counts for each group
     const groupsWithCounts = await Promise.all(
       groups.map(async (group) => {
-        const memberCount = await Member.countDocuments({
+        const memberCount = await UserModel.countDocuments({
           groupIds: group._id,
           churchId: user.user?.churchId,
         });
@@ -130,7 +129,7 @@ async function registerGroupHandler(
     }
     await dbConnect();
     const groupData: AddGroupPayload = await request.json();
-    const existingGroup = await Group.findOne({
+    const existingGroup = await GroupModel.findOne({
       groupName: groupData.groupName,
       churchId: user.user?.churchId,
     });
@@ -146,7 +145,7 @@ async function registerGroupHandler(
         { status: 400 }
       );
     }
-    const group = new Group({
+    const group = new GroupModel({
       ...groupData,
       churchId: user.user?.churchId,
     });

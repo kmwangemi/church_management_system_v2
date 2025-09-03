@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Event from '@/models/event';
+import { EventModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -71,12 +71,12 @@ async function getEventHandler(request: NextRequest): Promise<NextResponse> {
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [events, total] = await Promise.all([
-      Event.find(query)
+      EventModel.find(query)
         .sort({ startDate: -1, createdAt: -1 }) // Secondary sort by creation date
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance if you don't need mongoose documents
-      Event.countDocuments(query),
+      EventModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -141,7 +141,7 @@ async function registerEventHandler(
     await dbConnect();
     const eventData = await request.json();
     // Create and save the event
-    const event = new Event({
+    const event = new EventModel({
       ...eventData,
       churchId: user.user?.churchId,
     });
