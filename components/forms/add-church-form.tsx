@@ -66,7 +66,6 @@ interface AddChurchFormProps {
   onCloseDialog: () => void;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore complexity
 export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
   const [currentTab, setCurrentTab] = useState('basic');
   const [logoFile, setLogoFile] = useState<File | null>(null);

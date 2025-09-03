@@ -93,9 +93,7 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
             name="leaderId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Group Leader
-                </FormLabel>
+                <FormLabel>Group Leader</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter leader name" {...field} />
                 </FormControl>

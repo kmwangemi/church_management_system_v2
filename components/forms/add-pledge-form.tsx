@@ -29,7 +29,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
 import { useRegisterPledge } from '@/lib/hooks/pledge/use-pledge-queries';
-import type { User } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,
   PLEDGE_FREQUENCY_OPTIONS,
@@ -49,7 +49,9 @@ interface AddPledgeFormProps {
 }
 
 export function AddPledgeForm({ onCloseDialog }: AddPledgeFormProps) {
-  const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const {
     mutateAsync: registerPledgeMutation,
     isPending,

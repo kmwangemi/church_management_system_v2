@@ -1,8 +1,7 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore complexity */
 import { Input } from '@/components/ui/input';
 import { useFetchUsers } from '@/lib/hooks/user/use-user-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
-import type { User as Member } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
 import {
   ArrowUp,
@@ -25,17 +24,17 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 interface RecentSearch {
   id: string;
-  member: Member;
+  member: UserResponse;
   searchedAt: Date;
 }
 
 interface UserListInputProps {
-  value?: Member | null;
-  onChange?: (member: Member | null) => void;
+  value?: UserResponse | null;
+  onChange?: (member: UserResponse | null) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-  displayProperty?: keyof Member;
+  displayProperty?: keyof UserResponse;
   maxRecentSearches?: number;
 }
 
@@ -88,7 +87,7 @@ const UserListInputComponent = React.forwardRef<
     }, []);
     // Add to recent searches
     const addToRecentSearches = useCallback(
-      (member: Member) => {
+      (member: UserResponse) => {
         setRecentSearches((prev) => {
           const filtered = prev.filter(
             (item) => item.member._id !== member._id
@@ -130,7 +129,7 @@ const UserListInputComponent = React.forwardRef<
     // Fetch members using the provided hook
     const { data, isLoading, error } = useFetchUsers(1, debouncedSearchTerm);
     // Extract members array from the API response
-    const members: Member[] = useMemo(() => {
+    const members: UserResponse[] = useMemo(() => {
       if (!data?.users) return [];
       return data.users;
     }, [data]);
@@ -225,7 +224,7 @@ const UserListInputComponent = React.forwardRef<
           document.removeEventListener('mousedown', handleClickOutside);
       }
     }, [isOpen]);
-    const handleSelect = (member: Member) => {
+    const handleSelect = (member: UserResponse) => {
       onChange?.(member);
       addToRecentSearches(member);
       setIsOpen(false);
@@ -242,7 +241,7 @@ const UserListInputComponent = React.forwardRef<
       setSearchTerm('');
       setShowRecentSearches(true);
     };
-    const getDisplayValue = (member: Member): string => {
+    const getDisplayValue = (member: UserResponse): string => {
       const propertyValue = member[displayProperty];
       return String(propertyValue || '');
     };

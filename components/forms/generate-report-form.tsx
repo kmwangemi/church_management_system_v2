@@ -88,7 +88,7 @@ export function GenerateReportForm({ onCloseDialog }: GenerateReportFormProps) {
   const getTotalDepartments = () => {
     const departments = form.watch('departments') || [];
     return departments.reduce((total, groupId) => {
-      const group = reportDepartmentGroups.find((g) => g.id === groupId);
+      const group = reportDepartmentGroups.find((g: { id: string; }) => g.id === groupId);
       return total + (group?.count || 0);
     }, 0);
   };

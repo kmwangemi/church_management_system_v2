@@ -28,7 +28,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
 import { useRegisterDisciple } from '@/lib/hooks/disciple/use-disciple-queries';
-import type { User } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 import { DISCIPLE_LEVEL_OPTIONS, getRelativeYear } from '@/lib/utils';
 import {
   type AddDisciplePayload,
@@ -44,8 +44,12 @@ interface AddDiscipleFormProps {
 }
 
 export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
-  const [selectedMember, setSelectedMember] = useState<User | null>(null);
-  const [selectedMentor, setSelectedMentor] = useState<User | null>(null);
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
+  const [selectedMentor, setSelectedMentor] = useState<UserResponse | null>(
+    null
+  );
   const {
     mutateAsync: registerDiscipleMutation,
     isPending,
