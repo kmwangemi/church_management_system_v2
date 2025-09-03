@@ -185,9 +185,7 @@ export const formatNotificationCount = (count: number) => {
   return count.toString();
 };
 
-export const ADMIN_ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
-];
+export const ADMIN_ROLE_OPTIONS = [{ value: 'admin', label: 'Admin' }];
 
 export const MEMBER_ROLE_OPTIONS = [
   { value: 'visitor', label: 'Visitor' },
@@ -500,6 +498,51 @@ export const REPORT_DATE_RANGE_OPTIONS = [
   { value: 'last6months', label: 'Last 6 Months' },
   { value: 'lastyear', label: 'Last Year' },
   { value: 'custom', label: 'Custom Range' },
+];
+
+export const ADMIN_ACCESS_LEVEL_OPTIONS = [
+  { value: 'branch', label: 'Branch' },
+  { value: 'regional', label: 'Regional' },
+  { value: 'national', label: 'National' },
+];
+
+export const SUPERADMIN_ACCESS_LEVEL_OPTIONS = [
+  { value: 'global', label: 'Global' },
+  { value: 'system', label: 'System' },
+];
+
+export const REFERRAL_SOURCE_OPTIONS = [
+  { value: 'friend', label: 'Friend' },
+  { value: 'family', label: 'Family' },
+  { value: 'online', label: 'Online' },
+  { value: 'flyer', label: 'Flyer' },
+  { value: 'other', label: 'Other' },
+];
+
+export const FOLLOW_UP_STATUS_OPTIONS = [
+  { value: 'interested', label: 'Interested' },
+  { value: 'not_interested', label: 'Not Interested' },
+  { value: 'pending', label: 'Pending' },
+];
+
+export const EMPLOYMENT_TYPE_OPTIONS = [
+  { value: 'full-time', label: 'Full-Time' },
+  { value: 'part-time', label: 'Part-Time' },
+  { value: 'contract', label: 'Contract' },
+];
+
+export const MEMBERSHIP_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'transferred', label: 'Transferred' },
+  { value: 'deceased', label: 'Deceased' },
+]
+
+export const USER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'pending', label: 'Pending' },
 ];
 
 export const getUserId = (userId: any): string => {

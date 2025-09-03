@@ -28,9 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { MemberListInput } from '@/components/user-list-input';
+import { UserListInput } from '@/components/user-list-input';
 import { useRegisterOffering } from '@/lib/hooks/offering/use-offering-queries';
-import type { Member } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 import {
   CONTRIBUTION_TYPE_OPTIONS,
   getRelativeYear,
@@ -50,7 +50,9 @@ interface AddOfferingFormProps {
 }
 
 export function AddOfferingForm({ onCloseDialog }: AddOfferingFormProps) {
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const {
     mutateAsync: registerOfferingMutation,
     isPending,
@@ -107,7 +109,7 @@ export function AddOfferingForm({ onCloseDialog }: AddOfferingFormProps) {
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <MemberListInput
+                        <UserListInput
                           className="w-full"
                           onChange={(member) => {
                             setSelectedMember(member);

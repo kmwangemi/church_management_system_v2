@@ -8,7 +8,6 @@ import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -27,11 +26,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,32 +35,48 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useFetchUserById } from '@/lib/hooks/user/use-user-queries';
-import type { Branch } from '@/lib/types/branch';
+import { UserListInput } from '@/components/user-list-input';
+import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
 import {
+  useFetchUserById,
+  useUpdateUserById,
+} from '@/lib/hooks/user/use-user-queries';
+import { errorToastStyle } from '@/lib/toast-styles';
+import type { Branch } from '@/lib/types/branch';
+import type { UserResponse } from '@/lib/types/user';
+import {
+  ADMIN_ACCESS_LEVEL_OPTIONS,
+  capitalizeFirstLetter,
+  EMPLOYMENT_TYPE_OPTIONS,
+  FOLLOW_UP_STATUS_OPTIONS,
   GENDER_OPTIONS,
   getFirstLetter,
   getRelativeYear,
   MARITAL_STATUS_OPTIONS,
   MEMBER_ROLE_OPTIONS,
+  MEMBERSHIP_STATUS_OPTIONS,
+  REFERRAL_SOURCE_OPTIONS,
+  SUPERADMIN_ACCESS_LEVEL_OPTIONS,
+  USER_STATUS_OPTIONS,
 } from '@/lib/utils';
 import {
   type UpdateUserPayload,
   userUpdateSchema,
 } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 import {
   ArrowLeft,
-  CalendarIcon,
   Church,
+  Loader2,
   Save,
   Shield,
   Upload,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export default function EditMemberPage({
   params,
@@ -74,13 +84,29 @@ export default function EditMemberPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
+    null
+  );
+  const [profilePicUploading, setProfilePicUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     data: user,
     isLoading: isLoadingUser,
     isError: isErrorUser,
     error: errorUser,
   } = useFetchUserById(id);
+  const {
+    upload,
+    isUploading,
+    uploadProgress,
+    error: uploadError,
+    clearError,
+  } = useFileUpload('logo');
   const form = useForm<UpdateUserPayload>({
     resolver: zodResolver(userUpdateSchema),
     defaultValues: {
@@ -195,8 +221,8 @@ export default function EditMemberPage({
   useEffect(() => {
     if (user) {
       form.reset({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
+        firstName: capitalizeFirstLetter(user?.firstName || ''),
+        lastName: capitalizeFirstLetter(user?.lastName || ''),
         email: user?.email || '',
         phoneNumber: user?.phoneNumber || '',
         address: user?.address || {
@@ -310,15 +336,93 @@ export default function EditMemberPage({
       });
     }
   }, [form, user]);
-
-  const currentRole = form.watch('role');
-
-  const onSubmit = (data: UpdateUserPayload) => {
-    // biome-ignore lint/suspicious/noConsole: ignore
-    console.log('Form submitted:', data);
-    // Handle form submission
+  const {
+    mutateAsync: updateUserMutation,
+    isPending,
+    isError,
+    error,
+  } = useUpdateUserById(id);
+  const { reset, watch, setValue } = form;
+  // Handle profile picture file selection
+  const handleProfilePictureSelect = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    // Clear any previous errors
+    clearError();
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    // Validate file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB', {
+        style: errorToastStyle,
+      });
+      return;
+    }
+    setProfilePicFile(file);
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setProfilePicPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  // Handle profile picture update using the hook
+  const handleProfilePictureUpload = async () => {
+    if (!profilePicFile) return;
+    try {
+      // Use the upload function from the hook
+      const uploadResponse = await upload(profilePicFile);
+      setValue('profilePictureUrl', uploadResponse || '');
+      toast.success('Profile picture uploaded successfully');
+    } catch (error) {
+      toast.error('Failed to update profile picture');
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.error('Profile picture update error:', error);
+    }
+  };
+  // Handle profile picture removal
+  const handleProfilePicRemove = () => {
+    setProfilePicFile(null);
+    setProfilePicPreview(null);
+    setValue('profilePictureUrl', '');
+    clearError(); // Clear any upload errors
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
+  // Handle form submission
+  const onSubmit = async (payload: UpdateUserPayload) => {
+    // Upload profile picture if selected but not uploaded yet
+    try {
+      setProfilePicUploading(true);
+      const profilePicUrl = await upload(profilePicFile as File);
+      payload.profilePictureUrl = profilePicUrl || '';
+    } catch (_error) {
+      toast.error('Failed to update profile picture');
+      return;
+    } finally {
+      setProfilePicUploading(false);
+    }
+    const validation = userUpdateSchema.safeParse(payload);
+    if (!validation.success) {
+      // biome-ignore lint/suspicious/noConsole: ignore console
+      console.log('Validation errors:', validation.error.issues);
+      toast.error('Please fix all validation errors');
+      return;
+    }
+    await updateUserMutation({ userId: id, payload });
+    reset();
+    setProfilePicFile(null);
+    setProfilePicPreview(null);
+  };
+
+  const currentRole = form.watch('role');
   const renderRoleSpecificFields = () => {
     switch (currentRole) {
       case 'member':
@@ -348,29 +452,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Membership Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Membership date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -381,20 +474,22 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Membership Status</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select membership status" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="transferred">Transferred</SelectItem>
-                        <SelectItem value="deceased">Deceased</SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {MEMBERSHIP_STATUS_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -407,29 +502,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Baptism Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-20)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Baptism date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -440,29 +524,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Joined Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Joined date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -510,29 +583,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ordination Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Ordination date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -620,29 +682,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Appointment Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Appointment date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -703,20 +754,22 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Access Level</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select access level" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="branch">Branch</SelectItem>
-                        <SelectItem value="regional">Regional</SelectItem>
-                        <SelectItem value="national">National</SelectItem>
-                        <SelectItem value="global">Global</SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {ADMIN_ACCESS_LEVEL_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -755,18 +808,22 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Access Level</FormLabel>
-                    <Select
-                      defaultValue="global"
-                      onValueChange={field.onChange}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select access level" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="global">Global</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {SUPERADMIN_ACCESS_LEVEL_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -803,29 +860,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Visit Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Visit date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -836,21 +882,22 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>How Did You Hear About Us?</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select how you heard about us" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="friend">Friend</SelectItem>
-                        <SelectItem value="family">Family</SelectItem>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="flyer">Flyer</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {REFERRAL_SOURCE_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -863,22 +910,22 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Follow Up Status</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select follow up status" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="contacted">Contacted</SelectItem>
-                        <SelectItem value="interested">Interested</SelectItem>
-                        <SelectItem value="not_interested">
-                          Not Interested
-                        </SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -911,7 +958,15 @@ export default function EditMemberPage({
                   <FormItem>
                     <FormLabel>Invited By</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <UserListInput
+                        className="w-full"
+                        onChange={(member) => {
+                          setSelectedMember(member);
+                          field.onChange(member?._id || ''); // ✅ Store only the ID
+                        }}
+                        placeholder="Search and select a member"
+                        value={selectedMember} // ✅ Use state for display
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -975,20 +1030,22 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Employment Type</FormLabel>
-                    <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select employment type" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="full-time">Full-time</SelectItem>
-                        <SelectItem value="part-time">Part-time</SelectItem>
-                        <SelectItem value="contract">Contract</SelectItem>
-                        <SelectItem value="casual">Casual</SelectItem>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {EMPLOYMENT_TYPE_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -1001,29 +1058,18 @@ export default function EditMemberPage({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            className="w-full justify-start bg-transparent text-left font-normal"
-                            variant="outline"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(field.value, 'PPP')
-                              : 'Select date'}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          initialFocus
-                          mode="single"
-                          onSelect={field.onChange}
-                          selected={field.value}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        format="long"
+                        maxDate={getRelativeYear(1)}
+                        minDate={getRelativeYear(-50)}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toISOString() : '')
+                        }
+                        placeholder="Start date"
+                        value={field.value ? new Date(field.value) : undefined}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1076,6 +1122,7 @@ export default function EditMemberPage({
     <div className="space-y-6">
       {/* Header */}
       {isErrorUser && <RenderApiError error={errorUser} />}
+      {isError && <RenderApiError error={error} />}
       {isLoadingUser ? (
         <SpinnerLoader description="Loading user data..." />
       ) : (
@@ -1097,13 +1144,14 @@ export default function EditMemberPage({
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline">Cancel</Button>
-              <Button onClick={form.handleSubmit(onSubmit)}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
-            </div>
+            <Button
+              disabled={isPending || isUploading}
+              onClick={form.handleSubmit(onSubmit)}
+              type="submit"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {isPending || isUploading ? 'Saving changes...' : ' Save Changes'}
+            </Button>
           </div>
           <Form {...form}>
             <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -1127,16 +1175,91 @@ export default function EditMemberPage({
                         <Avatar className="h-24 w-24">
                           <AvatarImage
                             alt={user?.firstName || 'User'}
-                            src={user?.profilePictureUrl || ''}
+                            src={
+                              profilePicPreview ||
+                              watch('profilePictureUrl') ||
+                              ''
+                            }
                           />
                           <AvatarFallback className="text-lg">{`${getFirstLetter(
                             user?.firstName || ''
                           )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
                         </Avatar>
-                        <Button variant="outline">
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload Photo
-                        </Button>
+                        <div className="flex-1">
+                          <input
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleProfilePictureSelect}
+                            ref={fileInputRef}
+                            type="file"
+                          />
+                          <div className="flex space-x-2">
+                            {profilePicFile ? (
+                              <>
+                                <Button
+                                  disabled={profilePicUploading}
+                                  onClick={handleProfilePictureUpload}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  {profilePicUploading ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Upload className="mr-2 h-4 w-4" />
+                                  )}
+                                  {profilePicUploading
+                                    ? 'Uploading...'
+                                    : 'Upload'}
+                                </Button>
+                                <Button
+                                  onClick={handleProfilePicRemove}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  <X className="mr-2 h-4 w-4" />
+                                  Remove
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                onClick={() => fileInputRef.current?.click()}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Photo
+                              </Button>
+                            )}
+                          </div>
+                          {/* Show upload progress */}
+                          {isUploading && (
+                            <div className="mt-2">
+                              <div className="h-2 w-full rounded-full bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full bg-blue-600 transition-all duration-300"
+                                  style={{ width: `${uploadProgress}%` }}
+                                />
+                              </div>
+                              <p className="mt-1 text-gray-500 text-xs">
+                                Uploading... {uploadProgress}%
+                              </p>
+                            </div>
+                          )}
+                          {/* Show error if any */}
+                          {uploadError && (
+                            <p className="mt-1 text-red-500 text-xs">
+                              {uploadError}
+                            </p>
+                          )}
+                          {!(isUploading || error) && (
+                            <p className="mt-1 text-gray-500 text-xs">
+                              PNG, JPG up to 2MB
+                            </p>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                     {/* Basic Information */}
@@ -1575,48 +1698,30 @@ export default function EditMemberPage({
                           <FormItem>
                             <FormLabel>Status</FormLabel>
                             <Select
-                              defaultValue={field.value}
                               onValueChange={field.onChange}
+                              value={field.value}
                             >
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
+                                <SelectTrigger className="cursor-pointer">
+                                  <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">
-                                  Inactive
-                                </SelectItem>
-                                <SelectItem value="suspended">
-                                  Suspended
-                                </SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
+                              <SelectContent className="max-h-[400px] overflow-y-auto">
+                                {USER_STATUS_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    className="cursor-pointer"
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      {/* <FormField
-                        control={form.control}
-                        name="isEmailVerified"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Email Verified
-                              </FormLabel>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      /> */}
                     </CardContent>
                   </Card>
                 </TabsContent>

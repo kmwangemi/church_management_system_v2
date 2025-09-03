@@ -5,7 +5,7 @@ import type {
   UserListResponse,
   UserResponse,
 } from '@/lib/types/user';
-import type { AddUserPayload } from '@/lib/validations/users';
+import type { AddUserPayload, UpdateUserPayload } from '@/lib/validations/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -65,19 +65,19 @@ const updateUserById = async ({
   payload,
 }: {
   userId: string;
-  payload: Partial<AddUserPayload>;
+  payload: Partial<UpdateUserPayload>;
 }): Promise<UserResponse> => {
   const { data } = await apiClient.put(`/users/${userId}`, payload);
   return data;
 };
 
-export const useUpdateUserById = () => {
+export const useUpdateUserById = (userId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateUserById,
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['user', userId] });
       toast.success('User has been updated successfully.', {
         style: successToastStyle,
       });

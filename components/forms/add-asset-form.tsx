@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterAsset } from '@/lib/hooks/asset/use-asset-queries';
-import type { Branch } from '@/lib/types';
+import type { Branch } from '@/lib/types/branch';
 import {
   ASSET_CONDITION_OPTIONS,
   ASSET_MAINTENANCE_FREQUENCY_OPTIONS,

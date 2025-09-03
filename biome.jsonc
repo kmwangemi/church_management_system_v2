@@ -21,7 +21,8 @@
         "useBlockStatements": "off",
         "noNestedTernary": "off",
         "noNonNullAssertion": "off",
-        "useConsistentMemberAccessibility": "off"
+        "useConsistentMemberAccessibility": "off",
+        "noEnum": "off"
       },
       "complexity": {
         "noForEach": "off",

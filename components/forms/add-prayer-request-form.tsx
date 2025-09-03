@@ -27,9 +27,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { MemberListInput } from '@/components/user-list-input';
+import { UserListInput } from '@/components/user-list-input';
 import { useCreatePrayerRequest } from '@/lib/hooks/prayer-request/use-prayer-request-queries';
-import type { Member } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 import { PRAYER_CATEGORY_OPTIONS, PRAYER_PRIORITY_OPTIONS } from '@/lib/utils';
 import {
   type AddPrayerRequestPayload,
@@ -47,7 +47,9 @@ interface AddPrayerRequestFormProps {
 export function AddPrayerRequestForm({
   onCloseDialog,
 }: AddPrayerRequestFormProps) {
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const {
     mutateAsync: registerDiscipleMutation,
     isPending,
@@ -261,7 +263,7 @@ export function AddPrayerRequestForm({
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <MemberListInput
+                        <UserListInput
                           className="w-full"
                           onChange={(member) => {
                             setSelectedMember(member);

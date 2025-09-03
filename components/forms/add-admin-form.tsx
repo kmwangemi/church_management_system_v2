@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Branch } from '@/lib/types';
+import type { Branch } from '@/lib/types/branch';
 import { ADMIN_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, Users } from 'lucide-react';
@@ -118,9 +118,7 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
               <Users className="h-5 w-5" />
               <span>Admin Information</span>
             </CardTitle>
-            <CardDescription>
-              Create a new admin account
-            </CardDescription>
+            <CardDescription>Create a new admin account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

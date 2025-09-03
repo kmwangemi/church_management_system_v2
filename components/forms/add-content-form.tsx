@@ -39,7 +39,6 @@ import {
 import {
   // AddContentSchema,
   FILE_VALIDATION,
-  // type AddContentPayload,
 } from '@/lib/validations/content';
 // import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, FileText, Loader2, Upload, X } from 'lucide-react';
