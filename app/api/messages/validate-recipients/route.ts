@@ -2,9 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Department from '@/models/department';
-import Group from '@/models/group';
-import User from '@/models/user';
+import { DepartmentModel, GroupModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -58,13 +56,13 @@ async function validateRecipientsHandler(
       try {
         if (recipientId === 'all' || recipientId === 'active') {
           // These are always valid system groups
-          result.memberCount = await User.countDocuments({
+          result.memberCount = await UserModel.countDocuments({
             churchId,
             ...(recipientId === 'active' ? { status: 'active' } : {}),
           });
         } else if (recipientId.startsWith('dept_')) {
           const departmentId = recipientId.replace('dept_', '');
-          const department = await Department.findOne({
+          const department = await DepartmentModel.findOne({
             _id: new mongoose.Types.ObjectId(departmentId),
             churchId,
           });
@@ -74,7 +72,7 @@ async function validateRecipientsHandler(
             result.error = 'Department not found';
             hasErrors = true;
           } else if (department.isActive) {
-            result.memberCount = await User.countDocuments({
+            result.memberCount = await UserModel.countDocuments({
               churchId,
               departmentId: new mongoose.Types.ObjectId(departmentId),
               status: 'active',
@@ -86,7 +84,7 @@ async function validateRecipientsHandler(
           }
         } else if (recipientId.startsWith('group_')) {
           const groupId = recipientId.replace('group_', '');
-          const group = await Group.findOne({
+          const group = await GroupModel.findOne({
             _id: new mongoose.Types.ObjectId(groupId),
             churchId,
           });
@@ -96,7 +94,7 @@ async function validateRecipientsHandler(
             result.error = 'Group not found';
             hasErrors = true;
           } else if (group.isActive) {
-            result.memberCount = await User.countDocuments({
+            result.memberCount = await UserModel.countDocuments({
               churchId,
               groupId: new mongoose.Types.ObjectId(groupId),
               status: 'active',
@@ -107,13 +105,13 @@ async function validateRecipientsHandler(
             hasErrors = true;
           }
         } else if (recipientId === 'leadership') {
-          result.memberCount = await User.countDocuments({
+          result.memberCount = await UserModel.countDocuments({
             churchId,
             role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
             status: 'active',
           });
         } else if (recipientId === 'volunteers') {
-          result.memberCount = await User.countDocuments({
+          result.memberCount = await UserModel.countDocuments({
             churchId,
             role: 'volunteer',
             status: 'active',

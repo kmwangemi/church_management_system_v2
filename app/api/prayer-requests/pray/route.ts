@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import PrayerRequest from '@/models/prayer-request';
+import { PrayerRequestModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -46,7 +46,7 @@ async function updatePrayerCountHandler(
       );
     }
     // Update prayer count
-    const updatedPrayerRequest = await PrayerRequest.findOneAndUpdate(
+    const updatedPrayerRequest = await PrayerRequestModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(prayerRequestId),
         churchId: new mongoose.Types.ObjectId(user.user?.churchId),

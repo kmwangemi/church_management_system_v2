@@ -3,8 +3,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import { calculateDateRange } from '@/lib/utils';
-import Report from '@/models/report';
-import User from '@/models/user';
+import { ReportModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -93,13 +92,13 @@ async function getReportsHandler(request: NextRequest): Promise<NextResponse> {
     const skip = (page - 1) * limit;
     // Execute queries
     const [reports, total] = await Promise.all([
-      Report.find(query)
+      ReportModel.find(query)
         .populate('createdBy', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Report.countDocuments(query),
+      ReportModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -122,76 +121,6 @@ async function getReportsHandler(request: NextRequest): Promise<NextResponse> {
       { status: 500 }
     );
   }
-}
-
-// Helper function to calculate department counts
-async function calculateDepartmentCounts(
-  departments: string[],
-  churchId: mongoose.Types.ObjectId
-) {
-  // Create an array of promises for all department count queries
-  const countPromises = departments.map(async (departmentId) => {
-    try {
-      let count = 0;
-      let departmentName = '';
-      // Parse department ID to determine type and count members
-      if (departmentId === 'all') {
-        count = await User.countDocuments({ churchId, status: 'active' });
-        departmentName = 'All Members';
-      } else if (departmentId === 'leadership') {
-        count = await User.countDocuments({
-          churchId,
-          role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
-          status: 'active',
-        });
-        departmentName = 'Leadership';
-      } else if (departmentId === 'volunteers') {
-        count = await User.countDocuments({
-          churchId,
-          role: 'volunteer',
-          status: 'active',
-        });
-        departmentName = 'Volunteers';
-      } else if (departmentId.startsWith('dept_')) {
-        const deptId = departmentId.replace('dept_', '');
-        count = await User.countDocuments({
-          churchId,
-          departmentId: new mongoose.Types.ObjectId(deptId),
-          status: 'active',
-        });
-        // You might want to populate department name from Department model
-        departmentName = `Department ${deptId}`;
-      } else if (departmentId.startsWith('group_')) {
-        const groupId = departmentId.replace('group_', '');
-        count = await User.countDocuments({
-          churchId,
-          groupId: new mongoose.Types.ObjectId(groupId),
-          status: 'active',
-        });
-        // You might want to populate group name from Group model
-        departmentName = `Group ${groupId}`;
-      }
-      return {
-        departmentId,
-        departmentName,
-        count,
-      };
-    } catch (_error) {
-      return {
-        departmentId,
-        departmentName: `Error loading ${departmentId}`,
-        count: 0,
-      };
-    }
-  });
-  // Execute all promises concurrently
-  const departmentCounts = await Promise.all(countPromises);
-  // Calculate total count from all department counts
-  const totalCount = departmentCounts.reduce(
-    (sum, dept) => sum + dept.count,
-    0
-  );
-  return { totalCount, departmentCounts };
 }
 
 // POST /api/reports - Create a new report
@@ -345,13 +274,12 @@ async function createReportHandler(
       reportObj.customEndDate = new Date(reportData.customEndDate);
     }
     // Create and save report
-    const report = new Report(reportObj);
+    const report = new ReportModel(reportObj);
     const savedReport = await report.save();
     // Populate the saved report for response
-    const populatedReport = await Report.findById(savedReport._id).populate(
-      'createdBy',
-      'name email'
-    );
+    const populatedReport = await ReportModel.findById(
+      savedReport._id
+    ).populate('createdBy', 'name email');
     contextLogger.info('Report created successfully', {
       reportId: savedReport._id,
       type: savedReport.type,

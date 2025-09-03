@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Report from '@/models/report';
+import { ReportModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -44,21 +44,21 @@ export async function getReportStatsHandler(
       reportsByStatus,
       recentReports,
     ] = await Promise.all([
-      Report.countDocuments({ churchId }),
-      Report.countDocuments({ churchId, status: 'completed' }),
-      Report.countDocuments({ churchId, status: 'generating' }),
-      Report.countDocuments({ churchId, status: 'failed' }),
-      Report.aggregate([
+      ReportModel.countDocuments({ churchId }),
+      ReportModel.countDocuments({ churchId, status: 'completed' }),
+      ReportModel.countDocuments({ churchId, status: 'generating' }),
+      ReportModel.countDocuments({ churchId, status: 'failed' }),
+      ReportModel.aggregate([
         { $match: { churchId } },
         { $group: { _id: '$type', count: { $sum: 1 } } },
         { $project: { type: '$_id', count: 1, _id: 0 } },
       ]),
-      Report.aggregate([
+      ReportModel.aggregate([
         { $match: { churchId } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
         { $project: { status: '$_id', count: 1, _id: 0 } },
       ]),
-      Report.find({ churchId })
+      ReportModel.find({ churchId })
         .populate('createdBy', 'name')
         .sort({ createdAt: -1 })
         .limit(5)

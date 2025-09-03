@@ -1,9 +1,7 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: ignore any */
-
-import path from 'node:path';
+import { FILE_CONFIGS } from '@/lib/utils';
 import { v2 as cloudinary } from 'cloudinary';
 import { type NextRequest, NextResponse } from 'next/server';
-import { FILE_CONFIGS } from '@/lib/utils';
+import path from 'node:path';
 
 // Configure Cloudinary
 cloudinary.config({

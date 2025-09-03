@@ -2,9 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Disciple from '@/models/disciple';
-import DiscipleProgress from '@/models/disciple-progress';
-import Milestone from '@/models/milestone';
+import { DiscipleModel, DiscipleProgressModel, MilestoneModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -52,7 +50,7 @@ async function addMilestoneCompletionHandler(
       );
     }
     // Check if disciple exists
-    const disciple = await Disciple.findOne({
+    const disciple = await DiscipleModel.findOne({
       _id: params.id,
       churchId: user.user?.churchId,
     });
@@ -63,7 +61,7 @@ async function addMilestoneCompletionHandler(
       );
     }
     // Check if milestone exists
-    const milestone = await Milestone.findOne({
+    const milestone = await MilestoneModel.findOne({
       _id: milestoneId,
       churchId: user.user?.churchId,
     });
@@ -74,7 +72,7 @@ async function addMilestoneCompletionHandler(
       );
     }
     // Check if milestone already completed
-    const existingProgress = await DiscipleProgress.findOne({
+    const existingProgress = await DiscipleProgressModel.findOne({
       discipleId: params.id,
       milestoneId,
     });
@@ -85,7 +83,7 @@ async function addMilestoneCompletionHandler(
       );
     }
     // Create progress record
-    const progressRecord = new DiscipleProgress({
+    const progressRecord = new DiscipleProgressModel({
       churchId: user.user?.churchId,
       branchId: user.user?.branchId,
       discipleId: params.id,
@@ -98,14 +96,14 @@ async function addMilestoneCompletionHandler(
     });
     await progressRecord.save();
     // Update disciple's milestones completed array
-    await Disciple.findByIdAndUpdate(params.id, {
+    await DiscipleModel.findByIdAndUpdate(params.id, {
       $addToSet: { milestonesCompleted: milestoneId },
     });
     // Update milestone completion count
-    await Milestone.findByIdAndUpdate(milestoneId, {
+    await MilestoneModel.findByIdAndUpdate(milestoneId, {
       $inc: { completionCount: 1 },
     });
-    const populatedProgress = await DiscipleProgress.findById(
+    const populatedProgress = await DiscipleProgressModel.findById(
       progressRecord._id
     )
       .populate('milestoneId', 'name points category')

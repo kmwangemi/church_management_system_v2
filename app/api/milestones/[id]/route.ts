@@ -2,9 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Disciple from '@/models/disciple';
-import DiscipleProgress from '@/models/disciple-progress';
-import Milestone from '@/models/milestone';
+import { DiscipleModel, DiscipleProgressModel, MilestoneModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -45,7 +43,7 @@ async function getMilestoneHandler(
       );
     }
     // Find the milestone
-    const milestone = await Milestone.findOne({
+    const milestone = await MilestoneModel.findOne({
       _id: params.id,
       churchId: user.user?.churchId,
     })
@@ -58,7 +56,7 @@ async function getMilestoneHandler(
       );
     }
     // Get completion statistics
-    const completionStats = await DiscipleProgress.aggregate([
+    const completionStats = await DiscipleProgressModel.aggregate([
       {
         $match: {
           milestoneId: new mongoose.Types.ObjectId(params.id),
@@ -73,7 +71,7 @@ async function getMilestoneHandler(
       },
     ]);
     // Get recent completions
-    const recentCompletions = await DiscipleProgress.find({
+    const recentCompletions = await DiscipleProgressModel.find({
       milestoneId: params.id,
       churchId: user.user?.churchId,
       status: 'approved',
@@ -175,7 +173,7 @@ async function updateMilestoneHandler(
     }
     // Check if name is being updated and ensure uniqueness
     if (allowedUpdates.name) {
-      const existingMilestone = await Milestone.findOne({
+      const existingMilestone = await MilestoneModel.findOne({
         churchId: user.user?.churchId,
         name: { $regex: new RegExp(`^${allowedUpdates.name}$`, 'i') },
         _id: { $ne: params.id }, // Exclude current milestone
@@ -188,7 +186,7 @@ async function updateMilestoneHandler(
       }
     }
     // Find and update the milestone
-    const updatedMilestone = await Milestone.findOneAndUpdate(
+    const updatedMilestone = await MilestoneModel.findOneAndUpdate(
       {
         _id: params.id,
         churchId: user.user?.churchId,
@@ -206,7 +204,7 @@ async function updateMilestoneHandler(
     }
     // If points were updated, update all existing progress records
     if (allowedUpdates.points) {
-      await DiscipleProgress.updateMany(
+      await DiscipleProgressModel.updateMany(
         { milestoneId: params.id },
         { pointsEarned: allowedUpdates.points }
       );
@@ -271,7 +269,7 @@ async function deleteMilestoneHandler(
       );
     }
     // Check if milestone has any progress records
-    const progressCount = await DiscipleProgress.countDocuments({
+    const progressCount = await DiscipleProgressModel.countDocuments({
       milestoneId: params.id,
     });
     if (progressCount > 0) {
@@ -284,7 +282,7 @@ async function deleteMilestoneHandler(
       );
     }
     // Check if milestone is a prerequisite for other milestones
-    const dependentMilestones = await Milestone.countDocuments({
+    const dependentMilestones = await MilestoneModel.countDocuments({
       prerequisiteMilestones: params.id,
     });
     if (dependentMilestones > 0) {
@@ -297,7 +295,7 @@ async function deleteMilestoneHandler(
       );
     }
     // Find and delete the milestone
-    const deletedMilestone = await Milestone.findOneAndDelete({
+    const deletedMilestone = await MilestoneModel.findOneAndDelete({
       _id: params.id,
       churchId: user.user?.churchId,
     });
@@ -308,7 +306,7 @@ async function deleteMilestoneHandler(
       );
     }
     // Remove milestone from any disciple's completed milestones array
-    await Disciple.updateMany(
+    await DiscipleModel.updateMany(
       { milestonesCompleted: params.id },
       { $pull: { milestonesCompleted: params.id } }
     );

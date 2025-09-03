@@ -1,10 +1,8 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Disciple from '@/models/disciple';
-import User from '@/models/user';
+import { DiscipleModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -85,7 +83,7 @@ async function getDisciplesHandler(
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [disciples, total] = await Promise.all([
-      Disciple.find(query)
+      DiscipleModel.find(query)
         .populate('memberId', 'firstName lastName email phoneNumber')
         .populate('mentorId', 'firstName lastName email phoneNumber')
         .populate('milestonesCompleted', 'name points category')
@@ -93,7 +91,7 @@ async function getDisciplesHandler(
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance if you don't need mongoose documents
-      Disciple.countDocuments(query),
+      DiscipleModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -178,17 +176,17 @@ async function registerDiscipleHandler(
       );
     }
     // check if member exists
-    const existingMember = await User.findById(memberId);
+    const existingMember = await UserModel.findById(memberId);
     if (!existingMember) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
     // check if mentor exists
-    const existingMentor = await User.findById(mentorId);
+    const existingMentor = await UserModel.findById(mentorId);
     if (!existingMentor) {
       return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
     }
     // Check if member is already in discipleship program
-    const existingDisciple = await Disciple.findOne({
+    const existingDisciple = await DiscipleModel.findOne({
       churchId: user.user?.churchId,
       memberId: new mongoose.Types.ObjectId(memberId),
       status: 'active',
@@ -200,7 +198,7 @@ async function registerDiscipleHandler(
       );
     }
     // Create and save the disciple
-    const disciple = new Disciple({
+    const disciple = new DiscipleModel({
       ...discipleData,
       churchId: user.user?.churchId,
       branchId: existingMember?.branchId || null, // Assuming user has branchId

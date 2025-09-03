@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddDepartmentPayload } from '@/lib/validations/department';
-import Department from '@/models/department';
+import { DepartmentModel } from '@/models';
 import { type NextRequest, NextResponse } from 'next/server';
 
 async function getDepartmentHandler(
@@ -50,12 +50,12 @@ async function getDepartmentHandler(
     }
     const skip = (page - 1) * limit;
     const [departments, total] = await Promise.all([
-      Department.find(query)
+      DepartmentModel.find(query)
         // .populate('churchId', 'churchName address country')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      Department.countDocuments(query),
+      DepartmentModel.countDocuments(query),
     ]);
     return NextResponse.json({
       departments,
@@ -114,7 +114,7 @@ async function registerDepartmentHandler(
     }
     await dbConnect();
     const departmentData: AddDepartmentPayload = await request.json();
-    const existingDepartment = await Department.findOne({
+    const existingDepartment = await DepartmentModel.findOne({
       departmentName: departmentData.departmentName,
       churchId: user.user?.churchId,
     });
@@ -124,7 +124,7 @@ async function registerDepartmentHandler(
         { status: 400 }
       );
     }
-    const department = new Department({
+    const department = new DepartmentModel({
       ...departmentData,
       churchId: user.user?.churchId,
     });

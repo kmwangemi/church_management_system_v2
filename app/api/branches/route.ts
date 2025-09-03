@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import type { AddBranchPayload } from '@/lib/validations/branch';
-import BranchModel from '@/models/branch';
+import { BranchModel } from '@/models';
 import { type NextRequest, NextResponse } from 'next/server';
 
 async function getBranchHandler(request: NextRequest): Promise<NextResponse> {

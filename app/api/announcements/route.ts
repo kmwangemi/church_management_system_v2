@@ -1,10 +1,9 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore exccessive complexity */
 /** biome-ignore-all lint/style/useCollapsedElseIf: ignore collapsed else if */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Announcement from '@/models/announcement';
+import { AnnouncementModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -110,7 +109,7 @@ async function getAnnouncementHandler(
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [announcements, total] = await Promise.all([
-      Announcement.find(query)
+      AnnouncementModel.find(query)
         .populate('authorId', 'firstName lastName email')
         .populate('branchId', 'name')
         .sort({
@@ -122,7 +121,7 @@ async function getAnnouncementHandler(
         .skip(skip)
         .limit(limit)
         .lean(),
-      Announcement.countDocuments(query),
+      AnnouncementModel.countDocuments(query),
     ]);
     // If it's a text search, add score sorting
     let sortedAnnouncements = announcements;
@@ -218,7 +217,7 @@ async function createAnnouncementHandler(
       announcementData.expiryDate = new Date(announcementData.expiryDate);
     }
     // Create and save the announcement
-    const announcement = new Announcement({
+    const announcement = new AnnouncementModel({
       ...announcementData,
       churchId: user.user?.churchId,
       branchId: user.user?.branchId || announcementData.branchId,
@@ -311,7 +310,7 @@ async function updateAnnouncementHandler(
       updateData.expiryDate = new Date(updateData.expiryDate);
     }
     // Find and update the announcement
-    const updatedAnnouncement = await Announcement.findOneAndUpdate(
+    const updatedAnnouncement = await AnnouncementModel.findOneAndUpdate(
       {
         _id: announcementId,
         churchId: user.user?.churchId,
@@ -399,7 +398,7 @@ async function deleteAnnouncementHandler(
       );
     }
     // Find and delete the announcement
-    const deletedAnnouncement = await Announcement.findOneAndDelete({
+    const deletedAnnouncement = await AnnouncementModel.findOneAndDelete({
       _id: announcementId,
       churchId: user.user?.churchId,
     });

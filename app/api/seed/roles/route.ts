@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { seedPermissions, seedRoles } from '@/scripts/seed-roles';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -42,12 +42,12 @@ export async function POST(_request: NextRequest) {
 export async function GET() {
   try {
     await dbConnect();
-    const { Role } = await import('@/models/role');
-    const { Permission } = await import('@/models/permission');
-    const roles = await Role.find({ isSystemRole: true }).populate(
+    const { RoleModel } = await import('@/models');
+    const { PermissionModel } = await import('@/models');
+    const roles = await RoleModel.find({ isSystemRole: true }).populate(
       'permissions'
     );
-    const permissions = await Permission.find();
+    const permissions = await PermissionModel.find();
     return NextResponse.json({
       roles: roles.map((role) => ({
         name: role.name,

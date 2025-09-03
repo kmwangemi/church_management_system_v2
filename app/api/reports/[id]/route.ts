@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Report from '@/models/report';
+import { ReportModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -34,7 +34,7 @@ async function getReportHandler(
       );
     }
     await dbConnect();
-    const report = await Report.findOne({
+    const report = await ReportModel.findOne({
       _id: new mongoose.Types.ObjectId(params.id),
       churchId: new mongoose.Types.ObjectId(user.user?.churchId),
     }).populate('createdBy', 'firstName lastName email');
@@ -76,7 +76,7 @@ async function cancelReportHandler(
     }
     const user = authResult;
     await dbConnect();
-    const report = await Report.findOneAndUpdate(
+    const report = await ReportModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(params.id),
         churchId: new mongoose.Types.ObjectId(user.user?.churchId),
@@ -127,7 +127,7 @@ async function deleteReportHandler(
     }
     const user = authResult;
     await dbConnect();
-    const report = await Report.findOneAndDelete({
+    const report = await ReportModel.findOneAndDelete({
       _id: new mongoose.Types.ObjectId(params.id),
       churchId: new mongoose.Types.ObjectId(user.user?.churchId),
     });

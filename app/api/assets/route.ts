@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Asset from '@/models/asset';
+import { AssetModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -81,12 +81,12 @@ async function getAssetHandler(request: NextRequest): Promise<NextResponse> {
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [assets, total] = await Promise.all([
-      Asset.find(query)
+      AssetModel.find(query)
         .sort({ startDate: -1, createdAt: -1 }) // Secondary sort by creation date
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance if you don't need mongoose documents
-      Asset.countDocuments(query),
+      AssetModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -151,7 +151,7 @@ async function registerAssetHandler(
     await dbConnect();
     const assetData = await request.json();
     // Create and save the asset
-    const asset = new Asset({
+    const asset = new AssetModel({
       ...assetData,
       churchId: user.user?.churchId,
     });

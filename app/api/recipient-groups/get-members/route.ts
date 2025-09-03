@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/user';
+import { UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -49,14 +49,16 @@ async function getMembersHandler(request: NextRequest): Promise<NextResponse> {
       let members = [];
       // Parse recipient ID to determine type and get members
       if (recipientId === 'all') {
-        members = await User.find({ churchId }).select(selectFields).lean();
+        members = await UserModel.find({ churchId })
+          .select(selectFields)
+          .lean();
       } else if (recipientId === 'active') {
-        members = await User.find({ churchId, status: 'active' })
+        members = await UserModel.find({ churchId, status: 'active' })
           .select(selectFields)
           .lean();
       } else if (recipientId.startsWith('dept_')) {
         const departmentId = recipientId.replace('dept_', '');
-        members = await User.find({
+        members = await UserModel.find({
           churchId,
           departmentId: new mongoose.Types.ObjectId(departmentId),
           status: 'active',
@@ -65,7 +67,7 @@ async function getMembersHandler(request: NextRequest): Promise<NextResponse> {
           .lean();
       } else if (recipientId.startsWith('group_')) {
         const groupId = recipientId.replace('group_', '');
-        members = await User.find({
+        members = await UserModel.find({
           churchId,
           groupId: new mongoose.Types.ObjectId(groupId),
           status: 'active',
@@ -73,7 +75,7 @@ async function getMembersHandler(request: NextRequest): Promise<NextResponse> {
           .select(selectFields)
           .lean();
       } else if (recipientId === 'leadership') {
-        members = await User.find({
+        members = await UserModel.find({
           churchId,
           role: { $in: ['leader', 'pastor', 'deacon', 'elder'] },
           status: 'active',
@@ -81,7 +83,7 @@ async function getMembersHandler(request: NextRequest): Promise<NextResponse> {
           .select(selectFields)
           .lean();
       } else if (recipientId === 'volunteers') {
-        members = await User.find({
+        members = await UserModel.find({
           churchId,
           role: 'volunteer',
           status: 'active',

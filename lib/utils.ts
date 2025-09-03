@@ -536,7 +536,7 @@ export const MEMBERSHIP_STATUS_OPTIONS = [
   { value: 'inactive', label: 'Inactive' },
   { value: 'transferred', label: 'Transferred' },
   { value: 'deceased', label: 'Deceased' },
-]
+];
 
 export const USER_STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },

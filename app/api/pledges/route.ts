@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Pledge from '@/models/pledge';
+import { PledgeModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -70,12 +70,12 @@ async function getPledgeHandler(request: NextRequest): Promise<NextResponse> {
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [pledges, total] = await Promise.all([
-      Pledge.find(query)
+      PledgeModel.find(query)
         .sort({ startDate: -1, createdAt: -1 }) // Secondary sort by creation date
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance if you don't need mongoose documents
-      Pledge.countDocuments(query),
+      PledgeModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -140,7 +140,7 @@ async function registerPledgeHandler(
     await dbConnect();
     const pledgeData = await request.json();
     // Create and save the pledge
-    const pledge = new Pledge({
+    const pledge = new PledgeModel({
       ...pledgeData,
       churchId: user.user?.churchId,
     });

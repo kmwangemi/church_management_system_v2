@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Offering from '@/models/offering';
+import { OfferingModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -70,12 +70,12 @@ async function getOfferingHandler(request: NextRequest): Promise<NextResponse> {
     const skip = (page - 1) * limit;
     // Execute queries with better error handling
     const [offerings, total] = await Promise.all([
-      Offering.find(query)
+      OfferingModel.find(query)
         .sort({ startDate: -1, createdAt: -1 }) // Secondary sort by creation date
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance if you don't need mongoose documents
-      Offering.countDocuments(query),
+      OfferingModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -140,7 +140,7 @@ async function registerOfferingHandler(
     await dbConnect();
     const offeringData = await request.json();
     // Create and save the offering
-    const offering = new Offering({
+    const offering = new OfferingModel({
       ...offeringData,
       churchId: user.user?.churchId,
     });

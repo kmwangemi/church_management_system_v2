@@ -1,9 +1,8 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Milestone from '@/models/milestone';
+import { MilestoneModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -97,13 +96,13 @@ async function getMilestonesHandler(
     }
     // Execute queries with better error handling
     const [milestones, total] = await Promise.all([
-      Milestone.find(query)
+      MilestoneModel.find(query)
         .populate('prerequisiteMilestones', 'name points category level')
         .sort(sortOrder)
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance
-      Milestone.countDocuments(query),
+      MilestoneModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -185,7 +184,7 @@ async function createMilestoneHandler(
       );
     }
     // Check if milestone name already exists for this church
-    const existingMilestone = await Milestone.findOne({
+    const existingMilestone = await MilestoneModel.findOne({
       churchId: user.user?.churchId,
       name: { $regex: new RegExp(`^${name}$`, 'i') }, // Case-insensitive exact match
     });
@@ -196,7 +195,7 @@ async function createMilestoneHandler(
       );
     }
     // Get the next order number for this category
-    const lastMilestone = await Milestone.findOne({
+    const lastMilestone = await MilestoneModel.findOne({
       churchId: user.user?.churchId,
       category,
     }).sort({ order: -1 });
@@ -204,7 +203,7 @@ async function createMilestoneHandler(
     // Set default level if not provided
     const level = milestoneData.level || 'new-convert';
     // Create and save the milestone
-    const milestone = new Milestone({
+    const milestone = new MilestoneModel({
       ...milestoneData,
       churchId: user.user?.churchId,
       branchId: user.user?.branchId, // Assuming user has branchId

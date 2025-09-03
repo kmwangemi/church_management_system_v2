@@ -1,8 +1,8 @@
-import crypto from 'node:crypto';
-import { type NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/user';
+import { UserModel } from '@/models';
+import { type NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 
 export async function POST(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') || 'unknown';
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       contextLogger.warn('Forgot password failed - Missing email', { email });
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
-    const user = await User.findOne({ email });
+    const user = await UserModel.findOne({ email });
     if (!user) {
       return NextResponse.json({
         message:

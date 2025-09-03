@@ -1,9 +1,8 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import Content from '@/models/content';
+import { ContentModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -150,12 +149,12 @@ async function getContentHandler(request: NextRequest): Promise<NextResponse> {
     }
     // Execute queries with better error handling
     const [content, total] = await Promise.all([
-      Content.find(query)
+      ContentModel.find(query)
         .sort(sortObject)
         .skip(skip)
         .limit(limit)
         .lean(), // Use lean() for better performance if you don't need mongoose documents
-      Content.countDocuments(query),
+      ContentModel.countDocuments(query),
     ]);
     return NextResponse.json({
       success: true,
@@ -236,7 +235,7 @@ async function createContentHandler(
         .filter((tag: string) => tag.length > 0);
     }
     // Create and save the content
-    const content = new Content({
+    const content = new ContentModel({
       ...contentData,
       churchId: user.user?.churchId,
       // author: user.user?.name || user.user?.email || 'Unknown',
@@ -323,7 +322,7 @@ async function updateContentHandler(
         .map((tag: string) => tag.trim())
         .filter((tag: string) => tag.length > 0);
     }
-    const updatedContent = await Content.findOneAndUpdate(
+    const updatedContent = await ContentModel.findOneAndUpdate(
       {
         _id: contentId,
         churchId: user.user?.churchId,
