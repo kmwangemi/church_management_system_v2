@@ -185,13 +185,15 @@ ChurchSchema.index({
   description: 'text',
 });
 
-// Virtual to get full address as string
 ChurchSchema.virtual('fullAddress').get(function () {
   const addr = this.address;
-  const parts = [addr.street, addr.city];
+  if (!addr) return ''; // or return null, depending on what you want
+  const parts: string[] = [];
+  if (addr.street) parts.push(addr.street);
+  if (addr.city) parts.push(addr.city);
   if (addr.state) parts.push(addr.state);
   if (addr.zipCode) parts.push(addr.zipCode);
-  parts.push(addr.country);
+  if (addr.country) parts.push(addr.country);
   return parts.join(', ');
 });
 

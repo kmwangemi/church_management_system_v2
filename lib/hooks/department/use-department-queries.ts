@@ -1,12 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
 import type {
   DepartmentAddResponse,
   DepartmentListResponse,
-} from '@/lib/types';
+} from '@/lib/types/department';
 import type { AddDepartmentPayload } from '@/lib/validations/department';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const registerDepartment = async (
   payload: AddDepartmentPayload

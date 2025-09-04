@@ -545,6 +545,13 @@ export const USER_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
+export const VOLUNTEER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'on_hold', label: 'On Hold' },
+  { value: 'suspended', label: 'Suspended' },
+];
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {

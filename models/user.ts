@@ -65,7 +65,7 @@ interface IVolunteerDetails {
   availabilitySchedule?: {
     days?: string[];
     timeSlots?: string[];
-    preferredTimes?: string;
+    preferredTimes?: string[];
   };
   departments?: mongoose.Types.ObjectId[];
   volunteerRoles?: {
@@ -301,7 +301,7 @@ const VolunteerDetailsSchema = new Schema<IVolunteerDetails>(
     availabilitySchedule: {
       days: [{ type: String }],
       timeSlots: [{ type: String, trim: true }],
-      preferredTimes: { type: String, trim: true },
+      preferredTimes: [{ type: String, trim: true }],
     },
     departments: [{ type: Schema.Types.ObjectId, ref: 'Department' }],
     volunteerRoles: [

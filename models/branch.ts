@@ -129,7 +129,6 @@ const BranchSchema = new Schema<IBranch>(
 BranchSchema.index({ churchId: 1 }); // Index by church
 BranchSchema.index({ churchId: 1, isActive: 1 }); // Index by church and active status
 BranchSchema.index({ pastorId: 1 }); // Index by pastor
-BranchSchema.index({ branchName: 1 }); // Index by branch name
 BranchSchema.index({ 'address.city': 1, 'address.state': 1 }); // Index by location
 
 // Add text index for searching
