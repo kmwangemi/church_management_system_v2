@@ -25,19 +25,19 @@ const emergencyDetailsSchema = z.object({
 
 const memberDetailsSchema = z.object({
   memberId: optionalString,
-  membershipDate: z.date().optional(),
+  membershipDate: optionalString,
   membershipStatus: z.enum(['active', 'inactive', 'transferred', 'deceased']),
   departmentIds: z.array(z.string()).optional(),
   groupIds: z.array(z.string()).optional(),
   occupation: optionalString,
-  baptismDate: z.date().optional(),
-  joinedDate: z.date().optional(),
+  baptismDate: optionalString,
+  joinedDate: optionalString,
 });
 
 // 🔹 Other role-based details with fixed string handling
 const pastorDetailsSchema = z.object({
   pastorId: optionalString,
-  ordinationDate: z.date().optional(),
+  ordinationDate: optionalString,
   qualifications: z.array(z.string()).optional(),
   specializations: z.array(z.string()).optional(),
   assignments: z.array(z.any()).optional(),
@@ -48,7 +48,7 @@ const pastorDetailsSchema = z.object({
 
 const bishopDetailsSchema = z.object({
   bishopId: optionalString,
-  appointmentDate: z.date().optional(),
+  appointmentDate: optionalString,
   jurisdictionArea: optionalString,
   oversight: z.record(z.string(), z.any()).optional(),
   qualifications: z.array(z.string()).optional(),
@@ -60,7 +60,7 @@ const staffDetailsSchema = z.object({
   staffId: optionalString,
   jobTitle: optionalString,
   department: optionalString,
-  startDate: z.date().optional(),
+  startDate: optionalString,
   salary: z.number().optional(),
   employmentType: z
     .enum(['full-time', 'part-time', 'contract', 'casual'])
@@ -95,7 +95,7 @@ const superAdminDetailsSchema = z.object({
 
 const visitorDetailsSchema = z.object({
   visitorId: optionalString,
-  visitDate: z.date().optional(),
+  visitDate: optionalString,
   invitedBy: optionalString,
   howDidYouHear: z
     .enum(['friend', 'family', 'online', 'flyer', 'other'])
@@ -103,7 +103,7 @@ const visitorDetailsSchema = z.object({
   followUpStatus: z
     .enum(['pending', 'contacted', 'interested', 'not_interested'])
     .optional(),
-  followUpDate: z.date().optional(),
+  followUpDate: optionalString,
   followUpNotes: optionalString,
   interestedInMembership: z.boolean(),
   servicesAttended: z.array(z.string()).optional(),
@@ -135,7 +135,7 @@ export const userUpdateSchema = z.object({
   email: optionalEmail,
   phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
   address: addressSchema,
-  dateOfBirth: z.date().optional(),
+  dateOfBirth: optionalString,
   gender: z.enum(['male', 'female']),
   profilePictureUrl: optionalString,
   occupation: optionalString,
@@ -159,12 +159,12 @@ export const userUpdateSchema = z.object({
   isStaff: z.boolean(),
   isVolunteer: z.boolean(),
   status: z.enum(['active', 'inactive', 'suspended', 'pending']),
-  lastLogin: z.date().optional(),
+  lastLogin: optionalString,
   maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed']),
   emergencyDetails: emergencyDetailsSchema, // ✅ Using the fixed schema
   notes: optionalString,
   skills: z.array(z.string()).optional(),
-  createdAt: z.date().optional(),
+  createdAt: optionalString,
   // role-based details
   memberDetails: memberDetailsSchema.optional(),
   pastorDetails: pastorDetailsSchema.optional(),

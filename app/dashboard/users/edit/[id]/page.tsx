@@ -247,9 +247,7 @@ export default function EditMemberPage({
           zipCode: user?.address?.zipCode || undefined,
           country: user?.address?.country || undefined,
         },
-        dateOfBirth: user?.dateOfBirth
-          ? new Date(user?.dateOfBirth)
-          : undefined,
+        dateOfBirth: user?.dateOfBirth || undefined,
         gender: user?.gender || 'male',
         profilePictureUrl: user?.profilePictureUrl || undefined,
         occupation: user?.occupation
@@ -283,25 +281,17 @@ export default function EditMemberPage({
       // Member details
       formData.memberDetails = {
         memberId: user?.memberDetails?.memberId || '',
-        membershipDate:
-          user?.memberDetails?.membershipDate &&
-          new Date(user?.memberDetails?.membershipDate),
+        membershipDate: user?.memberDetails?.membershipDate || undefined,
         membershipStatus: user?.memberDetails?.membershipStatus || 'active',
         departmentIds: user?.memberDetails?.departmentIds || [],
         groupIds: user?.memberDetails?.groupIds || [],
-        baptismDate:
-          user?.memberDetails?.baptismDate &&
-          new Date(user?.memberDetails?.baptismDate),
-        joinedDate:
-          user?.memberDetails?.joinedDate &&
-          new Date(user?.memberDetails?.joinedDate),
+        baptismDate: user?.memberDetails?.baptismDate || undefined,
+        joinedDate: user?.memberDetails?.joinedDate || undefined,
       };
       // Pastor details
       formData.pastorDetails = {
         pastorId: user?.pastorDetails?.pastorId || '',
-        ordinationDate:
-          user?.pastorDetails?.ordinationDate &&
-          new Date(user?.pastorDetails?.ordinationDate),
+        ordinationDate: user?.pastorDetails?.ordinationDate || undefined,
         qualifications: user?.pastorDetails?.qualifications || [],
         specializations: user?.pastorDetails?.specializations || [],
         assignments: user?.pastorDetails?.assignments || [],
@@ -313,9 +303,7 @@ export default function EditMemberPage({
       if (user?.bishopDetails) {
         formData.bishopDetails = {
           bishopId: user?.bishopDetails?.bishopId || '',
-          appointmentDate:
-            user?.bishopDetails?.appointmentDate &&
-            new Date(user?.bishopDetails?.appointmentDate),
+          appointmentDate: user?.bishopDetails?.appointmentDate || undefined,
           jurisdictionArea: user?.bishopDetails?.jurisdictionArea || '',
           oversight: user?.bishopDetails?.oversight || {},
           qualifications: user?.bishopDetails?.qualifications || [],
@@ -353,15 +341,11 @@ export default function EditMemberPage({
       if (user?.visitorDetails) {
         formData.visitorDetails = {
           visitorId: user?.visitorDetails?.visitorId || '',
-          visitDate:
-            user?.visitorDetails?.visitDate &&
-            new Date(user?.visitorDetails?.visitDate),
+          visitDate: user?.visitorDetails?.visitDate || undefined,
           invitedBy: user?.visitorDetails?.invitedBy || '',
           howDidYouHear: user?.visitorDetails?.howDidYouHear || 'friend',
           followUpStatus: user?.visitorDetails?.followUpStatus || 'pending',
-          followUpDate:
-            user?.visitorDetails?.followUpDate &&
-            new Date(user?.visitorDetails?.followUpDate),
+          followUpDate: user?.visitorDetails?.followUpDate || undefined,
           followUpNotes: user?.visitorDetails?.followUpNotes || '',
           interestedInMembership: user?.visitorDetails?.interestedInMembership,
           servicesAttended: user?.visitorDetails?.servicesAttended || [],
@@ -376,9 +360,7 @@ export default function EditMemberPage({
           department: capitalizeFirstLetter(
             user?.staffDetails?.department || ''
           ),
-          startDate:
-            user?.staffDetails?.startDate &&
-            new Date(user?.staffDetails?.startDate),
+          startDate: user?.staffDetails?.startDate || undefined,
           salary: user?.staffDetails?.salary || 0,
           employmentType: user?.staffDetails?.employmentType || 'full-time',
           isActive: user?.staffDetails?.isActive,
