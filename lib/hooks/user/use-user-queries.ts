@@ -5,7 +5,10 @@ import type {
   UserListResponse,
   UserResponse,
 } from '@/lib/types/user';
-import type { AddUserPayload, UpdateUserPayload } from '@/lib/validations/users';
+import type {
+  AddUserPayload,
+  UpdateUserPayload,
+} from '@/lib/validations/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 

@@ -1,8 +1,7 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore complexity */
 import { Input } from '@/components/ui/input';
 import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
-import type { Branch } from '@/lib/types';
+import type { Branch } from '@/lib/types/branch';
 import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
 import {
   ArrowUp,
@@ -267,7 +266,7 @@ const BranchListInputComponent = React.forwardRef<
               <span className="truncate">{getDisplayValue(recent.branch)}</span>
               {recent.branch.address && (
                 <span className="truncate text-muted-foreground text-xs">
-                  {recent.branch.address}
+                  {recent?.branch?.address?.street}
                 </span>
               )}
             </div>
@@ -320,13 +319,15 @@ const BranchListInputComponent = React.forwardRef<
               <div className="flex items-center gap-2 text-muted-foreground text-xs">
                 {branch.address && (
                   <span className="truncate">
-                    {capitalizeFirstLetter(branch.address)}
+                    {capitalizeFirstLetter(branch?.address?.street)}
                   </span>
                 )}
-                {branch.country && (
+                {branch?.address?.country && (
                   <>
                     {branch.address && <span>•</span>}
-                    <span>{capitalizeFirstLetter(branch.country)}</span>
+                    <span>
+                      {capitalizeFirstLetter(branch?.address?.country)}
+                    </span>
                   </>
                 )}
               </div>
@@ -357,7 +358,7 @@ const BranchListInputComponent = React.forwardRef<
                 <span className="truncate">{getDisplayValue(value)}</span>
                 {value.address && (
                   <span className="truncate text-muted-foreground text-xs">
-                    {capitalizeFirstLetter(value.address)}
+                    {capitalizeFirstLetter(value?.address?.street)}
                   </span>
                 )}
               </div>

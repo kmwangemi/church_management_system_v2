@@ -144,7 +144,6 @@ AssetSchema.index({ churchId: 1, branchId: 1 }); // Index by church and branch
 AssetSchema.index({ churchId: 1, type: 1 }); // Index by church and asset type
 AssetSchema.index({ churchId: 1, status: 1 }); // Index by church and status
 AssetSchema.index({ churchId: 1, condition: 1 }); // Index by church and condition
-AssetSchema.index({ serialNumber: 1 }, { sparse: true }); // Index by serial number (sparse for optional field)
 
 // Add text index for searching by name, type, supplier, and notes
 AssetSchema.index({
