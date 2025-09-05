@@ -89,7 +89,7 @@ export interface VolunteerDetails {
   availabilitySchedule: {
     days: string[];
     timeSlots: string[];
-    preferredTimes: string;
+    preferredTimes: string[];
   };
   departments: string[];
   volunteerRoles: {

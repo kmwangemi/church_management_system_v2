@@ -74,7 +74,7 @@ const volunteerDetailsSchema = z.object({
     .enum(['active', 'inactive', 'on_hold', 'suspended'])
     .optional(),
   availabilitySchedule: z.record(z.string(), z.any()).optional(),
-  departments: z.array(z.any()).optional(),
+  departments: z.array(z.string()).optional(),
   volunteerRoles: z.array(z.any()).optional(),
   backgroundCheck: z.record(z.string(), z.any()).optional(),
   hoursContributed: z.number().optional(),
@@ -139,13 +139,7 @@ export const userUpdateSchema = z.object({
   gender: z.enum(['male', 'female']),
   profilePictureUrl: optionalString,
   occupation: optionalString,
-  branchId: z
-    .union([
-      z.string().optional(),
-      z.object({ branchName: optionalString }),
-      z.literal(''),
-    ])
-    .optional(),
+  branchId: optionalString,
   isMember: z.boolean(),
   role: z.enum([
     'member',

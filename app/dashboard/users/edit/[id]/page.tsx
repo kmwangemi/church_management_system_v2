@@ -1,13 +1,18 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
-import { BranchListInput } from '@/components/branch-list-input';
+import { BranchCombobox } from '@/components/branch-combobox';
 import { CountrySelect } from '@/components/country-list-input';
 import { DatePicker } from '@/components/date-picker';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { MultiSelect } from '@/components/multi-select';
 import { PhoneInput } from '@/components/phone-number-input';
-import { TimeInput } from '@/components/time-input';
+import {
+  RenderMemberDetails,
+  RenderRoleSpecificFields,
+  RenderStaffDetails,
+  RenderVolunteerDetails,
+} from '@/components/role-specific';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,10 +39,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
 import { useFetchDepartments } from '@/lib/hooks/department/use-department-queries';
 import { useFetchGroups } from '@/lib/hooks/group/use-group-queries';
 import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
@@ -46,23 +49,14 @@ import {
   useUpdateUserById,
 } from '@/lib/hooks/user/use-user-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
-import type { Branch } from '@/lib/types/branch';
-import type { UserResponse } from '@/lib/types/user';
 import {
-  ADMIN_ACCESS_LEVEL_OPTIONS,
   capitalizeFirstLetter,
-  EMPLOYMENT_TYPE_OPTIONS,
-  FOLLOW_UP_STATUS_OPTIONS,
   GENDER_OPTIONS,
   getFirstLetter,
   getRelativeYear,
   MARITAL_STATUS_OPTIONS,
   MEMBER_ROLE_OPTIONS,
-  MEMBERSHIP_STATUS_OPTIONS,
-  REFERRAL_SOURCE_OPTIONS,
-  SUPERADMIN_ACCESS_LEVEL_OPTIONS,
   USER_STATUS_OPTIONS,
-  VOLUNTEER_STATUS_OPTIONS,
 } from '@/lib/utils';
 import {
   type UpdateUserPayload,
@@ -81,10 +75,6 @@ export default function EditMemberPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
     null
@@ -134,9 +124,7 @@ export default function EditMemberPage({
       gender: 'male',
       profilePictureUrl: undefined,
       occupation: '',
-      branchId: {
-        branchName: '',
-      },
+      branchId: undefined,
       isMember: false,
       role: 'member',
       isStaff: false,
@@ -389,8 +377,6 @@ export default function EditMemberPage({
     error,
   } = useUpdateUserById(id);
   const { reset, watch, setValue } = form;
-  console.log('errors--->', form.formState.errors);
-  console.log('watch all values--->', watch());
   // Handle profile picture file selection
   const handleProfilePictureSelect = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -472,965 +458,19 @@ export default function EditMemberPage({
     setProfilePicPreview(null);
   };
   const currentRole = form.watch('role');
-  const renderRoleSpecificFields = () => {
-    switch (currentRole) {
-      case 'member':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Member Details</CardTitle>
-              <CardDescription>Member-specific information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="memberDetails.memberId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Member ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="memberDetails.membershipDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Membership Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        format="long"
-                        maxDate={getRelativeYear(1)}
-                        minDate={getRelativeYear(-50)}
-                        onChange={(date) =>
-                          field.onChange(date ? date.toISOString() : '')
-                        }
-                        placeholder="Membership date"
-                        value={field.value ? new Date(field.value) : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="memberDetails.membershipStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Membership Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select membership status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {MEMBERSHIP_STATUS_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="memberDetails.baptismDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Baptism Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        format="long"
-                        maxDate={getRelativeYear(1)}
-                        minDate={getRelativeYear(-20)}
-                        onChange={(date) =>
-                          field.onChange(date ? date.toISOString() : '')
-                        }
-                        placeholder="Baptism date"
-                        value={field.value ? new Date(field.value) : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="memberDetails.joinedDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Joined Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        format="long"
-                        maxDate={getRelativeYear(1)}
-                        minDate={getRelativeYear(-50)}
-                        onChange={(date) =>
-                          field.onChange(date ? date.toISOString() : '')
-                        }
-                        placeholder="Joined date"
-                        value={field.value ? new Date(field.value) : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      case 'pastor':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Pastor Details</CardTitle>
-              <CardDescription>Pastor-specific information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="pastorDetails.pastorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pastor ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="pastorDetails.ordinationDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ordination Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        format="long"
-                        maxDate={getRelativeYear(1)}
-                        minDate={getRelativeYear(-50)}
-                        onChange={(date) =>
-                          field.onChange(date ? date.toISOString() : '')
-                        }
-                        placeholder="Ordination date"
-                        value={field.value ? new Date(field.value) : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="pastorDetails.sermonCount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sermon Count</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="pastorDetails.counselingSessions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Counseling Sessions</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="pastorDetails.biography"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Biography</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={4} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      case 'bishop':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Bishop Details</CardTitle>
-              <CardDescription>Bishop-specific information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="bishopDetails.bishopId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bishop ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bishopDetails.appointmentDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Appointment Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        format="long"
-                        maxDate={getRelativeYear(1)}
-                        minDate={getRelativeYear(-50)}
-                        onChange={(date) =>
-                          field.onChange(date ? date.toISOString() : '')
-                        }
-                        placeholder="Appointment date"
-                        value={field.value ? new Date(field.value) : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bishopDetails.jurisdictionArea"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Jurisdiction Area</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bishopDetails.biography"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Biography</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={4} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      case 'admin':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Details</CardTitle>
-              <CardDescription>Admin-specific information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="adminDetails.adminId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Admin ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="adminDetails.accessLevel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Access Level</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select access level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {ADMIN_ACCESS_LEVEL_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      case 'superadmin':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Super Admin Details</CardTitle>
-              <CardDescription>
-                Super admin-specific information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="superAdminDetails.superAdminId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Super Admin ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="superAdminDetails.accessLevel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Access Level</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select access level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {SUPERADMIN_ACCESS_LEVEL_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      case 'visitor':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Visitor Details</CardTitle>
-              <CardDescription>Visitor-specific information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="visitorDetails.visitorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Visitor ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.visitDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Visit Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        format="long"
-                        maxDate={getRelativeYear(1)}
-                        minDate={getRelativeYear(-50)}
-                        onChange={(date) =>
-                          field.onChange(date ? date.toISOString() : '')
-                        }
-                        placeholder="Visit date"
-                        value={field.value ? new Date(field.value) : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.howDidYouHear"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>How Did You Hear About Us?</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select how you heard about us" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {REFERRAL_SOURCE_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.followUpStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Follow Up Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select follow up status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.interestedInMembership"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">
-                        Interested in Membership
-                      </FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="visitorDetails.invitedBy"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Invited By</FormLabel>
-                    <FormControl>
-                      <UserListInput
-                        className="w-full"
-                        onChange={(member) => {
-                          setSelectedMember(member);
-                          field.onChange(member?._id || ''); // ✅ Store only the ID
-                        }}
-                        placeholder="Search and select a member"
-                        value={selectedMember} // ✅ Use state for display
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        );
-      default:
-        return null;
-    }
+  // Helper function to determine if isMember checkbox should be shown
+  const shouldShowIsMemberCheckbox = () => {
+    return currentRole && currentRole !== 'member' && currentRole !== 'visitor';
   };
-  const renderStaffDetails = () => {
-    if (user?.isStaff || form.watch('isStaff') === true) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Staff Details</CardTitle>
-            <CardDescription>Staff-specific information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="staffDetails.staffId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Staff ID</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="staffDetails.jobTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="staffDetails.department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="staffDetails.employmentType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Employment Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="cursor-pointer">
-                        <SelectValue placeholder="Select employment type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="max-h-[400px] overflow-y-auto">
-                      {EMPLOYMENT_TYPE_OPTIONS.map((option) => (
-                        <SelectItem
-                          className="cursor-pointer"
-                          key={option.value}
-                          value={option.value}
-                        >
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="staffDetails.startDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Date</FormLabel>
-                  <FormControl>
-                    <DatePicker
-                      format="long"
-                      maxDate={getRelativeYear(1)}
-                      minDate={getRelativeYear(-50)}
-                      onChange={(date) =>
-                        field.onChange(date ? date.toISOString() : '')
-                      }
-                      placeholder="Start date"
-                      value={field.value ? new Date(field.value) : undefined}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="staffDetails.salary"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Salary</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="staffDetails.isActive"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      Currently Active
-                    </FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-      );
+  // Handle role changes and update isMember accordingly
+  useEffect(() => {
+    if (currentRole === 'member') {
+      setValue('isMember', true);
     }
-    return null;
-  };
-  const renderVolunteerDetails = () => {
-    if (user?.isVolunteer || form.watch('isVolunteer') === true) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Volunteer Details</CardTitle>
-            <CardDescription>Volunteer-specific information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Basic Volunteer Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="volunteerDetails.volunteerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Volunteer ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="volunteerDetails.volunteerStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Volunteer Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select volunteer Status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {VOLUNTEER_STATUS_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            {/* Availability Schedule */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-sm">Availability Schedule</h4>
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="volunteerDetails.availabilitySchedule.days"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Available Days</FormLabel>
-                      <FormControl>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            'Monday',
-                            'Tuesday',
-                            'Wednesday',
-                            'Thursday',
-                            'Friday',
-                            'Saturday',
-                            'Sunday',
-                          ].map((day) => (
-                            <label
-                              className="flex items-center space-x-2"
-                              key={day}
-                            >
-                              <input
-                                checked={field.value?.includes(day)}
-                                className="cursor-pointer rounded"
-                                onChange={(e) => {
-                                  const currentDays = field.value || [];
-                                  if (e.target.checked) {
-                                    field.onChange([...currentDays, day]);
-                                  } else {
-                                    field.onChange(
-                                      currentDays.filter(
-                                        (d: string) => d !== day
-                                      )
-                                    );
-                                  }
-                                }}
-                                type="checkbox"
-                              />
-                              <span className="text-sm">{day}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="volunteerDetails.availabilitySchedule.preferredTimes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferred Times</FormLabel>
-                      <FormControl>
-                        <TimeInput
-                          multiSelect
-                          onChange={field.onChange}
-                          placeholder="Select preferre times"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-            {/* Departments */}
-            <FormField
-              control={form.control}
-              name="volunteerDetails.departments"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Departments</FormLabel>
-                  <FormControl>
-                    <MultiSelect
-                      onChange={field.onChange}
-                      options={
-                        departments?.departments?.map((dept) => ({
-                          label: capitalizeFirstLetter(dept?.departmentName),
-                          value: dept?._id,
-                        })) || []
-                      }
-                      placeholder="Select department(s)"
-                      selected={field.value || []}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {/* Background Check */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-sm">Background Check</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="volunteerDetails.backgroundCheck.completed"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">
-                          Background Check Completed
-                        </FormLabel>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="volunteerDetails.backgroundCheck.clearanceLevel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Clearance Level</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="cursor-pointer">
-                            <SelectValue placeholder="Select clearance level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="basic">Basic</SelectItem>
-                          <SelectItem value="enhanced">Enhanced</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {form.watch('volunteerDetails.backgroundCheck.completed') && (
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="volunteerDetails.backgroundCheck.completedDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Completed Date</FormLabel>
-                        <FormControl>
-                          <DatePicker
-                            format="long"
-                            maxDate={new Date()}
-                            minDate={getRelativeYear(-10)}
-                            onChange={(date) =>
-                              field.onChange(date ? date.toISOString() : '')
-                            }
-                            placeholder="Completed date"
-                            value={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="volunteerDetails.backgroundCheck.expiryDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expiry Date</FormLabel>
-                        <FormControl>
-                          <DatePicker
-                            format="long"
-                            maxDate={getRelativeYear(10)}
-                            minDate={new Date()}
-                            onChange={(date) =>
-                              field.onChange(date ? date.toISOString() : '')
-                            }
-                            placeholder="Expiry date"
-                            value={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-            </div>
-            {/* Hours Contributed */}
-            <FormField
-              control={form.control}
-              name="volunteerDetails.hoursContributed"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hours Contributed</FormLabel>
-                  <FormControl>
-                    <Input
-                      min="0"
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-      );
-    }
-    return null;
-  };
+    // else {
+    //   setValue('isMember', false);
+    // }
+  }, [currentRole, setValue]);
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1472,7 +512,6 @@ export default function EditMemberPage({
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="personal">Personal Info</TabsTrigger>
                   <TabsTrigger value="role">Role Details</TabsTrigger>
-                  {/* <TabsTrigger value="church">Church Details</TabsTrigger> */}
                   <TabsTrigger value="staff">Staff Details</TabsTrigger>
                   <TabsTrigger value="volunteer">Volunteer Details</TabsTrigger>
                 </TabsList>
@@ -2104,82 +1143,91 @@ export default function EditMemberPage({
                   </div>
                 </TabsContent>
                 <TabsContent className="space-y-6" value="role">
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Role <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="branchId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Branch</FormLabel>
                           <FormControl>
-                            <SelectTrigger className="cursor-pointer">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
+                            <BranchCombobox
+                              className="w-full"
+                              onChange={field.onChange}
+                              placeholder="Search and select a branch"
+                              value={field.value}
+                            />
                           </FormControl>
-                          <SelectContent className="max-h-[400px] overflow-y-auto">
-                            {MEMBER_ROLE_OPTIONS.map((option) => (
-                              <SelectItem
-                                className="cursor-pointer"
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Role <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="cursor-pointer">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-[400px] overflow-y-auto">
+                              {MEMBER_ROLE_OPTIONS.map((option) => (
+                                <SelectItem
+                                  className="cursor-pointer"
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  {/* Conditionally show isMember checkbox */}
+                  {shouldShowIsMemberCheckbox() && (
+                    <FormField
+                      control={form.control}
+                      name="isMember"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Church Member</FormLabel>
+                            <p className="text-gray-500 text-sm">
+                              This person is also a church member
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  <RenderMemberDetails
+                    currentRole={currentRole}
+                    form={form}
+                    user={user}
                   />
-                  <FormField
-                    control={form.control}
-                    name="branchId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Branch</FormLabel>
-                        <FormControl>
-                          <BranchListInput
-                            className="w-full"
-                            onChange={(branch) => {
-                              setSelectedBranch(branch);
-                              field.onChange(branch?._id || '');
-                            }}
-                            placeholder="Search and select a branch"
-                            value={selectedBranch}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <RenderRoleSpecificFields
+                    currentRole={currentRole}
+                    form={form}
                   />
-                  {/* Secondary role flag */}
-                  <FormField
-                    control={form.control}
-                    name="isMember"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Church Member</FormLabel>
-                          <p className="text-gray-500 text-sm">
-                            This person is also a church member
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  {renderRoleSpecificFields()}
                 </TabsContent>
                 <TabsContent className="space-y-6" value="staff">
                   {/* Secondary role flag */}
@@ -2203,7 +1251,7 @@ export default function EditMemberPage({
                       </FormItem>
                     )}
                   />
-                  {renderStaffDetails()}
+                  <RenderStaffDetails form={form} user={user} />
                 </TabsContent>
                 <TabsContent className="space-y-6" value="volunteer">
                   {/* Secondary role flag */}
@@ -2228,7 +1276,7 @@ export default function EditMemberPage({
                       </FormItem>
                     )}
                   />
-                  {renderVolunteerDetails()}
+                  <RenderVolunteerDetails form={form} user={user} />
                 </TabsContent>
               </Tabs>
             </form>

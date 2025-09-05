@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
-import { UserModel } from '@/models';
+import { BranchModel, UserModel } from '@/models';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -48,27 +48,31 @@ async function getUserByIdHandler(
       isDeleted: false,
     };
     // Authorization logic - different levels of access
+    if (
+      currentUser.user?.role !== 'superadmin' &&
+      !currentUser.user?.churchId
+    ) {
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
     if (currentUser.user?.role !== 'superadmin') {
-      if (!currentUser.user?.churchId) {
-        return NextResponse.json(
-          { error: 'Church ID not found' },
-          { status: 400 }
-        );
-      }
       query.churchId = currentUser.user.churchId;
-      // Additional restrictions for non-admin roles
-      if (!['admin', 'superadmin'].includes(currentUser.user?.role)) {
-        // Pastors and bishops might have additional restrictions
-        // For example, they might only see users in their branch or department
-        if (currentUser.user?.branchId) {
-          query.branchId = currentUser.user.branchId;
-        }
+
+      if (
+        !['admin', 'superadmin'].includes(currentUser.user?.role) &&
+        currentUser.user?.branchId
+      ) {
+        query.branchId = currentUser.user.branchId;
       }
     }
     // Check if user is trying to view their own profile (always allowed)
     const isOwnProfile = id === currentUser.user?.sub;
     // Find user with comprehensive population
     const foundUser = await UserModel.findOne(query)
+      // Exclude certain fields from the main user
+      .select('-passwordHash -verificationCode -resetPasswordToken') // 👈 Exclude fields here
       // Basic relationships
       .populate('branchId', 'branchName address phoneNumber email')
       .populate('churchId', 'churchName address phoneNumber email')
@@ -84,19 +88,12 @@ async function getUserByIdHandler(
       .populate('staffDetails')
       // Volunteer details populations
       .populate('volunteerDetails')
-      .populate('volunteerDetails.departments', 'name description')
       // Admin details populations
       .populate('adminDetails')
       .lean();
     if (!foundUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    // Filter sensitive data based on user role and whether it's their own profile
-    const sanitizedUser = sanitizeUserData(
-      foundUser,
-      currentUser.user?.role,
-      isOwnProfile
-    );
     contextLogger.info('User retrieved successfully', {
       userId: foundUser._id?.toString(),
       role: foundUser.role,
@@ -104,7 +101,7 @@ async function getUserByIdHandler(
       isOwnProfile,
     });
     return NextResponse.json({
-      user: sanitizedUser,
+      user: foundUser,
     });
   } catch (error) {
     contextLogger.error('Get user by ID error:', error);
@@ -119,77 +116,6 @@ async function getUserByIdHandler(
       { error: 'Internal server error' },
       { status: 500 }
     );
-  }
-}
-
-// Helper function to sanitize user data based on permissions
-function sanitizeUserData(
-  user: any,
-  currentUserRole: string,
-  isOwnProfile: boolean
-) {
-  // Always exclude sensitive fields
-  const { password, resetPasswordToken, ...sanitizedUser } = user;
-  // Sensitive fields that might need to be filtered
-  const sensitiveFields = [
-    'emergencyDetails',
-    'staffDetails.salary',
-    'lastLogin',
-    'createdAt',
-    'updatedAt',
-  ];
-  // Role-based access control
-  switch (currentUserRole) {
-    case 'superadmin':
-      // Superadmin can see everything (except password)
-      return sanitizedUser;
-    case 'admin':
-      // Admin can see most fields
-      return sanitizedUser;
-    case 'pastor':
-    case 'bishop':
-      // Pastors/bishops have limited access to sensitive info
-      if (!isOwnProfile) {
-        // Remove salary information for staff
-        if (sanitizedUser.staffDetails?.salary) {
-          sanitizedUser.staffDetails.salary = undefined;
-        }
-        // Limit emergency contact details
-        if (sanitizedUser.emergencyDetails) {
-          const {
-            emergencyContactFullName,
-            emergencyContactPhoneNumber,
-            ...rest
-          } = sanitizedUser.emergencyDetails;
-          sanitizedUser.emergencyDetails = {
-            emergencyContactFullName,
-            emergencyContactPhoneNumber,
-          };
-        }
-      }
-      return sanitizedUser;
-    default:
-      // Most restricted access
-      if (!isOwnProfile) {
-        sensitiveFields.forEach((field) => {
-          const fieldParts = field.split('.');
-          if (fieldParts.length === 1) {
-            delete sanitizedUser[field];
-          } else {
-            // Handle nested field removal
-            let obj = sanitizedUser;
-            for (let i = 0; i < fieldParts.length - 1; i++) {
-              if (obj[fieldParts[i]]) {
-                obj = obj[fieldParts[i]];
-              }
-            }
-            if (obj) {
-              delete obj[fieldParts.at(-1)];
-            }
-          }
-        });
-      }
-      return sanitizedUser;
   }
 }
 
@@ -225,10 +151,17 @@ export async function updateUserByIdHandler(
         { status: 400 }
       );
     }
+    // Parse and validate request body
+    const updateData = await request.json();
+    if (!updateData || Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: 'No update data provided' },
+        { status: 400 }
+      );
+    }
     await dbConnect();
     session = await mongoose.startSession();
     await session.startTransaction();
-    const updateData = await request.json();
     // Find existing user
     const existingUser = await UserModel.findOne({
       _id: id,
@@ -238,7 +171,7 @@ export async function updateUserByIdHandler(
       await session.abortTransaction();
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    // Admins can only update users in their own church
+    // Authorization: Admins can only update users in their own church
     if (
       currentUser.user?.role === 'admin' &&
       existingUser.churchId?.toString() !== currentUser.user?.churchId
@@ -249,7 +182,7 @@ export async function updateUserByIdHandler(
         { status: 403 }
       );
     }
-    // Check for duplicate email
+    // Check for duplicate email with better error handling
     if (updateData.email && updateData.email !== existingUser.email) {
       const duplicateEmail = await UserModel.findOne({
         email: updateData.email,
@@ -275,11 +208,34 @@ export async function updateUserByIdHandler(
         _id: { $ne: id },
         isDeleted: false,
       }).session(session);
-
       if (duplicatePhone) {
         await session.abortTransaction();
         return NextResponse.json(
           { error: 'Phone number already exists' },
+          { status: 400 }
+        );
+      }
+    }
+    // Validate branch belongs to user's church if updating branchId
+    if (updateData.branchId) {
+      if (!mongoose.Types.ObjectId.isValid(updateData.branchId)) {
+        await session.abortTransaction();
+        return NextResponse.json(
+          { error: 'Invalid branch ID format' },
+          { status: 400 }
+        );
+      }
+      const branch = await BranchModel.findOne({
+        _id: updateData.branchId,
+        churchId:
+          currentUser.user?.role === 'admin'
+            ? currentUser.user.churchId
+            : existingUser.churchId,
+      }).session(session);
+      if (!branch) {
+        await session.abortTransaction();
+        return NextResponse.json(
+          { error: 'Branch not found or not accessible' },
           { status: 400 }
         );
       }
@@ -293,7 +249,8 @@ export async function updateUserByIdHandler(
       updateObject.firstName = updateData.firstName;
     if (updateData.lastName !== undefined)
       updateObject.lastName = updateData.lastName;
-    if (updateData.email !== undefined) updateObject.email = updateData.email;
+    if (updateData.email !== undefined)
+      updateObject.email = updateData.email.toLowerCase().trim();
     if (updateData.phoneNumber !== undefined)
       updateObject.phoneNumber = updateData.phoneNumber;
     if (updateData.gender !== undefined)
@@ -330,13 +287,9 @@ export async function updateUserByIdHandler(
     }
     // --- Branch ID ---
     if (updateData.branchId) {
-      if (mongoose.Types.ObjectId.isValid(updateData.branchId)) {
-        updateObject.branchId = updateData.branchId;
-      } else {
-        contextLogger.warn('Invalid branchId format, skipping update');
-      }
+      updateObject.branchId = updateData.branchId;
     }
-    // --- Role handling ---
+    // --- Role handling - Only admin can change roles ---
     if (updateData.role && updateData.role !== existingUser.role) {
       if (currentUser.user?.role !== 'admin') {
         await session.abortTransaction();
@@ -346,7 +299,7 @@ export async function updateUserByIdHandler(
         );
       }
       updateObject.role = updateData.role;
-      // Clear old role details
+      // Clear all role-specific details when changing roles
       updateObject.memberDetails = undefined;
       updateObject.visitorDetails = undefined;
       updateObject.pastorDetails = undefined;
@@ -354,49 +307,62 @@ export async function updateUserByIdHandler(
       updateObject.adminDetails = undefined;
       updateObject.superAdminDetails = undefined;
     }
-    console.log('updateData.memberDetails--->', updateData.memberDetails);
-    // --- Member details ---
-    if (updateData.memberDetails) {
+    // --- Role-specific details handling ---
+    // Only update role details if the user has the corresponding role
+    if (
+      updateData.memberDetails &&
+      (existingUser.role === 'member' || updateObject.role === 'member')
+    ) {
       updateObject.memberDetails = {
         ...existingUser.memberDetails,
         ...updateData.memberDetails,
         memberId: existingUser.memberDetails?.memberId || '',
       };
     }
-     // --- Visitor details ---
-    if (updateData.visitorDetails) {
+    if (
+      updateData.visitorDetails &&
+      (existingUser.role === 'visitor' || updateObject.role === 'visitor')
+    ) {
       updateObject.visitorDetails = {
         ...existingUser.visitorDetails,
         ...updateData.visitorDetails,
         visitorId: existingUser.visitorDetails?.visitorId || '',
       };
     }
-    // --- Pastor details ---
-    if (updateData.pastorDetails) {
+    if (
+      updateData.pastorDetails &&
+      (existingUser.role === 'pastor' || updateObject.role === 'pastor')
+    ) {
       updateObject.pastorDetails = {
         ...existingUser.pastorDetails,
         ...updateData.pastorDetails,
         pastorId: existingUser.pastorDetails?.pastorId || '',
       };
     }
-    // --- Bishop details ---
-    if (updateData.bishopDetails) {
+    if (
+      updateData.bishopDetails &&
+      (existingUser.role === 'bishop' || updateObject.role === 'bishop')
+    ) {
       updateObject.bishopDetails = {
         ...existingUser.bishopDetails,
         ...updateData.bishopDetails,
         bishopId: existingUser.bishopDetails?.bishopId || '',
       };
     }
-    // --- Admin details ---
-    if (updateData.adminDetails) {
+    if (
+      updateData.adminDetails &&
+      (existingUser.role === 'admin' || updateObject.role === 'admin')
+    ) {
       updateObject.adminDetails = {
         ...existingUser.adminDetails,
         ...updateData.adminDetails,
         adminId: existingUser.adminDetails?.adminId || '',
       };
     }
-    // --- SuperAdmin details ---
-    if (updateData.superAdminDetails) {
+    if (
+      updateData.superAdminDetails &&
+      (existingUser.role === 'superadmin' || updateObject.role === 'superadmin')
+    ) {
       updateObject.superAdminDetails = {
         ...existingUser.superAdminDetails,
         ...updateData.superAdminDetails,
@@ -404,7 +370,7 @@ export async function updateUserByIdHandler(
       };
     }
     // --- Staff details ---
-    if (updateData.isStaff && updateData.staffDetails) {
+    if (updateData.isStaff === true && updateData.staffDetails) {
       updateObject.staffDetails = {
         ...existingUser.staffDetails,
         ...updateData.staffDetails,
@@ -414,7 +380,7 @@ export async function updateUserByIdHandler(
       updateObject.staffDetails = undefined;
     }
     // --- Volunteer details ---
-    if (updateData.isVolunteer && updateData.volunteerDetails) {
+    if (updateData.isVolunteer === true && updateData.volunteerDetails) {
       updateObject.volunteerDetails = {
         ...existingUser.volunteerDetails,
         ...updateData.volunteerDetails,
@@ -449,6 +415,7 @@ export async function updateUserByIdHandler(
       userId: updatedUser._id?.toString(),
       role: updatedUser.role,
       updatedBy: currentUser.user?.sub,
+      fieldsUpdated: Object.keys(updateObject),
     });
     return NextResponse.json({
       message: 'User updated successfully',
@@ -472,6 +439,12 @@ export async function updateUserByIdHandler(
     if (error instanceof mongoose.Error.CastError) {
       return NextResponse.json(
         { error: 'Invalid data format' },
+        { status: 400 }
+      );
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: 'Invalid JSON format' },
         { status: 400 }
       );
     }

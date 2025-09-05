@@ -20,40 +20,66 @@ interface MultiSelectOption {
   label: string;
 }
 
-interface MultiSelectProps {
+// Generic interface that works with both strings and objects
+interface MultiSelectProps<T = string> {
   options: MultiSelectOption[];
-  selected: string[];
-  onChange: (values: string[]) => void;
+  selected: T[];
+  onChange: (values: T[]) => void;
   placeholder?: string;
   className?: string;
+  // Function to extract the value from the selected item (for objects)
+  getValueFromItem?: (item: T) => string;
+  // Function to create the item from a value (for objects)
+  createItemFromValue?: (value: string) => T;
 }
 
-export function MultiSelect({
+export function MultiSelect<T = string>({
   options,
   selected,
   onChange,
   placeholder = 'Select items...',
   className,
-}: MultiSelectProps) {
+  getValueFromItem,
+  createItemFromValue,
+}: MultiSelectProps<T>) {
   const [open, setOpen] = useState(false);
-
+  // Helper function to get the string value from an item
+  const getItemValue = (item: T): string => {
+    if (getValueFromItem) {
+      return getValueFromItem(item);
+    }
+    // If T is string, just return it
+    return item as string;
+  };
+  // Helper function to create an item from a string value
+  const createItem = (value: string): T => {
+    if (createItemFromValue) {
+      return createItemFromValue(value);
+    }
+    // If T is string, just return the value
+    return value as T;
+  };
   const handleSelect = (value: string) => {
-    if (selected.includes(value)) {
+    const selectedValues = selected.map(getItemValue);
+    if (selectedValues.includes(value)) {
       // Remove the item
-      onChange(selected.filter((item) => item !== value));
+      onChange(selected.filter((item) => getItemValue(item) !== value));
     } else {
       // Add the item
-      onChange([...selected, value]);
+      onChange([...selected, createItem(value)]);
     }
   };
 
   const handleRemove = (value: string) => {
-    onChange(selected.filter((item) => item !== value));
+    onChange(selected.filter((item) => getItemValue(item) !== value));
   };
 
-  const selectedLabels = selected.map((value) => {
+  const selectedLabels = selected.map((item) => {
+    const value = getItemValue(item);
     return options.find((option) => option.value === value)?.label || value;
   });
+
+  const selectedValues = selected.map(getItemValue);
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -73,7 +99,7 @@ export function MultiSelect({
                   key={index}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleRemove(selected[index]);
+                    handleRemove(getItemValue(selected[index]));
                   }}
                   variant="secondary"
                 >
@@ -103,7 +129,7 @@ export function MultiSelect({
               >
                 <Check
                   className={`mr-2 h-4 w-4 ${
-                    selected.includes(option.value)
+                    selectedValues.includes(option.value)
                       ? 'opacity-100'
                       : 'opacity-0'
                   }`}

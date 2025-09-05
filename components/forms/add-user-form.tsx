@@ -1,7 +1,7 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
-import { BranchListInput } from '@/components/branch-list-input';
+import { BranchCombobox } from '@/components/branch-combobox';
 import { CountrySelect } from '@/components/country-list-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Button } from '@/components/ui/button';
@@ -30,12 +30,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRegisterUser } from '@/lib/hooks/user/use-user-queries';
-import type { Branch } from '@/lib/types/branch';
 import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, MapPin, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddUserFormProps {
@@ -43,7 +42,6 @@ interface AddUserFormProps {
 }
 
 export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const {
     mutateAsync: registerUserMutation,
     isPending,
@@ -90,7 +88,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
-    setSelectedBranch(null);
   };
   // Helper function to determine if isMember checkbox should be shown
   const shouldShowIsMemberCheckbox = () => {
@@ -345,14 +342,11 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                       Branch <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <BranchListInput
+                      <BranchCombobox
                         className="w-full"
-                        onChange={(branch) => {
-                          setSelectedBranch(branch);
-                          field.onChange(branch?._id || '');
-                        }}
+                        onChange={field.onChange}
                         placeholder="Search and select a branch"
-                        value={selectedBranch}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />

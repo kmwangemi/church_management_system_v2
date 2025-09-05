@@ -1,7 +1,7 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
-import { BranchListInput } from '@/components/branch-list-input';
+import { BranchCombobox } from '@/components/branch-combobox';
 import { DatePicker } from '@/components/date-picker';
 import { NumberInput } from '@/components/number-input';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterAsset } from '@/lib/hooks/asset/use-asset-queries';
-import type { Branch } from '@/lib/types/branch';
 import {
   ASSET_CONDITION_OPTIONS,
   ASSET_MAINTENANCE_FREQUENCY_OPTIONS,
@@ -41,7 +40,6 @@ import {
 import { type AddAssetPayload, AddAssetSchema } from '@/lib/validations/asset';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building, Calendar, DollarSign, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddAssetFormProps {
@@ -49,7 +47,6 @@ interface AddAssetFormProps {
 }
 
 export function AddAssetForm({ onCloseDialog }: AddAssetFormProps) {
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const {
     mutateAsync: registerAssetMutation,
     isPending,
@@ -160,14 +157,11 @@ export function AddAssetForm({ onCloseDialog }: AddAssetFormProps) {
                       Branch <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <BranchListInput
+                      <BranchCombobox
                         className="w-full"
-                        onChange={(branch) => {
-                          setSelectedBranch(branch);
-                          field.onChange(branch?._id || ''); // ✅ Store only the ID
-                        }}
+                        onChange={field.onChange}
                         placeholder="Search and select a branch"
-                        value={selectedBranch} // ✅ Use state for display
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
