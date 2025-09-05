@@ -1,6 +1,6 @@
 'use client';
 
-import { BranchListInput } from '@/components/branch-list-input';
+import { BranchCombobox } from '@/components/branch-combobox';
 import { CountrySelect } from '@/components/country-list-input';
 import { PasswordInput } from '@/components/password-input';
 import { PhoneInput } from '@/components/phone-number-input';
@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Branch } from '@/lib/types/branch';
 import { ADMIN_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, Users } from 'lucide-react';
@@ -68,7 +67,6 @@ interface AddAdminFormProps {
 }
 
 export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<AdminForm>({
     resolver: zodResolver(adminSchema),
@@ -343,14 +341,11 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                         Branch <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <BranchListInput
+                        <BranchCombobox
                           className="w-full"
-                          onChange={(branch) => {
-                            setSelectedBranch(branch);
-                            field.onChange(branch?._id || '');
-                          }}
+                          onChange={field.onChange}
                           placeholder="Search and select a branch"
-                          value={selectedBranch}
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />

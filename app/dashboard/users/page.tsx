@@ -1,7 +1,8 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ignore */
 'use client';
 
 import RenderApiError from '@/components/api-error';
+import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
+import { SendEmailDialog } from '@/components/dialogs/send-email-dialog';
 import { AddUserForm } from '@/components/forms/add-user-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
@@ -41,7 +42,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFetchUsers } from '@/lib/hooks/user/use-user-queries';
+import {
+  useDeleteUserById,
+  useFetchUsers,
+} from '@/lib/hooks/user/use-user-queries';
+import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
@@ -51,6 +56,7 @@ import {
 import {
   Crown,
   Download,
+  Edit,
   Eye,
   Mail,
   MoreHorizontal,
@@ -63,7 +69,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 const getRoleIcon = (role: string) => {
@@ -77,7 +83,6 @@ const getRoleIcon = (role: string) => {
       return <Users className="h-4 w-4" />;
   }
 };
-
 const getRoleBadgeVariant = (role: string) => {
   switch (role.toLowerCase()) {
     case 'pastor':
@@ -95,15 +100,13 @@ const getRoleBadgeVariant = (role: string) => {
 export default function UsersPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [emailingUser, setEmailingUser] = useState<UserResponse | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserResponse | null>(null);
   const searchParams = useSearchParams();
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
-  const {
-    register,
-    // reset: resetSearchInput,
-    handleSubmit,
-  } = useForm({
+  const { register, handleSubmit } = useForm({
     defaultValues: {
       query: searchQuery,
     },
@@ -114,30 +117,62 @@ export default function UsersPage() {
     isError: isErrorUsers,
     error: errorUsers,
   } = useFetchUsers(page, searchQuery);
-
-  // const filteredUsers = users.filter((user) => {
-  //   const matchesSearch =
-  //     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     user.department.toLowerCase().includes(searchTerm.toLowerCase());
-  //   if (selectedTab === 'all') return matchesSearch;
-  //   if (selectedTab === 'active')
-  //     return matchesSearch && user.status === 'Active';
-  //   if (selectedTab === 'inactive')
-  //     return matchesSearch && user.status === 'Inactive';
-  //   if (selectedTab === 'staff')
-  //     return matchesSearch && (user.role === 'Pastor' || user.role === 'Admin');
-  //   return matchesSearch;
-  // });
-
-  // const stats = {
-  //   total: users.length,
-  //   active: users.filter((m) => m.status === 'Active').length,
-  //   inactive: users.filter((m) => m.status === 'Inactive').length,
-  //   staff: users.filter((m) => m.role === 'Pastor' || m.role === 'Admin')
-  //     .length,
-  // };
-
+  const {
+    mutateAsync: deleteUserMutation,
+    isPending: isPendingDeleteUser,
+    isError: isErrorDeleteUser,
+    error: errorDeleteUser,
+  } = useDeleteUserById();
+  // Filter users based on selected tab and status
+  const filteredUsers = useMemo(() => {
+    if (!users?.users) return [];
+    let filtered = users.users;
+    // Filter by status
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter((user) => user.status === selectedStatus);
+    }
+    // Filter by tab
+    if (selectedTab !== 'all') {
+      switch (selectedTab) {
+        case 'active':
+          filtered = filtered.filter((user) => user.status === 'active');
+          break;
+        case 'inactive':
+          filtered = filtered.filter((user) => user.status === 'inactive');
+          break;
+        case 'staff':
+          filtered = filtered.filter((user) =>
+            ['pastor', 'bishop', 'admin'].includes(user.role?.toLowerCase())
+          );
+          break;
+        default:
+          break;
+      }
+    }
+    return filtered;
+  }, [users?.users, selectedStatus, selectedTab]);
+  // Calculate stats
+  const stats = useMemo(() => {
+    const allUsers = users?.users || [];
+    return {
+      total: users?.totalUsers || 0,
+      active: allUsers.filter((u) => u.status === 'active').length,
+      inactive: allUsers.filter((u) => u.status === 'inactive').length,
+      staff: allUsers.filter((u) =>
+        ['pastor', 'bishop', 'admin'].includes(u.role?.toLowerCase())
+      ).length,
+    };
+  }, [users]);
+  const handleDeleteUser = async (userId: string) => {
+    await deleteUserMutation(userId);
+    setDeletingUser(null);
+  };
+  const openDeleteDialog = (user: UserResponse) => {
+    setDeletingUser(user);
+  };
+  const openEmailDialog = (user: UserResponse) => {
+    setEmailingUser(user);
+  };
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -157,7 +192,10 @@ export default function UsersPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+          <Dialog
+            onOpenChange={setIsAddUserDialogOpen}
+            open={isAddUserDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
@@ -171,7 +209,9 @@ export default function UsersPage() {
                   Add a new user to the church database
                 </DialogDescription>
               </DialogHeader>
-              <AddUserForm onCloseDialog={() => setIsDialogOpen(false)} />
+              <AddUserForm
+                onCloseDialog={() => setIsAddUserDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -189,8 +229,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl text-gray-900">
-              {/* {stats.total} */}
-              {0}
+              {stats.total}
             </div>
             <p className="mt-1 text-gray-500 text-xs">All registered users</p>
           </CardContent>
@@ -206,8 +245,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl text-green-600">
-              {/* {stats.active} */}
-              {0}
+              {stats.active}
             </div>
             <p className="mt-1 text-gray-500 text-xs">Currently active</p>
           </CardContent>
@@ -223,8 +261,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl text-red-600">
-              {/* {stats.inactive} */}
-              {0}
+              {stats.inactive}
             </div>
             <p className="mt-1 text-gray-500 text-xs">Need follow-up</p>
           </CardContent>
@@ -240,8 +277,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl text-purple-600">
-              {/* {stats.staff} */}
-              {0}
+              {stats.staff}
             </div>
             <p className="mt-1 text-gray-500 text-xs">Leadership team</p>
           </CardContent>
@@ -250,7 +286,6 @@ export default function UsersPage() {
       {/* Search and Filter */}
       <Card>
         <CardHeader>
-          {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row">
             <SearchInput
               handleSubmit={handleSubmit}
@@ -273,18 +308,15 @@ export default function UsersPage() {
         <CardContent>
           <Tabs onValueChange={setSelectedTab} value={selectedTab}>
             <TabsList className="grid w-full grid-cols-4">
-              {/* <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
+              <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
               <TabsTrigger value="active">Active ({stats.active})</TabsTrigger>
               <TabsTrigger value="inactive">
                 Inactive ({stats.inactive})
               </TabsTrigger>
-              <TabsTrigger value="staff">Staff ({stats.staff})</TabsTrigger> */}
-              <TabsTrigger value="all">All ({0})</TabsTrigger>
-              <TabsTrigger value="active">Active ({0})</TabsTrigger>
-              <TabsTrigger value="inactive">Inactive ({0})</TabsTrigger>
-              <TabsTrigger value="staff">Staff ({0})</TabsTrigger>
+              <TabsTrigger value="staff">Staff ({stats.staff})</TabsTrigger>
             </TabsList>
             {isErrorUsers && <RenderApiError error={errorUsers} />}
+            {isErrorDeleteUser && <RenderApiError error={errorDeleteUser} />}
             {isLoadingUsers ? (
               <SpinnerLoader description="Loading users..." />
             ) : (
@@ -303,7 +335,7 @@ export default function UsersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users?.users.map((user) => (
+                      {filteredUsers.map((user) => (
                         <TableRow className="hover:bg-gray-50" key={user._id}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
@@ -312,15 +344,13 @@ export default function UsersPage() {
                                   alt={user?.firstName || 'User'}
                                   src={user?.profilePictureUrl ?? ''}
                                 />
-                                <AvatarFallback className="bg-blue-100 text-blue-600">{`${getFirstLetter(
-                                  user?.firstName || ''
-                                )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                                <AvatarFallback className="bg-blue-100 text-blue-600">
+                                  {`${getFirstLetter(user?.firstName || '')}${getFirstLetter(user?.lastName || '')}`}
+                                </AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-medium text-gray-900">
-                                  {`${capitalizeFirstLetter(
-                                    user?.firstName || 'N/A'
-                                  )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                                  {`${capitalizeFirstLetter(user?.firstName || 'N/A')} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
                                 </div>
                                 <div className="text-gray-500 text-sm">
                                   {user.email || 'N/A'}
@@ -383,19 +413,28 @@ export default function UsersPage() {
                                     View User
                                   </Link>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  onClick={() => openEmailDialog(user)}
+                                >
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Send Email
+                                </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                  <Link href={`/send-email/${user._id}`}>
-                                    <Mail className="mr-2 h-4 w-4" />
-                                    Send Email
+                                  <Link
+                                    href={`/dashboard/users/edit/${user._id}`}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit User
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-red-600"
-                                  // onClick={() => handleRemoveUser(user.id)}
+                                  className="cursor-pointer text-red-600"
+                                  onClick={() => openDeleteDialog(user)}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Remove User
+                                  Delete User
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -405,7 +444,7 @@ export default function UsersPage() {
                     </TableBody>
                   </Table>
                 </div>
-                {users?.users?.length === 0 && (
+                {filteredUsers.length === 0 && (
                   <div className="py-12 text-center">
                     <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                     <h3 className="mb-2 font-medium text-gray-900 text-lg">
@@ -421,6 +460,24 @@ export default function UsersPage() {
           </Tabs>
         </CardContent>
       </Card>
+      {/* Delete User Dialog */}
+      <DeleteUserDialog
+        isDeleting={isPendingDeleteUser}
+        onDelete={handleDeleteUser}
+        onOpenChange={(open) => {
+          if (!open) setDeletingUser(null);
+        }}
+        open={!!deletingUser}
+        user={deletingUser}
+      />
+      {/* Send Email Dialog */}
+      <SendEmailDialog
+        onOpenChange={(open) => {
+          if (!open) setEmailingUser(null);
+        }}
+        open={!!emailingUser}
+        user={emailingUser}
+      />
     </div>
   );
 }

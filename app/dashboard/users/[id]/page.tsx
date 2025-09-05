@@ -494,7 +494,7 @@ export default function MemberDetailsPage({
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm" htmlFor={''}>
+              <Label className="mr-2 font-medium text-sm" htmlFor={''}>
                 Employment Type
               </Label>
               <Badge variant="outline">
@@ -510,7 +510,7 @@ export default function MemberDetailsPage({
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm" htmlFor={''}>
+              <Label className="mr-2 font-medium text-sm" htmlFor={''}>
                 Status
               </Label>
               <Badge
@@ -545,7 +545,7 @@ export default function MemberDetailsPage({
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm" htmlFor={''}>
+              <Label className="mr-2 font-medium text-sm" htmlFor={''}>
                 Status
               </Label>
               <Badge
@@ -567,7 +567,7 @@ export default function MemberDetailsPage({
               </p>
             </div>
             <div>
-              <Label className="font-medium text-sm" htmlFor={''}>
+              <Label className="mr-2 font-medium text-sm" htmlFor={''}>
                 Background Check
               </Label>
               <Badge
@@ -587,7 +587,9 @@ export default function MemberDetailsPage({
                 Availability
               </Label>
               <p className="text-muted-foreground text-sm">
-                {user.volunteerDetails.availabilitySchedule?.preferredTimes}
+                {user.volunteerDetails.availabilitySchedule?.preferredTimes
+                  ?.map((time) => `${time}hrs`)
+                  .join(', ') ?? ''}
               </p>
             </div>
             <div className="md:col-span-2">
@@ -737,9 +739,9 @@ export default function MemberDetailsPage({
                   <Heart className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-bold text-2xl">
+                  {/* <div className="font-bold text-2xl">
                     {user?.volunteerDetails?.hoursContributed ?? 0}
-                  </div>
+                  </div> */}
                   <div className="font-bold text-2xl">{0}</div>
                   <p className="text-muted-foreground text-xs">This year</p>
                 </CardContent>
@@ -805,7 +807,7 @@ export default function MemberDetailsPage({
                             className="text-muted-foreground text-sm"
                             key={index}
                           >
-                            {capitalizeFirstLetter(group || 'N/A')}
+                            {capitalizeFirstLetter(group?.groupName || 'N/A')}
                           </p>
                         ))}
                       </div>
@@ -893,7 +895,9 @@ export default function MemberDetailsPage({
                             : 'secondary'
                         }
                       >
-                        {user?.memberDetails?.baptismDate ? 'Yes' : 'No'}
+                        {user?.memberDetails?.baptismDate
+                          ? `Yes (${new Date(user.memberDetails.baptismDate).toLocaleDateString()})`
+                          : 'No'}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
@@ -967,7 +971,7 @@ export default function MemberDetailsPage({
                       <div className="mt-2 flex flex-wrap gap-2">
                         {user?.memberDetails?.groupIds.map((group, index) => (
                           <Badge key={index} variant="outline">
-                            {capitalizeFirstLetter(group || 'N/A')}
+                            {capitalizeFirstLetter(group?.groupName || 'N/A')}
                           </Badge>
                         ))}
                       </div>
