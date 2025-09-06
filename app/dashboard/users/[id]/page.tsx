@@ -337,16 +337,11 @@ export default function MemberDetailsPage({
                       </div>
                       <div>
                         <Label className="font-medium text-sm" htmlFor={''}>
-                          Small Groups
+                          Gender
                         </Label>
-                        {user?.memberDetails?.groupIds.map((group, index) => (
-                          <p
-                            className="text-muted-foreground text-sm"
-                            key={index}
-                          >
-                            {capitalizeFirstLetter(group?.groupName || 'N/A')}
-                          </p>
-                        ))}
+                        <p className="text-muted-foreground text-sm">
+                          {capitalizeFirstLetter(user?.gender || 'N/A')}
+                        </p>
                       </div>
                     </div>
                     {/* Role-Specific Information */}
