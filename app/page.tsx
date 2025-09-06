@@ -9,11 +9,18 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Award,
   BarChart3,
   BookOpen,
   Calendar,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Church,
@@ -80,14 +87,38 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
-            <Link href="/pricing/church">
+            {/* <Link href="/pricing/church">
               <Button
                 className="hover:bg-blue-50 dark:hover:bg-gray-800"
                 variant="ghost"
               >
                 Pricing
               </Button>
-            </Link>
+            </Link> */}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="cursor-pointer">
+                <Button
+                  className="flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-gray-800"
+                  variant="ghost"
+                >
+                  Pricing
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <Link href="/pricing/member">
+                  <DropdownMenuItem className="cursor-pointer">
+                    Member Pricing
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/pricing/church">
+                  <DropdownMenuItem className="cursor-pointer">
+                    Church Pricing
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link href="/request-demo">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl">
                 Free Demo

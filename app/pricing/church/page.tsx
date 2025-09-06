@@ -2,71 +2,105 @@
 
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { Calendar, Check, Church, Heart, Mail, Shield, X } from 'lucide-react';
+import {
+  Building,
+  Calendar,
+  Check,
+  Church,
+  DollarSign,
+  Mail,
+  Shield,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 export default function ChurchPricingPage() {
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const currentYear = new Date().getFullYear();
   const plans = [
     {
       name: 'Basic',
       description: 'Perfect for small congregations',
-      price: billingCycle === 'monthly' ? 0 : 0,
+      price: billingCycle === 'monthly' ? 2999 : 29_999,
       period: billingCycle === 'monthly' ? '/month' : '/year',
       popular: false,
       features: [
         { name: 'Up to 100 members', included: true },
-        { name: 'Basic member management', included: true },
+        { name: 'Basic user management', included: true },
+        { name: '5 Branch locations', included: true },
+        { name: 'Basic departments', included: true },
+        { name: 'Small groups (up to 10)', included: true },
+        { name: 'Basic attendance tracking', included: true },
         { name: 'Event scheduling', included: true },
-        { name: 'Prayer request tracking', included: true },
+        { name: 'Basic finance tracking', included: true },
+        { name: 'Prayer request management', included: true },
         { name: 'Email support', included: true },
         { name: 'Advanced reporting', included: false },
-        { name: 'Donation tracking', included: false },
-        { name: 'Multi-location support', included: false },
+        { name: 'Multi-branch support', included: false },
+        { name: 'Advanced communication tools', included: false },
+        { name: 'Discipleship programs', included: false },
+        { name: 'Volunteer management', included: false },
+        { name: 'Asset management', included: false },
+        { name: 'Content management', included: false },
+        { name: 'Advanced contributions tracking', included: false },
       ],
-      buttonText: 'Get Started Free',
-      buttonStyle:
-        'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50',
     },
     {
       name: 'Ministry',
       description: 'For growing churches',
-      price: billingCycle === 'monthly' ? 29.99 : 299.99,
+      price: billingCycle === 'monthly' ? 4999 : 49_999,
       period: billingCycle === 'monthly' ? '/month' : '/year',
-      popular: false,
+      popular: true,
+      savings: billingCycle === 'yearly' ? 'Save KES 9,989' : null,
       features: [
         { name: 'Up to 500 members', included: true },
-        { name: 'Advanced member management', included: true },
+        { name: 'Advanced user management', included: true },
+        { name: 'Up to 20 branch locations', included: true },
+        { name: 'Department management', included: true },
+        { name: 'Unlimited small groups', included: true },
+        { name: 'Advanced attendance tracking', included: true },
         { name: 'Event scheduling & registration', included: true },
+        { name: 'Finance & budget management', included: true },
+        { name: 'Contributions tracking', included: true },
+        { name: 'Basic asset management', included: true },
+        { name: 'Communication tools', included: true },
         { name: 'Prayer request management', included: true },
-        { name: 'Priority support', included: true },
-        { name: 'Donation tracking', included: true },
+        { name: 'Basic discipleship programs', included: true },
+        { name: 'Volunteer scheduling', included: true },
         { name: 'Basic reporting', included: true },
-        { name: 'Multi-location support', included: false },
+        { name: 'Priority support', included: true },
+        { name: 'Advanced content management', included: false },
+        { name: 'Comprehensive reporting', included: false },
       ],
-      buttonText: 'Start Ministry Plan',
-      buttonStyle: 'bg-blue-600 text-white hover:bg-blue-700',
     },
     {
       name: 'Cathedral',
-      description: 'Best value for large congregations',
-      price: billingCycle === 'monthly' ? 79.99 : 799.99,
+      description: 'Complete solution for large congregations',
+      price: billingCycle === 'monthly' ? 9999 : 99_999,
       period: billingCycle === 'monthly' ? '/month' : '/year',
-      popular: true,
-      savings: billingCycle === 'yearly' ? 'Save $159.89' : null,
+      popular: false,
+      savings: billingCycle === 'yearly' ? 'Save KES 19,989' : null,
       features: [
         { name: 'Unlimited members', included: true },
-        { name: 'Complete member management', included: true },
+        { name: 'Complete user management', included: true },
+        { name: 'Unlimited branch locations', included: true },
+        { name: 'Advanced department management', included: true },
+        { name: 'Unlimited small groups', included: true },
+        { name: 'Advanced attendance analytics', included: true },
         { name: 'Advanced event management', included: true },
+        { name: 'Complete finance management', included: true },
+        { name: 'Advanced contributions tracking', included: true },
+        { name: 'Complete asset management', included: true },
+        { name: 'Advanced communication suite', included: true },
         { name: 'Prayer & pastoral care', included: true },
-        { name: 'Priority support', included: true },
-        { name: 'Advanced donation tracking', included: true },
-        { name: 'Comprehensive reporting', included: true },
-        { name: 'Multi-location support', included: true },
+        { name: 'Complete discipleship programs', included: true },
+        { name: 'Advanced volunteer management', included: true },
+        { name: 'Content management system', included: true },
+        { name: 'Comprehensive reporting & analytics', included: true },
+        { name: 'Custom integrations', included: true },
+        { name: 'Priority support & training', included: true },
       ],
-      buttonText: 'Start Cathedral Plan',
-      buttonStyle: 'bg-blue-600 text-white hover:bg-blue-700',
     },
   ];
   const features = [
@@ -81,22 +115,44 @@ export default function ChurchPricingPage() {
       title: 'Cancel Anytime',
       description: 'No long-term contracts. Cancel your subscription anytime',
     },
+    {
+      icon: DollarSign,
+      title: 'M-Pesa Integration',
+      description:
+        'Seamless payments through M-Pesa for convenient transactions',
+    },
+    {
+      icon: Building,
+      title: 'Multi-Branch Support',
+      description:
+        'Manage multiple church locations from one central dashboard',
+    },
   ];
   const faqs = [
     {
       question: 'How does the free trial work?',
       answer:
-        'Start with our Basic plan at no cost. No credit card required. Upgrade anytime to unlock unlimited features and advanced member management tools.',
+        'Start with a 14-day free trial of any plan. No credit card required. Experience all features before you commit.',
     },
     {
       question: 'What payment methods do you accept?',
       answer:
-        'We accept all major credit cards, debit cards, ACH transfers, and digital wallets through Stripe for secure processing.',
+        'We accept M-Pesa payments for convenient local transactions. Payments are processed securely through our automated M-Pesa integration.',
     },
     {
       question: "Is my congregation's data secure?",
       answer:
-        'Absolutely. We use bank-level encryption and never store your payment information. Your member data is private and secure.',
+        'Absolutely. We use bank-level encryption and follow international security standards. Your member data is private, secure, and never shared.',
+    },
+    {
+      question: 'Can I upgrade or downgrade my plan?',
+      answer:
+        'Yes, you can change your plan anytime. Upgrades take effect immediately, and downgrades take effect at the next billing cycle.',
+    },
+    {
+      question: 'Do you offer training and support?',
+      answer:
+        'Yes! All plans include comprehensive onboarding, video tutorials, and ongoing support. Cathedral plan includes priority support and personalized training sessions.',
     },
   ];
   return (
@@ -115,6 +171,14 @@ export default function ChurchPricingPage() {
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+            <Link href="/">
+              <Button
+                className="hover:bg-blue-50 dark:hover:bg-gray-800"
+                variant="ghost"
+              >
+                Home
+              </Button>
+            </Link>
             <Link href="/request-demo">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl">
                 Free Demo
@@ -140,7 +204,8 @@ export default function ChurchPricingPage() {
           </h1>
           <p className="mx-auto mb-8 max-w-3xl text-gray-600 text-xl">
             Choose the perfect plan for your ministry goals. All plans include
-            our advanced church management and member engagement tools.
+            comprehensive church management tools with M-Pesa integration for
+            seamless operations.
           </p>
           {/* Billing Toggle */}
           <div className="mb-12 inline-flex items-center rounded-lg bg-gray-100 p-1">
@@ -164,7 +229,10 @@ export default function ChurchPricingPage() {
               onClick={() => setBillingCycle('yearly')}
               type="button"
             >
-              Yearly
+              Yearly{' '}
+              <span className="ml-1 font-semibold text-green-600">
+                (Save 17%)
+              </span>
             </button>
           </div>
         </div>
@@ -203,17 +271,15 @@ export default function ChurchPricingPage() {
                   <p className="mb-4 text-gray-600">{plan.description}</p>
                   <div className="mb-1 flex items-baseline">
                     <span className="font-bold text-5xl text-gray-900">
-                      ${plan.price}
+                      KES {plan.price.toLocaleString()}
                     </span>
                     <span className="ml-1 text-gray-600">{plan.period}</span>
                   </div>
-                  {plan.price === 0 && (
-                    <p className="text-gray-500 text-sm">
-                      No credit card required
-                    </p>
-                  )}
+                  <p className="text-gray-500 text-sm">
+                    Pay conveniently via M-Pesa
+                  </p>
                 </div>
-                <ul className="mb-8 space-y-4">
+                <ul className="mb-8 max-h-80 space-y-4 overflow-y-auto">
                   {plan.features.map((feature, featureIndex) => (
                     <li className="flex items-start" key={featureIndex}>
                       <div className="mr-3 flex-shrink-0">
@@ -242,17 +308,20 @@ export default function ChurchPricingPage() {
           <h2 className="mb-4 font-bold text-3xl text-gray-900">
             Everything you need to grow your ministry
           </h2>
-          <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
+          <div className="mx-auto mt-12 grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
-              <div className="flex items-start space-x-4" key={index}>
+              <div
+                className="flex flex-col items-center space-y-4 text-center"
+                key={index}
+              >
                 <div className="flex-shrink-0">
-                  <feature.icon className="h-8 w-8 text-green-500" />
+                  <feature.icon className="h-8 w-8 text-blue-600" />
                 </div>
-                <div className="text-left">
-                  <h3 className="mb-1 font-semibold text-gray-900">
+                <div>
+                  <h3 className="mb-2 font-semibold text-gray-900">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <p className="text-gray-600 text-sm">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -281,13 +350,12 @@ export default function ChurchPricingPage() {
           <div className="grid gap-8 md:grid-cols-3">
             <div>
               <div className="mb-4 flex items-center space-x-2">
-                <Heart className="h-6 w-6" />
-                <span className="font-bold text-xl">ChurchConnect</span>
+                <Church className="h-6 w-6" />
+                <span className="font-bold text-xl">ChurchHub</span>
               </div>
               <p className="mb-4 text-gray-300">
-                AI-powered church management that helps you grow your ministry.
-                Optimize your congregation management and stand out to new
-                members.
+                Comprehensive church management system that helps you grow your
+                ministry with features tailored for modern churches.
               </p>
             </div>
             <div>
@@ -338,7 +406,7 @@ export default function ChurchPricingPage() {
           </div>
           <div className="mt-12 flex flex-col items-center justify-between border-gray-700 border-t pt-8 md:flex-row">
             <p className="text-gray-400">
-              © 2025 ChurchConnect. All rights reserved.
+              © {currentYear} ChurchHub. All rights reserved.
             </p>
             <div className="mt-4 flex space-x-6 md:mt-0">
               <Link className="text-gray-400 hover:text-white" href="/">

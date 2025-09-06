@@ -2,71 +2,94 @@
 
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { Calendar, Check, Church, Mail, Shield, Users, X } from 'lucide-react';
+import {
+  Calendar,
+  Check,
+  Church,
+  DollarSign,
+  Heart,
+  Mail,
+  Shield,
+  Users,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 export default function MembersPricingPage() {
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const currentYear = new Date().getFullYear();
   const plans = [
     {
       name: 'Connect',
       description: 'Perfect for new members',
-      price: billingCycle === 'monthly' ? 0 : 0,
+      price: billingCycle === 'monthly' ? 49 : 499,
       period: billingCycle === 'monthly' ? '/month' : '/year',
       popular: false,
       features: [
         { name: 'Church directory access', included: true },
         { name: 'Event notifications', included: true },
         { name: 'Prayer request submissions', included: true },
-        { name: 'Basic giving tools', included: true },
+        { name: 'Basic giving tools (M-Pesa)', included: true },
+        { name: 'Basic profile management', included: true },
+        { name: 'Community announcements', included: true },
         { name: 'Email support', included: true },
         { name: 'Small group finder', included: false },
         { name: 'Advanced devotional content', included: false },
         { name: 'Ministry scheduling tools', included: false },
+        { name: 'Advanced communication features', included: false },
+        { name: 'Volunteer management', included: false },
+        { name: 'Event registration', included: false },
+        { name: 'Attendance tracking', included: false },
       ],
-      buttonText: 'Join for Free',
-      buttonStyle:
-        'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50',
     },
     {
       name: 'Engage',
       description: 'For active members',
-      price: billingCycle === 'monthly' ? 9.99 : 99.99,
+      price: billingCycle === 'monthly' ? 99 : 999,
       period: billingCycle === 'monthly' ? '/month' : '/year',
-      popular: false,
+      popular: true,
+      savings: billingCycle === 'yearly' ? 'Save KES 189' : null,
       features: [
-        { name: 'Full church directory', included: true },
-        { name: 'Event registration', included: true },
+        { name: 'Full church directory access', included: true },
+        { name: 'Event registration & management', included: true },
         { name: 'Prayer circle participation', included: true },
-        { name: 'Advanced giving & tithing', included: true },
-        { name: 'Priority support', included: true },
-        { name: 'Small group management', included: true },
+        { name: 'Advanced giving & tithing (M-Pesa)', included: true },
+        { name: 'Complete profile management', included: true },
+        { name: 'Small group finder & joining', included: true },
         { name: 'Daily devotional content', included: true },
+        { name: 'Basic communication tools', included: true },
+        { name: 'Attendance self-tracking', included: true },
+        { name: 'Volunteer opportunity access', included: true },
+        { name: 'Priority support', included: true },
         { name: 'Ministry scheduling tools', included: false },
+        { name: 'Advanced volunteer management', included: false },
       ],
-      buttonText: 'Start Engaging',
-      buttonStyle: 'bg-blue-600 text-white hover:bg-blue-700',
     },
     {
       name: 'Serve',
       description: 'Best value for ministry leaders',
-      price: billingCycle === 'monthly' ? 19.99 : 199.99,
+      price: billingCycle === 'monthly' ? 149 : 1499,
       period: billingCycle === 'monthly' ? '/month' : '/year',
-      popular: true,
-      savings: billingCycle === 'yearly' ? 'Save $39.89' : null,
+      popular: false,
+      savings: billingCycle === 'yearly' ? 'Save KES 289' : null,
       features: [
         { name: 'Complete church access', included: true },
         { name: 'Unlimited event management', included: true },
-        { name: 'Lead prayer groups', included: true },
-        { name: 'Advanced giving analytics', included: true },
-        { name: 'Priority support', included: true },
-        { name: 'Create & manage groups', included: true },
+        { name: 'Lead prayer groups & circles', included: true },
+        { name: 'Advanced giving analytics (M-Pesa)', included: true },
+        { name: 'Advanced profile & ministry management', included: true },
+        { name: 'small groups management', included: true },
         { name: 'Premium devotional library', included: true },
+        { name: 'Advanced communication suite', included: true },
+        { name: 'Comprehensive attendance tracking', included: true },
+        { name: 'Volunteer coordination & management', included: true },
         { name: 'Ministry scheduling tools', included: true },
+        { name: 'Content creation & sharing', included: true },
+        { name: 'Discipleship program access', included: true },
+        { name: 'Leadership resources', included: true },
+        { name: 'Priority support & training', included: true },
       ],
-      buttonText: 'Start Serving',
-      buttonStyle: 'bg-blue-600 text-white hover:bg-blue-700',
     },
   ];
   const features = [
@@ -82,26 +105,48 @@ export default function MembersPricingPage() {
       description:
         'No long-term commitments. Upgrade or downgrade your membership anytime',
     },
+    {
+      icon: DollarSign,
+      title: 'M-Pesa Integration',
+      description:
+        'Seamless giving and payments through M-Pesa for convenient transactions',
+    },
+    {
+      icon: Users,
+      title: 'Community Connection',
+      description:
+        'Connect with fellow believers and build meaningful relationships in your faith journey',
+    },
   ];
   const faqs = [
     {
-      question: 'How does the free membership work?',
+      question: 'How does the membership work?',
       answer:
-        'Start with our Connect plan at no cost. Access basic church features and community tools. Upgrade anytime to unlock premium content and advanced features.',
+        'Choose the plan that fits your spiritual journey. Start with Connect for basic access, upgrade to Engage for active participation, or choose Serve for ministry leadership opportunities.',
     },
     {
       question: 'What payment methods do you accept?',
       answer:
-        'We accept all major credit cards, debit cards, PayPal, and bank transfers. All payments are processed securely through our encrypted payment system.',
+        'We accept M-Pesa payments for convenient local transactions. All payments are processed securely through our automated M-Pesa integration.',
     },
     {
       question: 'Is my personal and giving data secure?',
       answer:
         'Absolutely. We use enterprise-grade encryption for all personal data and giving records. Your information is never shared with third parties and remains completely confidential.',
     },
+    {
+      question: 'Can I change my membership plan?',
+      answer:
+        'Yes! You can upgrade or downgrade your membership plan anytime. Upgrades take effect immediately, and downgrades take effect at the next billing cycle.',
+    },
+    {
+      question: 'What happens if I cancel my membership?',
+      answer:
+        "You can cancel anytime with no penalties. You'll continue to have access to paid features until the end of your current billing period, then automatically move to basic access.",
+    },
   ];
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white/90 shadow-sm backdrop-blur-md transition-colors duration-300 dark:bg-gray-900/90">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
@@ -116,6 +161,14 @@ export default function MembersPricingPage() {
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+            <Link href="/">
+              <Button
+                className="hover:bg-blue-50 dark:hover:bg-gray-800"
+                variant="ghost"
+              >
+                Home
+              </Button>
+            </Link>
             <Link href="/request-demo">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl">
                 Free Demo
@@ -142,7 +195,7 @@ export default function MembersPricingPage() {
           <p className="mx-auto mb-8 max-w-3xl text-gray-600 text-xl">
             Choose the perfect membership level for your spiritual journey. All
             plans help you connect deeper with your faith community and grow in
-            your walk with God.
+            your walk with God through our comprehensive platform.
           </p>
           {/* Billing Toggle */}
           <div className="mb-12 inline-flex items-center rounded-lg bg-gray-100 p-1">
@@ -166,7 +219,10 @@ export default function MembersPricingPage() {
               onClick={() => setBillingCycle('yearly')}
               type="button"
             >
-              Yearly
+              Yearly{' '}
+              <span className="ml-1 font-semibold text-green-600">
+                (Save 17%)
+              </span>
             </button>
           </div>
         </div>
@@ -205,17 +261,15 @@ export default function MembersPricingPage() {
                   <p className="mb-4 text-gray-600">{plan.description}</p>
                   <div className="mb-1 flex items-baseline">
                     <span className="font-bold text-5xl text-gray-900">
-                      ${plan.price}
+                      KES {plan.price.toLocaleString()}
                     </span>
                     <span className="ml-1 text-gray-600">{plan.period}</span>
                   </div>
-                  {plan.price === 0 && (
-                    <p className="text-gray-500 text-sm">
-                      No credit card required
-                    </p>
-                  )}
+                  <p className="text-gray-500 text-sm">
+                    Pay conveniently via M-Pesa
+                  </p>
                 </div>
-                <ul className="mb-8 space-y-4">
+                <ul className="mb-8 max-h-80 space-y-4 overflow-y-auto">
                   {plan.features.map((feature, featureIndex) => (
                     <li className="flex items-start" key={featureIndex}>
                       <div className="mr-3 flex-shrink-0">
@@ -244,17 +298,20 @@ export default function MembersPricingPage() {
           <h2 className="mb-4 font-bold text-3xl text-gray-900">
             Everything you need for spiritual growth
           </h2>
-          <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
+          <div className="mx-auto mt-12 grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
-              <div className="flex items-start space-x-4" key={index}>
+              <div
+                className="flex flex-col items-center space-y-4 text-center"
+                key={index}
+              >
                 <div className="flex-shrink-0">
-                  <feature.icon className="h-8 w-8 text-green-500" />
+                  <feature.icon className="h-8 w-8 text-blue-600" />
                 </div>
-                <div className="text-left">
-                  <h3 className="mb-1 font-semibold text-gray-900">
+                <div>
+                  <h3 className="mb-2 font-semibold text-gray-900">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <p className="text-gray-600 text-sm">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -283,13 +340,13 @@ export default function MembersPricingPage() {
           <div className="grid gap-8 md:grid-cols-3">
             <div>
               <div className="mb-4 flex items-center space-x-2">
-                <Users className="h-6 w-6" />
-                <span className="font-bold text-xl">FaithConnect</span>
+                <Heart className="h-6 w-6" />
+                <span className="font-bold text-xl">ChurchHub Members</span>
               </div>
               <p className="mb-4 text-gray-300">
                 Connecting believers in meaningful community. Grow in your
                 faith, serve others, and build lasting relationships with fellow
-                members.
+                members through our comprehensive platform.
               </p>
             </div>
             <div>
@@ -298,6 +355,14 @@ export default function MembersPricingPage() {
                 <li>
                   <Link className="text-gray-300 hover:text-white" href="/">
                     Home
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="text-gray-300 hover:text-white"
+                    href="/pricing/members"
+                  >
+                    Membership
                   </Link>
                 </li>
                 <li>
@@ -332,7 +397,7 @@ export default function MembersPricingPage() {
           </div>
           <div className="mt-12 flex flex-col items-center justify-between border-gray-700 border-t pt-8 md:flex-row">
             <p className="text-gray-400">
-              © 2025 FaithConnect. All rights reserved.
+              © {currentYear} ChurchHub Members. All rights reserved.
             </p>
             <div className="mt-4 flex space-x-6 md:mt-0">
               <Link className="text-gray-400 hover:text-white" href="/">
