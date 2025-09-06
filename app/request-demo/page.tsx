@@ -2,6 +2,7 @@
 
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
+import { NumberInput } from '@/components/number-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,7 +32,6 @@ import {
 import { useRequestDemo } from '@/lib/hooks/demo/use-demo-queries';
 import {
   CHURCH_DENOMINATION_OPTIONS,
-  NUMBER_OF_CHURCH_BRANCHES_OPTIONS,
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
 } from '@/lib/utils';
 import {
@@ -310,29 +310,9 @@ export default function RequestDemoPage() {
                             Number of Branches{' '}
                             <span className="text-red-500">*</span>
                           </FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="cursor-pointer">
-                                <SelectValue placeholder="Select number" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-[400px] overflow-y-auto">
-                              {NUMBER_OF_CHURCH_BRANCHES_OPTIONS.map(
-                                (option) => (
-                                  <SelectItem
-                                    className="cursor-pointer"
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <NumberInput placeholder="5" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

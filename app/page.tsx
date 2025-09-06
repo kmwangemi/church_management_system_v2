@@ -80,6 +80,14 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+            <Link href="/pricing/church">
+              <Button
+                className="hover:bg-blue-50 dark:hover:bg-gray-800"
+                variant="ghost"
+              >
+                Pricing
+              </Button>
+            </Link>
             <Link href="/request-demo">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl">
                 Free Demo
