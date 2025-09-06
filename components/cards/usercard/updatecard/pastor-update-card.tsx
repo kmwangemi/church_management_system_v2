@@ -15,10 +15,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { PastorDetailsCardProps } from '@/lib/types/index';
+import type { PastorUpdateCardProps } from '@/lib/types/index';
 import { getRelativeYear } from '@/lib/utils';
 
-export const PastorDetailsCard: React.FC<PastorDetailsCardProps> = ({
+export const PastorUpdateCard: React.FC<PastorUpdateCardProps> = ({
   form,
 }) => {
   return (
@@ -30,7 +30,7 @@ export const PastorDetailsCard: React.FC<PastorDetailsCardProps> = ({
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="pastorDetails.pastorId"
+          name="pastorUpdate.pastorId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Pastor ID</FormLabel>
@@ -43,7 +43,7 @@ export const PastorDetailsCard: React.FC<PastorDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="pastorDetails.ordinationDate"
+          name="pastorUpdate.ordinationDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Ordination Date</FormLabel>
@@ -66,7 +66,7 @@ export const PastorDetailsCard: React.FC<PastorDetailsCardProps> = ({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="pastorDetails.sermonCount"
+            name="pastorUpdate.sermonCount"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Sermon Count</FormLabel>
@@ -83,7 +83,7 @@ export const PastorDetailsCard: React.FC<PastorDetailsCardProps> = ({
           />
           <FormField
             control={form.control}
-            name="pastorDetails.counselingSessions"
+            name="pastorUpdate.counselingSessions"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Counseling Sessions</FormLabel>
@@ -101,7 +101,7 @@ export const PastorDetailsCard: React.FC<PastorDetailsCardProps> = ({
         </div>
         <FormField
           control={form.control}
-          name="pastorDetails.biography"
+          name="pastorUpdate.biography"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Biography</FormLabel>

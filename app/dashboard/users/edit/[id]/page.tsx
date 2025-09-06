@@ -7,12 +7,6 @@ import { DatePicker } from '@/components/date-picker';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { MultiSelect } from '@/components/multi-select';
 import { PhoneInput } from '@/components/phone-number-input';
-import {
-  RenderMemberDetails,
-  RenderRoleSpecificFields,
-  RenderStaffDetails,
-  RenderVolunteerDetails,
-} from '@/components/role-specific';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,6 +35,12 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  RenderMemberUpdate,
+  RenderStaffUpdate,
+  RenderUpdateRoleSpecificFields,
+  RenderVolunteerUpdate,
+} from '@/components/update-role-specific';
 import { useFetchDepartments } from '@/lib/hooks/department/use-department-queries';
 import { useFetchGroups } from '@/lib/hooks/group/use-group-queries';
 import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
@@ -1219,12 +1219,12 @@ export default function EditMemberPage({
                       )}
                     />
                   )}
-                  <RenderMemberDetails
+                  <RenderMemberUpdate
                     currentRole={currentRole}
                     form={form}
                     user={user}
                   />
-                  <RenderRoleSpecificFields
+                  <RenderUpdateRoleSpecificFields
                     currentRole={currentRole}
                     form={form}
                   />
@@ -1251,7 +1251,7 @@ export default function EditMemberPage({
                       </FormItem>
                     )}
                   />
-                  <RenderStaffDetails form={form} user={user} />
+                  <RenderStaffUpdate form={form} user={user} />
                 </TabsContent>
                 <TabsContent className="space-y-6" value="volunteer">
                   {/* Secondary role flag */}
@@ -1276,7 +1276,7 @@ export default function EditMemberPage({
                       </FormItem>
                     )}
                   />
-                  <RenderVolunteerDetails form={form} user={user} />
+                  <RenderVolunteerUpdate form={form} user={user} />
                 </TabsContent>
               </Tabs>
             </form>

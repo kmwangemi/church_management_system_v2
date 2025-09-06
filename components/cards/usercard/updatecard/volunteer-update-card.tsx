@@ -25,14 +25,14 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useFetchDepartments } from '@/lib/hooks/department/use-department-queries';
-import type { VolunteerDetailsCardProps } from '@/lib/types/index';
+import type { VolunteerUpdateCardProps } from '@/lib/types/index';
 import {
   capitalizeFirstLetter,
   getRelativeYear,
   VOLUNTEER_STATUS_OPTIONS,
 } from '@/lib/utils';
 
-export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
+export const VolunteerUpdateCard: React.FC<VolunteerUpdateCardProps> = ({
   form,
 }) => {
   const {
@@ -52,7 +52,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="volunteerDetails.volunteerId"
+            name="volunteerUpdate.volunteerId"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Volunteer ID</FormLabel>
@@ -65,7 +65,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
           />
           <FormField
             control={form.control}
-            name="volunteerDetails.volunteerStatus"
+            name="volunteerUpdate.volunteerStatus"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Volunteer Status</FormLabel>
@@ -98,7 +98,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
-              name="volunteerDetails.availabilitySchedule.days"
+              name="volunteerUpdate.availabilitySchedule.days"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Available Days</FormLabel>
@@ -143,7 +143,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
             />
             <FormField
               control={form.control}
-              name="volunteerDetails.availabilitySchedule.preferredTimes"
+              name="volunteerUpdate.availabilitySchedule.preferredTimes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Preferred Times</FormLabel>
@@ -164,7 +164,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
         {/* Departments */}
         <FormField
           control={form.control}
-          name="volunteerDetails.departments"
+          name="volunteerUpdate.departments"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Departments</FormLabel>
@@ -191,7 +191,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
-              name="volunteerDetails.backgroundCheck.completed"
+              name="volunteerUpdate.backgroundCheck.completed"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
@@ -210,7 +210,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
             />
             <FormField
               control={form.control}
-              name="volunteerDetails.backgroundCheck.clearanceLevel"
+              name="volunteerUpdate.backgroundCheck.clearanceLevel"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Clearance Level</FormLabel>
@@ -230,11 +230,11 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
               )}
             />
           </div>
-          {form.watch('volunteerDetails.backgroundCheck.completed') && (
+          {form.watch('volunteerUpdate.backgroundCheck.completed') && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
-                name="volunteerDetails.backgroundCheck.completedDate"
+                name="volunteerUpdate.backgroundCheck.completedDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Completed Date</FormLabel>
@@ -256,7 +256,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
               />
               <FormField
                 control={form.control}
-                name="volunteerDetails.backgroundCheck.expiryDate"
+                name="volunteerUpdate.backgroundCheck.expiryDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Expiry Date</FormLabel>
@@ -282,7 +282,7 @@ export const VolunteerDetailsCard: React.FC<VolunteerDetailsCardProps> = ({
         {/* Hours Contributed */}
         <FormField
           control={form.control}
-          name="volunteerDetails.hoursContributed"
+          name="volunteerUpdate.hoursContributed"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Hours Contributed</FormLabel>

@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SuperAdminDetailsCardProps } from '@/lib/types/index';
+import type { SuperAdminUpdateCardProps } from '@/lib/types/index';
 import { SUPERADMIN_ACCESS_LEVEL_OPTIONS } from '@/lib/utils';
 
-export const SuperAdminDetailsCard: React.FC<SuperAdminDetailsCardProps> = ({
+export const SuperAdminUpdateCard: React.FC<SuperAdminUpdateCardProps> = ({
   form,
 }) => {
   return (
@@ -35,7 +35,7 @@ export const SuperAdminDetailsCard: React.FC<SuperAdminDetailsCardProps> = ({
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="superAdminDetails.superAdminId"
+          name="superAdminUpdate.superAdminId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Super Admin ID</FormLabel>
@@ -48,7 +48,7 @@ export const SuperAdminDetailsCard: React.FC<SuperAdminDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="superAdminDetails.accessLevel"
+          name="superAdminUpdate.accessLevel"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Access Level</FormLabel>

@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { AdminDetailsCardProps } from '@/lib/types/index';
+import type { AdminUpdateCardProps } from '@/lib/types/index';
 import { ADMIN_ACCESS_LEVEL_OPTIONS } from '@/lib/utils';
 
-export const AdminDetailsCard: React.FC<AdminDetailsCardProps> = ({ form }) => {
+export const AdminUpdateCard: React.FC<AdminUpdateCardProps> = ({ form }) => {
   return (
     <Card>
       <CardHeader>
@@ -33,7 +33,7 @@ export const AdminDetailsCard: React.FC<AdminDetailsCardProps> = ({ form }) => {
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="adminDetails.adminId"
+          name="adminUpdate.adminId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Admin ID</FormLabel>
@@ -46,7 +46,7 @@ export const AdminDetailsCard: React.FC<AdminDetailsCardProps> = ({ form }) => {
         />
         <FormField
           control={form.control}
-          name="adminDetails.accessLevel"
+          name="adminUpdate.accessLevel"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Access Level</FormLabel>

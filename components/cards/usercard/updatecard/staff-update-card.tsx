@@ -22,10 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import type { StaffDetailsCardProps } from '@/lib/types/index';
+import type { StaffUpdateCardProps } from '@/lib/types/index';
 import { EMPLOYMENT_TYPE_OPTIONS, getRelativeYear } from '@/lib/utils';
 
-export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
+export const StaffUpdateCard: React.FC<StaffUpdateCardProps> = ({ form }) => {
   return (
     <Card>
       <CardHeader>
@@ -35,7 +35,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="staffDetails.staffId"
+          name="staffUpdate.staffId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Staff ID</FormLabel>
@@ -49,7 +49,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="staffDetails.jobTitle"
+            name="staffUpdate.jobTitle"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Job Title</FormLabel>
@@ -62,7 +62,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
           />
           <FormField
             control={form.control}
-            name="staffDetails.department"
+            name="staffUpdate.department"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Department</FormLabel>
@@ -76,7 +76,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
         </div>
         <FormField
           control={form.control}
-          name="staffDetails.employmentType"
+          name="staffUpdate.employmentType"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Employment Type</FormLabel>
@@ -104,7 +104,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
         />
         <FormField
           control={form.control}
-          name="staffDetails.startDate"
+          name="staffUpdate.startDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Start Date</FormLabel>
@@ -126,7 +126,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
         />
         <FormField
           control={form.control}
-          name="staffDetails.salary"
+          name="staffUpdate.salary"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Salary</FormLabel>
@@ -143,7 +143,7 @@ export const StaffDetailsCard: React.FC<StaffDetailsCardProps> = ({ form }) => {
         />
         <FormField
           control={form.control}
-          name="staffDetails.isActive"
+          name="staffUpdate.isActive"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
