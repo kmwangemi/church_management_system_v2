@@ -3,33 +3,33 @@ import type { UseFormReturn } from 'react-hook-form';
 
 // Form data interface
 export interface UserFormData {
-  // Pastor details
-  pastorDetails?: {
+  // Pastor update
+  pastorUpdate?: {
     pastorId: string;
     ordinationDate: string;
     sermonCount: number;
     counselingSessions: number;
     biography: string;
   };
-  // Bishop details
-  bishopDetails?: {
+  // Bishop update
+  bishopUpdate?: {
     bishopId: string;
     appointmentDate: string;
     jurisdictionArea: string;
     biography: string;
   };
-  // Admin details
-  adminDetails?: {
+  // Admin update
+  adminUpdate?: {
     adminId: string;
     accessLevel: string;
   };
-  // Super Admin details
-  superAdminDetails?: {
+  // Super Admin update
+  superAdminUpdate?: {
     superAdminId: string;
     accessLevel: string;
   };
-  // Visitor details
-  visitorDetails?: {
+  // Visitor update
+  visitorUpdate?: {
     visitorId: string;
     visitDate: string;
     howDidYouHear: string;
@@ -37,16 +37,16 @@ export interface UserFormData {
     interestedInMembership: boolean;
     invitedBy: string;
   };
-  // Member details
-  memberDetails?: {
+  // Member update
+  memberUpdate?: {
     memberId: string;
     membershipDate: string;
     membershipStatus: string;
     baptismDate: string;
     joinedDate: string;
   };
-  // Staff details
-  staffDetails?: {
+  // Staff update
+  staffUpdate?: {
     staffId: string;
     jobTitle: string;
     department: string;
@@ -55,8 +55,8 @@ export interface UserFormData {
     salary: number;
     isActive: boolean;
   };
-  // Volunteer details
-  volunteerDetails?: {
+  // Volunteer update
+  volunteerUpdate?: {
     volunteerId: string;
     volunteerStatus: string;
     availabilitySchedule: {
@@ -78,35 +78,35 @@ export interface UserFormData {
 }
 
 // Component prop interfaces
-export interface PastorDetailsCardProps {
+export interface PastorUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface BishopDetailsCardProps {
+export interface BishopUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface AdminDetailsCardProps {
+export interface AdminUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface SuperAdminDetailsCardProps {
+export interface SuperAdminUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface VisitorDetailsCardProps {
+export interface VisitorUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface MemberDetailsCardProps {
+export interface MemberUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface StaffDetailsCardProps {
+export interface StaffUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
-export interface VolunteerDetailsCardProps {
+export interface VolunteerUpdateCardProps {
   form: UseFormReturn<UserFormData>;
 }
 
@@ -121,7 +121,16 @@ export interface RoleSpecificFormProps {
   form: UseFormReturn<UserFormData | any>;
 }
 
-export interface StaffDetailsFormProps {
+export interface StaffUpdateFormProps {
   user: UserResponse | undefined;
   form: UseFormReturn<UserFormData | any>;
+}
+
+export interface UserViewProps {
+  user: UserResponse | undefined;
+}
+
+export interface RoleViewProps {
+  currentRole: string | undefined;
+  user: UserResponse | undefined;
 }

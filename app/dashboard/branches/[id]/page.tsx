@@ -275,8 +275,9 @@ export default function BranchDetailsPage({
       </div>
 
       <Tabs className="space-y-4" defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
           <TabsTrigger value="facilities">Facilities</TabsTrigger>

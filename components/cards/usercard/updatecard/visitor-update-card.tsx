@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { UserListInput } from '@/components/user-list-input';
-import type { VisitorDetailsCardProps } from '@/lib/types/index';
+import type { VisitorUpdateCardProps } from '@/lib/types/index';
 import type { UserResponse } from '@/lib/types/user';
 import {
   FOLLOW_UP_STATUS_OPTIONS,
@@ -32,7 +32,7 @@ import {
 } from '@/lib/utils';
 import { useState } from 'react';
 
-export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
+export const VisitorUpdateCard: React.FC<VisitorUpdateCardProps> = ({
   form,
 }) => {
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
@@ -47,7 +47,7 @@ export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="visitorDetails.visitorId"
+          name="visitorUpdate.visitorId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Visitor ID</FormLabel>
@@ -60,7 +60,7 @@ export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="visitorDetails.visitDate"
+          name="visitorUpdate.visitDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Visit Date</FormLabel>
@@ -82,7 +82,7 @@ export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="visitorDetails.howDidYouHear"
+          name="visitorUpdate.howDidYouHear"
           render={({ field }) => (
             <FormItem>
               <FormLabel>How Did You Hear About Us?</FormLabel>
@@ -110,7 +110,7 @@ export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="visitorDetails.followUpStatus"
+          name="visitorUpdate.followUpStatus"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Follow Up Status</FormLabel>
@@ -138,7 +138,7 @@ export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="visitorDetails.interestedInMembership"
+          name="visitorUpdate.interestedInMembership"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
@@ -157,7 +157,7 @@ export const VisitorDetailsCard: React.FC<VisitorDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="visitorDetails.invitedBy"
+          name="visitorUpdate.invitedBy"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Invited By</FormLabel>

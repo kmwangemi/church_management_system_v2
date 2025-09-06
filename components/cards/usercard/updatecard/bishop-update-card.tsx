@@ -15,10 +15,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { BishopDetailsCardProps } from '@/lib/types/index';
+import type { BishopUpdateCardProps } from '@/lib/types/index';
 import { getRelativeYear } from '@/lib/utils';
 
-export const BishopDetailsCard: React.FC<BishopDetailsCardProps> = ({
+export const BishopUpdateCard: React.FC<BishopUpdateCardProps> = ({
   form,
 }) => {
   return (
@@ -30,7 +30,7 @@ export const BishopDetailsCard: React.FC<BishopDetailsCardProps> = ({
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="bishopDetails.bishopId"
+          name="bishopUpdate.bishopId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Bishop ID</FormLabel>
@@ -43,7 +43,7 @@ export const BishopDetailsCard: React.FC<BishopDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="bishopDetails.appointmentDate"
+          name="bishopUpdate.appointmentDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Appointment Date</FormLabel>
@@ -65,7 +65,7 @@ export const BishopDetailsCard: React.FC<BishopDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="bishopDetails.jurisdictionArea"
+          name="bishopUpdate.jurisdictionArea"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Jurisdiction Area</FormLabel>
@@ -78,7 +78,7 @@ export const BishopDetailsCard: React.FC<BishopDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="bishopDetails.biography"
+          name="bishopUpdate.biography"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Biography</FormLabel>

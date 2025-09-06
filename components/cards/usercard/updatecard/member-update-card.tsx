@@ -21,10 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { MemberDetailsCardProps } from '@/lib/types/index';
+import type { MemberUpdateCardProps } from '@/lib/types/index';
 import { getRelativeYear, MEMBERSHIP_STATUS_OPTIONS } from '@/lib/utils';
 
-export const MemberDetailsCard: React.FC<MemberDetailsCardProps> = ({
+export const MemberUpdateCard: React.FC<MemberUpdateCardProps> = ({
   form,
 }) => {
   return (
@@ -36,7 +36,7 @@ export const MemberDetailsCard: React.FC<MemberDetailsCardProps> = ({
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="memberDetails.memberId"
+          name="memberUpdate.memberId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Member ID</FormLabel>
@@ -49,7 +49,7 @@ export const MemberDetailsCard: React.FC<MemberDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="memberDetails.membershipDate"
+          name="memberUpdate.membershipDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Membership Date</FormLabel>
@@ -71,7 +71,7 @@ export const MemberDetailsCard: React.FC<MemberDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="memberDetails.membershipStatus"
+          name="memberUpdate.membershipStatus"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Membership Status</FormLabel>
@@ -99,7 +99,7 @@ export const MemberDetailsCard: React.FC<MemberDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="memberDetails.baptismDate"
+          name="memberUpdate.baptismDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Baptism Date</FormLabel>
@@ -121,7 +121,7 @@ export const MemberDetailsCard: React.FC<MemberDetailsCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="memberDetails.joinedDate"
+          name="memberUpdate.joinedDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Joined Date</FormLabel>
