@@ -2,14 +2,18 @@ import mongoose, { Schema, type Document, type Model } from 'mongoose';
 
 export interface IChurchSubscription extends Document {
   churchId: mongoose.Types.ObjectId;
-  plan: 'basic' | 'standard' | 'premium' | 'enterprise';
+  plan: 'basic' | 'ministry' | 'cathedral';
   status: 'active' | 'expired' | 'canceled' | 'trial';
   isPaid: boolean;
   invoiceAmount: number;
   paidAmount: number;
   balAmount: number;
   maxUsers?: number;
+  maxBranches?: number;
+  maxSmallGroups?: number;
   currentUsers?: number;
+  currentBranches?: number;
+  currentSmallGroups?: number;
   features?: string[];
   startDate: Date;
   endDate: Date;
@@ -50,6 +54,14 @@ export interface IChurchSubscriptionModel extends Model<IChurchSubscription> {
     churchId: mongoose.Types.ObjectId,
     userCount: number
   ): mongoose.Query<IChurchSubscription | null, IChurchSubscription>;
+  updateBranchCount(
+    churchId: mongoose.Types.ObjectId,
+    branchCount: number
+  ): mongoose.Query<IChurchSubscription | null, IChurchSubscription>;
+  updateSmallGroupCount(
+    churchId: mongoose.Types.ObjectId,
+    groupCount: number
+  ): mongoose.Query<IChurchSubscription | null, IChurchSubscription>;
 }
 
 const ChurchSubscriptionSchema = new Schema<IChurchSubscription>(
@@ -64,9 +76,8 @@ const ChurchSubscriptionSchema = new Schema<IChurchSubscription>(
     plan: {
       type: String,
       enum: {
-        values: ['basic', 'standard', 'premium', 'enterprise'],
-        message:
-          'Subscription plan must be basic, standard, premium, or enterprise',
+        values: ['basic', 'ministry', 'cathedral'],
+        message: 'Subscription plan must be basic, ministry, or cathedral',
       },
       required: [true, 'Subscription plan is required'],
       index: true,
@@ -101,7 +112,26 @@ const ChurchSubscriptionSchema = new Schema<IChurchSubscription>(
       type: Number,
       min: 1,
     },
+    maxBranches: {
+      type: Number,
+      min: 1,
+      default: 1,
+    },
+    maxSmallGroups: {
+      type: Number,
+      min: 0,
+    },
     currentUsers: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    currentBranches: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    currentSmallGroups: {
       type: Number,
       default: 0,
       min: 0,
@@ -128,6 +158,7 @@ const ChurchSubscriptionSchema = new Schema<IChurchSubscription>(
       type: String,
       trim: true,
       enum: ['credit_card', 'paypal', 'stripe', 'm-pesa'],
+      default: 'm-pesa',
     },
     lastPaymentDate: {
       type: Date,
@@ -185,30 +216,69 @@ ChurchSubscriptionSchema.virtual('isOverUserLimit').get(function () {
   );
 });
 
+// Virtual to check if over branch limit
+ChurchSubscriptionSchema.virtual('isOverBranchLimit').get(function () {
+  return (
+    this.currentBranches != null &&
+    this.maxBranches != null &&
+    this.currentBranches > this.maxBranches
+  );
+});
+
+// Virtual to check if over small group limit
+ChurchSubscriptionSchema.virtual('isOverSmallGroupLimit').get(function () {
+  return (
+    this.currentSmallGroups != null &&
+    this.maxSmallGroups != null &&
+    this.maxSmallGroups !== -1 && // -1 means unlimited
+    this.currentSmallGroups > this.maxSmallGroups
+  );
+});
+
 // Virtual to get usage percentage
 ChurchSubscriptionSchema.virtual('usagePercentage').get(function () {
   if (this.currentUsers == null || this.maxUsers == null) return 0;
+  if (this.maxUsers === -1) return 0; // Unlimited
   return Math.round((this.currentUsers / this.maxUsers) * 100);
 });
 
+// Virtual to get branch usage percentage
+ChurchSubscriptionSchema.virtual('branchUsagePercentage').get(function () {
+  if (this.currentBranches == null || this.maxBranches == null) return 0;
+  if (this.maxBranches === -1) return 0; // Unlimited
+  return Math.round((this.currentBranches / this.maxBranches) * 100);
+});
+
+// Virtual to get small group usage percentage
+ChurchSubscriptionSchema.virtual('smallGroupUsagePercentage').get(function () {
+  if (this.currentSmallGroups == null || this.maxSmallGroups == null) return 0;
+  if (this.maxSmallGroups === -1) return 0; // Unlimited
+  return Math.round((this.currentSmallGroups / this.maxSmallGroups) * 100);
+});
+
 // Helper functions for pre-save logic
-function setDefaultMaxUsers(doc: IChurchSubscription) {
-  if (!doc.maxUsers) {
+function setDefaultLimits(doc: IChurchSubscription) {
+  if (!(doc.maxUsers && doc.maxBranches) || doc.maxSmallGroups === undefined) {
     switch (doc.plan) {
       case 'basic':
-        doc.maxUsers = 50;
+        if (!doc.maxUsers) doc.maxUsers = 100;
+        if (!doc.maxBranches) doc.maxBranches = 1;
+        if (doc.maxSmallGroups === undefined) doc.maxSmallGroups = 5;
         break;
-      case 'standard':
-        doc.maxUsers = 200;
+      case 'ministry':
+        if (!doc.maxUsers) doc.maxUsers = 500;
+        if (!doc.maxBranches) doc.maxBranches = 3;
+        if (doc.maxSmallGroups === undefined) doc.maxSmallGroups = -1; // Unlimited
         break;
-      case 'premium':
-        doc.maxUsers = 500;
-        break;
-      case 'enterprise':
-        doc.maxUsers = 9999;
+      case 'cathedral':
+        if (!doc.maxUsers) doc.maxUsers = -1; // Unlimited
+        if (!doc.maxBranches) doc.maxBranches = -1; // Unlimited
+        if (doc.maxSmallGroups === undefined) doc.maxSmallGroups = -1; // Unlimited
         break;
       default:
-        doc.maxUsers = 50;
+        if (!doc.maxUsers) doc.maxUsers = 100;
+        if (!doc.maxBranches) doc.maxBranches = 1;
+        if (doc.maxSmallGroups === undefined) doc.maxSmallGroups = 5;
     }
   }
 }
@@ -240,50 +310,72 @@ function setDefaultFeatures(doc: IChurchSubscription) {
   if (!doc.features || doc.features.length === 0) {
     switch (doc.plan) {
       case 'basic':
-        doc.features = ['user_management', 'basic_reports', 'events'];
-        break;
-      case 'standard':
         doc.features = [
           'user_management',
-          'basic_reports',
-          'events',
-          'finances',
-          'advanced_reports',
+          'basic_departments',
+          'small_groups_limited',
+          'attendance_tracking',
+          'event_scheduling',
+          'basic_finance',
+          'prayer_requests',
+          'email_support',
         ];
         break;
-      case 'premium':
+      case 'ministry':
         doc.features = [
-          'user_management',
-          'basic_reports',
-          'events',
-          'finances',
-          'advanced_reports',
-          'custom_fields',
-          'api_access',
-        ];
-        break;
-      case 'enterprise':
-        doc.features = [
-          'user_management',
-          'basic_reports',
-          'events',
-          'finances',
-          'advanced_reports',
-          'custom_fields',
-          'api_access',
-          'white_label',
+          'advanced_user_management',
+          'department_management',
+          'unlimited_small_groups',
+          'advanced_attendance',
+          'event_registration',
+          'finance_budget_management',
+          'contributions_tracking',
+          'basic_asset_management',
+          'communication_tools',
+          'prayer_management',
+          'basic_discipleship',
+          'volunteer_scheduling',
+          'basic_reporting',
           'priority_support',
         ];
         break;
+      case 'cathedral':
+        doc.features = [
+          'complete_user_management',
+          'advanced_department_management',
+          'unlimited_small_groups',
+          'advanced_attendance_analytics',
+          'advanced_event_management',
+          'complete_finance_management',
+          'advanced_contributions_tracking',
+          'complete_asset_management',
+          'advanced_communication_suite',
+          'prayer_pastoral_care',
+          'complete_discipleship_programs',
+          'advanced_volunteer_management',
+          'content_management_system',
+          'comprehensive_reporting_analytics',
+          'custom_integrations',
+          'priority_support_training',
+        ];
+        break;
       default:
-        doc.features = ['user_management', 'basic_reports', 'events'];
+        doc.features = [
+          'user_management',
+          'basic_departments',
+          'small_groups_limited',
+          'attendance_tracking',
+          'event_scheduling',
+          'basic_finance',
+          'prayer_requests',
+        ];
     }
   }
 }
 
 // Pre-save middleware
 ChurchSubscriptionSchema.pre('save', function (next) {
-  setDefaultMaxUsers(this);
+  setDefaultLimits(this);
   calculateBalanceAndPaidStatus(this);
   updateStatusIfExpired(this);
   setNextBillingDate(this);
@@ -308,6 +400,25 @@ ChurchSubscriptionSchema.methods.renew = function (months = 1) {
   this.status = 'active';
   this.nextBillingDate = newEndDate;
   return this.save();
+};
+
+ChurchSubscriptionSchema.methods.canCreateBranch = function () {
+  if (this.maxBranches === -1) return true; // Unlimited
+  return this.currentBranches < this.maxBranches;
+};
+
+ChurchSubscriptionSchema.methods.canAddUser = function () {
+  if (this.maxUsers === -1) return true; // Unlimited
+  return this.currentUsers < this.maxUsers;
+};
+
+ChurchSubscriptionSchema.methods.canCreateSmallGroup = function () {
+  if (this.maxSmallGroups === -1) return true; // Unlimited
+  return this.currentSmallGroups < this.maxSmallGroups;
+};
+
+ChurchSubscriptionSchema.methods.hasFeature = function (feature: string) {
+  return this.features?.includes(feature);
 };
 
 // Static methods
@@ -343,6 +454,7 @@ ChurchSubscriptionSchema.statics.findByPlan = function (plan: string) {
 ChurchSubscriptionSchema.statics.findOverUserLimit = function () {
   return this.find({
     status: 'active',
+    maxUsers: { $ne: -1 }, // Exclude unlimited plans
     $expr: { $gt: ['$currentUsers', '$maxUsers'] },
   });
 };
@@ -354,6 +466,28 @@ ChurchSubscriptionSchema.statics.updateUserCount = function (
   return this.findOneAndUpdate(
     { churchId },
     { currentUsers: userCount },
+    { new: true }
+  );
+};
+
+ChurchSubscriptionSchema.statics.updateBranchCount = function (
+  churchId: mongoose.Types.ObjectId,
+  branchCount: number
+) {
+  return this.findOneAndUpdate(
+    { churchId },
+    { currentBranches: branchCount },
+    { new: true }
+  );
+};
+
+ChurchSubscriptionSchema.statics.updateSmallGroupCount = function (
+  churchId: mongoose.Types.ObjectId,
+  groupCount: number
+) {
+  return this.findOneAndUpdate(
+    { churchId },
+    { currentSmallGroups: groupCount },
     { new: true }
   );
 };

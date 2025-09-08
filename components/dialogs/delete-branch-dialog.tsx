@@ -1,7 +1,6 @@
 'use client';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +12,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import type { UserResponse } from '@/lib/types/user';
-import { capitalizeFirstLetter, getFirstLetter } from '@/lib/utils';
+import type { Branch } from '@/lib/types/branch';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   AlertTriangle,
   Calendar,
@@ -25,72 +24,58 @@ import {
   User,
 } from 'lucide-react';
 
-interface DeleteUserDialogProps {
+interface DeleteBranchDialogProps {
   open: boolean;
   isDeleting: boolean;
   onOpenChange: (open: boolean) => void;
-  user: UserResponse | null;
-  onDelete: (userId: string) => Promise<void>; // Updated to accept string and return Promise
+  branch: Branch | null;
+  onDelete: (branchId: string) => Promise<void>; // Updated to accept string and return Promise
 }
 
-export function DeleteUserDialog({
+export function DeleteBranchDialog({
   open,
   isDeleting,
   onOpenChange,
-  user,
+  branch,
   onDelete,
-}: DeleteUserDialogProps) {
-  if (!user) return null;
-  const handleDelete = async () => await onDelete(user._id);
+}: DeleteBranchDialogProps) {
+  if (!branch) return null;
+  const handleDelete = async () => await onDelete(branch._id);
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 text-red-600">
             <Trash2 className="h-5 w-5" />
-            <span>Delete Member</span>
+            <span>Delete Branch</span>
           </DialogTitle>
           <DialogDescription>
             This action cannot be undone. This will permanently delete the
-            member and all associated data.
+            branch and all associated data.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
-          {/* Member Info */}
+          {/* Branch Info */}
           <div className="flex items-center space-x-4 rounded-lg bg-gray-50 p-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage
-                alt={user?.firstName || 'User'}
-                src={user?.profilePictureUrl ?? ''}
-              />
-              <AvatarFallback className="bg-blue-100 text-blue-600 text-lg">
-                {`${getFirstLetter(
-                  user?.firstName || ''
-                )}${getFirstLetter(user?.lastName || '')}`}
-              </AvatarFallback>
-            </Avatar>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">{`${capitalizeFirstLetter(
-                user?.firstName || 'N/A'
-              )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}</h3>
+              <h3 className="font-semibold text-lg">
+                {capitalizeFirstLetterOfEachWord(branch?.branchName || 'N/A')}
+              </h3>
               <div className="mt-1 flex items-center space-x-4 text-gray-600 text-sm">
                 <div className="flex items-center space-x-1">
                   <Mail className="h-3 w-3" />
-                  <span>{user.email}</span>
+                  <span>{branch?.email || 'N/A'}</span>
                 </div>
-                {user?.phoneNumber && (
+                {branch?.phoneNumber && (
                   <div className="flex items-center space-x-1">
                     <Phone className="h-3 w-3" />
-                    <span>{user.phoneNumber}</span>
+                    <span>{branch.phoneNumber}</span>
                   </div>
                 )}
               </div>
               <div className="mt-2 flex items-center space-x-2">
-                <Badge variant="secondary">{user.role}</Badge>
-                <Badge
-                  variant={user?.status === 'active' ? 'default' : 'secondary'}
-                >
-                  {capitalizeFirstLetter(user.status)}
+                <Badge variant={branch?.isActive ? 'default' : 'secondary'}>
+                  {branch?.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
             </div>
@@ -100,7 +85,7 @@ export function DeleteUserDialog({
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               <strong>Warning:</strong> This will permanently delete all data
-              associated with this member.
+              associated with this Branch.
             </AlertDescription>
           </Alert>
           {/* What will be deleted */}
@@ -111,7 +96,7 @@ export function DeleteUserDialog({
             <div className="grid grid-cols-1 gap-2 text-gray-600 text-sm">
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4" />
-                <span>Personal information and contact details</span>
+                <span>Branch information and contact details</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4" />
@@ -121,20 +106,12 @@ export function DeleteUserDialog({
                 <Trash2 className="h-4 w-4" />
                 <span>Giving history and financial contributions</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4" />
-                <span>Group memberships and ministry involvement</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
-                <span>Prayer requests and spiritual journey data</span>
-              </div>
             </div>
           </div>
           <Separator />
           <div className="text-gray-600 text-sm">
-            <strong>Member since:</strong>{' '}
-            {new Date(user?.createdAt).toLocaleDateString()}
+            <strong>Branch since:</strong>{' '}
+            {new Date(branch?.establishedDate).toLocaleDateString()}
           </div>
         </div>
         <DialogFooter className="flex-col gap-2 sm:flex-row">
@@ -155,12 +132,12 @@ export function DeleteUserDialog({
             {isDeleting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting User...
+                Deleting Branch...
               </>
             ) : (
               <>
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete User
+                Delete Branch
               </>
             )}
           </Button>

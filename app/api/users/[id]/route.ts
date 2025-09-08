@@ -468,9 +468,10 @@ async function deleteUserByIdHandler(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { id } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/users/${params.id}` },
+    { requestId, endpoint: `/api/users/${id}` },
     'api'
   );
   let session: mongoose.ClientSession | null = null;
@@ -488,7 +489,7 @@ async function deleteUserByIdHandler(
     }
     const currentUser = authResult;
     // Validate user ID
-    if (!(params.id && mongoose.Types.ObjectId.isValid(params.id))) {
+    if (!(id && mongoose.Types.ObjectId.isValid(id))) {
       return NextResponse.json(
         { error: 'Valid user ID is required' },
         { status: 400 }
@@ -510,7 +511,7 @@ async function deleteUserByIdHandler(
     }
     // Find the user to delete
     const userToDelete = await UserModel.findOne({
-      _id: params.id,
+      _id: id,
       isDeleted: false,
     }).session(session);
     if (!userToDelete) {
@@ -550,11 +551,11 @@ async function deleteUserByIdHandler(
     let result: mongoose.Document | null;
     if (hardDelete) {
       // Hard delete - permanently remove from database
-      result = await UserModel.findByIdAndDelete(params.id).session(session);
+      result = await UserModel.findByIdAndDelete(id).session(session);
     } else {
       // Soft delete - set isDeleted flag and deactivate
       result = await UserModel.findByIdAndUpdate(
-        params.id,
+        id,
         {
           isDeleted: true,
           status: 'inactive',

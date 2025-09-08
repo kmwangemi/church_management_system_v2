@@ -39,23 +39,56 @@ async function getBranchHandler(request: NextRequest): Promise<NextResponse> {
     const page = Number.parseInt(searchParams.get('page') || '1', 10);
     const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
     const search = searchParams.get('search') || '';
-    const query: any = { churchId: user.user?.churchId };
-    if (search) {
+    const status = searchParams.get('status'); // 'active', 'inactive', or undefined for all
+    // Build base query
+    const query: any = { churchId: user.user.churchId };
+    // Add status filter if provided
+    if (status === 'active') {
+      query.isActive = true;
+    } else if (status === 'inactive') {
+      query.isActive = false;
+    }
+    // Handle search - improved to search nested address fields correctly
+    if (search && search.length > 0) {
+      // Option 1: Use text search (recommended if you have text index)
+      // Use MongoDB text search for better performance
+      query.$text = { $search: search };
+      // Option 2: Alternative regex-based search for specific fields
+      // Uncomment this if you prefer regex search or don't have text index
+      /*
       query.$or = [
         { branchName: { $regex: search, $options: 'i' } },
-        { address: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { 'address.street': { $regex: search, $options: 'i' } },
+        { 'address.city': { $regex: search, $options: 'i' } },
+        { 'address.state': { $regex: search, $options: 'i' } },
+        { 'address.country': { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phoneNumber: { $regex: search, $options: 'i' } }
       ];
+      */
     }
     const skip = (page - 1) * limit;
+    // Build the find query
+    let findQuery = BranchModel.find(query);
+    // If using text search, sort by text score for relevance
+    if (search && query.$text) {
+      findQuery = findQuery.sort({
+        score: { $meta: 'textScore' },
+        createdAt: -1,
+      });
+    } else {
+      findQuery = findQuery.sort({ createdAt: -1 });
+    }
     const [branches, total] = await Promise.all([
-      BranchModel.find(query)
-        // .populate('pastorId', 'firstName lastName')
-        .sort({ createdAt: -1 })
+      findQuery
+        .populate('pastorId', 'firstName lastName email') // Updated to match your user fields
         .skip(skip)
         .limit(limit),
       BranchModel.countDocuments(query),
     ]);
-    return NextResponse.json({
+    // Optional: Add metadata about the search
+    const response: any = {
       branches,
       pagination: {
         page,
@@ -63,7 +96,16 @@ async function getBranchHandler(request: NextRequest): Promise<NextResponse> {
         total,
         pages: Math.ceil(total / limit),
       },
-    });
+    };
+    // Add search metadata if search was performed
+    if (search) {
+      response.searchTerm = search;
+      response.searchResults = total;
+    }
+    if (status) {
+      response.statusFilter = status;
+    }
+    return NextResponse.json(response);
   } catch (error) {
     contextLogger.error('Unexpected error in getBranchHandler', error);
     return NextResponse.json(

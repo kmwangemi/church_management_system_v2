@@ -15,19 +15,25 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterDepartment } from '@/lib/hooks/department/use-department-queries';
+import type { UserResponse } from '@/lib/types/user';
 import { MEETING_DAY_OPTIONS } from '@/lib/utils';
 import {
   type AddDepartmentPayload,
   addDepartmentSchema,
 } from '@/lib/validations/department';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { UserListInput } from '../user-list-input';
 
 interface AddDepartmentFormProps {
   onCloseDialog: () => void;
 }
 
 export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const {
     mutateAsync: registerDepartmentMutation,
     isPending,
@@ -72,6 +78,27 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
                 </FormLabel>
                 <FormControl>
                   <Input placeholder="Choir" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="leaderId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Leader (Optional)</FormLabel>
+                <FormControl>
+                  <UserListInput
+                    className="w-full"
+                    onChange={(member) => {
+                      setSelectedMember(member);
+                      field.onChange(member?._id || ''); // ✅ Store only the ID
+                    }}
+                    placeholder="Search and select a leader"
+                    value={selectedMember} // ✅ Use state for display
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
