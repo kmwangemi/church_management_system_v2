@@ -2,8 +2,8 @@
 
 import RenderApiError from '@/components/api-error';
 import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
-import { SendEmailDialog } from '@/components/dialogs/send-email-dialog';
 import { AddUserForm } from '@/components/forms/add-user-form';
+import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -71,31 +71,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-const getRoleIcon = (role: string) => {
-  switch (role.toLowerCase()) {
-    case 'pastor':
-    case 'bishop':
-      return <Crown className="h-4 w-4" />;
-    case 'admin':
-      return <UserCheck className="h-4 w-4" />;
-    default:
-      return <Users className="h-4 w-4" />;
-  }
-};
-const getRoleBadgeVariant = (role: string) => {
-  switch (role.toLowerCase()) {
-    case 'pastor':
-    case 'bishop':
-      return 'default';
-    case 'admin':
-      return 'secondary';
-    case 'volunteer':
-      return 'outline';
-    default:
-      return 'secondary';
-  }
-};
 
 export default function UsersPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -407,7 +382,10 @@ export default function UsersPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem asChild>
+                                <DropdownMenuItem
+                                  asChild
+                                  className="cursor-pointer"
+                                >
                                   <Link href={`/dashboard/users/${user._id}`}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     View User
@@ -420,7 +398,10 @@ export default function UsersPage() {
                                   <Mail className="mr-2 h-4 w-4" />
                                   Send Email
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
+                                <DropdownMenuItem
+                                  asChild
+                                  className="cursor-pointer"
+                                >
                                   <Link
                                     href={`/dashboard/users/edit/${user._id}`}
                                   >
@@ -469,14 +450,6 @@ export default function UsersPage() {
         }}
         open={!!deletingUser}
         user={deletingUser}
-      />
-      {/* Send Email Dialog */}
-      <SendEmailDialog
-        onOpenChange={(open) => {
-          if (!open) setEmailingUser(null);
-        }}
-        open={!!emailingUser}
-        user={emailingUser}
       />
     </div>
   );

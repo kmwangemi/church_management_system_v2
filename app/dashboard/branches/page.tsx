@@ -4,7 +4,7 @@ import {
   Activity,
   Building,
   Eye,
-  MapPin,
+  MoreHorizontal,
   // Phone,
   Plus,
   Trash2,
@@ -13,7 +13,10 @@ import {
   Users,
 } from 'lucide-react';
 // import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import RenderApiError from '@/components/api-error';
+import { DeleteBranchDialog } from '@/components/dialogs/delete-branch-dialog';
 import { AddBranchForm } from '@/components/forms/add-branch-form';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,14 +41,39 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
+import {
+  useDeleteBranchById,
+  useFetchBranches,
+} from '@/lib/hooks/branch/use-branch-queries';
+import type { Branch } from '@/lib/types/branch';
+import {
+  capitalizeFirstLetter,
+  capitalizeFirstLetterOfEachWord,
+  formatToNewDate,
+} from '@/lib/utils';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -144,6 +172,7 @@ export default function BranchesPage() {
   // const pathname = usePathname();
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deletingBranch, setDeletingBranch] = useState<Branch | null>(null);
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
   const {
@@ -157,10 +186,23 @@ export default function BranchesPage() {
   });
   const {
     data: branches,
-    // isLoading: isLoadingBranches,
-    // isError: isErrorBranches,
-    // error: errorBranches,
+    isLoading: isLoadingBranches,
+    isError: isErrorBranches,
+    error: errorBranches,
   } = useFetchBranches(page, searchQuery);
+  const {
+    mutateAsync: deleteBranchMutation,
+    isPending: isPendingDeleteBranch,
+    isError: isErrorDeleteBranch,
+    error: errorDeleteBranch,
+  } = useDeleteBranchById();
+  const handleDeleteBranch = async (branchId: string) => {
+    await deleteBranchMutation(branchId);
+    setDeletingBranch(null);
+  };
+  const openDeleteDialog = (branch: Branch) => {
+    setDeletingBranch(branch);
+  };
 
   // const handleResetQueries = () => {
   //   resetSearchInput();
@@ -432,15 +474,10 @@ export default function BranchesPage() {
           </div>
         </TabsContent>
         <TabsContent className="space-y-4" value="branches">
+          {/* Search and Filter */}
           <Card>
             <CardHeader>
-              <CardTitle>Church Branches</CardTitle>
-              <CardDescription>
-                Manage all church branch locations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+              <div className="flex flex-col gap-4 sm:flex-row">
                 <SearchInput
                   handleSubmit={handleSubmit}
                   placeholder="Search branches..."
@@ -461,67 +498,144 @@ export default function BranchesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {branches?.branches?.map((branch) => (
-                  <Card key={branch._id}>
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-lg">
-                            {branch.branchName}
-                          </h3>
-                          <Badge
-                            variant={branch?.isActive ? 'default' : 'secondary'}
+            </CardHeader>
+            <CardContent>
+              {isErrorBranches && <RenderApiError error={errorBranches} />}
+              {isErrorDeleteBranch && (
+                <RenderApiError error={errorDeleteBranch} />
+              )}
+              {isLoadingBranches ? (
+                <SpinnerLoader description="Loading branches..." />
+              ) : (
+                <div className="mt-6">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Branch</TableHead>
+                          <TableHead>Capacity</TableHead>
+                          <TableHead>Members</TableHead>
+                          <TableHead>Pastor</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Established Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {branches?.branches?.map((branch) => (
+                          <TableRow
+                            className="hover:bg-gray-50"
+                            key={branch._id}
                           >
-                            {branch?.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <div className="space-y-2 text-muted-foreground text-sm">
-                          <div className="flex items-center">
-                            <MapPin className="mr-2 h-4 w-4" />
-                            {branch?.address?.street}
-                          </div>
-                          {/* <div className="flex items-center">
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            {branch.pastor}
-                          </div> */}
-                          {/* <div className="flex items-center">
-                            <Users className="mr-2 h-4 w-4" />
-                            {branch.members} members
-                          </div>
-                          <div className="flex items-center">
-                            <Building2 className="mr-2 h-4 w-4" />
-                            {branch.departments} departments
-                          </div> */}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          Established: {branch.establishedDate}
-                        </div>
-                        <div className="flex space-x-2">
-                          <Link href={`/dashboard/branches/${branch._id}`}>
-                            <Button size="sm" variant="outline">
-                              <Eye className="h-4 w-4" />
-                              View
-                            </Button>
-                          </Link>
-                          <Button
-                            className="text-red-600"
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                            <TableCell>
+                              <div className="flex items-center space-x-3">
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {capitalizeFirstLetterOfEachWord(
+                                      branch?.branchName || 'N/A'
+                                    )}
+                                  </div>
+                                  <div className="text-gray-500 text-sm">
+                                    {branch?.email || 'N/A'}
+                                  </div>
+                                  <div className="text-gray-500 text-sm">
+                                    {branch?.phoneNumber || 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-900 text-sm">
+                                {branch?.capacity || 'N/A'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-900 text-sm">
+                                {branch?.members || 'N/A'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-900 text-sm">
+                                {`${capitalizeFirstLetter(branch?.pastorId?.firstName || 'N/A')} ${capitalizeFirstLetter(branch?.pastorId?.lastName || 'N/A')}`}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  branch?.isActive ? 'default' : 'secondary'
+                                }
+                              >
+                                {branch?.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-900 text-sm">
+                                {formatToNewDate(branch?.establishedDate)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    className="h-8 w-8 p-0"
+                                    variant="ghost"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem asChild className='cursor-pointer'>
+                                    <Link
+                                      href={`/dashboard/branches/${branch._id}`}
+                                    >
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View Branch
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="cursor-pointer text-red-600"
+                                    onClick={() => openDeleteDialog(branch)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Branch
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {branches?.branches?.length === 0 && (
+                    <div className="py-12 text-center">
+                      <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                      <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                        No branches found
+                      </h3>
+                      <p className="text-gray-500">
+                        Try adjusting your search or filter criteria.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Delete Branch Dialog */}
+      <DeleteBranchDialog
+        branch={deletingBranch}
+        isDeleting={isPendingDeleteBranch}
+        onDelete={handleDeleteBranch}
+        onOpenChange={(open) => {
+          if (!open) setDeletingBranch(null);
+        }}
+        open={!!deletingBranch}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Address, Pagination } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 
 export interface BranchAddResponse {
   churchId: string;
@@ -17,11 +18,14 @@ export interface Branch {
   _id: string;
   churchId: string;
   branchName: string;
+  email?: string;
+  phoneNumber?: string;
   address: Address;
+  members?: number;
   capacity: number;
-  pastorId?: string; // Optional, if not always present
-  users?: number; // Optional, if not always present
-  establishedDate: Date; // ISO string; use `Date` if you parse it
+  pastorId?: UserResponse; // Optional, if not always present
+  establishedDate: string ; // ISO string; use `Date` if you parse it
+  description?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -3,6 +3,7 @@ import mongoose, { type Document, Schema } from 'mongoose';
 export interface IDepartment extends Document {
   churchId: mongoose.Types.ObjectId;
   leaderId?: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
   departmentName: string;
   description?: string;
   meetingDay: string[];
@@ -31,6 +32,7 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
       trim: true,
     },
     leaderId: { type: Schema.Types.ObjectId, ref: 'User', trim: true },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Branch', trim: true },
     departmentName: {
       type: String,
       required: true,

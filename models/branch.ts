@@ -6,6 +6,7 @@ export interface IBranch extends Document {
   email?: string;
   phoneNumber?: string;
   pastorId?: mongoose.Types.ObjectId;
+  members?: number;
   capacity: number;
   establishedDate: Date;
   address?: {
@@ -16,17 +17,79 @@ export interface IBranch extends Document {
     country?: string;
   };
   isActive: boolean;
+  isDeleted: boolean;
   description?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // Virtual properties
+  ageInYears: number;
+  fullAddress: string;
+  formattedEstablishedDate: string;
+  statusText: string;
+
+  // Instance methods
+  deactivate(): Promise<IBranch>;
+  activate(): Promise<IBranch>;
+  softDelete(): Promise<IBranch>; // Fixed: Added parentheses
+  restore(): Promise<IBranch>; // Added restore method
+  updateCapacity(newCapacity: number): Promise<IBranch>;
 }
 
 // Define the interface for the static methods
 export interface IBranchModel extends Model<IBranch> {
+  // Existing static methods
   findByChurch(churchId: mongoose.Types.ObjectId): Promise<IBranch[]>;
   findActiveBranches(churchId: mongoose.Types.ObjectId): Promise<IBranch[]>;
   findByPastor(pastorId: mongoose.Types.ObjectId): Promise<IBranch[]>;
   getTotalCapacity(churchId: mongoose.Types.ObjectId): Promise<number>;
+
+  // Additional useful static methods
+  findInactiveBranches(churchId: mongoose.Types.ObjectId): Promise<IBranch[]>;
+  findDeletedBranches(churchId: mongoose.Types.ObjectId): Promise<IBranch[]>; // New method
+  getTotalMembers(churchId: mongoose.Types.ObjectId): Promise<number>;
+  getBranchStats(churchId: mongoose.Types.ObjectId): Promise<{
+    totalBranches: number;
+    activeBranches: number;
+    inactiveBranches: number;
+    deletedBranches: number; // Added deleted count
+    totalCapacity: number;
+    totalMembers: number;
+    averageCapacity: number;
+    averageMembers: number;
+  }>;
+  findByLocation(
+    city?: string,
+    state?: string,
+    country?: string
+  ): Promise<IBranch[]>;
+  searchBranches(
+    churchId: mongoose.Types.ObjectId,
+    searchTerm: string
+  ): Promise<IBranch[]>;
+  getBranchesByCapacityRange(
+    churchId: mongoose.Types.ObjectId,
+    minCapacity: number,
+    maxCapacity: number
+  ): Promise<IBranch[]>;
+  getOldestBranches(
+    churchId: mongoose.Types.ObjectId,
+    limit?: number
+  ): Promise<IBranch[]>;
+  getNewestBranches(
+    churchId: mongoose.Types.ObjectId,
+    limit?: number
+  ): Promise<IBranch[]>;
+  getBranchesNeedingPastor(
+    churchId: mongoose.Types.ObjectId
+  ): Promise<IBranch[]>;
+  getBranchesOverCapacity(
+    churchId: mongoose.Types.ObjectId
+  ): Promise<IBranch[]>;
+  getBranchesByEstablishedYear(
+    churchId: mongoose.Types.ObjectId,
+    year: number
+  ): Promise<IBranch[]>;
 }
 
 const BranchSchema = new Schema<IBranch>(
@@ -91,6 +154,11 @@ const BranchSchema = new Schema<IBranch>(
       trim: true,
       lowercase: true,
     },
+    members: {
+      type: Number,
+      trim: true,
+      default: 0,
+    },
     capacity: {
       type: Number,
       trim: true,
@@ -113,6 +181,12 @@ const BranchSchema = new Schema<IBranch>(
       type: Boolean,
       default: true,
     },
+    isDeleted: {
+      type: Boolean,
+      required: true,
+      default: false,
+      index: true, // Added index for better performance
+    },
     description: {
       type: String,
       trim: true,
@@ -128,8 +202,13 @@ const BranchSchema = new Schema<IBranch>(
 // Add indexes for better query performance
 BranchSchema.index({ churchId: 1 }); // Index by church
 BranchSchema.index({ churchId: 1, isActive: 1 }); // Index by church and active status
+BranchSchema.index({ churchId: 1, isDeleted: 1 }); // Index by church and deleted status
 BranchSchema.index({ pastorId: 1 }); // Index by pastor
 BranchSchema.index({ 'address.city': 1, 'address.state': 1 }); // Index by location
+BranchSchema.index({ capacity: 1 }); // Index by capacity
+BranchSchema.index({ members: 1 }); // Index by members
+BranchSchema.index({ establishedDate: 1 }); // Index by established date
+BranchSchema.index({ isDeleted: 1 }); // Index for soft delete filtering
 
 // Add text index for searching
 BranchSchema.index({
@@ -151,6 +230,17 @@ BranchSchema.pre('save', function (next) {
   }
   next();
 });
+
+// Add middleware to exclude soft-deleted documents by default
+BranchSchema.pre(
+  ['find', 'findOne', 'findOneAndUpdate', 'count', 'countDocuments'],
+  function () {
+    // Only add isDeleted filter if not already specified
+    if (!this.getQuery().isDeleted) {
+      this.where({ isDeleted: { $ne: true } });
+    }
+  }
+);
 
 // Virtual for branch age in years
 BranchSchema.virtual('ageInYears').get(function () {
@@ -183,8 +273,9 @@ BranchSchema.virtual('formattedEstablishedDate').get(function () {
   }).format(this.establishedDate);
 });
 
-// Virtual for status indicator
+// Virtual for status indicator - Updated to include deleted status
 BranchSchema.virtual('statusText').get(function () {
+  if (this.isDeleted) return 'Deleted';
   return this.isActive ? 'Active' : 'Inactive';
 });
 
@@ -199,41 +290,230 @@ BranchSchema.methods.activate = function () {
   return this.save();
 };
 
+BranchSchema.methods.softDelete = function () {
+  this.isDeleted = true;
+  this.isActive = false; // Deactivate when soft deleting
+  return this.save();
+};
+
+BranchSchema.methods.restore = function () {
+  this.isDeleted = false;
+  // Note: Don't automatically activate on restore, let user decide
+  return this.save();
+};
+
 BranchSchema.methods.updateCapacity = function (newCapacity: number) {
   this.capacity = newCapacity;
   return this.save();
 };
 
-// Static methods (these will be properly typed with IBranchModel)
+// Base query helper to exclude deleted items
+const nonDeletedQuery = (churchId: mongoose.Types.ObjectId) => ({
+  churchId,
+  isDeleted: { $ne: true },
+});
+
+// Existing static methods - Updated to exclude soft-deleted records
 BranchSchema.statics.findByChurch = function (
   churchId: mongoose.Types.ObjectId
 ) {
-  return this.find({ churchId }).populate('pastorId', 'name email');
+  return this.find(nonDeletedQuery(churchId)).populate(
+    'pastorId',
+    'firstName lastName email'
+  );
 };
 
 BranchSchema.statics.findActiveBranches = function (
   churchId: mongoose.Types.ObjectId
 ) {
-  return this.find({ churchId, isActive: true }).populate(
-    'pastorId',
-    'name email'
-  );
+  return this.find({
+    ...nonDeletedQuery(churchId),
+    isActive: true,
+  }).populate('pastorId', 'firstName lastName email');
 };
 
 BranchSchema.statics.findByPastor = function (
   pastorId: mongoose.Types.ObjectId
 ) {
-  return this.find({ pastorId, isActive: true });
+  return this.find({
+    pastorId,
+    isActive: true,
+    isDeleted: { $ne: true },
+  }).populate('pastorId', 'firstName lastName email');
 };
 
 BranchSchema.statics.getTotalCapacity = async function (
   churchId: mongoose.Types.ObjectId
 ) {
   const result = await this.aggregate([
-    { $match: { churchId, isActive: true } },
+    { $match: { churchId, isActive: true, isDeleted: { $ne: true } } },
     { $group: { _id: null, totalCapacity: { $sum: '$capacity' } } },
   ]);
   return result[0]?.totalCapacity || 0;
+};
+
+// Additional static methods implementations - Updated
+BranchSchema.statics.findInactiveBranches = function (
+  churchId: mongoose.Types.ObjectId
+) {
+  return this.find({
+    ...nonDeletedQuery(churchId),
+    isActive: false,
+  }).populate('pastorId', 'firstName lastName email');
+};
+
+// New method to find soft-deleted branches
+BranchSchema.statics.findDeletedBranches = function (
+  churchId: mongoose.Types.ObjectId
+) {
+  return this.find({
+    churchId,
+    isDeleted: true,
+  }).populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.getTotalMembers = async function (
+  churchId: mongoose.Types.ObjectId
+) {
+  const result = await this.aggregate([
+    { $match: { churchId, isActive: true, isDeleted: { $ne: true } } },
+    { $group: { _id: null, totalMembers: { $sum: '$members' } } },
+  ]);
+  return result[0]?.totalMembers || 0;
+};
+
+BranchSchema.statics.getBranchStats = async function (
+  churchId: mongoose.Types.ObjectId
+) {
+  const result = await this.aggregate([
+    { $match: { churchId, isDeleted: { $ne: true } } }, // Exclude deleted
+    {
+      $group: {
+        _id: null,
+        totalBranches: { $sum: 1 },
+        activeBranches: {
+          $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] },
+        },
+        inactiveBranches: {
+          $sum: { $cond: [{ $eq: ['$isActive', false] }, 1, 0] },
+        },
+        totalCapacity: { $sum: '$capacity' },
+        totalMembers: { $sum: '$members' },
+        averageCapacity: { $avg: '$capacity' },
+        averageMembers: { $avg: '$members' },
+      },
+    },
+  ]);
+
+  // Separate query for deleted count
+  const deletedCount = await this.countDocuments({ churchId, isDeleted: true });
+
+  const stats = result[0] || {
+    totalBranches: 0,
+    activeBranches: 0,
+    inactiveBranches: 0,
+    totalCapacity: 0,
+    totalMembers: 0,
+    averageCapacity: 0,
+    averageMembers: 0,
+  };
+
+  return {
+    ...stats,
+    deletedBranches: deletedCount,
+  };
+};
+
+BranchSchema.statics.findByLocation = function (
+  city?: string,
+  state?: string,
+  country?: string
+) {
+  const query: any = { isDeleted: { $ne: true } }; // Exclude deleted
+
+  if (city) query['address.city'] = new RegExp(city, 'i');
+  if (state) query['address.state'] = new RegExp(state, 'i');
+  if (country) query['address.country'] = new RegExp(country, 'i');
+
+  return this.find(query).populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.searchBranches = function (
+  churchId: mongoose.Types.ObjectId,
+  searchTerm: string
+) {
+  return this.find({
+    churchId,
+    isDeleted: { $ne: true }, // Exclude deleted
+    $text: { $search: searchTerm },
+  }).populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.getBranchesByCapacityRange = function (
+  churchId: mongoose.Types.ObjectId,
+  minCapacity: number,
+  maxCapacity: number
+) {
+  return this.find({
+    ...nonDeletedQuery(churchId),
+    capacity: { $gte: minCapacity, $lte: maxCapacity },
+  }).populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.getOldestBranches = function (
+  churchId: mongoose.Types.ObjectId,
+  limit = 5
+) {
+  return this.find(nonDeletedQuery(churchId))
+    .sort({ establishedDate: 1 })
+    .limit(limit)
+    .populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.getNewestBranches = function (
+  churchId: mongoose.Types.ObjectId,
+  limit = 5
+) {
+  return this.find(nonDeletedQuery(churchId))
+    .sort({ establishedDate: -1 })
+    .limit(limit)
+    .populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.getBranchesNeedingPastor = function (
+  churchId: mongoose.Types.ObjectId
+) {
+  return this.find({
+    ...nonDeletedQuery(churchId),
+    isActive: true,
+    $or: [{ pastorId: { $exists: false } }, { pastorId: null }],
+  });
+};
+
+BranchSchema.statics.getBranchesOverCapacity = function (
+  churchId: mongoose.Types.ObjectId
+) {
+  return this.find({
+    ...nonDeletedQuery(churchId),
+    isActive: true,
+    $expr: { $gt: ['$members', '$capacity'] },
+  }).populate('pastorId', 'firstName lastName email');
+};
+
+BranchSchema.statics.getBranchesByEstablishedYear = function (
+  churchId: mongoose.Types.ObjectId,
+  year: number
+) {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year + 1, 0, 1);
+
+  return this.find({
+    ...nonDeletedQuery(churchId),
+    establishedDate: {
+      $gte: startDate,
+      $lt: endDate,
+    },
+  }).populate('pastorId', 'firstName lastName email');
 };
 
 // Ensure virtuals are included in JSON output

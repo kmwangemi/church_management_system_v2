@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useRegisterBranch } from '@/lib/hooks/branch/use-branch-queries';
+import type { UserResponse } from '@/lib/types/user';
 import { getRelativeYear } from '@/lib/utils';
 import {
   type AddBranchPayload,
@@ -29,13 +30,18 @@ import {
 } from '@/lib/validations/branch';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, MapPin } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { UserListInput } from '../user-list-input';
 
 interface AddBranchFormProps {
   onCloseDialog: () => void;
 }
 
 export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const {
     mutateAsync: registerBranchMutation,
     isPending,
@@ -46,6 +52,7 @@ export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
     resolver: zodResolver(addBranchSchema),
     defaultValues: {
       branchName: '',
+      pastorId: '',
       address: {
         street: '',
         city: '',
@@ -95,6 +102,27 @@ export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="Kawangware" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={branchForm.control}
+                name="pastorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pastor (Optional)</FormLabel>
+                    <FormControl>
+                      <UserListInput
+                        className="w-full"
+                        onChange={(member) => {
+                          setSelectedMember(member);
+                          field.onChange(member?._id || ''); // ✅ Store only the ID
+                        }}
+                        placeholder="Search and select a pastor"
+                        value={selectedMember} // ✅ Use state for display
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
