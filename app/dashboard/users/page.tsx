@@ -130,7 +130,7 @@ export default function UsersPage() {
   const stats = useMemo(() => {
     const allUsers = users?.users || [];
     return {
-      total: users?.totalUsers || 0,
+      total: users?.users || 0,
       active: allUsers.filter((u) => u.status === 'active').length,
       inactive: allUsers.filter((u) => u.status === 'inactive').length,
       staff: allUsers.filter((u) =>

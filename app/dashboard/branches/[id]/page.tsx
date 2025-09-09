@@ -2,9 +2,12 @@
 
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
+import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
+import { AddDepartmentForm } from '@/components/forms/add-department-form';
 import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { PhoneInput } from '@/components/phone-number-input';
+import ReusableSelect from '@/components/reusable-select';
 import SearchInput from '@/components/search-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -43,13 +46,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -60,11 +56,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useFetchBranchById } from '@/lib/hooks/branch/use-branch-queries';
 import {
-  useDeleteUserById,
-  useFetchUsers,
-} from '@/lib/hooks/user/use-user-queries';
+  useFetchBranchById,
+  useFetchBranchMembers,
+} from '@/lib/hooks/branch/use-branch-queries';
+import { useDeleteUserById } from '@/lib/hooks/user/use-user-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
@@ -109,23 +105,22 @@ export default function BranchDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
+  const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
-  const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [emailingUser, setEmailingUser] = useState<UserResponse | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserResponse | null>(null);
   const searchParams = useSearchParams();
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
+  const selectedStatusQuery = searchParams.get('status') || 'all';
   const {
     data: branch,
     isLoading: isLoadingBranch,
     isError: isErrorBranch,
     error: errorBranch,
   } = useFetchBranchById(id);
-  console.log('branch--->', branch);
   const form = useForm<UpdateBranchPayload>({
     resolver: zodResolver(updateBranchSchema),
     defaultValues: {
@@ -300,12 +295,26 @@ export default function BranchDetailsPage({
       query: searchQuery,
     },
   });
+  const PAGE_SIZE = 10;
+  // Narrow selectedStatusQuery to only "active" | "inactive" | "suspended" | "pending" | undefined
+  const statusFilter:
+    | 'active'
+    | 'inactive'
+    | 'suspended'
+    | 'pending'
+    | undefined =
+    selectedStatusQuery === 'active' ||
+    selectedStatusQuery === 'inactive' ||
+    selectedStatusQuery === 'suspended' ||
+    selectedStatusQuery === 'pending'
+      ? selectedStatusQuery
+      : undefined;
   const {
     data: users,
     isLoading: isLoadingUsers,
     isError: isErrorUsers,
     error: errorUsers,
-  } = useFetchUsers(page, searchQuery);
+  } = useFetchBranchMembers(id, page, searchQuery, statusFilter, PAGE_SIZE);
   const {
     mutateAsync: deleteUserMutation,
     isPending: isPendingDeleteUser,
@@ -316,10 +325,6 @@ export default function BranchDetailsPage({
   const filteredUsers = useMemo(() => {
     if (!users?.users) return [];
     let filtered = users.users;
-    // Filter by status
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter((user) => user.status === selectedStatus);
-    }
     // Filter by tab
     if (selectedTab !== 'all') {
       switch (selectedTab) {
@@ -339,12 +344,12 @@ export default function BranchDetailsPage({
       }
     }
     return filtered;
-  }, [users?.users, selectedStatus, selectedTab]);
+  }, [users?.users, selectedTab]);
   // Calculate stats
   const stats = useMemo(() => {
     const allUsers = users?.users || [];
     return {
-      total: users?.totalUsers || 0,
+      total: allUsers.length || 0,
       active: allUsers.filter((u) => u.status === 'active').length,
       inactive: allUsers.filter((u) => u.status === 'inactive').length,
       staff: allUsers.filter((u) =>
@@ -359,702 +364,702 @@ export default function BranchDetailsPage({
   const openDeleteDialog = (user: UserResponse) => {
     setDeletingUser(user);
   };
-  const openEmailDialog = (user: UserResponse) => {
-    setEmailingUser(user);
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/dashboard/branches">
-            <Button size="sm" variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Branches
-            </Button>
-          </Link>
-          <div>
-            <h1 className="font-bold text-3xl tracking-tight">
-              {branch?.branchName}
-            </h1>
-            <p className="text-muted-foreground">
-              Branch details and management
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setIsEditing(!isEditing)} variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            {isEditing ? 'Cancel' : 'Edit'}
-          </Button>
-          {isEditing && (
-            <Button>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-          )}
-        </div>
-      </div>
-      {/* Branch Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">{branch?.members}</div>
-            <p className="text-muted-foreground text-xs">
-              {Math.round((branch?.members / branch?.capacity) * 100)}% capacity
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Departments</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">{departments.length}</div>
-            <p className="text-muted-foreground text-xs">Active departments</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">
-              Weekly Services
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">
-              {/* {branch.serviceSchedule.length} */}
-              {0}
+      {isErrorBranch && <RenderApiError error={errorBranch} />}
+      {isLoadingBranch ? (
+        <SpinnerLoader description="Loading branch data..." />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/dashboard/branches">
+                <Button size="sm" variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Branches
+                </Button>
+              </Link>
+              <div>
+                <h1 className="font-bold text-3xl tracking-tight">
+                  {branch?.branchName}
+                </h1>
+                <p className="text-muted-foreground">
+                  Branch details and management
+                </p>
+              </div>
             </div>
-            <p className="text-muted-foreground text-xs">Regular services</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">
-              Avg. Attendance
-            </CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">
-              {/* {Math.round(
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setIsEditing(!isEditing)}
+                variant="outline"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                {isEditing ? 'Cancel' : 'Edit'}
+              </Button>
+              {isEditing && (
+                <Button>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              )}
+            </div>
+          </div>
+          {/* Branch Stats */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-medium text-sm">
+                  Total Members
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="font-bold text-2xl">{branch?.members}</div>
+                <p className="text-muted-foreground text-xs">
+                  {Math.round((branch?.members / branch?.capacity) * 100)}%
+                  capacity
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-medium text-sm">
+                  Departments
+                </CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="font-bold text-2xl">{departments.length}</div>
+                <p className="text-muted-foreground text-xs">
+                  Active departments
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-medium text-sm">
+                  Weekly Services
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="font-bold text-2xl">
+                  {/* {branch.serviceSchedule.length} */}
+                  {0}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Regular services
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-medium text-sm">
+                  Avg. Attendance
+                </CardTitle>
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="font-bold text-2xl">
+                  {/* {Math.round(
                 branch.serviceSchedule.reduce(
                   (sum, service) => sum + service.attendance,
                   0
                 ) / branch.serviceSchedule.length
               )} */}
-              0
-            </div>
-            <p className="text-muted-foreground text-xs">Per service</p>
-          </CardContent>
-        </Card>
-      </div>
-      <Tabs className="space-y-4" defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="departments">Departments</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="facilities">Facilities</TabsTrigger>
-          <TabsTrigger value="activities">Activities</TabsTrigger>
-        </TabsList>
-        <TabsContent className="space-y-6" value="overview">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Branch Information</CardTitle>
-                <CardDescription>
-                  Basic details and contact information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isEditing ? (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="branchName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Branch Name <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input placeholder="Kawangware" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter email address"
-                              type="email"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phoneNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Phone Number <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <PhoneInput
-                              defaultCountry="KE"
-                              onChange={field.onChange}
-                              placeholder="Enter phone number"
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="pastorId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pastor</FormLabel>
-                          <FormControl>
-                            <UserListInput
-                              className="w-full"
-                              onChange={(member) => {
-                                setSelectedMember(member);
-                                field.onChange(member?._id || ''); // ✅ Store only the ID
-                              }}
-                              placeholder="Search and select a pastor"
-                              value={selectedMember} // ✅ Use state for display
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                          <MapPin className="h-5 w-5" />
-                          <span>Address Information</span>
-                        </CardTitle>
-                        <CardDescription>
-                          Branch address information
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name="address.country"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  Country{' '}
-                                  <span className="text-red-500">*</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <CountrySelect
-                                    onChange={field.onChange}
-                                    placeholder="Select your country"
-                                    value={field.value}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="address.city"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  City <span className="text-red-500">*</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Nairobi" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="address.street"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  Street Address{' '}
-                                  <span className="text-red-500">*</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="123 Main Street"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="address.zipCode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Postal Code</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="00100" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {branch?.address?.street ?? 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {branch?.phoneNumber ?? 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{branch?.email ?? 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        Pastor: {branch?.pastorId?.firstName ?? 'N/A'}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-            {/* Branch Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Branch Status</CardTitle>
-                <CardDescription>
-                  Current status and capacity information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">Status</span>
-                  <Badge variant="default">
-                    {branch?.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
+                  0
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">Established</span>
-                  <span className="text-muted-foreground text-sm">
-                    {formatToNewDate(branch?.establishedDate)}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Capacity</span>
-                    <span className="text-muted-foreground text-sm">
-                      {branch?.members}/{branch?.capacity}
-                    </span>
-                  </div>
-                  <Progress
-                    className="w-full"
-                    value={(branch?.members / branch?.capacity) * 100}
-                  />
-                </div>
-                {isEditing && (
-                  <div className="space-y-2">
-                    <Label htmlFor="capacity">Capacity</Label>
-                    <Input
-                      defaultValue={branch?.capacity}
-                      id="capacity"
-                      type="number"
-                    />
-                  </div>
-                )}
+                <p className="text-muted-foreground text-xs">Per service</p>
               </CardContent>
             </Card>
           </div>
-          {/* Description */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-              <CardDescription>Branch mission and overview</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isEditing ? (
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} rows={4} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  {branch?.description}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="members">
-          {/* Search and Filter */}
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <SearchInput
-                  handleSubmit={handleSubmit}
-                  placeholder="Search users..."
-                  register={register}
-                />
-                <Select
-                  onValueChange={setSelectedStatus}
-                  value={selectedStatus}
-                >
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="growing">Growing</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs onValueChange={setSelectedTab} value={selectedTab}>
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
-                  <TabsTrigger value="active">
-                    Active ({stats.active})
-                  </TabsTrigger>
-                  <TabsTrigger value="inactive">
-                    Inactive ({stats.inactive})
-                  </TabsTrigger>
-                  <TabsTrigger value="staff">Staff ({stats.staff})</TabsTrigger>
-                </TabsList>
-                {isErrorUsers && <RenderApiError error={errorUsers} />}
-                {isErrorDeleteUser && (
-                  <RenderApiError error={errorDeleteUser} />
-                )}
-                {isLoadingUsers ? (
-                  <SpinnerLoader description="Loading members..." />
-                ) : (
-                  <TabsContent className="mt-6" value={selectedTab}>
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Gender</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Branch</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredUsers.map((user) => (
-                            <TableRow
-                              className="hover:bg-gray-50"
-                              key={user._id}
-                            >
-                              <TableCell>
-                                <div className="flex items-center space-x-3">
-                                  <Avatar className="h-10 w-10">
-                                    <AvatarImage
-                                      alt={user?.firstName || 'User'}
-                                      src={user?.profilePictureUrl ?? ''}
-                                    />
-                                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                                      {`${getFirstLetter(user?.firstName || '')}${getFirstLetter(user?.lastName || '')}`}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <div className="font-medium text-gray-900">
-                                      {`${capitalizeFirstLetter(user?.firstName || 'N/A')} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
-                                    </div>
-                                    <div className="text-gray-500 text-sm">
-                                      {user.email || 'N/A'}
-                                    </div>
-                                    <div className="text-gray-500 text-sm">
-                                      {user.phoneNumber || 'N/A'}
-                                    </div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-gray-900 text-sm">
-                                  {capitalizeFirstLetter(user.gender || 'N/A')}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  className="flex w-fit items-center gap-1"
-                                  variant={getRoleBadgeVariant(user.role)}
-                                >
-                                  {getRoleIcon(user.role)}
-                                  {user.role}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    user.status === 'active'
-                                      ? 'default'
-                                      : 'secondary'
-                                  }
-                                >
-                                  {user.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-gray-900 text-sm">
-                                  {formatToNewDate(user.createdAt)}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      className="h-8 w-8 p-0"
-                                      variant="ghost"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>
-                                      Actions
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem
-                                      asChild
-                                      className="cursor-pointer"
-                                    >
-                                      <Link
-                                        href={`/dashboard/users/${user._id}`}
-                                      >
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View User
-                                      </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="cursor-pointer"
-                                      onClick={() => openEmailDialog(user)}
-                                    >
-                                      <Mail className="mr-2 h-4 w-4" />
-                                      Send Email
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      asChild
-                                      className="cursor-pointer"
-                                    >
-                                      <Link
-                                        href={`/dashboard/users/edit/${user._id}`}
-                                      >
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit User
-                                      </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="cursor-pointer text-red-600"
-                                      onClick={() => openDeleteDialog(user)}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete User
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+          <Tabs className="space-y-4" defaultValue="overview">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+              <TabsTrigger value="departments">Departments</TabsTrigger>
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+              <TabsTrigger value="facilities">Facilities</TabsTrigger>
+              <TabsTrigger value="activities">Activities</TabsTrigger>
+            </TabsList>
+            <TabsContent className="space-y-6" value="overview">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Branch Information</CardTitle>
+                    <CardDescription>
+                      Basic details and contact information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isEditing ? (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="branchName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Branch Name{' '}
+                                <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Kawangware" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Address</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter email address"
+                                  type="email"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phoneNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Phone Number{' '}
+                                <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <PhoneInput
+                                  defaultCountry="KE"
+                                  onChange={field.onChange}
+                                  placeholder="Enter phone number"
+                                  value={field.value}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="pastorId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pastor</FormLabel>
+                              <FormControl>
+                                <UserListInput
+                                  className="w-full"
+                                  onChange={(member) => {
+                                    setSelectedMember(member);
+                                    field.onChange(member?._id || ''); // ✅ Store only the ID
+                                  }}
+                                  placeholder="Search and select a pastor"
+                                  value={selectedMember} // ✅ Use state for display
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center space-x-2">
+                              <MapPin className="h-5 w-5" />
+                              <span>Address Information</span>
+                            </CardTitle>
+                            <CardDescription>
+                              Branch address information
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <FormField
+                                control={form.control}
+                                name="address.country"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      Country{' '}
+                                      <span className="text-red-500">*</span>
+                                    </FormLabel>
+                                    <FormControl>
+                                      <CountrySelect
+                                        onChange={field.onChange}
+                                        placeholder="Select your country"
+                                        value={field.value}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="address.city"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      City{' '}
+                                      <span className="text-red-500">*</span>
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="Nairobi" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="address.street"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      Street Address{' '}
+                                      <span className="text-red-500">*</span>
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="123 Main Street"
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="address.zipCode"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Postal Code</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="00100" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {branch?.address?.street ?? 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {branch?.phoneNumber ?? 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {branch?.email ?? 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            Pastor: {branch?.pastorId?.firstName ?? 'N/A'}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+                {/* Branch Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Branch Status</CardTitle>
+                    <CardDescription>
+                      Current status and capacity information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">Status</span>
+                      <Badge variant="default">
+                        {branch?.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
                     </div>
-                    {filteredUsers.length === 0 && (
-                      <div className="py-12 text-center">
-                        <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                        <h3 className="mb-2 font-medium text-gray-900 text-lg">
-                          No users found
-                        </h3>
-                        <p className="text-gray-500">
-                          Try adjusting your search or filter criteria.
-                        </p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">Established</span>
+                      <span className="text-muted-foreground text-sm">
+                        {branch?.establishedDate
+                          ? formatToNewDate(branch.establishedDate)
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">Capacity</span>
+                        <span className="text-muted-foreground text-sm">
+                          {branch?.members}/{branch?.capacity}
+                        </span>
+                      </div>
+                      <Progress
+                        className="w-full"
+                        value={(branch?.members / branch?.capacity) * 100}
+                      />
+                    </div>
+                    {isEditing && (
+                      <div className="space-y-2">
+                        <Label htmlFor="capacity">Capacity</Label>
+                        <Input
+                          defaultValue={branch?.capacity}
+                          id="capacity"
+                          type="number"
+                        />
                       </div>
                     )}
-                  </TabsContent>
-                )}
-              </Tabs>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="departments">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-lg">Departments</h3>
-              <p className="text-muted-foreground text-sm">
-                Manage branch departments and leadership
-              </p>
-            </div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Department
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Department</DialogTitle>
-                  <DialogDescription>
-                    Create a new department for this branch
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="deptName">Department Name</Label>
-                    <Input id="deptName" placeholder="Enter department name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deptHead">Department Head</Label>
-                    <Input
-                      id="deptHead"
-                      placeholder="Enter department head name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deptDesc">Description</Label>
-                    <Textarea
-                      id="deptDesc"
-                      placeholder="Enter department description"
-                    />
-                  </div>
-                  <Button className="w-full">Create Department</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {departments.map((dept) => (
-              <Card key={dept.id}>
+                  </CardContent>
+                </Card>
+              </div>
+              {/* Description */}
+              <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{dept.name}</CardTitle>
-                    <Badge variant="outline">{dept.status}</Badge>
-                  </div>
-                  <CardDescription>{dept.description}</CardDescription>
+                  <CardTitle>Description</CardTitle>
+                  <CardDescription>Branch mission and overview</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">
-                        Department Head
-                      </span>
-                      <span className="text-muted-foreground text-sm">
-                        {dept.head}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">Members</span>
-                      <span className="text-muted-foreground text-sm">
-                        {dept.members}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center space-x-2">
-                    <Button size="sm" variant="outline">
-                      <Eye className="mr-1 h-4 w-4" />
-                      View
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Edit className="mr-1 h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
+                  {isEditing ? (
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={4} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      {branch?.description}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
-        <TabsContent className="space-y-6" value="schedule">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-lg">Service Schedule</h3>
-              <p className="text-muted-foreground text-sm">
-                Regular services and meeting times
-              </p>
-            </div>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Service
-            </Button>
-          </div>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Day</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Avg. Attendance</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* {branch.serviceSchedule.map((service, index) => (
+            </TabsContent>
+            <TabsContent className="space-y-6" value="members">
+              {/* Search and Filter */}
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    <SearchInput
+                      handleSubmit={handleSubmit}
+                      placeholder="Search users..."
+                      register={register}
+                    />
+                    <ReusableSelect
+                      // className="w-full sm:w-[200px]"
+                      clearValue="all"
+                      defaultValue="all"
+                      options={[
+                        { value: 'all', label: 'All' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'inactive', label: 'Inactive' },
+                        { value: 'suspended', label: 'Suspended' },
+                        { value: 'pending', label: 'Pending' },
+                      ]}
+                      paramName="status"
+                      placeholder="Filter by status"
+                      // resetPagination={false}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Tabs onValueChange={setSelectedTab} value={selectedTab}>
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
+                      <TabsTrigger value="active">
+                        Active ({stats.active})
+                      </TabsTrigger>
+                      <TabsTrigger value="inactive">
+                        Inactive ({stats.inactive})
+                      </TabsTrigger>
+                      <TabsTrigger value="staff">
+                        Staff ({stats.staff})
+                      </TabsTrigger>
+                    </TabsList>
+                    {isErrorUsers && <RenderApiError error={errorUsers} />}
+                    {isErrorDeleteUser && (
+                      <RenderApiError error={errorDeleteUser} />
+                    )}
+                    {isLoadingUsers ? (
+                      <SpinnerLoader description="Loading members..." />
+                    ) : (
+                      <TabsContent className="mt-6" value={selectedTab}>
+                        <div className="rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>User</TableHead>
+                                <TableHead>Gender</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead className="text-right">
+                                  Actions
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredUsers?.map((user) => (
+                                <TableRow
+                                  className="hover:bg-gray-50"
+                                  key={user._id}
+                                >
+                                  <TableCell>
+                                    <div className="flex items-center space-x-3">
+                                      <Avatar className="h-10 w-10">
+                                        <AvatarImage
+                                          alt={user?.firstName || 'User'}
+                                          src={user?.profilePictureUrl ?? ''}
+                                        />
+                                        <AvatarFallback className="bg-blue-100 text-blue-600">
+                                          {`${getFirstLetter(user?.firstName || '')}${getFirstLetter(user?.lastName || '')}`}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <div className="font-medium text-gray-900">
+                                          {`${capitalizeFirstLetter(user?.firstName || 'N/A')} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                                        </div>
+                                        <div className="text-gray-500 text-sm">
+                                          {user.email || 'N/A'}
+                                        </div>
+                                        <div className="text-gray-500 text-sm">
+                                          {user.phoneNumber || 'N/A'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-gray-900 text-sm">
+                                      {capitalizeFirstLetter(
+                                        user.gender || 'N/A'
+                                      )}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className="flex w-fit items-center gap-1"
+                                      variant={getRoleBadgeVariant(user.role)}
+                                    >
+                                      {getRoleIcon(user.role)}
+                                      {user.role}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        user.status === 'active'
+                                          ? 'default'
+                                          : 'secondary'
+                                      }
+                                    >
+                                      {user.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-gray-900 text-sm">
+                                      {formatToNewDate(user.createdAt)}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          className="h-8 w-8 p-0"
+                                          variant="ghost"
+                                        >
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>
+                                          Actions
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuItem
+                                          asChild
+                                          className="cursor-pointer"
+                                        >
+                                          <Link
+                                            href={`/dashboard/users/${user._id}`}
+                                          >
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            View User
+                                          </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          asChild
+                                          className="cursor-pointer"
+                                        >
+                                          <Link
+                                            href={`/dashboard/users/edit/${user._id}`}
+                                          >
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Edit User
+                                          </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="cursor-pointer text-red-600"
+                                          onClick={() => openDeleteDialog(user)}
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete User
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        {filteredUsers?.length === 0 && (
+                          <div className="py-12 text-center">
+                            <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                            <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                              No users found
+                            </h3>
+                            <p className="text-gray-500">
+                              Try adjusting your search or filter criteria.
+                            </p>
+                          </div>
+                        )}
+                      </TabsContent>
+                    )}
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="departments">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-lg">Departments</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Manage branch departments and leadership
+                  </p>
+                </div>
+                <Dialog
+                  onOpenChange={setIsDepartmentDialogOpen}
+                  open={isDepartmentDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Department
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New Department</DialogTitle>
+                      <DialogDescription>
+                        Create a new department for this branch
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddDepartmentForm
+                      onCloseDialog={() => setIsDepartmentDialogOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {departments.map((dept) => (
+                  <Card key={dept.id}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{dept.name}</CardTitle>
+                        <Badge variant="outline">{dept.status}</Badge>
+                      </div>
+                      <CardDescription>{dept.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">
+                            Department Head
+                          </span>
+                          <span className="text-muted-foreground text-sm">
+                            {dept.head}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">Members</span>
+                          <span className="text-muted-foreground text-sm">
+                            {dept.members}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="mr-1 h-4 w-4" />
+                          View
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Edit className="mr-1 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Trash2 className="mr-1 h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="schedule">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-lg">Service Schedule</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Regular services and meeting times
+                  </p>
+                </div>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Service
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Day</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Avg. Attendance</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* {branch.serviceSchedule.map((service, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">
                         {service.day}
@@ -1074,26 +1079,28 @@ export default function BranchDetailsPage({
                       </TableCell>
                     </TableRow>
                   ))} */}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent className="space-y-6" value="facilities">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-lg">Facilities & Amenities</h3>
-              <p className="text-muted-foreground text-sm">
-                Available facilities and resources
-              </p>
-            </div>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Facility
-            </Button>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {/* {branch.facilities.map((facility, index) => (
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="facilities">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-lg">
+                    Facilities & Amenities
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    Available facilities and resources
+                  </p>
+                </div>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Facility
+                </Button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* {branch.facilities.map((facility, index) => (
               <Card key={index}>
                 <CardContent className="flex items-center space-x-4 p-4">
                   <div className="flex-shrink-0">
@@ -1110,58 +1117,70 @@ export default function BranchDetailsPage({
                 </CardContent>
               </Card>
             ))} */}
-          </div>
-        </TabsContent>
-        <TabsContent className="space-y-6" value="activities">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-lg">Recent Activities</h3>
-              <p className="text-muted-foreground text-sm">
-                Latest events and activities at this branch
-              </p>
-            </div>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Log Activity
-            </Button>
-          </div>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>Participants</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activities.map((activity, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">
-                        {activity.date}
-                      </TableCell>
-                      <TableCell>{activity.activity}</TableCell>
-                      <TableCell>{activity.participants}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </div>
+            </TabsContent>
+            <TabsContent className="space-y-6" value="activities">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-lg">Recent Activities</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Latest events and activities at this branch
+                  </p>
+                </div>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Log Activity
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Activity</TableHead>
+                        <TableHead>Participants</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((activity, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">
+                            {activity.date}
+                          </TableCell>
+                          <TableCell>{activity.activity}</TableCell>
+                          <TableCell>{activity.participants}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button size="sm" variant="outline">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+      {/* Delete User Dialog */}
+      <DeleteUserDialog
+        isDeleting={isPendingDeleteUser}
+        onDelete={handleDeleteUser}
+        onOpenChange={(open) => {
+          if (!open) setDeletingUser(null);
+        }}
+        open={!!deletingUser}
+        user={deletingUser}
+      />
     </div>
   );
 }
