@@ -1,113 +1,254 @@
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
 import type {
-  Branch,
-  BranchAddResponse,
-  BranchListResponse,
-} from '@/lib/types/branch';
+  Activity,
+  ActivityAddResponse,
+  ActivityListResponse,
+  ActivityStatsResponse,
+} from '@/lib/types/activity';
 import type {
-  AddBranchPayload,
-  UpdateBranchPayload,
-} from '@/lib/validations/branch';
+  AddActivityPayload,
+  UpdateActivityPayload,
+} from '@/lib/validations/activity';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-const registerBranch = async (
-  payload: AddBranchPayload
-): Promise<BranchAddResponse> => {
-  const { data } = await apiClient.post('/branches', payload);
+/* ========== CREATE ACTIVITY ========== */
+const createActivity = async (
+  payload: AddActivityPayload
+): Promise<ActivityAddResponse> => {
+  const { data } = await apiClient.post('/activities', payload);
   return data;
 };
 
-export const useRegisterBranch = () => {
+export const useCreateActivity = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: registerBranch,
+    mutationFn: createActivity,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['branches'] });
-      toast.success('Church branch has been created successfully.', {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-stats'] });
+      toast.success('Activity has been created successfully.', {
         style: successToastStyle,
       });
     },
   });
 };
 
-const fetchBranches = async (
+/* ========== FETCH ACTIVITIES ========== */
+interface FetchActivitiesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+  status?: string;
+  branchId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+const fetchActivities = async ({
   page = 1,
-  search = ''
-): Promise<BranchListResponse> => {
-  const { data } = await apiClient.get(
-    `/branches?page=${page}&search=${search}`
-  );
+  limit = 10,
+  search = '',
+  type,
+  status,
+  branchId,
+  dateFrom,
+  dateTo,
+}: FetchActivitiesParams): Promise<ActivityListResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (type) params.append('type', type);
+  if (status) params.append('status', status);
+  if (branchId) params.append('branchId', branchId);
+  if (dateFrom) params.append('dateFrom', dateFrom);
+  if (dateTo) params.append('dateTo', dateTo);
+  const { data } = await apiClient.get(`/activities?${params.toString()}`);
   return data;
 };
 
-export const useFetchBranches = (page = 1, search = '') => {
+export const useFetchActivities = (params: FetchActivitiesParams = {}) => {
   return useQuery({
-    queryKey: ['branches', page, search],
-    queryFn: () => fetchBranches(page, search),
+    queryKey: ['activities', params],
+    queryFn: () => fetchActivities(params),
   });
 };
 
-/* ========== FETCH BRANCH BY ID ========== */
-const fetchBranchById = async (branchId: string): Promise<Branch> => {
+/* ========== FETCH ACTIVITY BY ID ========== */
+const fetchActivityById = async (activityId: string): Promise<Activity> => {
   const {
-    data: { branch },
-  } = await apiClient.get(`/branches/${branchId}`);
-  return branch;
+    data: { activity },
+  } = await apiClient.get(`/activities/${activityId}`);
+  return activity;
 };
 
-export const useFetchBranchById = (branchId: string) => {
+export const useFetchActivityById = (activityId: string) => {
   return useQuery({
-    queryKey: ['branch', branchId],
-    queryFn: () => fetchBranchById(branchId),
-    enabled: !!branchId, // only fetch if id is provided
+    queryKey: ['activity', activityId],
+    queryFn: () => fetchActivityById(activityId),
+    enabled: !!activityId, // only fetch if id is provided
   });
 };
 
-/* ========== UPDATE BRANCH BY ID ========== */
-const updateBranchById = async ({
-  branchId,
+/* ========== UPDATE ACTIVITY BY ID ========== */
+const updateActivityById = async ({
+  activityId,
   payload,
 }: {
-  branchId: string;
-  payload: Partial<UpdateBranchPayload>;
-}): Promise<Branch> => {
-  const { data } = await apiClient.put(`/branches/${branchId}`, payload);
+  activityId: string;
+  payload: Partial<UpdateActivityPayload>;
+}): Promise<{ activity: Activity; message: string }> => {
+  const { data } = await apiClient.put(`/activities/${activityId}`, payload);
   return data;
 };
 
-export const useUpdateBranchById = (branchId: string) => {
+export const useUpdateActivityById = (activityId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: updateBranchById,
+    mutationFn: updateActivityById,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['branches'] });
-      queryClient.invalidateQueries({ queryKey: ['branch', branchId] });
-      toast.success('Branch has been updated successfully.', {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['activity', activityId] });
+      queryClient.invalidateQueries({ queryKey: ['activity-stats'] });
+      toast.success('Activity has been updated successfully.', {
         style: successToastStyle,
       });
     },
   });
 };
 
-/* ========== DELETE BRANCH BY ID ========== */
-const deleteBranchById = async (
-  branchId: string
+/* ========== DELETE ACTIVITY BY ID ========== */
+const deleteActivityById = async (
+  activityId: string,
+  options?: { force?: boolean; cancel?: boolean }
 ): Promise<{ message: string }> => {
-  const { data } = await apiClient.delete(`/branches/${branchId}`);
+  const params = new URLSearchParams();
+  if (options?.force) params.append('force', 'true');
+  if (options?.cancel) params.append('cancel', 'true');
+  const url = params.toString()
+    ? `/activities/${activityId}?${params.toString()}`
+    : `/activities/${activityId}`;
+  const { data } = await apiClient.delete(url);
   return data;
 };
 
-export const useDeleteBranchById = () => {
+export const useDeleteActivityById = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteBranchById,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['branches'] });
-      toast.success('Branch has been deleted successfully.', {
+    mutationFn: ({
+      activityId,
+      options,
+    }: {
+      activityId: string;
+      options?: { force?: boolean; cancel?: boolean };
+    }) => deleteActivityById(activityId, options),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-stats'] });
+      const message = variables.options?.cancel
+        ? 'Activity has been cancelled successfully.'
+        : 'Activity has been deleted successfully.';
+      toast.success(message, {
         style: successToastStyle,
       });
     },
   });
 };
+
+/* ========== FETCH ACTIVITY STATISTICS ========== */
+interface FetchActivityStatsParams {
+  branchId?: string;
+  year?: string;
+  month?: string;
+}
+
+const fetchActivityStats = async ({
+  branchId,
+  year,
+  month,
+}: FetchActivityStatsParams = {}): Promise<ActivityStatsResponse> => {
+  const params = new URLSearchParams();
+  if (branchId) params.append('branchId', branchId);
+  if (year) params.append('year', year);
+  if (month) params.append('month', month);
+  const url = params.toString()
+    ? `/activities/stats?${params.toString()}`
+    : '/activities/stats';
+  const { data } = await apiClient.get(url);
+  return data;
+};
+
+export const useFetchActivityStats = (
+  params: FetchActivityStatsParams = {}
+) => {
+  return useQuery({
+    queryKey: ['activity-stats', params],
+    queryFn: () => fetchActivityStats(params),
+  });
+};
+
+/* ========== BULK OPERATIONS ========== */
+const bulkUpdateActivities = async ({
+  activityIds,
+  payload,
+}: {
+  activityIds: string[];
+  payload: Partial<UpdateActivityPayload>;
+}): Promise<{ message: string; updatedCount: number }> => {
+  const { data } = await apiClient.patch('/activities/bulk-update', {
+    activityIds,
+    payload,
+  });
+  return data;
+};
+
+export const useBulkUpdateActivities = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: bulkUpdateActivities,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-stats'] });
+      toast.success(`${data.updatedCount} activities updated successfully.`, {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+const bulkDeleteActivities = async (
+  activityIds: string[]
+): Promise<{ message: string; deletedCount: number }> => {
+  const { data } = await apiClient.delete('/activities/bulk-delete', {
+    data: { activityIds },
+  });
+  return data;
+};
+
+export const useBulkDeleteActivities = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: bulkDeleteActivities,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-stats'] });
+      toast.success(`${data.deletedCount} activities deleted successfully.`, {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+// DELETE / api / activities / [id];
+
+// Three;
+// deletion;
+// modes:
+
+// ?force=true - Hard delete (permanent)
+// ?cancel=true - Cancel activity (sets status to 'cancelled')
+// Default - Hard delete

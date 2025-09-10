@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useCreateServiceSchedule } from '@/lib/hooks/service-schedule/use-service-schedule-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,
@@ -50,23 +51,12 @@ export function AddServiceScheduleForm({
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
-
-  // Mock hook - replace with actual implementation
   const {
     mutateAsync: registerServiceScheduleMutation,
     isPending,
     isError,
     error,
-  } = {
-    mutateAsync: async (payload: AddServiceSchedulePayload) => {
-      console.log('Service Schedule payload:', payload);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    },
-    isPending: false,
-    isError: false,
-    error: null,
-  };
-
+  } = useCreateServiceSchedule();
   const serviceScheduleForm = useForm<AddServiceSchedulePayload>({
     resolver: zodResolver(addServiceScheduleSchema),
     defaultValues: {
@@ -75,6 +65,9 @@ export function AddServiceScheduleForm({
       service: '',
       type: 'worship',
       duration: '',
+      attendance: '',
+      startDate: '',
+      endDate: '',
       recurring: true,
       isActive: true,
       facilitator: undefined,
@@ -82,9 +75,7 @@ export function AddServiceScheduleForm({
       notes: '',
     },
   });
-
   const { reset } = serviceScheduleForm;
-
   const onSubmitServiceScheduleForm = async (
     payload: AddServiceSchedulePayload
   ) => {
@@ -95,12 +86,10 @@ export function AddServiceScheduleForm({
     onCloseDialog();
     reset();
   };
-
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
   };
-
   return (
     <>
       {isError && <RenderApiError error={error} />}
@@ -239,9 +228,7 @@ export function AddServiceScheduleForm({
               name="facilitator"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Facilitator/Leader <span className="text-red-500">*</span>
-                  </FormLabel>
+                  <FormLabel>Facilitator/Leader</FormLabel>
                   <FormControl>
                     <UserListInput
                       className="w-full"
@@ -277,10 +264,7 @@ export function AddServiceScheduleForm({
               name="startDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Start Date (Optional){' '}
-                    <span className="text-red-500">*</span>
-                  </FormLabel>
+                  <FormLabel>Start Date (Optional)</FormLabel>
                   <FormControl>
                     <DatePicker
                       format="long"
@@ -302,9 +286,7 @@ export function AddServiceScheduleForm({
               name="endDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    End Date (Optional) <span className="text-red-500">*</span>
-                  </FormLabel>
+                  <FormLabel>End Date (Optional)</FormLabel>
                   <FormControl>
                     <DatePicker
                       format="long"
