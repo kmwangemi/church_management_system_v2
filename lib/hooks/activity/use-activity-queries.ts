@@ -5,8 +5,6 @@ import type {
   BranchAddResponse,
   BranchListResponse,
 } from '@/lib/types/branch';
-import type { DepartmentListResponse } from '@/lib/types/department';
-import type { UserListResponse } from '@/lib/types/user';
 import type {
   AddBranchPayload,
   UpdateBranchPayload,
@@ -64,85 +62,6 @@ export const useFetchBranchById = (branchId: string) => {
     queryKey: ['branch', branchId],
     queryFn: () => fetchBranchById(branchId),
     enabled: !!branchId, // only fetch if id is provided
-  });
-};
-
-/* ========== FETCH BRANCH MEMBERS ========== */
-const fetchBranchMembers = async (
-  branchId: string,
-  page = 1,
-  search = '',
-  status?: 'active' | 'inactive' | 'suspended' | 'pending',
-  limit = 10
-): Promise<UserListResponse> => {
-  // Build query parameters
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-  });
-  if (search) {
-    params.append('search', search);
-  }
-  if (status) {
-    params.append('status', status);
-  }
-  const { data } = await apiClient.get(
-    `/branches/${branchId}/members?${params.toString()}`
-  );
-  return data;
-};
-
-export const useFetchBranchMembers = (
-  branchId: string,
-  page = 1,
-  search = '',
-  status?: 'active' | 'inactive' | 'suspended' | 'pending',
-  limit = 10
-) => {
-  return useQuery({
-    queryKey: ['branchMembers', branchId, page, search, status, limit],
-    queryFn: () => fetchBranchMembers(branchId, page, search, status, limit),
-    enabled: !!branchId, // Only run query if branchId is provided
-  });
-};
-
-/* ========== FETCH BRANCH DEPARTMENTS ========== */
-const fetchBranchDepartments = async (
-  branchId: string,
-  page = 1,
-  search = '',
-  status?: 'active' | 'inactive',
-  limit = 10
-): Promise<DepartmentListResponse> => {
-  // Build query parameters
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-  });
-  if (search) {
-    params.append('search', search);
-  }
-  if (status) {
-    params.append('status', status);
-  }
-  const { data } = await apiClient.get(
-    `/branches/${branchId}/departments?${params.toString()}`
-  );
-  return data;
-};
-
-export const useFetchBranchDepartments = (
-  branchId: string,
-  page = 1,
-  search = '',
-  status?: 'active' | 'inactive',
-  limit = 10
-) => {
-  return useQuery({
-    queryKey: ['branchDepartments', branchId, page, search, status, limit],
-    queryFn: () =>
-      fetchBranchDepartments(branchId, page, search, status, limit),
-    enabled: !!branchId, // Only run query if branchId is provided
   });
 };
 

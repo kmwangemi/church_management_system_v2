@@ -532,31 +532,31 @@ export default function BranchesPage() {
                                 <div>
                                   <div className="font-medium text-gray-900">
                                     {capitalizeFirstLetterOfEachWord(
-                                      branch?.branchName || 'N/A'
+                                      branch?.branchName || 'Not Provided'
                                     )}
                                   </div>
                                   <div className="text-gray-500 text-sm">
-                                    {branch?.email || 'N/A'}
+                                    {branch?.email || 'Not Provided'}
                                   </div>
                                   <div className="text-gray-500 text-sm">
-                                    {branch?.phoneNumber || 'N/A'}
+                                    {branch?.phoneNumber || 'Not Provided'}
                                   </div>
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {branch?.capacity || 'N/A'}
+                                {branch?.capacity || 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {branch?.members || 'N/A'}
+                                {branch?.members || 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {`${capitalizeFirstLetter(branch?.pastorId?.firstName || 'N/A')} ${capitalizeFirstLetter(branch?.pastorId?.lastName || 'N/A')}`}
+                                {`${capitalizeFirstLetter(branch?.pastorId?.firstName || '')} ${capitalizeFirstLetter(branch?.pastorId?.lastName || 'Not Provided')}`}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -585,7 +585,10 @@ export default function BranchesPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem asChild className='cursor-pointer'>
+                                  <DropdownMenuItem
+                                    asChild
+                                    className="cursor-pointer"
+                                  >
                                     <Link
                                       href={`/dashboard/branches/${branch._id}`}
                                     >

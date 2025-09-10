@@ -3,6 +3,7 @@ import type { Pagination } from '@/lib/types';
 export interface DepartmentAddResponse {
   churchId: string;
   branchId: string;
+  leaderId: string | null;
   departmentName: string;
   meetingDay: string[];
   meetingTime: string;
@@ -23,9 +24,18 @@ export interface Department {
     address: string;
     country: string;
   };
+  leaderId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    profilePictureUrl: string;
+  } | null;
   departmentName: string;
   meetingDay: string[];
   meetingTime: string;
+  members?: number;
   description: string;
   isActive: boolean;
   createdAt: Date;

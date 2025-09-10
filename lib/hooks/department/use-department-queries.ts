@@ -21,6 +21,7 @@ export const useRegisterDepartment = () => {
     mutationFn: registerDepartment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['branchDepartments'] });
       toast.success('Church department has been created successfully.', {
         style: successToastStyle,
       });
