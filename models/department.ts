@@ -5,7 +5,7 @@ export interface IDepartment extends Document {
   leaderId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
   departmentName: string;
-  description?: string;
+  description: string;
   meetingDay: string[];
   meetingTime: string[];
   isActive: boolean;
@@ -76,7 +76,7 @@ const DepartmentSchema = new Schema<DepartmentSchemaType>(
       required: true,
       trim: true,
     },
-    description: { type: String, trim: true, lowercase: true },
+    description: { type: String, trim: true, required: true, lowercase: true },
     isActive: { type: Boolean, default: true },
     budget: { type: Number, trim: true },
   },

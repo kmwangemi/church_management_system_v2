@@ -3,7 +3,9 @@
 import SearchInput from '@/components/search-input';
 import {
   Activity,
+  BarChart3,
   DollarSign,
+  Edit,
   Eye,
   Plus,
   Trash2,
@@ -523,49 +525,79 @@ export default function DepartmentsPage() {
           {/* Departments Grid */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {departments?.departments.map((dept) => (
-              <Card key={dept?._id}>
+              <Card
+                className="transition-shadow hover:shadow-lg"
+                key={dept._id}
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      {capitalizeFirstLetterOfEachWord(dept.departmentName)}
-                    </CardTitle>
+                    <div className="flex items-center space-x-3">
+                      <div className="rounded-lg bg-blue-100 p-2">
+                        {/* <dept.icon className="h-6 w-6 text-blue-600" /> */}
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">
+                          {capitalizeFirstLetterOfEachWord(dept.departmentName)}
+                        </CardTitle>
+                        {/* <CardDescription>{dept.head}</CardDescription> */}
+                      </div>
+                    </div>
                     <Badge variant={dept?.isActive ? 'default' : 'secondary'}>
                       {dept?.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
-                  <CardDescription>
-                    {capitalizeFirstLetter(dept?.description)}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">
-                        Department Head
-                      </span>
-                      <span className="text-muted-foreground text-sm">
-                        {dept?.leaderId?.firstName
-                          ? `${dept.leaderId.firstName} ${dept.leaderId.lastName}`
-                          : 'Not Assigned'}
-                      </span>
+                  <p className="mb-4 text-gray-600 text-sm">
+                    {capitalizeFirstLetter(dept.description)}
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Members:</span>
+                      {/* <div className="font-semibold">{dept.members}</div> */}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">Members</span>
-                      <span className="text-muted-foreground text-sm">
-                        {dept?.members || 0}
-                      </span>
+                    <div>
+                      <span className="text-gray-500">Budget:</span>
+                      {/* <div className="font-semibold">
+                        ${dept.budget.toLocaleString()}
+                      </div> */}
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Activities:</span>
+                      {/* <div className="font-semibold">{dept.activities}</div> */}
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Growth:</span>
+                      {/* <div
+                        className={`flex items-center font-semibold ${
+                          dept.growth >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {dept.growth >= 0 ? (
+                          <TrendingUp className="mr-1 h-3 w-3" />
+                        ) : (
+                          <TrendingDown className="mr-1 h-3 w-3" />
+                        )}
+                        {dept.growth > 0 ? '+' : ''}
+                        {dept.growth}%
+                      </div> */}
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center space-x-2">
+                  <div className="mt-4 flex justify-end gap-2">
                     <Link href={`/dashboard/departments/${dept._id}`}>
-                      <Button size="sm" variant="outline">
-                        <Eye className="mr-1 h-4 w-4" />
+                      <Button size="sm" variant="ghost">
+                        <Eye className="h-4 w-4" />
                         View Department
                       </Button>
                     </Link>
-                    <Button size="sm" variant="outline">
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Delete
+                    <Button size="sm" variant="ghost">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost">
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                    <Button className="text-red-600" size="sm" variant="ghost">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>

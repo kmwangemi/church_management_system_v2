@@ -552,6 +552,34 @@ export const VOLUNTEER_STATUS_OPTIONS = [
   { value: 'suspended', label: 'Suspended' },
 ];
 
+export const ACTIVITY_TYPE_OPTIONS = [
+  { label: 'Service', value: 'service' },
+  { label: 'Meeting', value: 'meeting' },
+  { label: 'Event', value: 'event' },
+  { label: 'Program', value: 'program' },
+  { label: 'Ministry', value: 'ministry' },
+  { label: 'Social', value: 'social' },
+  { label: 'Outreach', value: 'outreach' },
+];
+
+export const ACTIVITY_STATUS_OPTIONS = [
+  { label: 'Planned', value: 'planned' },
+  { label: 'Ongoing', value: 'ongoing' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
+  { label: 'Postponed', value: 'postponed' },
+];
+
+export const SERVICE_TYPE_OPTIONS = [
+  { label: 'Worship', value: 'worship' },
+  { label: 'Prayer', value: 'prayer' },
+  { label: 'Bible Study', value: 'bible_study' },
+  { label: 'Youth', value: 'youth' },
+  { label: 'Children', value: 'children' },
+  { label: 'Special', value: 'special' },
+  { label: 'Fellowship', value: 'fellowship' },
+];
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {

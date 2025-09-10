@@ -3,7 +3,11 @@
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
 import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
+import { AddActivityForm } from '@/components/forms/add-activity-form';
+import { AddAssetForm } from '@/components/forms/add-asset-form';
 import { AddDepartmentForm } from '@/components/forms/add-department-form';
+import { AddFacilityForm } from '@/components/forms/add-facility-form';
+import { AddServiceScheduleForm } from '@/components/forms/add-service-schedule-form';
 import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { PhoneInput } from '@/components/phone-number-input';
@@ -58,12 +62,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
 import {
   useFetchBranchById,
+  useFetchBranchDepartments,
   useFetchBranchMembers,
 } from '@/lib/hooks/branch/use-branch-queries';
 import { useDeleteUserById } from '@/lib/hooks/user/use-user-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
+  capitalizeFirstLetterOfEachWord,
   formatToNewDate,
   getFirstLetter,
 } from '@/lib/utils';
@@ -106,6 +112,10 @@ export default function BranchDetailsPage({
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
+  const [isServiceScheduleDialogOpen, setIsServiceScheduleDialogOpen] =
+    useState(false);
+  const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+  const [isFacilityDialogOpen, setIsFacilityDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
@@ -171,7 +181,6 @@ export default function BranchDetailsPage({
       form.reset(formData);
     }
   }, [form, branch]);
-
   // // Mock branch data - in real app, fetch based on params.id
   // const branch = {
   //   id: params.id,
@@ -222,40 +231,40 @@ export default function BranchDetailsPage({
   //     },
   //   ],
   // };
-  const departments = [
-    {
-      id: 1,
-      name: 'Worship Ministry',
-      head: 'Sarah Wilson',
-      members: 12,
-      description: 'Leads worship services and music ministry',
-      status: 'Active',
-    },
-    {
-      id: 2,
-      name: "Children's Ministry",
-      head: 'Lisa Brown',
-      members: 8,
-      description: "Ministry focused on children's spiritual development",
-      status: 'Active',
-    },
-    {
-      id: 3,
-      name: 'Youth Ministry',
-      head: 'David Johnson',
-      members: 6,
-      description: 'Engaging teenagers in faith and community',
-      status: 'Active',
-    },
-    {
-      id: 4,
-      name: 'Outreach Ministry',
-      head: 'Maria Garcia',
-      members: 15,
-      description: 'Community outreach and evangelism programs',
-      status: 'Active',
-    },
-  ];
+  // const departments = [
+  //   {
+  //     id: 1,
+  //     name: 'Worship Ministry',
+  //     head: 'Sarah Wilson',
+  //     members: 12,
+  //     description: 'Leads worship services and music ministry',
+  //     status: 'Active',
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Children's Ministry",
+  //     head: 'Lisa Brown',
+  //     members: 8,
+  //     description: "Ministry focused on children's spiritual development",
+  //     status: 'Active',
+  //   },
+  //   {
+  //     id: 3,
+  //     name: 'Youth Ministry',
+  //     head: 'David Johnson',
+  //     members: 6,
+  //     description: 'Engaging teenagers in faith and community',
+  //     status: 'Active',
+  //   },
+  //   {
+  //     id: 4,
+  //     name: 'Outreach Ministry',
+  //     head: 'Maria Garcia',
+  //     members: 15,
+  //     description: 'Community outreach and evangelism programs',
+  //     status: 'Active',
+  //   },
+  // ];
   const activities = [
     {
       date: '2024-12-20',
@@ -315,6 +324,13 @@ export default function BranchDetailsPage({
     isError: isErrorUsers,
     error: errorUsers,
   } = useFetchBranchMembers(id, page, searchQuery, statusFilter, PAGE_SIZE);
+  const {
+    data: departments,
+    isLoading: isLoadingDepartments,
+    isError: isErrorDepartments,
+    error: errorDepartments,
+  } = useFetchBranchDepartments(id);
+
   const {
     mutateAsync: deleteUserMutation,
     isPending: isPendingDeleteUser,
@@ -430,7 +446,9 @@ export default function BranchDetailsPage({
                 <Building className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="font-bold text-2xl">{departments.length}</div>
+                <div className="font-bold text-2xl">
+                  {departments?.departments?.length}
+                </div>
                 <p className="text-muted-foreground text-xs">
                   Active departments
                 </p>
@@ -660,25 +678,26 @@ export default function BranchDetailsPage({
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {branch?.address?.street ?? 'N/A'}
+                            {branch?.address?.street ?? 'Not Provided'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Phone className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {branch?.phoneNumber ?? 'N/A'}
+                            {branch?.phoneNumber ?? 'Not Provided'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Mail className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {branch?.email ?? 'N/A'}
+                            {branch?.email ?? 'Not Provided'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Users className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            Pastor: {branch?.pastorId?.firstName ?? 'N/A'}
+                            Pastor:{' '}
+                            {branch?.pastorId?.firstName ?? 'Not Provided'}
                           </span>
                         </div>
                       </>
@@ -705,7 +724,7 @@ export default function BranchDetailsPage({
                       <span className="text-muted-foreground text-sm">
                         {branch?.establishedDate
                           ? formatToNewDate(branch.establishedDate)
-                          : 'N/A'}
+                          : 'Not Provided'}
                       </span>
                     </div>
                     <div className="space-y-2">
@@ -844,13 +863,13 @@ export default function BranchDetailsPage({
                                       </Avatar>
                                       <div>
                                         <div className="font-medium text-gray-900">
-                                          {`${capitalizeFirstLetter(user?.firstName || 'N/A')} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                                          {`${capitalizeFirstLetter(user?.firstName || '')} ${capitalizeFirstLetter(user?.lastName || 'Not Provided')}`}
                                         </div>
                                         <div className="text-gray-500 text-sm">
-                                          {user.email || 'N/A'}
+                                          {user.email || 'Not Provided'}
                                         </div>
                                         <div className="text-gray-500 text-sm">
-                                          {user.phoneNumber || 'N/A'}
+                                          {user.phoneNumber || 'Not Provided'}
                                         </div>
                                       </div>
                                     </div>
@@ -858,7 +877,7 @@ export default function BranchDetailsPage({
                                   <TableCell>
                                     <span className="text-gray-900 text-sm">
                                       {capitalizeFirstLetter(
-                                        user.gender || 'N/A'
+                                        user.gender || 'Not Provided'
                                       )}
                                     </span>
                                   </TableCell>
@@ -987,51 +1006,77 @@ export default function BranchDetailsPage({
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {departments.map((dept) => (
-                  <Card key={dept.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{dept.name}</CardTitle>
-                        <Badge variant="outline">{dept.status}</Badge>
-                      </div>
-                      <CardDescription>{dept.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
+              {isErrorDepartments && (
+                <RenderApiError error={errorDepartments} />
+              )}
+              {isLoadingDepartments ? (
+                <SpinnerLoader description="Loading departments..." />
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {departments?.departments?.map((dept) => (
+                    <Card key={dept?._id}>
+                      <CardHeader>
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">
-                            Department Head
-                          </span>
-                          <span className="text-muted-foreground text-sm">
-                            {dept.head}
-                          </span>
+                          <CardTitle className="text-lg">
+                            {capitalizeFirstLetterOfEachWord(
+                              dept?.departmentName
+                            )}
+                          </CardTitle>
+                          <Badge
+                            variant={dept?.isActive ? 'default' : 'secondary'}
+                          >
+                            {dept?.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">Members</span>
-                          <span className="text-muted-foreground text-sm">
-                            {dept.members}
-                          </span>
+                        <CardDescription>{dept.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">
+                              Department Head
+                            </span>
+                            <span className="text-muted-foreground text-sm">
+                              {dept?.leaderId?.firstName
+                                ? `${dept.leaderId.firstName} ${dept.leaderId.lastName}`
+                                : 'Not Assigned'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">Members</span>
+                            <span className="text-muted-foreground text-sm">
+                              {dept?.members || 0}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="mt-4 flex items-center space-x-2">
-                        <Button size="sm" variant="outline">
-                          <Eye className="mr-1 h-4 w-4" />
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Edit className="mr-1 h-4 w-4" />
-                          Edit
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Trash2 className="mr-1 h-4 w-4" />
-                          Delete
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <div className="mt-4 flex items-center space-x-2">
+                          <Link href={`/dashboard/departments/${dept._id}`}>
+                            <Button size="sm" variant="outline">
+                              <Eye className="mr-1 h-4 w-4" />
+                              View Department
+                            </Button>
+                          </Link>
+                          <Button size="sm" variant="outline">
+                            <Trash2 className="mr-1 h-4 w-4" />
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+              {departments?.departments?.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No branch departments found
+                  </h3>
+                  <p className="text-gray-500">
+                    Try adjusting your search or filter criteria.
+                  </p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent className="space-y-6" value="schedule">
               <div className="flex items-center justify-between">
@@ -1041,10 +1086,30 @@ export default function BranchDetailsPage({
                     Regular services and meeting times
                   </p>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Service
-                </Button>
+                <Dialog
+                  onOpenChange={setIsServiceScheduleDialogOpen}
+                  open={isServiceScheduleDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Service
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New Service Schedule</DialogTitle>
+                      <DialogDescription>
+                        Create a new service schedule for this branch
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddServiceScheduleForm
+                      onCloseDialog={() =>
+                        setIsServiceScheduleDialogOpen(false)
+                      }
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
               <Card>
                 <CardContent className="p-0">
@@ -1094,10 +1159,28 @@ export default function BranchDetailsPage({
                     Available facilities and resources
                   </p>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Facility
-                </Button>
+                <Dialog
+                  onOpenChange={setIsFacilityDialogOpen}
+                  open={isFacilityDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Facility
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New Facility</DialogTitle>
+                      <DialogDescription>
+                        Create a new facility for this branch
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddAssetForm
+                      onCloseDialog={() => setIsFacilityDialogOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 {/* {branch.facilities.map((facility, index) => (
@@ -1127,10 +1210,28 @@ export default function BranchDetailsPage({
                     Latest events and activities at this branch
                   </p>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Log Activity
-                </Button>
+                <Dialog
+                  onOpenChange={setIsActivityDialogOpen}
+                  open={isActivityDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Log Activity
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New Activity</DialogTitle>
+                      <DialogDescription>
+                        Create a new activity for this branch
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddActivityForm
+                      onCloseDialog={() => setIsActivityDialogOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
               <Card>
                 <CardContent className="p-0">

@@ -23,6 +23,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -42,23 +50,23 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Baby,
-  BarChart3,
   BookOpen,
   Calendar,
   Clock,
   Coffee,
-  Edit,
+  Eye,
   Gamepad2,
   Heart,
   MapPin,
+  MoreHorizontal,
   Music,
   Plus,
   Search,
-  Trash2,
   TrendingDown,
   TrendingUp,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import {
   Bar,
@@ -647,22 +655,34 @@ export default function SmallGroupsPage() {
                           {group.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="ghost">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost">
-                            <BarChart3 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            className="text-red-600"
-                            size="sm"
-                            variant="ghost"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <TableCell className="text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button className="h-8 w-8 p-0" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              asChild
+                              className="cursor-pointer"
+                            >
+                              <Link href={`/dashboard/groups/${123}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Group
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {/* <DropdownMenuItem
+                              className="cursor-pointer text-red-600"
+                              onClick={() => openDeleteDialog(branch)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Group
+                            </DropdownMenuItem> */}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}

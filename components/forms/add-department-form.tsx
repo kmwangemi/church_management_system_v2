@@ -22,6 +22,7 @@ import {
   addDepartmentSchema,
 } from '@/lib/validations/department';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { UserListInput } from '../user-list-input';
@@ -31,6 +32,7 @@ interface AddDepartmentFormProps {
 }
 
 export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
+  const { id } = useParams();
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
@@ -44,7 +46,7 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
     resolver: zodResolver(addDepartmentSchema),
     defaultValues: {
       departmentName: '',
-      // leaderId: '',
+      leaderId: undefined,
       meetingDay: [],
       meetingTime: [],
       description: '',
@@ -52,6 +54,9 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
   });
   const { reset } = departmentForm;
   const onSubmitDepartmentForm = async (payload: AddDepartmentPayload) => {
+    if (id) {
+      payload.branchId = Array.isArray(id) ? id[0] : String(id); // Assign branchId as string from route params
+    }
     await registerDepartmentMutation(payload);
     onCloseDialog();
     reset();

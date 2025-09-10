@@ -1,3 +1,4 @@
+export { default as ActivityModel } from './activity';
 export { default as AnnouncementModel } from './announcement';
 export { default as AssetModel } from './asset';
 export { default as BranchModel } from './branch';
@@ -22,6 +23,7 @@ export { default as PrayerRequestModel } from './prayer-request';
 export { default as MessageRecipientModel } from './recipient-group';
 export { default as ReportModel } from './report';
 export { default as RoleModel } from './role';
+export { default as ServiceScheduleModel } from './service-schedule';
 export { default as UserModel } from './user';
 export { default as UserSubscriptionModel } from './user-subscription';
 
@@ -51,6 +53,8 @@ const models = {
   Role: require('./role').default,
   UserSubscription: require('./user-subscription').default,
   User: require('./user').default,
+  ServiceSchedule: require('./service-schedule').default,
+  Activity: require('./activity').default,
 };
 
 export default models;
