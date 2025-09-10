@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useCreateActivity } from '@/lib/hooks/activity/use-activity-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   ACTIVITY_STATUS_OPTIONS,
@@ -47,24 +48,12 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
-
-  // Mock hook - replace with actual implementation
   const {
     mutateAsync: registerActivityMutation,
     isPending,
     isError,
     error,
-  } = {
-    mutateAsync: async (payload: AddActivityPayload) => {
-      console.log('Activity payload:', payload);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    },
-    isPending: false,
-    isError: false,
-    error: null,
-  };
-
+  } = useCreateActivity();
   const activityForm = useForm<AddActivityPayload>({
     resolver: zodResolver(addActivitySchema),
     defaultValues: {
@@ -80,9 +69,7 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
       description: '',
     },
   });
-
   const { reset } = activityForm;
-
   const onSubmitActivityForm = async (payload: AddActivityPayload) => {
     if (id) {
       payload.branchId = Array.isArray(id) ? id[0] : String(id);
@@ -91,12 +78,10 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
     onCloseDialog();
     reset();
   };
-
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
   };
-
   return (
     <>
       {isError && <RenderApiError error={error} />}

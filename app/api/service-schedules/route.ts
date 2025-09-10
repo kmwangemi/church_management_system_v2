@@ -73,16 +73,7 @@ async function getServiceSchedulesHandler(
         time: 1,
       });
     } else {
-      // Sort by day order (Sunday first) and then by time
-      const dayOrder = {
-        Sunday: 1,
-        Monday: 2,
-        Tuesday: 3,
-        Wednesday: 4,
-        Thursday: 5,
-        Friday: 6,
-        Saturday: 7,
-      };
+      // Sort by day and then by time
       findQuery = findQuery.sort({ day: 1, time: 1 });
     }
     const [schedules, total] = await Promise.all([
