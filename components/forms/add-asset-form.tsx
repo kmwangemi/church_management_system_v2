@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterAsset } from '@/lib/hooks/asset/use-asset-queries';
+import { useRegisterAsset } from '@/lib/hooks/church/asset/use-asset-queries';
 import {
   ASSET_CONDITION_OPTIONS,
   ASSET_MAINTENANCE_FREQUENCY_OPTIONS,

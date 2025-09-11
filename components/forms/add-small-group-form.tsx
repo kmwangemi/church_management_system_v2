@@ -2,6 +2,7 @@
 
 import RenderApiError from '@/components/api-error';
 import { MultiSelect } from '@/components/multi-select';
+import { NumberInput } from '@/components/number-input';
 import { TimeInput } from '@/components/time-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +14,15 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterGroup } from '@/lib/hooks/group/use-group-queries';
+import { useRegisterGroup } from '@/lib/hooks/church/group/use-group-queries';
 import { GROUP_CATEGORY_OPTIONS, MEETING_DAY_OPTIONS } from '@/lib/utils';
 import {
   type AddGroupPayload,
@@ -22,14 +30,6 @@ import {
 } from '@/lib/validations/small-group';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { NumberInput } from '../number-input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
 
 interface AddSmallGroupFormProps {
   onCloseDialog: () => void;

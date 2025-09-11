@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useFetchDepartments } from '@/lib/hooks/department/use-department-queries';
+import { useFetchDepartments } from '@/lib/hooks/church/department/use-department-queries';
 import type { VolunteerUpdateCardProps } from '@/lib/types/index';
 import {
   capitalizeFirstLetter,

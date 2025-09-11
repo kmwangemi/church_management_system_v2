@@ -165,6 +165,7 @@ async function loginHandler(request: NextRequest) {
       );
     }
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const userRole = existingUser.role ?? 'user';
     const token = await new SignJWT({
       sub: getUserId(existingUser._id),
       churchId: existingUser?.churchId
@@ -173,7 +174,9 @@ async function loginHandler(request: NextRequest) {
       branchId: existingUser?.branchId
         ? getUserId(existingUser.branchId)
         : null,
-      role: existingUser.role,
+      role: userRole,
+      accessLevel:
+        userRole === 'admin' ? existingUser?.adminDetails?.accessLevel : null,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
@@ -181,7 +184,7 @@ async function loginHandler(request: NextRequest) {
       .sign(secret);
     contextLogger.info('Login successful', {
       email,
-      userId: existingUser._id,
+      userId: String(existingUser._id),
       role: existingUser.role,
     });
     const response = NextResponse.json({

@@ -1,6 +1,8 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
+import { NumberInput } from '@/components/number-input';
 import { TimeInput } from '@/components/time-input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,7 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useCreateServiceSchedule } from '@/lib/hooks/service-schedule/use-service-schedule-queries';
+import { UserListInput } from '@/components/user-list-input';
+import { useCreateServiceSchedule } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,
@@ -36,9 +39,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { DatePicker } from '../date-picker';
-import { NumberInput } from '../number-input';
-import { UserListInput } from '../user-list-input';
 
 interface AddServiceScheduleFormProps {
   onCloseDialog: () => void;
@@ -60,7 +60,7 @@ export function AddServiceScheduleForm({
   const serviceScheduleForm = useForm<AddServiceSchedulePayload>({
     resolver: zodResolver(addServiceScheduleSchema),
     defaultValues: {
-      day: 'Sunday',
+      day: 'sunday',
       time: '',
       service: '',
       type: 'worship',

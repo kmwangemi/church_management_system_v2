@@ -38,11 +38,11 @@ export const AddContentSchema = BaseContentSchema.extend({
 });
 
 // Update Content Schema (all fields optional except id)
-// export const UpdateContentSchema = BaseContentSchema.partial().extend({
-//   id: z.string().min(1, 'Content ID is required'),
-//   publishedAt: z.date().optional(),
-//   ...FileSchema.shape,
-// });
+export const UpdateContentSchema = BaseContentSchema.partial().extend({
+  id: z.string().min(1, 'Content ID is required'),
+  publishedAt: z.date().optional(),
+  ...FileSchema.shape,
+});
 
 // Query Parameters Schema
 // export const ContentQuerySchema = z.object({
@@ -68,7 +68,7 @@ export const AddContentSchema = BaseContentSchema.extend({
 
 // Export types
 export type AddContentPayload = z.infer<typeof AddContentSchema>;
-// export type UpdateContentPayload = z.infer<typeof UpdateContentSchema>;
+export type UpdateContentPayload = z.infer<typeof UpdateContentSchema>;
 // export type ContentQueryParams = z.infer<typeof ContentQuerySchema>;
 
 // Content validation utilities

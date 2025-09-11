@@ -675,6 +675,7 @@ async function generateRoleIds(user: IUser) {
     ) {
       query.role = role;
     }
+
     // For secondary roles, count by flag
     else if (role === 'staff') {
       query.isStaff = true;

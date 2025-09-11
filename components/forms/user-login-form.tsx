@@ -105,8 +105,8 @@ export default function LoginWithVerificationPage() {
         }
       );
       startResendCooldown();
-    } catch (error) {
-      console.error('Failed to send login code:', error);
+    } catch (_error) {
+      // console.error('Failed to send login code:', error);
       setHasInitialSendFailed(true);
     }
   };

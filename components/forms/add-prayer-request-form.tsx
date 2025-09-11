@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useCreatePrayerRequest } from '@/lib/hooks/prayer-request/use-prayer-request-queries';
+import { useCreatePrayerRequest } from '@/lib/hooks/church/prayer-request/use-prayer-request-queries';
 import type { UserResponse } from '@/lib/types/user';
 import { PRAYER_CATEGORY_OPTIONS, PRAYER_PRIORITY_OPTIONS } from '@/lib/utils';
 import {

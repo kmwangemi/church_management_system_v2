@@ -21,7 +21,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useRegisterBranch } from '@/lib/hooks/branch/use-branch-queries';
+import { UserListInput } from '@/components/user-list-input';
+import { useRegisterBranch } from '@/lib/hooks/church/branch/use-branch-queries';
 import type { UserResponse } from '@/lib/types/user';
 import { getRelativeYear } from '@/lib/utils';
 import {
@@ -32,7 +33,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { UserListInput } from '../user-list-input';
 
 interface AddBranchFormProps {
   onCloseDialog: () => void;

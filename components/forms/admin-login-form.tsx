@@ -41,11 +41,11 @@ export default function AdminLoginForm() {
     // Reset form before navigation
     reset();
     // Determine redirect path
-    let redirectPath = '/dashboard'; // default
+    let redirectPath = '/church'; // default
     if (result.user.role === 'superadmin') {
       redirectPath = '/superadmin';
     } else if (result.user.role === 'admin') {
-      redirectPath = '/dashboard';
+      redirectPath = '/church';
     }
     // Use window.location for a hard redirect instead of router.push
     // This ensures a fresh page load and clears any cached state

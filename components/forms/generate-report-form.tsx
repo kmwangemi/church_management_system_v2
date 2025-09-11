@@ -29,8 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useFetchRecipientGroups } from '@/lib/hooks/message/use-message-queries';
-import { useCreateReport } from '@/lib/hooks/report/use-report-queries';
+import { useFetchRecipientGroups } from '@/lib/hooks/church/message/use-message-queries';
+import { useCreateReport } from '@/lib/hooks/church/report/use-report-queries';
 import {
   getRelativeYear,
   REPORT_DATE_RANGE_OPTIONS,

@@ -1,6 +1,8 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
+import { NumberInput } from '@/components/number-input';
 import { TimeInput } from '@/components/time-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useCreateActivity } from '@/lib/hooks/activity/use-activity-queries';
+import { UserListInput } from '@/components/user-list-input';
+import { useCreateActivity } from '@/lib/hooks/church/activity/use-activity-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   ACTIVITY_STATUS_OPTIONS,
@@ -35,9 +38,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { DatePicker } from '../date-picker';
-import { NumberInput } from '../number-input';
-import { UserListInput } from '../user-list-input';
 
 interface AddActivityFormProps {
   onCloseDialog: () => void;

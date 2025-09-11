@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useRegisterPledge } from '@/lib/hooks/pledge/use-pledge-queries';
+import { useRegisterPledge } from '@/lib/hooks/church/pledge/use-pledge-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,

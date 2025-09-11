@@ -4,7 +4,7 @@ export async function logClientError(
   metadata?: Record<string, any>
 ) {
   try {
-    await fetch('/api/logs', {
+    await fetch('/api/shared/logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

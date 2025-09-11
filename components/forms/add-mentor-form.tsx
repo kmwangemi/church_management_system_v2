@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useCreateMilestone } from '@/lib/hooks/milestone/use-milestone-queries';
+import { useCreateMilestone } from '@/lib/hooks/church/milestone/use-milestone-queries';
 import { MILESTONE_CATEGORY_OPTIONS } from '@/lib/utils';
 import {
   type AddMilestonePayload,

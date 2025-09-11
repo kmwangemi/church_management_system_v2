@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterEvent } from '@/lib/hooks/event/use-event-queries';
+import { useRegisterEvent } from '@/lib/hooks/church/event/use-event-queries';
 import {
   EVENT_FREQUENCY_OPTIONS,
   EVENT_TYPE_OPTIONS,

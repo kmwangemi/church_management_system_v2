@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useRegisterOffering } from '@/lib/hooks/offering/use-offering-queries';
+import { useRegisterOffering } from '@/lib/hooks/church/offering/use-offering-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   CONTRIBUTION_TYPE_OPTIONS,
