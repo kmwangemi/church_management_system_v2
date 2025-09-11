@@ -13,7 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useFetchUsers } from '@/lib/hooks/user/use-user-queries';
+import { useFetchUsers } from '@/lib/hooks/church/user/use-user-queries';
 import type { UserResponse } from '@/lib/types/user';
 import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
 import { Check, ChevronsUpDown, User } from 'lucide-react';

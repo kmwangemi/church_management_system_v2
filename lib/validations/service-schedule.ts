@@ -4,13 +4,13 @@ const REGEX = /^\d+(\.\d+)?$/;
 
 export const addServiceScheduleSchema = z.object({
   day: z.enum([
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
   ]),
   time: z.string().min(1, 'Time is required'),
   service: z
@@ -43,17 +43,17 @@ export const addServiceScheduleSchema = z.object({
   ]),
   duration: z
     .string()
-    .min(15, 'Duration is required')
+    .min(1, 'Duration is required') // ✅ Changed from 15 to 1
     .refine((val) => REGEX.test(val.trim()), {
       message: 'Duration must be a valid number',
     })
     .refine(
       (val) => {
         const num = Number.parseFloat(val.trim());
-        return num >= 1 && num <= 480;
+        return num >= 15 && num <= 480; // ✅ Move the 15 minimum check here
       },
       {
-        message: 'Duration must be between 1 and 480 minutes',
+        message: 'Duration must be between 15 and 480 minutes',
       }
     ),
   facilitator: z.string().optional(),
@@ -69,7 +69,7 @@ export const addServiceScheduleSchema = z.object({
     .string()
     .max(500, 'Notes must be less than 500 characters')
     .optional(),
-  branchId: z.string().optional(),
+  branchId: z.string().min(1, 'Branch is required'),
 });
 
 export type AddServiceSchedulePayload = z.infer<

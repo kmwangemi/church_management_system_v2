@@ -27,8 +27,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { useCreateContent } from '@/lib/hooks/content/use-content-queries';
-import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
+import { useCreateContent } from '@/lib/hooks/church/content/use-content-queries';
+import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle } from '@/lib/toast-styles';
 import type { FileType } from '@/lib/types';
 import {
@@ -91,7 +91,11 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
       });
       return;
     }
-    if (!FILE_VALIDATION.ALLOWED_TYPES.includes(file.type)) {
+    if (
+      !FILE_VALIDATION.ALLOWED_TYPES.includes(
+        file.type as (typeof FILE_VALIDATION.ALLOWED_TYPES)[number]
+      )
+    ) {
       toast.error(
         'Invalid file type. Please upload PDF, DOC, MP3, MP4, JPG, PNG, or PPT files.',
         {
@@ -139,7 +143,6 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
       };
     } catch (error) {
       toast.error('Failed to upload file');
-      console.error('File upload error:', error);
       throw error;
     }
   };
@@ -160,8 +163,9 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
       toast.success('Content created successfully');
       onCloseDialog();
     } catch (error) {
-      console.error('Error creating content:', error);
       // Error handling is managed by the mutation hook and upload hook
+      toast.error('Error creating content:');
+      throw error;
     }
   };
   const isLoading = isPending || isUploading;
@@ -367,7 +371,7 @@ export function AddContentForm({ onCloseDialog }: AddContentFormProps) {
               <FormField
                 control={form.control}
                 name="fileUrl"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
                     <FormLabel>Upload File (Optional)</FormLabel>
                     <FormControl>

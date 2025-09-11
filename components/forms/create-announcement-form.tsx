@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterAnnouncement } from '@/lib/hooks/announcement/use-announcement-queries';
+import { useRegisterAnnouncement } from '@/lib/hooks/church/announcement/use-announcement-queries';
 import {
   ANNOUNCEMENT_CATEGORY_OPTIONS,
   ANNOUNCEMENT_PRIORITY_OPTIONS,
@@ -169,7 +169,6 @@ export function CreateAnnouncementForm({
                     </FormItem>
                   )}
                 />
-
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right" htmlFor="targetAudience">
                     Audience
@@ -187,7 +186,6 @@ export function CreateAnnouncementForm({
                     </SelectContent>
                   </Select>
                 </div>
-
                 <FormField
                   control={form.control}
                   name="priority"

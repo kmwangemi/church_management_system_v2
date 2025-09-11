@@ -27,7 +27,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to database via API
-    fetch('/api/logs', {
+    fetch('/api/shared/logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

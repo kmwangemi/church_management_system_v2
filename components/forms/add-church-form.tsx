@@ -36,7 +36,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterChurch } from '@/lib/hooks/auth/use-register-queries';
-import { useFileUpload } from '@/lib/hooks/upload/use-file-upload';
+import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,

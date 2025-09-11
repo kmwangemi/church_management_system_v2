@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useRegisterDisciple } from '@/lib/hooks/disciple/use-disciple-queries';
+import { useRegisterDisciple } from '@/lib/hooks/church/disciple/use-disciple-queries';
 import type { UserResponse } from '@/lib/types/user';
 import { DISCIPLE_LEVEL_OPTIONS, getRelativeYear } from '@/lib/utils';
 import {

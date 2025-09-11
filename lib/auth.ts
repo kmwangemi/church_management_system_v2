@@ -1,6 +1,6 @@
+import type { AuthUser } from '@/lib/types';
 import { decodeJwt, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
-import type { AuthUser } from '@/lib/types';
 
 interface TokenPayload extends AuthUser {
   exp?: number;
@@ -47,6 +47,7 @@ export async function verifyToken(request: NextRequest): Promise<{
         churchId: decoded.churchId,
         branchId: decoded.branchId,
         role: decoded.role,
+        accessLevel: decoded.accessLevel ?? null,
       },
     };
   } catch (error) {
@@ -90,6 +91,7 @@ export function getUserFromHeaders(request: NextRequest): AuthUser | null {
   const churchId = request.headers.get('x-church-id');
   const branchId = request.headers.get('x-branch-id');
   const role = request.headers.get('x-user-role');
+  const accessLevel = request.headers.get('x-access-level') || null;
   if (!(userId && churchId && branchId && role)) {
     return null;
   }
@@ -98,5 +100,6 @@ export function getUserFromHeaders(request: NextRequest): AuthUser | null {
     churchId,
     branchId,
     role,
+    accessLevel,
   };
 }

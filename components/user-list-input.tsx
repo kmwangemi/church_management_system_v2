@@ -1,5 +1,5 @@
 import { Input } from '@/components/ui/input';
-import { useFetchUsers } from '@/lib/hooks/user/use-user-queries';
+import { useFetchUsers } from '@/lib/hooks/church/user/use-user-queries';
 import { errorToastStyle } from '@/lib/toast-styles';
 import type { UserResponse } from '@/lib/types/user';
 import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';

@@ -12,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useFetchBranches } from '@/lib/hooks/branch/use-branch-queries';
+import { useFetchBranches } from '@/lib/hooks/church/branch/use-branch-queries';
 import type { Branch } from '@/lib/types/branch';
 import { capitalizeFirstLetter, cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, MapPin } from 'lucide-react';

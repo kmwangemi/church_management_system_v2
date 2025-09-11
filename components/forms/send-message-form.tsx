@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   useCreateMessage,
   useFetchRecipientGroups,
-} from '@/lib/hooks/message/use-message-queries';
+} from '@/lib/hooks/church/message/use-message-queries';
 import { getRelativeYear, MESSAGE_SEND_TIME_OPTIONS } from '@/lib/utils';
 import {
   type AddMessagePayload,

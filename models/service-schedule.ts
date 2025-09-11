@@ -5,13 +5,13 @@ export interface IServiceSchedule extends Document {
   churchId: mongoose.Types.ObjectId;
   branchId: mongoose.Types.ObjectId;
   day:
-    | 'Sunday'
-    | 'Monday'
-    | 'Tuesday'
-    | 'Wednesday'
-    | 'Thursday'
-    | 'Friday'
-    | 'Saturday';
+    | 'sunday'
+    | 'monday'
+    | 'tuesday'
+    | 'wednesday'
+    | 'thursday'
+    | 'friday'
+    | 'saturday';
   time: string;
   service: string;
   attendance?: number;
@@ -57,13 +57,13 @@ const ServiceScheduleSchema = new Schema<IServiceSchedule>(
       type: String,
       required: true,
       enum: [
-        'Sunday',
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
+        'sunday',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
       ],
       trim: true,
     },
@@ -164,8 +164,8 @@ ServiceScheduleSchema.index({
 // Pre-save middleware
 ServiceScheduleSchema.pre('save', function (next) {
   // If endDate is provided, ensure it's after startDate
-  if (this.startDate && this.endDate && this.endDate <= this.startDate) {
-    return next(new Error('End date must be after start date'));
+  if (this.startDate && this.endDate && this.endDate < this.startDate) {
+    return next(new Error('End date must be after or equal to start date'));
   }
   next();
 });

@@ -63,6 +63,7 @@ export interface AuthUser {
   churchId: string;
   branchId: string;
   role: string;
+  accessLevel: string | null;
   email?: string;
   name?: string;
   firstName?: string;

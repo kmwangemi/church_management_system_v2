@@ -1,7 +1,6 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: ignore */
+import { logger } from '@/lib/logger';
 import type { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '@/lib/logger';
 
 export interface ApiLoggerOptions {
   logRequests?: boolean;
@@ -20,11 +19,9 @@ export function withApiLogger(
     logErrors = true,
     excludePaths = ['/api/health', '/api/ping'],
   } = options;
-
   return async (req: NextRequest, context?: any): Promise<NextResponse> => {
     const requestId = uuidv4();
     const startTime = Date.now();
-
     // Extract request metadata
     const metadata = {
       requestId,
@@ -37,16 +34,13 @@ export function withApiLogger(
         'unknown',
       timestamp: new Date().toISOString(),
     };
-
     // Skip logging for excluded paths
     const shouldSkip = excludePaths.some((path) =>
       req.nextUrl.pathname.startsWith(path)
     );
-
     if (shouldSkip) {
       return handler(req, context);
     }
-
     // Log incoming request
     if (logRequests) {
       await logger.info(
@@ -55,12 +49,10 @@ export function withApiLogger(
         'api'
       );
     }
-
     try {
       // Execute the handler
       const response = await handler(req, context);
       const duration = Date.now() - startTime;
-
       // Log successful response
       if (logResponses) {
         await logger.info(
@@ -73,11 +65,9 @@ export function withApiLogger(
           'api'
         );
       }
-
       return response;
     } catch (error) {
       const duration = Date.now() - startTime;
-
       // Log error
       if (logErrors) {
         await logger.error(
@@ -90,7 +80,6 @@ export function withApiLogger(
           'api'
         );
       }
-
       // Re-throw the error so it can be handled by the caller
       throw error;
     }

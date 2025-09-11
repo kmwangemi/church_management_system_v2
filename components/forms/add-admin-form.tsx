@@ -29,12 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ADMIN_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
+import { ADMIN_ACCESS_LEVEL_OPTIONS, ADMIN_ROLE_OPTIONS, capitalizeFirstLetter, GENDER_OPTIONS } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { MultiSelect } from '../multi-select';
+import { useFetchBranches } from '@/lib/hooks/church/branch/use-branch-queries';
 
 const adminSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -68,6 +70,9 @@ interface AddAdminFormProps {
 
 export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  // Fetch branches with search term
+    const { data, isLoading: isLoadingBranches } = useFetchBranches(1, '');
+    const branches = data?.branches || [];
   const form = useForm<AdminForm>({
     resolver: zodResolver(adminSchema),
     defaultValues: {
@@ -332,6 +337,66 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Access Level <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select access level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {ADMIN_ACCESS_LEVEL_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="branchId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Branches</FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          onChange={field.onChange}
+                          options={
+                            branches?.map((branch) => ({
+                              label: capitalizeFirstLetter(
+                                branch?.branchName
+                              ),
+                              value: branch?._id,
+                            })) || []
+                          }
+                          placeholder="Select branche(s)"
+                          selected={field.value || []}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="branchId"

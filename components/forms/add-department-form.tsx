@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterDepartment } from '@/lib/hooks/department/use-department-queries';
+import { UserListInput } from '@/components/user-list-input';
+import { useRegisterDepartment } from '@/lib/hooks/church/department/use-department-queries';
 import type { UserResponse } from '@/lib/types/user';
 import { MEETING_DAY_OPTIONS } from '@/lib/utils';
 import {
@@ -25,7 +26,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { UserListInput } from '../user-list-input';
 
 interface AddDepartmentFormProps {
   onCloseDialog: () => void;
