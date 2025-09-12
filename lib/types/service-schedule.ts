@@ -1,4 +1,5 @@
 import type { Pagination } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 
 export interface ServiceScheduleAddResponse {
   churchId: string;
@@ -65,7 +66,7 @@ export interface ServiceSchedule {
     | 'special'
     | 'fellowship';
   formattedDuration?: number; // in minutes
-  facilitator?: string;
+  facilitator?: UserResponse;
   location?: string;
   recurring: boolean;
   startDate?: string;

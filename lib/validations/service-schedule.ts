@@ -59,17 +59,17 @@ export const addServiceScheduleSchema = z.object({
   facilitator: z.string().optional(),
   location: z
     .string()
-    .max(100, 'Location must be less than 100 characters')
-    .optional(),
+    .min(5, 'Location must be at least 3 characters')
+    .max(100, 'Location must be less than 100 characters'),
   recurring: z.boolean(),
   isActive: z.boolean(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().min(1, 'End date is required'),
   notes: z
     .string()
     .max(500, 'Notes must be less than 500 characters')
     .optional(),
-  branchId: z.string().min(1, 'Branch is required'),
+  branchId: z.string().optional(),
 });
 
 export type AddServiceSchedulePayload = z.infer<

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useCreateServiceSchedule } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
+import { useCreateBranchServiceSchedule } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,
@@ -56,7 +56,7 @@ export function AddServiceScheduleForm({
     isPending,
     isError,
     error,
-  } = useCreateServiceSchedule();
+  } = useCreateBranchServiceSchedule();
   const serviceScheduleForm = useForm<AddServiceSchedulePayload>({
     resolver: zodResolver(addServiceScheduleSchema),
     defaultValues: {
@@ -79,10 +79,10 @@ export function AddServiceScheduleForm({
   const onSubmitServiceScheduleForm = async (
     payload: AddServiceSchedulePayload
   ) => {
-    if (id) {
-      payload.branchId = Array.isArray(id) ? id[0] : String(id);
-    }
-    await registerServiceScheduleMutation(payload);
+    await registerServiceScheduleMutation({
+      branchId: id ? String(id) : '',
+      payload,
+    });
     onCloseDialog();
     reset();
   };
@@ -200,7 +200,9 @@ export function AddServiceScheduleForm({
               name="attendance"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Expected Attendance</FormLabel>
+                  <FormLabel>
+                    Expected Attendance <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <NumberInput placeholder="180" {...field} />
                   </FormControl>
@@ -215,7 +217,9 @@ export function AddServiceScheduleForm({
               name="duration"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Duration (minutes)</FormLabel>
+                  <FormLabel>
+                    Duration (minutes) <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <NumberInput placeholder="90" {...field} />
                   </FormControl>
@@ -250,7 +254,9 @@ export function AddServiceScheduleForm({
             name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
+                <FormLabel>
+                  Location <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Main Sanctuary" {...field} />
                 </FormControl>
@@ -264,7 +270,9 @@ export function AddServiceScheduleForm({
               name="startDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Start Date (Optional)</FormLabel>
+                  <FormLabel>
+                    Start Date <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <DatePicker
                       format="long"
@@ -286,7 +294,9 @@ export function AddServiceScheduleForm({
               name="endDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>End Date (Optional)</FormLabel>
+                  <FormLabel>
+                    End Date <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <DatePicker
                       format="long"

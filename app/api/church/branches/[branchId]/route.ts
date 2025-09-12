@@ -9,19 +9,19 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
   params: {
-    id: string;
+    branchId: string;
   };
 }
 
-// GET /api/branches/[id] - Get single branch by ID
+// GET /api/branches/[branchId] - Get single branch by ID
 async function getBranchByIdHandler(
   request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const { id } = await params;
+  const { branchId } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/church/branches/${id}` },
+    { requestId, endpoint: `/api/church/branches/${branchId}` },
     'api'
   );
   try {
@@ -43,7 +43,7 @@ async function getBranchByIdHandler(
       );
     }
     // Validate MongoDB ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(branchId)) {
       return NextResponse.json(
         { error: 'Invalid branch ID format' },
         { status: 400 }
@@ -51,7 +51,7 @@ async function getBranchByIdHandler(
     }
     await dbConnect();
     const branch = await BranchModel.findOne({
-      _id: id,
+      _id: branchId,
       churchId: user.user.churchId,
     }).populate('pastorId', 'firstName lastName email');
     if (!branch) {
@@ -72,10 +72,10 @@ async function updateBranchHandler(
   request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const { id } = await params;
+  const { branchId } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/church/branches/${id}` },
+    { requestId, endpoint: `/api/church/branches/${branchId}` },
     'api'
   );
   try {
@@ -97,7 +97,7 @@ async function updateBranchHandler(
       );
     }
     // Validate MongoDB ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(branchId)) {
       return NextResponse.json(
         { error: 'Invalid branch ID format' },
         { status: 400 }
@@ -107,7 +107,7 @@ async function updateBranchHandler(
     const updateData: Partial<AddBranchPayload> = await request.json();
     // Check if branch exists and belongs to the user's church
     const existingBranch = await BranchModel.findOne({
-      _id: id,
+      _id: branchId,
       churchId: user.user.churchId,
     });
     if (!existingBranch) {
@@ -121,7 +121,7 @@ async function updateBranchHandler(
       const duplicateBranch = await BranchModel.findOne({
         branchName: updateData.branchName,
         churchId: user.user.churchId,
-        _id: { $ne: id }, // Exclude current branch from search
+        _id: { $ne: branchId }, // Exclude current branch from search
       });
       if (duplicateBranch) {
         return NextResponse.json(
@@ -132,7 +132,7 @@ async function updateBranchHandler(
     }
     // Update the branch
     const updatedBranch = await BranchModel.findByIdAndUpdate(
-      id,
+      branchId,
       {
         ...updateData,
         updatedAt: new Date(),
@@ -143,7 +143,7 @@ async function updateBranchHandler(
       }
     ).populate('pastorId', 'firstName lastName email');
     contextLogger.info('Branch updated successfully', {
-      branchId: id,
+      branchId,
       updatedFields: Object.keys(updateData),
     });
     return NextResponse.json({
@@ -159,15 +159,15 @@ async function updateBranchHandler(
   }
 }
 
-// DELETE /api/branches/[id] - Delete branch by ID
+// DELETE /api/branches/[branchId] - Delete branch by ID
 async function deleteBranchHandler(
   request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const { id } = await params;
+  const { branchId } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/church/branches/${id}` },
+    { requestId, endpoint: `/api/church/branches/${branchId}` },
     'api'
   );
   try {
@@ -189,7 +189,7 @@ async function deleteBranchHandler(
       );
     }
     // Validate MongoDB ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(branchId)) {
       return NextResponse.json(
         { error: 'Invalid branch ID format' },
         { status: 400 }
@@ -198,7 +198,7 @@ async function deleteBranchHandler(
     await dbConnect();
     // Check if branch exists and belongs to the user's church
     const existingBranch = await BranchModel.findOne({
-      _id: id,
+      _id: branchId,
       churchId: user.user.churchId,
     });
     if (!existingBranch) {
@@ -209,8 +209,8 @@ async function deleteBranchHandler(
     const forceDelete = searchParams.get('force') === 'true';
     if (forceDelete) {
       // Hard delete - permanently remove the branch
-      await BranchModel.findByIdAndDelete(id);
-      contextLogger.info('Branch permanently deleted', { branchId: id });
+      await BranchModel.findByIdAndDelete(branchId);
+      contextLogger.info('Branch permanently deleted', { branchId });
       return NextResponse.json({
         message: 'Branch permanently deleted successfully',
       });
@@ -218,7 +218,7 @@ async function deleteBranchHandler(
     // Soft delete - mark as inactive
     const deactivatedBranch = await existingBranch.softDelete();
     contextLogger.info('Branch deactivated (soft delete)', {
-      branchId: id,
+      branchId,
     });
     return NextResponse.json({
       branch: deactivatedBranch,
