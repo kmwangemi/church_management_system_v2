@@ -24,7 +24,7 @@ export interface Branch {
   members?: number;
   capacity: number;
   pastorId?: UserResponse; // Optional, if not always present
-  establishedDate: string ; // ISO string; use `Date` if you parse it
+  establishedDate: Date ; // ISO string; use `Date` if you parse it
   description?: string;
   isActive: boolean;
   createdAt: Date;

@@ -29,19 +29,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ADMIN_ACCESS_LEVEL_OPTIONS, ADMIN_ROLE_OPTIONS, capitalizeFirstLetter, GENDER_OPTIONS } from '@/lib/utils';
+import { useFetchBranches } from '@/lib/hooks/church/branch/use-branch-queries';
+import {
+  ADMIN_ACCESS_LEVEL_OPTIONS,
+  ADMIN_ROLE_OPTIONS,
+  capitalizeFirstLetter,
+  GENDER_OPTIONS,
+} from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { MultiSelect } from '../multi-select';
-import { useFetchBranches } from '@/lib/hooks/church/branch/use-branch-queries';
 
 const adminSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.email().optional(),
+  email: z.email('Please enter a valid email address'),
   phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   isMember: z.boolean(),
@@ -59,7 +64,9 @@ const adminSchema = z.object({
     error: 'Gender is required',
   }),
   role: z.string().min(1, 'Please select a role'),
-  branchId: z.string().min(1, 'Please select a branch'),
+  accessLevel: z.string().min(1, 'Please select an access level'),
+  branchIds: z.array(z.string()).min(1, 'Please select at least one branch'),
+  primaryBranchId: z.string().min(1, 'Please select a primary branch'),
 });
 
 type AdminForm = z.infer<typeof adminSchema>;
@@ -71,8 +78,9 @@ interface AddAdminFormProps {
 export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   // Fetch branches with search term
-    const { data, isLoading: isLoadingBranches } = useFetchBranches(1, '');
-    const branches = data?.branches || [];
+  const { data, isLoading: isLoadingBranches } = useFetchBranches(1, '');
+  const branches = data?.branches || [];
+
   const form = useForm<AdminForm>({
     resolver: zodResolver(adminSchema),
     defaultValues: {
@@ -81,6 +89,7 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
       phoneNumber: '',
       gender: 'male',
       role: '',
+      accessLevel: '',
       email: '',
       address: {
         street: '',
@@ -91,7 +100,9 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
       },
       isMember: true,
       isStaff: false,
-      branchId: '',
+      isVolunteer: false,
+      branchIds: [],
+      primaryBranchId: '',
       password: 'User@123',
       sendWelcomeEmail: false,
     },
@@ -339,7 +350,7 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                 />
                 <FormField
                   control={form.control}
-                  name="role"
+                  name="accessLevel"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -370,21 +381,20 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
-                  name="branchId"
+                  name="branchIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branches</FormLabel>
+                      <FormLabel>
+                        Branches <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <MultiSelect
                           onChange={field.onChange}
                           options={
                             branches?.map((branch) => ({
-                              label: capitalizeFirstLetter(
-                                branch?.branchName
-                              ),
+                              label: capitalizeFirstLetter(branch?.branchName),
                               value: branch?._id,
                             })) || []
                           }
@@ -396,20 +406,19 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
-                  name="branchId"
+                  name="primaryBranchId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Branch <span className="text-red-500">*</span>
+                        Primary Branch <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <BranchCombobox
                           className="w-full"
                           onChange={field.onChange}
-                          placeholder="Search and select a branch"
+                          placeholder="Search and select primary branch"
                           value={field.value}
                         />
                       </FormControl>
@@ -454,6 +463,26 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                           <FormLabel>Staff Member</FormLabel>
                           <p className="text-gray-500 text-sm">
                             This person is also a paid staff member
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="isVolunteer"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Volunteer</FormLabel>
+                          <p className="text-gray-500 text-sm">
+                            This person is also a volunteer
                           </p>
                         </div>
                       </FormItem>

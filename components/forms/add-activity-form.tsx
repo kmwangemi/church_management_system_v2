@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useCreateActivity } from '@/lib/hooks/church/activity/use-activity-queries';
+import { useCreateBranchActivity } from '@/lib/hooks/church/activity/use-activity-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   ACTIVITY_STATUS_OPTIONS,
@@ -53,7 +53,7 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
     isPending,
     isError,
     error,
-  } = useCreateActivity();
+  } = useCreateBranchActivity();
   const activityForm = useForm<AddActivityPayload>({
     resolver: zodResolver(addActivitySchema),
     defaultValues: {
@@ -71,10 +71,10 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
   });
   const { reset } = activityForm;
   const onSubmitActivityForm = async (payload: AddActivityPayload) => {
-    if (id) {
-      payload.branchId = Array.isArray(id) ? id[0] : String(id);
-    }
-    await registerActivityMutation(payload);
+    await registerActivityMutation({
+      branchId: id ? String(id) : '',
+      payload,
+    });
     onCloseDialog();
     reset();
   };
@@ -212,7 +212,9 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
               name="startTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Start Time</FormLabel>
+                  <FormLabel>
+                    Start Time <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <TimeInput
                       onChange={field.onChange}
@@ -229,7 +231,9 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
               name="endTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>End Time</FormLabel>
+                  <FormLabel>
+                    End Time <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <TimeInput
                       onChange={field.onChange}
@@ -248,7 +252,9 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>
+                    Location <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="Sanctuary" {...field} />
                   </FormControl>
@@ -261,9 +267,7 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
               name="facilitator"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Facilitator <span className="text-red-500">*</span>
-                  </FormLabel>
+                  <FormLabel>Facilitator</FormLabel>
                   <FormControl>
                     <UserListInput
                       className="w-full"
@@ -285,7 +289,9 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
             name="budget"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Budget (KES)</FormLabel>
+                <FormLabel>
+                  Budget (KES) <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <NumberInput placeholder="1000" {...field} />
                 </FormControl>

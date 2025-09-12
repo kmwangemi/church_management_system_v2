@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
   params: {
-    id: string;
+    branchId: string;
   };
 }
 
@@ -15,10 +15,10 @@ async function getBranchDepartmentsHandler(
   request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const { id } = await params;
+  const { branchId } = await params;
   const requestId = request.headers.get('x-request-id') || 'unknown';
   const contextLogger = logger.createContextLogger(
-    { requestId, endpoint: `/api/church/branches/${id}/departments` },
+    { requestId, endpoint: `/api/church/branches/${branchId}/departments` },
     'api'
   );
   try {
@@ -44,8 +44,6 @@ async function getBranchDepartmentsHandler(
       );
     }
     await dbConnect();
-    // Extract branchId from route parameters
-    const branchId = id;
     if (!branchId) {
       return NextResponse.json(
         { error: 'Branch ID is required' },

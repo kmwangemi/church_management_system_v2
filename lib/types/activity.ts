@@ -1,4 +1,5 @@
 import type { Pagination } from '@/lib/types';
+import type { UserResponse } from '@/lib/types/user';
 
 export interface ActivityAddResponse {
   churchId: string;
@@ -45,7 +46,7 @@ export interface Activity {
   startTime?: string;
   endTime?: string;
   location?: string;
-  facilitator?: string;
+  facilitator?: UserResponse;
   budget?: number;
   description?: string;
   createdAt: Date;

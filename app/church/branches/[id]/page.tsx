@@ -4,7 +4,6 @@ import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
 import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
 import { AddActivityForm } from '@/components/forms/add-activity-form';
-import { AddAssetForm } from '@/components/forms/add-asset-form';
 import { AddDepartmentForm } from '@/components/forms/add-department-form';
 import { AddServiceScheduleForm } from '@/components/forms/add-service-schedule-form';
 import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
@@ -59,12 +58,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
+import { useFetchBranchActivities } from '@/lib/hooks/church/activity/use-activity-queries';
 import {
   useFetchBranchById,
   useFetchBranchDepartments,
   useFetchBranchMembers,
 } from '@/lib/hooks/church/branch/use-branch-queries';
-import { useFetchServiceSchedules } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
+import { useFetchBranchServiceSchedules } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
 import { useDeleteUserById } from '@/lib/hooks/church/user/use-user-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
@@ -79,178 +79,25 @@ import {
 } from '@/lib/validations/branch';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  AlertTriangle,
   ArrowLeft,
   Building,
   Calendar,
-  Car,
-  CheckCircle,
-  Coffee,
   Edit,
   Eye,
-  Heart,
-  Home,
   Mail,
   MapPin,
   MoreHorizontal,
-  Music,
   Phone,
   Plus,
   Save,
   Trash2,
   UserPlus,
   Users,
-  Wifi,
-  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-// Mock data
-const assets = [
-  {
-    id: 1,
-    name: 'Church Bus #1',
-    type: 'Vehicle',
-    category: 'Transportation',
-    value: 45_000,
-    purchaseDate: '2022-03-15',
-    condition: 'Good',
-    location: 'Main Campus',
-    status: 'Active',
-    lastMaintenance: '2024-01-15',
-    nextMaintenance: '2024-04-15',
-    serialNumber: 'CB001-2022',
-    warranty: '3 years',
-  },
-  {
-    id: 2,
-    name: 'Grace Christian School',
-    type: 'Property',
-    category: 'Education',
-    value: 850_000,
-    purchaseDate: '2018-08-01',
-    condition: 'Excellent',
-    location: 'Downtown Campus',
-    status: 'Active',
-    lastMaintenance: '2023-12-01',
-    nextMaintenance: '2024-06-01',
-    serialNumber: 'GCS-2018',
-    warranty: 'N/A',
-  },
-  {
-    id: 3,
-    name: 'Sound System - Main Sanctuary',
-    type: 'Equipment',
-    category: 'Audio/Visual',
-    value: 25_000,
-    purchaseDate: '2023-01-10',
-    condition: 'Excellent',
-    location: 'Main Sanctuary',
-    status: 'Active',
-    lastMaintenance: '2024-02-01',
-    nextMaintenance: '2024-05-01',
-    serialNumber: 'SS-MS-2023',
-    warranty: '2 years',
-  },
-  {
-    id: 4,
-    name: 'Church Van #2',
-    type: 'Vehicle',
-    category: 'Transportation',
-    value: 32_000,
-    purchaseDate: '2021-11-20',
-    condition: 'Fair',
-    location: 'Main Campus',
-    status: 'Maintenance',
-    lastMaintenance: '2024-02-20',
-    nextMaintenance: '2024-03-20',
-    serialNumber: 'CV002-2021',
-    warranty: 'Expired',
-  },
-  {
-    id: 5,
-    name: 'Fellowship Hall Tables',
-    type: 'Furniture',
-    category: 'Furniture',
-    value: 8000,
-    purchaseDate: '2020-05-15',
-    condition: 'Good',
-    location: 'Fellowship Hall',
-    status: 'Active',
-    lastMaintenance: '2023-11-01',
-    nextMaintenance: '2024-11-01',
-    serialNumber: 'FHT-2020',
-    warranty: 'N/A',
-  },
-];
-
-const getAssetIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'vehicle':
-      return <Car className="h-5 w-5" />;
-    case 'property':
-      return <Building className="h-5 w-5" />;
-    case 'equipment':
-      return <Wrench className="h-5 w-5" />;
-    default:
-      return <Home className="h-5 w-5" />;
-  }
-};
-
-const getConditionBadge = (condition: string) => {
-  switch (condition.toLowerCase()) {
-    case 'excellent':
-      return (
-        <Badge className="border-green-200 bg-green-100 text-green-800">
-          Excellent
-        </Badge>
-      );
-    case 'good':
-      return (
-        <Badge className="border-blue-200 bg-blue-100 text-blue-800">
-          Good
-        </Badge>
-      );
-    case 'fair':
-      return (
-        <Badge className="border-yellow-200 bg-yellow-100 text-yellow-800">
-          Fair
-        </Badge>
-      );
-    case 'poor':
-      return (
-        <Badge className="border-red-200 bg-red-100 text-red-800">Poor</Badge>
-      );
-    default:
-      return <Badge variant="secondary">{condition}</Badge>;
-  }
-};
-
-const getStatusBadge = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return (
-        <Badge className="border-green-200 bg-green-100 text-green-800">
-          <CheckCircle className="mr-1 h-3 w-3" />
-          Active
-        </Badge>
-      );
-    case 'maintenance':
-      return (
-        <Badge className="border-orange-200 bg-orange-100 text-orange-800">
-          <AlertTriangle className="mr-1 h-3 w-3" />
-          Maintenance
-        </Badge>
-      );
-    case 'retired':
-      return <Badge variant="secondary">Retired</Badge>;
-    default:
-      return <Badge variant="secondary">{status}</Badge>;
-  }
-};
 
 export default function BranchDetailsPage({
   params,
@@ -263,7 +110,6 @@ export default function BranchDetailsPage({
   const [isServiceScheduleDialogOpen, setIsServiceScheduleDialogOpen] =
     useState(false);
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
-  const [isFacilityDialogOpen, setIsFacilityDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
@@ -273,13 +119,13 @@ export default function BranchDetailsPage({
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
   const selectedStatusQuery = searchParams.get('status') || 'all';
+  const PAGE_SIZE = 10;
   const {
     data: branch,
     isLoading: isLoadingBranch,
     isError: isErrorBranch,
     error: errorBranch,
   } = useFetchBranchById(id);
-
   const form = useForm<UpdateBranchPayload>({
     resolver: zodResolver(updateBranchSchema),
     defaultValues: {
@@ -330,130 +176,11 @@ export default function BranchDetailsPage({
       form.reset(formData);
     }
   }, [form, branch]);
-  // // Mock branch data - in real app, fetch based on params.id
-  // const branch = {
-  //   id: params.id,
-  //   name: 'Downtown Campus',
-  //   address: '456 Church Street, Downtown, ST 12345',
-  //   phone: '+1 (555) 234-5678',
-  //   email: 'downtown@church.com',
-  //   pastor: 'Rev. Michael Davis',
-  //   established: '2015-08-15',
-  //   capacity: 300,
-  //   currentMembers: 245,
-  //   status: 'Active',
-  //   description:
-  //     'Our downtown campus serves the urban community with contemporary worship and community outreach programs.',
-  //   facilities: [
-  //     'Sanctuary',
-  //     'Fellowship Hall',
-  //     "Children's Area",
-  //     'Kitchen',
-  //     'Parking',
-  //     'Sound System',
-  //     'WiFi',
-  //   ],
-  //   serviceSchedule: [
-  //     {
-  //       day: 'Sunday',
-  //       time: '9:00 AM',
-  //       service: 'Morning Worship',
-  //       attendance: 180,
-  //     },
-  //     {
-  //       day: 'Sunday',
-  //       time: '11:00 AM',
-  //       service: 'Contemporary Service',
-  //       attendance: 220,
-  //     },
-  //     {
-  //       day: 'Wednesday',
-  //       time: '7:00 PM',
-  //       service: 'Bible Study',
-  //       attendance: 65,
-  //     },
-  //     {
-  //       day: 'Friday',
-  //       time: '7:00 PM',
-  //       service: 'Youth Meeting',
-  //       attendance: 45,
-  //     },
-  //   ],
-  // };
-  // const departments = [
-  //   {
-  //     id: 1,
-  //     name: 'Worship Ministry',
-  //     head: 'Sarah Wilson',
-  //     members: 12,
-  //     description: 'Leads worship services and music ministry',
-  //     status: 'Active',
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Children's Ministry",
-  //     head: 'Lisa Brown',
-  //     members: 8,
-  //     description: "Ministry focused on children's spiritual development",
-  //     status: 'Active',
-  //   },
-  //   {
-  //     id: 3,
-  //     name: 'Youth Ministry',
-  //     head: 'David Johnson',
-  //     members: 6,
-  //     description: 'Engaging teenagers in faith and community',
-  //     status: 'Active',
-  //   },
-  //   {
-  //     id: 4,
-  //     name: 'Outreach Ministry',
-  //     head: 'Maria Garcia',
-  //     members: 15,
-  //     description: 'Community outreach and evangelism programs',
-  //     status: 'Active',
-  //   },
-  // ];
-  const activities = [
-    {
-      date: '2024-12-20',
-      activity: 'Christmas Service Planning',
-      participants: 25,
-    },
-    { date: '2024-12-18', activity: 'Community Food Drive', participants: 40 },
-    { date: '2024-12-15', activity: 'Youth Christmas Party', participants: 35 },
-    {
-      date: '2024-12-12',
-      activity: 'Bible Study Leadership Training',
-      participants: 12,
-    },
-  ];
-  const getFacilityIcon = (facility: string) => {
-    switch (facility.toLowerCase()) {
-      case 'sanctuary':
-        return <Building className="h-4 w-4" />;
-      case 'fellowship hall':
-        return <Users className="h-4 w-4" />;
-      case "children's area":
-        return <Heart className="h-4 w-4" />;
-      case 'kitchen':
-        return <Coffee className="h-4 w-4" />;
-      case 'parking':
-        return <Car className="h-4 w-4" />;
-      case 'sound system':
-        return <Music className="h-4 w-4" />;
-      case 'wifi':
-        return <Wifi className="h-4 w-4" />;
-      default:
-        return <Building className="h-4 w-4" />;
-    }
-  };
   const { register, handleSubmit } = useForm({
     defaultValues: {
       query: searchQuery,
     },
   });
-  const PAGE_SIZE = 10;
   // Narrow selectedStatusQuery to only "active" | "inactive" | "suspended" | "pending" | undefined
   const statusFilter:
     | 'active'
@@ -484,17 +211,31 @@ export default function BranchDetailsPage({
     isLoading: isLoadingSchedules,
     isError: isErrorSchedules,
     error: errorSchedules,
-  } = useFetchServiceSchedules({
+  } = useFetchBranchServiceSchedules({
     page: 1,
-    limit: 10,
+    limit: PAGE_SIZE,
     search: '',
-    day: '',
-    type: '',
+    // day: '',
+    // type: '',
     branchId: id,
-    status: 'active',
+    // status: 'active',
   });
-  console.log('schedules--->', schedules);
-
+  const {
+    data: activities,
+    isLoading: isLoadingActivities,
+    isError: isErrorActivities,
+    error: errorActivities,
+  } = useFetchBranchActivities({
+    branchId: id,
+    page: 1,
+    limit: PAGE_SIZE,
+    search: '',
+    // type,
+    // status,
+    // dateFrom,
+    // dateTo,
+  });
+  // Delete user mutation
   const {
     mutateAsync: deleteUserMutation,
     isPending: isPendingDeleteUser,
@@ -597,8 +338,10 @@ export default function BranchDetailsPage({
               <CardContent>
                 <div className="font-bold text-2xl">{branch?.members}</div>
                 <p className="text-muted-foreground text-xs">
-                  {Math.round((branch?.members / branch?.capacity) * 100)}%
-                  capacity
+                  {Math.round(
+                    ((branch?.members ?? 0) / (branch?.capacity ?? 1)) * 100
+                  )}
+                  % capacity
                 </p>
               </CardContent>
             </Card>
@@ -657,12 +400,11 @@ export default function BranchDetailsPage({
             </Card>
           </div>
           <Tabs className="space-y-4" defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="members">Members</TabsTrigger>
               <TabsTrigger value="departments">Departments</TabsTrigger>
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
-              <TabsTrigger value="facilities">Facilities</TabsTrigger>
               <TabsTrigger value="activities">Activities</TabsTrigger>
             </TabsList>
             <TabsContent className="space-y-6" value="overview">
@@ -900,7 +642,10 @@ export default function BranchDetailsPage({
                       </div>
                       <Progress
                         className="w-full"
-                        value={(branch?.members / branch?.capacity) * 100}
+                        value={
+                          ((branch?.members ?? 0) / (branch?.capacity ?? 1)) *
+                          100
+                        }
                       />
                     </div>
                     {isEditing && (
@@ -1291,6 +1036,7 @@ export default function BranchDetailsPage({
                           <TableHead>Duration</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Avg. Attendance</TableHead>
+                          <TableHead>Facilitator</TableHead>
                           <TableHead>Location</TableHead>
                           <TableHead>Start Date</TableHead>
                           <TableHead>End Date</TableHead>
@@ -1316,6 +1062,11 @@ export default function BranchDetailsPage({
                             </TableCell>
                             <TableCell>
                               {service?.formattedAttendance}
+                            </TableCell>
+                            <TableCell>
+                              {service?.facilitator?.firstName
+                                ? `${service.facilitator.firstName} ${service.facilitator.lastName}`
+                                : 'Not Assigned'}
                             </TableCell>
                             <TableCell>
                               {capitalizeFirstLetterOfEachWord(
@@ -1365,141 +1116,6 @@ export default function BranchDetailsPage({
                 </div>
               )}
             </TabsContent>
-            <TabsContent className="space-y-6" value="facilities">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium text-lg">
-                    Facilities & Amenities
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Available facilities and resources
-                  </p>
-                </div>
-                <Dialog
-                  onOpenChange={setIsFacilityDialogOpen}
-                  open={isFacilityDialogOpen}
-                >
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Facility
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Add New Facility</DialogTitle>
-                      <DialogDescription>
-                        Create a new facility for this branch
-                      </DialogDescription>
-                    </DialogHeader>
-                    <AddAssetForm
-                      onCloseDialog={() => setIsFacilityDialogOpen(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>Condition</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Next Maintenance</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {assets.map((asset) => (
-                      <TableRow className="hover:bg-gray-50" key={asset.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="rounded-lg bg-gray-100 p-2">
-                              {getAssetIcon(asset.type)}
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {asset.name}
-                              </div>
-                              <div className="text-gray-500 text-sm">
-                                {asset.location}
-                              </div>
-                              <div className="text-gray-500 text-sm">
-                                Serial: {asset.serialNumber}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{asset.type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            ${asset.value.toLocaleString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {getConditionBadge(asset.condition)}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span className="text-gray-900 text-sm">
-                              {new Date(
-                                asset.nextMaintenance
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button className="h-8 w-8 p-0" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Asset
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Calendar className="mr-2 h-4 w-4" />
-                                Schedule Maintenance
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Wrench className="mr-2 h-4 w-4" />
-                                Maintenance History
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Asset
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {assets.length === 0 && (
-                <div className="py-12 text-center">
-                  <Building className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
-                    No assets found
-                  </h3>
-                  <p className="text-gray-500">
-                    Try adjusting your search or filter criteria.
-                  </p>
-                </div>
-              )}
-            </TabsContent>
             <TabsContent className="space-y-6" value="activities">
               <div className="flex items-center justify-between">
                 <div>
@@ -1531,41 +1147,94 @@ export default function BranchDetailsPage({
                   </DialogContent>
                 </Dialog>
               </div>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Activity</TableHead>
-                        <TableHead>Participants</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {activities.map((activity, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">
-                            {activity.date}
-                          </TableCell>
-                          <TableCell>{activity.activity}</TableCell>
-                          <TableCell>{activity.participants}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button size="sm" variant="outline">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+              {isErrorActivities && <RenderApiError error={errorActivities} />}
+              {/* {isErrorDeleteUser && <RenderApiError error={errorDeleteUser} />} */}
+              {isLoadingActivities ? (
+                <SpinnerLoader description="Loading activities..." />
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Activity</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Participants</TableHead>
+                          <TableHead>Facilitator</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Start Time</TableHead>
+                          <TableHead>End Time</TableHead>
+                          <TableHead>Budget</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {activities?.activities?.map((activity) => (
+                          <TableRow key={activity?._id}>
+                            <TableCell className="font-medium">
+                              {activity?.date
+                                ? formatToNewDate(new Date(activity?.date))
+                                : 'Not Provided'}
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(activity?.activity)}
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(activity?.type)}
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(activity?.status)}
+                            </TableCell>
+                            <TableCell>{activity?.participants}</TableCell>
+                            <TableCell>
+                              {activity?.facilitator?.firstName
+                                ? `${activity.facilitator.firstName} ${activity.facilitator.lastName}`
+                                : 'Not Assigned'}
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetterOfEachWord(
+                                activity?.location ?? ''
+                              ) || 'Not Provided'}
+                            </TableCell>
+                            <TableCell>{activity?.startTime}</TableCell>
+                            <TableCell>{activity?.endTime}</TableCell>
+                            <TableCell>{activity?.budget}</TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(
+                                activity?.description ?? ''
+                              ) || 'Not Provided'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="outline">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+              {activities?.activities?.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No activities found
+                  </h3>
+                  <p className="text-gray-500">
+                    Try adjusting your search or filter criteria.
+                  </p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </>

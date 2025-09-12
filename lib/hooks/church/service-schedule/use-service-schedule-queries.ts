@@ -4,26 +4,36 @@ import type {
   ServiceSchedule,
   ServiceScheduleAddResponse,
   ServiceScheduleListResponse,
-  ServiceScheduleStatsResponse,
 } from '@/lib/types/service-schedule';
 import type { AddServiceSchedulePayload } from '@/lib/validations/service-schedule';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-/* ========== CREATE SERVICE SCHEDULE ========== */
-const createServiceSchedule = async (
-  payload: AddServiceSchedulePayload
-): Promise<ServiceScheduleAddResponse> => {
-  const { data } = await apiClient.post('/church/service-schedules', payload);
+/* ========== CREATE SERVICE SCHEDULE FOR BRANCH ========== */
+const createBranchServiceSchedule = async ({
+  branchId,
+  payload,
+}: {
+  branchId: string;
+  payload: AddServiceSchedulePayload;
+}): Promise<ServiceScheduleAddResponse> => {
+  const { data } = await apiClient.post(
+    `/church/branches/${branchId}/service-schedules`,
+    payload
+  );
   return data;
 };
 
-export const useCreateServiceSchedule = () => {
+export const useCreateBranchServiceSchedule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: createServiceSchedule,
-    onSuccess: () => {
+    mutationFn: createBranchServiceSchedule,
+    onSuccess: (_data, variables) => {
+      // Invalidate both branch-specific and general queries
       queryClient.invalidateQueries({ queryKey: ['service-schedules'] });
+      queryClient.invalidateQueries({
+        queryKey: ['branch-service-schedules', variables.branchId],
+      });
       queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
       toast.success('Service schedule has been created successfully.', {
         style: successToastStyle,
@@ -32,8 +42,53 @@ export const useCreateServiceSchedule = () => {
   });
 };
 
-/* ========== FETCH SERVICE SCHEDULES ========== */
-interface FetchServiceSchedulesParams {
+/* ========== FETCH BRANCH SERVICE SCHEDULES ========== */
+interface FetchBranchServiceSchedulesParams {
+  branchId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  day?: string;
+  type?: string;
+  status?: 'active' | 'inactive' | 'all';
+}
+
+const fetchBranchServiceSchedules = async ({
+  branchId,
+  page = 1,
+  limit = 10,
+  search = '',
+  day,
+  type,
+  status,
+}: FetchBranchServiceSchedulesParams): Promise<ServiceScheduleListResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (day) params.append('day', day);
+  if (type) params.append('type', type);
+  if (status) params.append('status', status);
+
+  const { data } = await apiClient.get(
+    `/church/branches/${branchId}/service-schedules?${params.toString()}`
+  );
+  return data;
+};
+
+export const useFetchBranchServiceSchedules = (
+  params: FetchBranchServiceSchedulesParams
+) => {
+  return useQuery({
+    queryKey: ['branch-service-schedules', params.branchId, params],
+    queryFn: () => fetchBranchServiceSchedules(params),
+    enabled: !!params.branchId, // only fetch if branchId is provided
+  });
+};
+
+/* ========== FETCH ALL SERVICE SCHEDULES (BACKWARD COMPATIBILITY) ========== */
+interface FetchAllServiceSchedulesParams {
   page?: number;
   limit?: number;
   search?: string;
@@ -43,7 +98,7 @@ interface FetchServiceSchedulesParams {
   status?: 'active' | 'inactive';
 }
 
-const fetchServiceSchedules = async ({
+const fetchAllServiceSchedules = async ({
   page = 1,
   limit = 10,
   search = '',
@@ -51,7 +106,7 @@ const fetchServiceSchedules = async ({
   type,
   branchId,
   status,
-}: FetchServiceSchedulesParams): Promise<ServiceScheduleListResponse> => {
+}: FetchAllServiceSchedulesParams): Promise<ServiceScheduleListResponse> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
@@ -61,6 +116,7 @@ const fetchServiceSchedules = async ({
   if (type) params.append('type', type);
   if (branchId) params.append('branchId', branchId);
   if (status) params.append('status', status);
+
   const { data } = await apiClient.get(
     `/church/service-schedules?${params.toString()}`
   );
@@ -68,15 +124,43 @@ const fetchServiceSchedules = async ({
 };
 
 export const useFetchServiceSchedules = (
-  params: FetchServiceSchedulesParams = {}
+  params: FetchAllServiceSchedulesParams = {}
 ) => {
   return useQuery({
     queryKey: ['service-schedules', params],
-    queryFn: () => fetchServiceSchedules(params),
+    queryFn: () => fetchAllServiceSchedules(params),
   });
 };
 
-/* ========== FETCH SERVICE SCHEDULE BY ID ========== */
+/* ========== FETCH SERVICE SCHEDULE BY ID FROM BRANCH ========== */
+const fetchBranchServiceScheduleById = async ({
+  branchId,
+  scheduleId,
+}: {
+  branchId: string;
+  scheduleId: string;
+}): Promise<{ schedule: ServiceSchedule; branch: any }> => {
+  const { data } = await apiClient.get(
+    `/church/branches/${branchId}/service-schedules/${scheduleId}`
+  );
+  return data;
+};
+
+export const useFetchBranchServiceScheduleById = ({
+  branchId,
+  scheduleId,
+}: {
+  branchId: string;
+  scheduleId: string;
+}) => {
+  return useQuery({
+    queryKey: ['branch-service-schedule', branchId, scheduleId],
+    queryFn: () => fetchBranchServiceScheduleById({ branchId, scheduleId }),
+    enabled: !!branchId && !!scheduleId, // only fetch if both IDs are provided
+  });
+};
+
+/* ========== FETCH SERVICE SCHEDULE BY ID (BACKWARD COMPATIBILITY) ========== */
 const fetchServiceScheduleById = async (
   scheduleId: string
 ): Promise<ServiceSchedule> => {
@@ -94,7 +178,52 @@ export const useFetchServiceScheduleById = (scheduleId: string) => {
   });
 };
 
-/* ========== UPDATE SERVICE SCHEDULE BY ID ========== */
+/* ========== UPDATE SERVICE SCHEDULE BY ID IN BRANCH ========== */
+const updateBranchServiceScheduleById = async ({
+  branchId,
+  scheduleId,
+  payload,
+}: {
+  branchId: string;
+  scheduleId: string;
+  payload: Partial<AddServiceSchedulePayload>;
+}): Promise<{ schedule: ServiceSchedule; branch: any; message: string }> => {
+  const { data } = await apiClient.put(
+    `/church/branches/${branchId}/service-schedules/${scheduleId}`,
+    payload
+  );
+  return data;
+};
+
+export const useUpdateBranchServiceScheduleById = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateBranchServiceScheduleById,
+    onSuccess: (_data, variables) => {
+      // Invalidate multiple query patterns
+      queryClient.invalidateQueries({ queryKey: ['service-schedules'] });
+      queryClient.invalidateQueries({
+        queryKey: ['branch-service-schedules', variables.branchId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          'branch-service-schedule',
+          variables.branchId,
+          variables.scheduleId,
+        ],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['service-schedule', variables.scheduleId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
+      toast.success('Service schedule has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== UPDATE SERVICE SCHEDULE BY ID (BACKWARD COMPATIBILITY) ========== */
 const updateServiceScheduleById = async ({
   scheduleId,
   payload,
@@ -126,7 +255,60 @@ export const useUpdateServiceScheduleById = (scheduleId: string) => {
   });
 };
 
-/* ========== DELETE SERVICE SCHEDULE BY ID ========== */
+/* ========== DELETE SERVICE SCHEDULE BY ID FROM BRANCH ========== */
+const deleteBranchServiceScheduleById = async ({
+  branchId,
+  scheduleId,
+  options,
+}: {
+  branchId: string;
+  scheduleId: string;
+  options?: { force?: boolean };
+}): Promise<{ message: string; schedule?: ServiceSchedule; branch?: any }> => {
+  const params = new URLSearchParams();
+  if (options?.force) params.append('force', 'true');
+
+  const url = params.toString()
+    ? `/church/branches/${branchId}/service-schedules/${scheduleId}?${params.toString()}`
+    : `/church/branches/${branchId}/service-schedules/${scheduleId}`;
+
+  const { data } = await apiClient.delete(url);
+  return data;
+};
+
+export const useDeleteBranchServiceScheduleById = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteBranchServiceScheduleById,
+    onSuccess: (_data, variables) => {
+      // Invalidate multiple query patterns
+      queryClient.invalidateQueries({ queryKey: ['service-schedules'] });
+      queryClient.invalidateQueries({
+        queryKey: ['branch-service-schedules', variables.branchId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          'branch-service-schedule',
+          variables.branchId,
+          variables.scheduleId,
+        ],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['service-schedule', variables.scheduleId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
+
+      const message = variables.options?.force
+        ? 'Service schedule has been permanently deleted.'
+        : 'Service schedule has been deactivated successfully.';
+      toast.success(message, {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== DELETE SERVICE SCHEDULE BY ID (BACKWARD COMPATIBILITY) ========== */
 const deleteServiceScheduleById = async (
   scheduleId: string,
   options?: { force?: boolean }
@@ -160,146 +342,5 @@ export const useDeleteServiceScheduleById = () => {
         style: successToastStyle,
       });
     },
-  });
-};
-
-/* ========== FETCH SERVICE SCHEDULE STATISTICS ========== */
-interface FetchServiceScheduleStatsParams {
-  branchId?: string;
-}
-
-const fetchServiceScheduleStats = async ({
-  branchId,
-}: FetchServiceScheduleStatsParams = {}): Promise<ServiceScheduleStatsResponse> => {
-  const params = new URLSearchParams();
-  if (branchId) params.append('branchId', branchId);
-  const url = params.toString()
-    ? `/church/service-schedules/stats?${params.toString()}`
-    : '/church/service-schedules/stats';
-  const { data } = await apiClient.get(url);
-  return data;
-};
-
-export const useFetchServiceScheduleStats = (
-  params: FetchServiceScheduleStatsParams = {}
-) => {
-  return useQuery({
-    queryKey: ['service-schedule-stats', params],
-    queryFn: () => fetchServiceScheduleStats(params),
-  });
-};
-
-/* ========== UPDATE ATTENDANCE ========== */
-const updateAttendance = async ({
-  scheduleId,
-  attendance,
-}: {
-  scheduleId: string;
-  attendance: number;
-}): Promise<{ schedule: ServiceSchedule; message: string }> => {
-  const { data } = await apiClient.patch(
-    `/church/service-schedules/${scheduleId}/attendance`,
-    {
-      attendance,
-    }
-  );
-  return data;
-};
-
-export const useUpdateAttendance = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updateAttendance,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['service-schedules'] });
-      queryClient.invalidateQueries({
-        queryKey: ['service-schedule', variables.scheduleId],
-      });
-      queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
-      toast.success('Attendance has been updated successfully.', {
-        style: successToastStyle,
-      });
-    },
-  });
-};
-
-/* ========== BULK OPERATIONS ========== */
-const bulkUpdateServiceSchedules = async ({
-  scheduleIds,
-  payload,
-}: {
-  scheduleIds: string[];
-  payload: Partial<AddServiceSchedulePayload>;
-}): Promise<{ message: string; updatedCount: number }> => {
-  const { data } = await apiClient.patch('/church/service-schedules/bulk-update', {
-    scheduleIds,
-    payload,
-  });
-  return data;
-};
-
-export const useBulkUpdateServiceSchedules = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: bulkUpdateServiceSchedules,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['service-schedules'] });
-      queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
-      toast.success(
-        `${data.updatedCount} service schedules updated successfully.`,
-        {
-          style: successToastStyle,
-        }
-      );
-    },
-  });
-};
-
-const bulkDeleteServiceSchedules = async (
-  scheduleIds: string[]
-): Promise<{ message: string; deletedCount: number }> => {
-  const { data } = await apiClient.delete('/church/service-schedules/bulk-delete', {
-    data: { scheduleIds },
-  });
-  return data;
-};
-
-export const useBulkDeleteServiceSchedules = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: bulkDeleteServiceSchedules,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['service-schedules'] });
-      queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
-      toast.success(
-        `${data.deletedCount} service schedules deleted successfully.`,
-        {
-          style: successToastStyle,
-        }
-      );
-    },
-  });
-};
-
-/* ========== GET WEEKLY SCHEDULE ========== */
-const fetchWeeklySchedule = async (
-  branchId?: string
-): Promise<{
-  weeklySchedule: Record<string, ServiceSchedule[]>;
-  totalServices: number;
-}> => {
-  const params = new URLSearchParams();
-  if (branchId) params.append('branchId', branchId);
-  const url = params.toString()
-    ? `/church/service-schedules/weekly?${params.toString()}`
-    : '/church/service-schedules/weekly';
-  const { data } = await apiClient.get(url);
-  return data;
-};
-
-export const useFetchWeeklySchedule = (branchId?: string) => {
-  return useQuery({
-    queryKey: ['weekly-schedule', branchId],
-    queryFn: () => fetchWeeklySchedule(branchId),
   });
 };
