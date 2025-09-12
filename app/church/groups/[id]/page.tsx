@@ -47,7 +47,6 @@ import {
   Edit,
   Mail,
   MapPin,
-  MessageSquare,
   Phone,
   Target,
   TrendingUp,
@@ -183,7 +182,7 @@ export default function GroupDetailsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/dashboard/groups">
+          <Link href="/church/groups">
             <Button size="sm" variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Groups
@@ -375,11 +374,11 @@ export default function GroupDetailsPage({
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label className="font-medium text-sm">Category</Label>
+                <Label className="mr-4 font-medium text-sm">Category</Label>
                 <Badge variant="outline">{groupDetails.category}</Badge>
               </div>
               <div className="space-y-2">
-                <Label className="font-medium text-sm">Status</Label>
+                <Label className="mr-4 font-medium text-sm">Status</Label>
                 <Badge
                   variant={
                     groupDetails.status === 'Active' ? 'default' : 'secondary'
@@ -396,7 +395,7 @@ export default function GroupDetailsPage({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="font-medium text-sm">Start Date</Label>
+                <Label className="mr-4 font-medium text-sm">Start Date</Label>
                 <span className="text-sm">
                   {new Date(groupDetails.startDate).toLocaleDateString()}
                 </span>
@@ -456,16 +455,6 @@ export default function GroupDetailsPage({
                   {new Date(groupDetails.leader.joinDate).toLocaleDateString()}
                 </span>
               </div>
-            </div>
-            <div className="flex space-x-2">
-              <Button className="flex-1" size="sm" variant="outline">
-                <Phone className="mr-2 h-4 w-4" />
-                Call
-              </Button>
-              <Button className="flex-1" size="sm" variant="outline">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Message
-              </Button>
             </div>
           </CardContent>
         </Card>
