@@ -56,7 +56,7 @@ export interface ServiceSchedule {
     | 'saturday';
   time: string;
   service: string;
-  formattedAttendance?: number;
+  attendance?: number;
   type:
     | 'worship'
     | 'prayer'
@@ -65,7 +65,7 @@ export interface ServiceSchedule {
     | 'children'
     | 'special'
     | 'fellowship';
-  formattedDuration?: number; // in minutes
+  duration?: number; // in minutes
   facilitator?: UserResponse;
   location?: string;
   recurring: boolean;

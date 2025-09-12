@@ -87,15 +87,6 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
-            {/* <Link href="/pricing/church">
-              <Button
-                className="hover:bg-blue-50 dark:hover:bg-gray-800"
-                variant="ghost"
-              >
-                Pricing
-              </Button>
-            </Link> */}
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild className="cursor-pointer">
                 <Button
@@ -107,19 +98,19 @@ export default function LandingPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <Link href="/pricing/member">
+                <Link href="/shared/pricing/member">
                   <DropdownMenuItem className="cursor-pointer">
                     Member Pricing
                   </DropdownMenuItem>
                 </Link>
-                <Link href="/pricing/church">
+                <Link href="/shared/pricing/church">
                   <DropdownMenuItem className="cursor-pointer">
                     Church Pricing
                   </DropdownMenuItem>
                 </Link>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Link href="/request-demo">
+            <Link href="/shared/request-demo">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl">
                 Free Demo
               </Button>
@@ -158,7 +149,7 @@ export default function LandingPage() {
             growth all in one place.
           </p>
           <div className="flex flex-col justify-center gap-6 sm:flex-row">
-            <Link href="/request-demo">
+            <Link href="/shared/request-demo">
               <Button
                 className="transform bg-gradient-to-r from-blue-600 to-purple-600 px-10 py-4 text-lg shadow-xl transition-all duration-300 hover:scale-105 hover:from-blue-700 hover:to-purple-700 hover:shadow-2xl"
                 size="lg"
@@ -436,7 +427,7 @@ export default function LandingPage() {
             Join hundreds of churches already using ChurchHub to streamline
             operations and focus on what matters most - ministry.
           </p>
-          <Link href="/request-demo">
+          <Link href="/shared/request-demo">
             <Button
               className="transform bg-white px-12 py-4 text-lg text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-gray-100 hover:shadow-3xl"
               size="lg"

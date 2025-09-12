@@ -23,7 +23,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useCreateBranchActivity } from '@/lib/hooks/church/activity/use-activity-queries';
+import {
+  useCreateBranchActivity,
+  useUpdateBranchActivityById,
+} from '@/lib/hooks/church/activity/use-activity-queries';
+import type { Activity } from '@/lib/types/activity';
 import type { UserResponse } from '@/lib/types/user';
 import {
   ACTIVITY_STATUS_OPTIONS,
@@ -36,30 +40,48 @@ import {
 } from '@/lib/validations/activity';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-interface AddActivityFormProps {
+interface ActivityFormProps {
   onCloseDialog: () => void;
+  activity?: Activity; // Optional activity for edit mode
+  mode?: 'add' | 'edit'; // Form mode
 }
 
-export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
+export function ActivityForm({
+  onCloseDialog,
+  activity,
+  mode = 'add',
+}: ActivityFormProps) {
   const { id } = useParams();
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
+  // Hooks for both create and update
   const {
-    mutateAsync: registerActivityMutation,
-    isPending,
-    isError,
-    error,
+    mutateAsync: createActivityMutation,
+    isPending: isCreating,
+    isError: isCreateError,
+    error: createError,
   } = useCreateBranchActivity();
+  const {
+    mutateAsync: updateActivityMutation,
+    isPending: isUpdating,
+    isError: isUpdateError,
+    error: updateError,
+  } = useUpdateBranchActivityById();
+  // Determine which mutation is pending/errored
+  const isPending = isCreating || isUpdating;
+  const isError = isCreateError || isUpdateError;
+  const error = createError || updateError;
   const activityForm = useForm<AddActivityPayload>({
     resolver: zodResolver(addActivitySchema),
     defaultValues: {
       activity: '',
       participants: '',
       type: 'event',
+      date: '',
       status: 'planned',
       startTime: '',
       endTime: '',
@@ -70,17 +92,50 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
     },
   });
   const { reset } = activityForm;
+  // Effect to populate form when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && activity) {
+      reset({
+        activity: activity?.activity ?? '',
+        participants:
+          activity?.participants !== undefined
+            ? String(activity.participants)
+            : '',
+        type: activity?.type ?? 'event',
+        status: activity?.status ?? 'planned',
+        date: activity?.date ?? '',
+        startTime: activity?.startTime ?? '',
+        endTime: activity?.endTime ?? '',
+        location: activity?.location ?? '',
+        facilitator:
+          typeof activity?.facilitator === 'string'
+            ? activity.facilitator
+            : (activity?.facilitator?._id ?? ''),
+        budget: activity?.budget !== undefined ? String(activity.budget) : '',
+        description: activity?.description ?? '',
+      });
+    }
+  }, [mode, activity, reset]);
   const onSubmitActivityForm = async (payload: AddActivityPayload) => {
-    await registerActivityMutation({
-      branchId: id ? String(id) : '',
-      payload,
-    });
+    if (mode === 'edit' && activity) {
+      await updateActivityMutation({
+        branchId: id ? String(id) : '',
+        activityId: activity._id,
+        payload,
+      });
+    } else {
+      await createActivityMutation({
+        branchId: id ? String(id) : '',
+        payload,
+      });
+    }
     onCloseDialog();
     reset();
   };
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
+    setSelectedMember(null);
   };
   return (
     <>
@@ -273,10 +328,10 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
                       className="w-full"
                       onChange={(member) => {
                         setSelectedMember(member);
-                        field.onChange(member?._id || ''); // ✅ Store only the ID
+                        field.onChange(member?._id || '');
                       }}
                       placeholder="Search and select a facilitator"
-                      value={selectedMember} // ✅ Use state for display
+                      value={selectedMember}
                     />
                   </FormControl>
                   <FormMessage />
@@ -327,7 +382,13 @@ export function AddActivityForm({ onCloseDialog }: AddActivityFormProps) {
               disabled={!activityForm.formState.isValid || isPending}
               type="submit"
             >
-              {isPending ? 'Adding activity...' : 'Add Activity'}
+              {isPending
+                ? mode === 'edit'
+                  ? 'Updating activity...'
+                  : 'Adding activity...'
+                : mode === 'edit'
+                  ? 'Update Activity'
+                  : 'Add Activity'}
             </Button>
           </div>
         </form>
