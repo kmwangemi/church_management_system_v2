@@ -668,7 +668,7 @@ export default function SmallGroupsPage() {
                               asChild
                               className="cursor-pointer"
                             >
-                              <Link href={`/dashboard/groups/${123}`}>
+                              <Link href={`/church/groups/${123}`}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Group
                               </Link>

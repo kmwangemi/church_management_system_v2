@@ -201,7 +201,7 @@ export default function DepartmentDetailsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/dashboard/departments">
+          <Link href="/church/departments">
             <Button size="sm" variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Departments
@@ -352,6 +352,17 @@ export default function DepartmentDetailsPage({
                           id="meetingTime"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="budget">Budget</Label>
+                        <Input defaultValue={department.budget} id="budget" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="established">Established</Label>
+                        <Input
+                          defaultValue={department.established}
+                          id="established"
+                        />
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -370,6 +381,12 @@ export default function DepartmentDetailsPage({
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
                         {department.meetingDay}s at {department.meetingTime}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        Budget: KES {department.budgetUsed.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -428,24 +445,6 @@ export default function DepartmentDetailsPage({
                       {new Date(department.head.joinDate).toLocaleDateString()}
                     </span>
                   </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    className="flex-1 bg-transparent"
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Phone className="mr-2 h-4 w-4" />
-                    Call
-                  </Button>
-                  <Button
-                    className="flex-1 bg-transparent"
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email
-                  </Button>
                 </div>
               </CardContent>
             </Card>
