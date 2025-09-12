@@ -28,7 +28,9 @@ import {
   YAxis,
 } from 'recharts';
 // import { Badge } from '@/components/ui/badge';
+import RenderApiError from '@/components/api-error';
 import { AddDepartmentForm } from '@/components/forms/add-department-form';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -65,88 +67,6 @@ import {
   capitalizeFirstLetterOfEachWord,
 } from '@/lib/utils';
 import Link from 'next/link';
-
-// Mock data
-// const departments = [
-//   {
-//     id: 1,
-//     name: 'Worship & Music',
-//     head: 'Sarah Johnson',
-//     members: 25,
-//     budget: 15_000,
-//     activities: 12,
-//     established: '2020',
-//     status: 'Active',
-//     growth: 15,
-//     icon: Music,
-//     description: 'Leading worship services and music ministry',
-//   },
-//   {
-//     id: 2,
-//     name: "Children's Ministry",
-//     head: 'Michael Brown',
-//     members: 18,
-//     budget: 8000,
-//     activities: 8,
-//     established: '2018',
-//     status: 'Active',
-//     growth: 22,
-//     icon: Baby,
-//     description: "Nurturing children's spiritual growth",
-//   },
-//   {
-//     id: 3,
-//     name: 'Youth Ministry',
-//     head: 'Lisa Davis',
-//     members: 15,
-//     budget: 12_000,
-//     activities: 15,
-//     established: '2019',
-//     status: 'Active',
-//     growth: 8,
-//     icon: Gamepad2,
-//     description: 'Engaging teenagers in faith and community',
-//   },
-//   {
-//     id: 4,
-//     name: 'Outreach & Missions',
-//     head: 'David Wilson',
-//     members: 22,
-//     budget: 20_000,
-//     activities: 6,
-//     established: '2017',
-//     status: 'Active',
-//     growth: 5,
-//     icon: Heart,
-//     description: 'Serving the community and global missions',
-//   },
-//   {
-//     id: 5,
-//     name: 'Adult Education',
-//     head: 'Jennifer Lee',
-//     members: 12,
-//     budget: 5000,
-//     activities: 10,
-//     established: '2021',
-//     status: 'Growing',
-//     growth: 30,
-//     icon: BookOpen,
-//     description: 'Bible studies and adult learning programs',
-//   },
-//   {
-//     id: 6,
-//     name: 'Prayer Ministry',
-//     head: 'Robert Taylor',
-//     members: 20,
-//     budget: 3000,
-//     activities: 4,
-//     established: '2016',
-//     status: 'Active',
-//     growth: -2,
-//     icon: Headphones,
-//     description: 'Coordinating prayer requests and intercession',
-//   },
-// ];
 
 const departmentBudgets = [
   { name: 'Worship', budget: 15_000, spent: 12_000 },
@@ -224,9 +144,9 @@ export default function DepartmentsPage() {
   });
   const {
     data: departments,
-    // isLoading: isLoadingDepartments,
-    // isError: isErrorDepartments,
-    // error: errorDepartments,
+    isLoading: isLoadingDepartments,
+    isError: isErrorDepartments,
+    error: errorDepartments,
   } = useFetchDepartments(page, searchQuery);
 
   // const handleResetQueries = () => {
@@ -515,63 +435,94 @@ export default function DepartmentsPage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="growing">Growing</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {/* Departments Grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {departments?.departments.map((dept) => (
-              <Card key={dept?._id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      {capitalizeFirstLetterOfEachWord(dept.departmentName)}
-                    </CardTitle>
-                    <Badge variant={dept?.isActive ? 'default' : 'secondary'}>
-                      {dept?.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    {capitalizeFirstLetter(dept?.description)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
+          {isErrorDepartments && <RenderApiError error={errorDepartments} />}
+          {isLoadingDepartments ? (
+            <SpinnerLoader description="Loading departments..." />
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {departments?.departments.map((dept) => (
+                <Card key={dept?._id}>
+                  <CardHeader>
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">
-                        Department Head
-                      </span>
-                      <span className="text-muted-foreground text-sm">
-                        {dept?.leaderId?.firstName
-                          ? `${dept.leaderId.firstName} ${dept.leaderId.lastName}`
-                          : 'Not Assigned'}
-                      </span>
+                      <CardTitle className="text-lg">
+                        {capitalizeFirstLetterOfEachWord(dept.departmentName)}
+                      </CardTitle>
+                      <Badge variant={dept?.isActive ? 'default' : 'secondary'}>
+                        {dept?.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">Members</span>
-                      <span className="text-muted-foreground text-sm">
-                        {dept?.members || 0}
-                      </span>
+                    <CardDescription>
+                      {capitalizeFirstLetter(dept?.description)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">
+                          Department Head
+                        </span>
+                        <span className="text-muted-foreground text-sm">
+                          {dept?.leaderId?.firstName
+                            ? `${dept.leaderId.firstName} ${dept.leaderId.lastName}`
+                            : 'Not Assigned'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">Members</span>
+                        <span className="text-muted-foreground text-sm">
+                          {dept?.members || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">Budget</span>
+                        <span className="text-muted-foreground text-sm">
+                          {dept?.budget || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">Branch</span>
+                        <span className="text-muted-foreground text-sm">
+                          {dept?.branchId
+                            ? capitalizeFirstLetterOfEachWord(
+                                dept?.branchId?.branchName
+                              )
+                            : 'All'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-4 flex items-center space-x-2">
-                    <Link href={`/dashboard/departments/${dept._id}`}>
+                    <div className="mt-4 flex items-center space-x-2">
+                      <Link href={`/church/departments/${dept._id}`}>
+                        <Button size="sm" variant="outline">
+                          <Eye className="mr-1 h-4 w-4" />
+                          View Department
+                        </Button>
+                      </Link>
                       <Button size="sm" variant="outline">
-                        <Eye className="mr-1 h-4 w-4" />
-                        View Department
+                        <Trash2 className="mr-1 h-4 w-4" />
+                        Delete
                       </Button>
-                    </Link>
-                    <Button size="sm" variant="outline">
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          {departments?.departments?.length === 0 && (
+            <div className="py-12 text-center">
+              <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                No departments found
+              </h3>
+              <p className="text-gray-500">
+                Try adjusting your search or filter criteria.
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

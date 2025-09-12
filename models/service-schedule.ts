@@ -171,20 +171,20 @@ ServiceScheduleSchema.pre('save', function (next) {
 });
 
 // Virtual for formatted duration
-ServiceScheduleSchema.virtual('formattedDuration').get(function () {
-  if (!this.duration) return 'Not specified';
-  const hours = Math.floor(this.duration / 60);
-  const minutes = this.duration % 60;
-  if (hours === 0) return `${minutes} minutes`;
-  if (minutes === 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
-  return `${hours}h ${minutes}m`;
-});
+// ServiceScheduleSchema.virtual('formattedDuration').get(function () {
+//   if (!this.duration) return 'Not specified';
+//   const hours = Math.floor(this.duration / 60);
+//   const minutes = this.duration % 60;
+//   if (hours === 0) return `${minutes} minutes`;
+//   if (minutes === 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
+//   return `${hours}h ${minutes}m`;
+// });
 
-// Virtual for formatted attendance
-ServiceScheduleSchema.virtual('formattedAttendance').get(function () {
-  if (!this.attendance) return 'Not recorded';
-  return new Intl.NumberFormat('en-KE').format(this.attendance);
-});
+// // Virtual for formatted attendance
+// ServiceScheduleSchema.virtual('formattedAttendance').get(function () {
+//   if (!this.attendance) return 'Not recorded';
+//   return new Intl.NumberFormat('en-KE').format(this.attendance);
+// });
 
 ServiceScheduleSchema.set('toJSON', { virtuals: true });
 ServiceScheduleSchema.set('toObject', { virtuals: true });

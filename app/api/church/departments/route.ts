@@ -51,7 +51,7 @@ async function getDepartmentHandler(
     const skip = (page - 1) * limit;
     const [departments, total] = await Promise.all([
       DepartmentModel.find(query)
-        // .populate('churchId', 'churchName address country')
+        .populate('branchId', 'branchName address')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),

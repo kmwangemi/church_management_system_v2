@@ -2,6 +2,7 @@
 
 import RenderApiError from '@/components/api-error';
 import { MultiSelect } from '@/components/multi-select';
+import { NumberInput } from '@/components/number-input';
 import { TimeInput } from '@/components/time-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,6 +48,7 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
     defaultValues: {
       departmentName: '',
       leaderId: undefined,
+      budget: '',
       meetingDay: [],
       meetingTime: [],
       description: '',
@@ -144,6 +146,21 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
                     placeholder="Select meeting times"
                     value={field.value}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="budget"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Budget (KES) <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <NumberInput placeholder="1000" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

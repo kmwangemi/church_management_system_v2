@@ -1,4 +1,4 @@
-import type { Pagination } from '@/lib/types';
+import type { Address, Pagination } from '@/lib/types';
 
 export interface DepartmentAddResponse {
   churchId: string;
@@ -7,6 +7,7 @@ export interface DepartmentAddResponse {
   departmentName: string;
   meetingDay: string[];
   meetingTime: string;
+  budget: number;
   description: string;
   isActive: boolean;
   _id: string;
@@ -21,8 +22,7 @@ export interface Department {
   branchId: {
     _id: string;
     branchName: string;
-    address: string;
-    country: string;
+    address: Address;
   };
   leaderId: {
     _id: string;
@@ -36,6 +36,7 @@ export interface Department {
   meetingDay: string[];
   meetingTime: string;
   members?: number;
+  budget?: number;
   description: string;
   isActive: boolean;
   createdAt: Date;

@@ -24,7 +24,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useCreateBranchServiceSchedule } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
+import {
+  useCreateBranchServiceSchedule,
+  useUpdateBranchServiceScheduleById,
+} from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
+import type { ServiceSchedule } from '@/lib/types/service-schedule';
 import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,
@@ -37,26 +41,41 @@ import {
 } from '@/lib/validations/service-schedule';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-interface AddServiceScheduleFormProps {
+interface ServiceScheduleFormProps {
   onCloseDialog: () => void;
+  serviceSchedule?: ServiceSchedule; // Optional service schedule for edit mode
+  mode?: 'add' | 'edit'; // Form mode
 }
 
-export function AddServiceScheduleForm({
+export function ServiceScheduleForm({
   onCloseDialog,
-}: AddServiceScheduleFormProps) {
+  serviceSchedule,
+  mode = 'add',
+}: ServiceScheduleFormProps) {
   const { id } = useParams();
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
+  // Hooks for both create and update
   const {
-    mutateAsync: registerServiceScheduleMutation,
-    isPending,
-    isError,
-    error,
+    mutateAsync: createServiceScheduleMutation,
+    isPending: isCreating,
+    isError: isCreateError,
+    error: createError,
   } = useCreateBranchServiceSchedule();
+  const {
+    mutateAsync: updateServiceScheduleMutation,
+    isPending: isUpdating,
+    isError: isUpdateError,
+    error: updateError,
+  } = useUpdateBranchServiceScheduleById();
+  // Determine which mutation is pending/errored
+  const isPending = isCreating || isUpdating;
+  const isError = isCreateError || isUpdateError;
+  const error = createError || updateError;
   const serviceScheduleForm = useForm<AddServiceSchedulePayload>({
     resolver: zodResolver(addServiceScheduleSchema),
     defaultValues: {
@@ -76,19 +95,57 @@ export function AddServiceScheduleForm({
     },
   });
   const { reset } = serviceScheduleForm;
+  // Effect to populate form when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && serviceSchedule) {
+      reset({
+        day: serviceSchedule?.day,
+        time: serviceSchedule?.time,
+        service: serviceSchedule?.service,
+        type: serviceSchedule?.type,
+        duration:
+          serviceSchedule?.duration !== undefined
+            ? String(serviceSchedule.duration)
+            : '',
+        attendance:
+          serviceSchedule?.attendance !== undefined
+            ? String(serviceSchedule.attendance)
+            : '',
+        startDate: serviceSchedule?.startDate,
+        endDate: serviceSchedule?.endDate,
+        recurring: serviceSchedule?.recurring,
+        isActive: serviceSchedule?.isActive,
+        facilitator:
+          typeof serviceSchedule?.facilitator === 'string'
+            ? serviceSchedule.facilitator
+            : (serviceSchedule?.facilitator?._id ?? ''),
+        location: serviceSchedule?.location,
+        notes: serviceSchedule?.notes,
+      });
+    }
+  }, [mode, serviceSchedule, reset]);
   const onSubmitServiceScheduleForm = async (
     payload: AddServiceSchedulePayload
   ) => {
-    await registerServiceScheduleMutation({
-      branchId: id ? String(id) : '',
-      payload,
-    });
+    if (mode === 'edit' && serviceSchedule) {
+      await updateServiceScheduleMutation({
+        branchId: id ? String(id) : '',
+        scheduleId: serviceSchedule._id,
+        payload,
+      });
+    } else {
+      await createServiceScheduleMutation({
+        branchId: id ? String(id) : '',
+        payload,
+      });
+    }
     onCloseDialog();
     reset();
   };
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
+    setSelectedMember(null);
   };
   return (
     <>
@@ -238,10 +295,10 @@ export function AddServiceScheduleForm({
                       className="w-full"
                       onChange={(member) => {
                         setSelectedMember(member);
-                        field.onChange(member?._id || ''); // ✅ Store only the ID
+                        field.onChange(member?._id || '');
                       }}
                       placeholder="Search and select a facilitator"
-                      value={selectedMember} // ✅ Use state for display
+                      value={selectedMember}
                     />
                   </FormControl>
                   <FormMessage />
@@ -379,8 +436,12 @@ export function AddServiceScheduleForm({
               type="submit"
             >
               {isPending
-                ? 'Adding service schedule...'
-                : 'Add Service Schedule'}
+                ? mode === 'edit'
+                  ? 'Updating service schedule...'
+                  : 'Adding service schedule...'
+                : mode === 'edit'
+                  ? 'Update Service Schedule'
+                  : 'Add Service Schedule'}
             </Button>
           </div>
         </form>

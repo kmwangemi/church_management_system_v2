@@ -2,10 +2,11 @@
 
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
-import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
-import { AddActivityForm } from '@/components/forms/add-activity-form';
+import { DeleteActivityDialog } from '@/components/dialogs/delete-activity-dialog';
+import { DeleteScheduleDialog } from '@/components/dialogs/delete-schedule-dialog';
+import { ActivityForm } from '@/components/forms/activity-form';
 import { AddDepartmentForm } from '@/components/forms/add-department-form';
-import { AddServiceScheduleForm } from '@/components/forms/add-service-schedule-form';
+import { ServiceScheduleForm } from '@/components/forms/service-schedule-form';
 import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { PhoneInput } from '@/components/phone-number-input';
@@ -58,14 +59,21 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useFetchBranchActivities } from '@/lib/hooks/church/activity/use-activity-queries';
+import {
+  useDeleteBranchActivityById,
+  useFetchBranchActivities,
+} from '@/lib/hooks/church/activity/use-activity-queries';
 import {
   useFetchBranchById,
   useFetchBranchDepartments,
   useFetchBranchMembers,
 } from '@/lib/hooks/church/branch/use-branch-queries';
-import { useFetchBranchServiceSchedules } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
-import { useDeleteUserById } from '@/lib/hooks/church/user/use-user-queries';
+import {
+  useDeleteBranchServiceScheduleById,
+  useFetchBranchServiceSchedules,
+} from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
+import type { Activity } from '@/lib/types/activity';
+import type { ServiceSchedule } from '@/lib/types/service-schedule';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
@@ -106,6 +114,7 @@ export default function BranchDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [isServiceScheduleDialogOpen, setIsServiceScheduleDialogOpen] =
     useState(false);
@@ -114,7 +123,11 @@ export default function BranchDetailsPage({
     null
   );
   const [selectedTab, setSelectedTab] = useState('all');
-  const [deletingUser, setDeletingUser] = useState<UserResponse | null>(null);
+  const [selectedSchedule, setSelectedSchedule] =
+    useState<ServiceSchedule | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
+    null
+  );
   const searchParams = useSearchParams();
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
@@ -235,13 +248,20 @@ export default function BranchDetailsPage({
     // dateFrom,
     // dateTo,
   });
-  // Delete user mutation
+  // Delete schedule mutation
   const {
-    mutateAsync: deleteUserMutation,
-    isPending: isPendingDeleteUser,
-    isError: isErrorDeleteUser,
-    error: errorDeleteUser,
-  } = useDeleteUserById();
+    mutateAsync: deleteScheduleMutation,
+    isPending: isPendingDeleteSchedule,
+    isError: isErrorDeleteSchedule,
+    error: errorDeleteSchedule,
+  } = useDeleteBranchServiceScheduleById();
+  // Delete activity mutation
+  const {
+    mutateAsync: deleteActivityMutation,
+    isPending: isPendingDeleteActivity,
+    isError: isErrorDeleteActivity,
+    error: errorDeleteActivity,
+  } = useDeleteBranchActivityById();
   // Filter users based on selected tab and status
   const filteredUsers = useMemo(() => {
     if (!users?.users) return [];
@@ -278,13 +298,68 @@ export default function BranchDetailsPage({
       ).length,
     };
   }, [users]);
-  const handleDeleteUser = async (userId: string) => {
-    await deleteUserMutation(userId);
-    setDeletingUser(null);
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    await deleteScheduleMutation({
+      branchId: id,
+      scheduleId,
+      options: { force: true },
+    });
+    setSelectedSchedule(null);
   };
-  const openDeleteDialog = (user: UserResponse) => {
-    setDeletingUser(user);
+  const openScheduleDeleteDialog = (schedule: ServiceSchedule) => {
+    setSelectedSchedule(schedule);
   };
+  const handleDeleteActivity = async (activityId: string) => {
+    await deleteActivityMutation({
+      branchId: id,
+      activityId,
+      options: { force: true },
+    });
+    setSelectedActivity(null);
+  };
+  const openActivityDeleteDialog = (activity: Activity) => {
+    setSelectedActivity(activity);
+  };
+  // Function to open dialog in edit mode
+  const handleEditServiceSchedule = (serviceSchedule: ServiceSchedule) => {
+    setSelectedSchedule(serviceSchedule);
+    setDialogMode('edit');
+    setIsServiceScheduleDialogOpen(true);
+  };
+  // Function to open dialog in add mode
+  const handleAddServiceSchedule = () => {
+    setSelectedSchedule(null);
+    setDialogMode('add');
+    setIsServiceScheduleDialogOpen(true);
+  };
+  // Function to close dialog and reset state
+  const handleCloseScheduleDialog = () => {
+    setIsServiceScheduleDialogOpen(false);
+    setSelectedSchedule(null);
+    setDialogMode('add');
+  };
+
+  // Function to open dialog in add mode
+  const handleAddActivity = () => {
+    setSelectedActivity(null);
+    setDialogMode('add');
+    setIsActivityDialogOpen(true);
+  };
+
+  // Function to open dialog in edit mode
+  const handleEditActivity = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setDialogMode('edit');
+    setIsActivityDialogOpen(true);
+  };
+
+  // Function to close dialog and reset state
+  const handleCloseActivityDialog = () => {
+    setIsActivityDialogOpen(false);
+    setSelectedActivity(null);
+    setDialogMode('add');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -732,9 +807,6 @@ export default function BranchDetailsPage({
                       </TabsTrigger>
                     </TabsList>
                     {isErrorUsers && <RenderApiError error={errorUsers} />}
-                    {isErrorDeleteUser && (
-                      <RenderApiError error={errorDeleteUser} />
-                    )}
                     {isLoadingUsers ? (
                       <SpinnerLoader description="Loading members..." />
                     ) : (
@@ -851,14 +923,6 @@ export default function BranchDetailsPage({
                                             Edit User
                                           </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                          className="cursor-pointer text-red-600"
-                                          onClick={() => openDeleteDialog(user)}
-                                        >
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          Delete User
-                                        </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                   </TableCell>
@@ -957,6 +1021,12 @@ export default function BranchDetailsPage({
                               {dept?.members || 0}
                             </span>
                           </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">Budget</span>
+                            <span className="text-muted-foreground text-sm">
+                              {dept?.budget || 0}
+                            </span>
+                          </div>
                         </div>
                         <div className="mt-4 flex items-center space-x-2">
                           <Link href={`/church/departments/${dept._id}`}>
@@ -965,10 +1035,6 @@ export default function BranchDetailsPage({
                               View Department
                             </Button>
                           </Link>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="mr-1 h-4 w-4" />
-                            Delete
-                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -996,32 +1062,43 @@ export default function BranchDetailsPage({
                   </p>
                 </div>
                 <Dialog
-                  onOpenChange={setIsServiceScheduleDialogOpen}
+                  onOpenChange={(open) => {
+                    if (open) setIsServiceScheduleDialogOpen(open);
+                    else handleCloseScheduleDialog();
+                  }}
                   open={isServiceScheduleDialogOpen}
                 >
                   <DialogTrigger asChild>
-                    <Button>
+                    <Button onClick={handleAddServiceSchedule}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Service
+                      Add Service Schedule
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Add New Service Schedule</DialogTitle>
+                      <DialogTitle>
+                        {dialogMode === 'edit'
+                          ? 'Edit Service Schedule'
+                          : 'Add New Service Schedule'}
+                      </DialogTitle>
                       <DialogDescription>
-                        Create a new service schedule for this branch
+                        {dialogMode === 'edit'
+                          ? 'Update the service schedule details'
+                          : 'Create a new service schedule for this branch'}
                       </DialogDescription>
                     </DialogHeader>
-                    <AddServiceScheduleForm
-                      onCloseDialog={() =>
-                        setIsServiceScheduleDialogOpen(false)
-                      }
+                    <ServiceScheduleForm
+                      mode={dialogMode}
+                      onCloseDialog={handleCloseScheduleDialog}
+                      serviceSchedule={selectedSchedule ?? undefined}
                     />
                   </DialogContent>
                 </Dialog>
               </div>
               {isErrorSchedules && <RenderApiError error={errorSchedules} />}
-              {/* {isErrorDeleteUser && <RenderApiError error={errorDeleteUser} />} */}
+              {isErrorDeleteSchedule && (
+                <RenderApiError error={errorDeleteSchedule} />
+              )}
               {isLoadingSchedules ? (
                 <SpinnerLoader description="Loading service schedules..." />
               ) : (
@@ -1033,7 +1110,7 @@ export default function BranchDetailsPage({
                           <TableHead>Day</TableHead>
                           <TableHead>Service</TableHead>
                           <TableHead>Time</TableHead>
-                          <TableHead>Duration</TableHead>
+                          <TableHead>Duration (Minutes)</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Avg. Attendance</TableHead>
                           <TableHead>Facilitator</TableHead>
@@ -1056,13 +1133,11 @@ export default function BranchDetailsPage({
                               )}
                             </TableCell>
                             <TableCell>{service.time}</TableCell>
-                            <TableCell>{service?.formattedDuration}</TableCell>
+                            <TableCell>{service?.duration}</TableCell>
                             <TableCell>
                               {capitalizeFirstLetter(service?.type)}
                             </TableCell>
-                            <TableCell>
-                              {service?.formattedAttendance}
-                            </TableCell>
+                            <TableCell>{service?.attendance}</TableCell>
                             <TableCell>
                               {service?.facilitator?.firstName
                                 ? `${service.facilitator.firstName} ${service.facilitator.lastName}`
@@ -1087,15 +1162,45 @@ export default function BranchDetailsPage({
                               {capitalizeFirstLetter(service?.notes ?? '') ||
                                 'Not Provided'}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Button size="sm" variant="outline">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    className="h-8 w-8 p-0"
+                                    variant="ghost"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    asChild
+                                    className="cursor-pointer"
+                                  >
+                                    <Button
+                                      onClick={() =>
+                                        handleEditServiceSchedule(service)
+                                      }
+                                      size="sm"
+                                      variant="ghost"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      Edit Service
+                                    </Button>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="cursor-pointer text-red-600"
+                                    onClick={() =>
+                                      openScheduleDeleteDialog(service)
+                                    }
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Service
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1125,30 +1230,43 @@ export default function BranchDetailsPage({
                   </p>
                 </div>
                 <Dialog
-                  onOpenChange={setIsActivityDialogOpen}
+                  onOpenChange={(open) => {
+                    if (open) setIsActivityDialogOpen(open);
+                    else handleCloseActivityDialog();
+                  }}
                   open={isActivityDialogOpen}
                 >
                   <DialogTrigger asChild>
-                    <Button>
+                    <Button onClick={handleAddActivity}>
                       <Plus className="mr-2 h-4 w-4" />
                       Log Activity
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Add New Activity</DialogTitle>
+                      <DialogTitle>
+                        {dialogMode === 'edit'
+                          ? 'Edit Activity'
+                          : 'Add New Activity'}
+                      </DialogTitle>
                       <DialogDescription>
-                        Create a new activity for this branch
+                        {dialogMode === 'edit'
+                          ? 'Update the activity details'
+                          : 'Create a new activity for this branch'}
                       </DialogDescription>
                     </DialogHeader>
-                    <AddActivityForm
-                      onCloseDialog={() => setIsActivityDialogOpen(false)}
+                    <ActivityForm
+                      activity={selectedActivity ?? undefined}
+                      mode={dialogMode}
+                      onCloseDialog={handleCloseActivityDialog}
                     />
                   </DialogContent>
                 </Dialog>
               </div>
               {isErrorActivities && <RenderApiError error={errorActivities} />}
-              {/* {isErrorDeleteUser && <RenderApiError error={errorDeleteUser} />} */}
+              {isErrorDeleteActivity && (
+                <RenderApiError error={errorDeleteActivity} />
+              )}
               {isLoadingActivities ? (
                 <SpinnerLoader description="Loading activities..." />
               ) : (
@@ -1207,15 +1325,45 @@ export default function BranchDetailsPage({
                                 activity?.description ?? ''
                               ) || 'Not Provided'}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Button size="sm" variant="outline">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    className="h-8 w-8 p-0"
+                                    variant="ghost"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    asChild
+                                    className="cursor-pointer"
+                                  >
+                                    <Button
+                                      onClick={() =>
+                                        handleEditActivity(activity)
+                                      }
+                                      size="sm"
+                                      variant="ghost"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      Edit Activity
+                                    </Button>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="cursor-pointer text-red-600"
+                                    onClick={() =>
+                                      openActivityDeleteDialog(activity)
+                                    }
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Service
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1239,15 +1387,25 @@ export default function BranchDetailsPage({
           </Tabs>
         </>
       )}
-      {/* Delete User Dialog */}
-      <DeleteUserDialog
-        isDeleting={isPendingDeleteUser}
-        onDelete={handleDeleteUser}
+      {/* Delete Schedule Dialog */}
+      <DeleteScheduleDialog
+        isDeleting={isPendingDeleteSchedule}
+        onDelete={handleDeleteSchedule}
         onOpenChange={(open) => {
-          if (!open) setDeletingUser(null);
+          if (!open) setSelectedSchedule(null);
         }}
-        open={!!deletingUser}
-        user={deletingUser}
+        open={!!selectedSchedule}
+        schedule={selectedSchedule}
+      />
+      {/* Delete Activity Dialog */}
+      <DeleteActivityDialog
+        activity={selectedActivity}
+        isDeleting={isPendingDeleteActivity}
+        onDelete={handleDeleteActivity}
+        onOpenChange={(open) => {
+          if (!open) setSelectedActivity(null);
+        }}
+        open={!!selectedActivity}
       />
     </div>
   );

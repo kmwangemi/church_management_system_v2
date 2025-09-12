@@ -15,6 +15,9 @@ interface TimeInputProps
   step?: number; // minutes step (5, 10, 15, 30)
 }
 
+// Regex for HH:mm format at top-level scope
+const hhmmRegex = /^\d{1,2}:\d{2}$/;
+
 const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
   (
     {
@@ -31,23 +34,26 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
     ref
   ) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedTimes, setSelectedTimes] = useState<string[]>(() => {
-      if (multiSelect) {
-        return Array.isArray(value) ? value : value ? [value] : [];
-      }
-      return [];
-    });
-    const [singleTime, setSingleTime] = useState<string>(() => {
-      if (!multiSelect) {
-        return Array.isArray(value) ? value[0] || '' : value || '';
-      }
-      return '';
-    });
+    const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+    const [singleTime, setSingleTime] = useState<string>('');
     const containerRef = useRef<HTMLDivElement>(null);
-    // const inputRef = useRef<HTMLInputElement>(null);
-
+    // Initialize and update state when value prop changes
+    useEffect(() => {
+      if (multiSelect) {
+        const newSelectedTimes = Array.isArray(value)
+          ? value
+          : value
+            ? [value]
+            : [];
+        setSelectedTimes(newSelectedTimes);
+      } else {
+        const newSingleTime = Array.isArray(value)
+          ? value[0] || ''
+          : value || '';
+        setSingleTime(newSingleTime);
+      }
+    }, [value, multiSelect]);
     // Generate time options based on step
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore excessive complexity
     const generateTimeOptions = () => {
       // biome-ignore lint/suspicious/noEvolvingTypes: ignore
       const options = [];
@@ -69,9 +75,7 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
       }
       return options;
     };
-
     const timeOptions = generateTimeOptions();
-
     // Handle clicking outside to close dropdown
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -88,7 +92,6 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
           document.removeEventListener('mousedown', handleClickOutside);
       }
     }, [isOpen]);
-
     const handleTimeSelect = (timeValue: string) => {
       if (multiSelect) {
         const newSelectedTimes = selectedTimes.includes(timeValue)
@@ -102,7 +105,6 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
         setIsOpen(false);
       }
     };
-
     const removeTime = (timeToRemove: string) => {
       if (multiSelect) {
         const newSelectedTimes = selectedTimes.filter(
@@ -112,15 +114,35 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
         onChange?.(newSelectedTimes);
       }
     };
-
+    // Normalize time format (handles different formats from DB)
+    const normalizeTime = (time: string): string => {
+      if (!time) return '';
+      // Handle different time formats that might come from DB
+      if (time.includes('T')) {
+        // ISO string format: "2023-01-01T14:30:00Z" -> "14:30"
+        const dateObj = new Date(time);
+        return `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+      }
+      // Handle HH:mm:ss format -> HH:mm
+      if (time.split(':').length === 3) {
+        return time.substring(0, 5); // Take only HH:mm part
+      }
+      // Handle HH:mm format (already correct)
+      if (hhmmRegex.test(time)) {
+        const [hours, minutes] = time.split(':');
+        return `${hours.padStart(2, '0')}:${minutes}`;
+      }
+      return time;
+    };
     const formatDisplayTime = (time: string) => {
-      if (format24Hour) return time;
-      const [hours, minutes] = time.split(':').map(Number);
+      const normalizedTime = normalizeTime(time);
+      if (!normalizedTime) return '';
+      if (format24Hour) return normalizedTime;
+      const [hours, minutes] = normalizedTime.split(':').map(Number);
       const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
       const ampm = hours >= 12 ? 'PM' : 'AM';
       return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`;
     };
-
     const getDisplayValue = () => {
       if (multiSelect) {
         return selectedTimes.length > 0
@@ -129,13 +151,11 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
       }
       return singleTime ? formatDisplayTime(singleTime) : '';
     };
-
     const getPlaceholderText = () => {
       if (placeholder) return placeholder;
       if (multiSelect) return 'Select times';
       return format24Hour ? 'Select time (24h)' : 'Select time (12h)';
     };
-
     return (
       <div className="relative" ref={containerRef}>
         <div className="relative">
@@ -162,7 +182,6 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
             <Clock className="size-5 cursor-pointer" />
           </button>
         </div>
-
         {/* Multi-select chips */}
         {multiSelect && selectedTimes.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -199,9 +218,14 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
                     typeof option === 'string'
                       ? formatDisplayTime(option)
                       : option.display;
+                  // Normalize both values for comparison
+                  const normalizedTimeValue = normalizeTime(timeValue);
+                  const normalizedSingleTime = normalizeTime(singleTime);
                   const isSelected = multiSelect
-                    ? selectedTimes.includes(timeValue)
-                    : singleTime === timeValue;
+                    ? selectedTimes.some(
+                        (t) => normalizeTime(t) === normalizedTimeValue
+                      )
+                    : normalizedSingleTime === normalizedTimeValue;
                   return (
                     <button
                       className={cn(
@@ -210,7 +234,7 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
                           'bg-primary text-primary-foreground hover:bg-primary/90'
                       )}
                       key={timeValue}
-                      onClick={() => handleTimeSelect(timeValue)}
+                      onClick={() => handleTimeSelect(normalizedTimeValue)}
                       type="button"
                     >
                       {displayTime}
@@ -229,8 +253,3 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
 TimeInput.displayName = 'TimeInput';
 
 export { TimeInput };
-
-
-
-// With form integration single time selection
-// <TimeInput {...field} />;
