@@ -580,6 +580,29 @@ export const SERVICE_TYPE_OPTIONS = [
   { label: 'Fellowship', value: 'fellowship' },
 ];
 
+export const DEPARTMENT_CATEGORY_OPTIONS = [
+  { value: 'ministry', label: 'Ministry' },
+  { value: 'administration', label: 'Administration' },
+  { value: 'operations', label: 'Operations' },
+  { value: 'education', label: 'Education' },
+  { value: 'outreach', label: 'Outreach' },
+  { value: 'support', label: 'Support' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'facilities', label: 'Facilities' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'communications', label: 'Communications' },
+  { value: 'pastoral_care', label: 'Pastoral Care' },
+  { value: 'missions', label: 'Missions' },
+  { value: 'youth', label: 'Youth' },
+  { value: 'children', label: 'Children' },
+  { value: 'worship', label: 'Worship' },
+  { value: 'discipleship', label: 'Discipleship' },
+  { value: 'community', label: 'Community' },
+  { value: 'events', label: 'Events' },
+  { value: 'security', label: 'Security' },
+  { value: 'volunteer_coordination', label: 'Volunteer Coordination' },
+];
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {
