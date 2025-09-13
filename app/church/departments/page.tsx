@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 // import { Badge } from '@/components/ui/badge';
 import RenderApiError from '@/components/api-error';
+import { DeleteDepartmentDialog } from '@/components/dialogs/delete-department-dialog';
 import { AddDepartmentForm } from '@/components/forms/add-department-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +62,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFetchDepartments } from '@/lib/hooks/church/department/use-department-queries';
+import {
+  useDeleteDepartmentById,
+  useFetchDepartments,
+} from '@/lib/hooks/church/department/use-department-queries';
+import type { Department } from '@/lib/types/department';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
@@ -131,6 +136,8 @@ export default function DepartmentsPage() {
   // const pathname = usePathname();
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deletingDepartment, setDeletingDepartment] =
+    useState<Department | null>(null);
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
   const {
@@ -148,6 +155,19 @@ export default function DepartmentsPage() {
     isError: isErrorDepartments,
     error: errorDepartments,
   } = useFetchDepartments(page, searchQuery);
+  const {
+    mutateAsync: deleteDepartmentMutation,
+    isPending: isPendingDeleteDepartment,
+    isError: isErrorDeleteDepartment,
+    error: errorDeleteDepartment,
+  } = useDeleteDepartmentById();
+  const handleDeleteDepartment = async (departmentId: string) => {
+    await deleteDepartmentMutation({ departmentId, options: { force: true } });
+    setDeletingDepartment(null);
+  };
+  const openDeleteDialog = (department: Department) => {
+    setDeletingDepartment(department);
+  };
 
   // const handleResetQueries = () => {
   //   resetSearchInput();
@@ -441,6 +461,9 @@ export default function DepartmentsPage() {
           </div>
           {/* Departments Grid */}
           {isErrorDepartments && <RenderApiError error={errorDepartments} />}
+          {isErrorDeleteDepartment && (
+            <RenderApiError error={errorDeleteDepartment} />
+          )}
           {isLoadingDepartments ? (
             <SpinnerLoader description="Loading departments..." />
           ) : (
@@ -475,13 +498,13 @@ export default function DepartmentsPage() {
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Members</span>
                         <span className="text-muted-foreground text-sm">
-                          {dept?.members || 0}
+                          {dept?.members?.length || 0}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Budget</span>
                         <span className="text-muted-foreground text-sm">
-                          {dept?.budget || 0}
+                          {dept?.totalBudget || 0}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -502,7 +525,11 @@ export default function DepartmentsPage() {
                           View Department
                         </Button>
                       </Link>
-                      <Button size="sm" variant="outline">
+                      <Button
+                        onClick={() => openDeleteDialog(dept)}
+                        size="sm"
+                        variant="destructive"
+                      >
                         <Trash2 className="mr-1 h-4 w-4" />
                         Delete
                       </Button>
@@ -519,12 +546,23 @@ export default function DepartmentsPage() {
                 No departments found
               </h3>
               <p className="text-gray-500">
-                Try adjusting your search or filter criteria.
+                Couldn’t find any departments. Try adjusting your filters or add
+                a new department.
               </p>
             </div>
           )}
         </TabsContent>
       </Tabs>
+      {/* Delete Department Dialog */}
+      <DeleteDepartmentDialog
+        department={deletingDepartment}
+        isDeleting={isPendingDeleteDepartment}
+        onDelete={handleDeleteDepartment}
+        onOpenChange={(open) => {
+          if (!open) setDeletingDepartment(null);
+        }}
+        open={!!deletingDepartment}
+      />
     </div>
   );
 }

@@ -14,11 +14,22 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
 import { useRegisterDepartment } from '@/lib/hooks/church/department/use-department-queries';
 import type { UserResponse } from '@/lib/types/user';
-import { MEETING_DAY_OPTIONS } from '@/lib/utils';
+import {
+  DEPARTMENT_CATEGORY_OPTIONS,
+  getRelativeYear,
+  MEETING_DAY_OPTIONS,
+} from '@/lib/utils';
 import {
   type AddDepartmentPayload,
   addDepartmentSchema,
@@ -27,6 +38,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { DatePicker } from '../date-picker';
 
 interface AddDepartmentFormProps {
   onCloseDialog: () => void;
@@ -47,8 +59,11 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
     resolver: zodResolver(addDepartmentSchema),
     defaultValues: {
       departmentName: '',
+      category: undefined,
       leaderId: undefined,
-      budget: '',
+      location: '',
+      establishedDate: '',
+      totalBudget: '',
       meetingDay: [],
       meetingTime: [],
       description: '',
@@ -86,6 +101,36 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
                 <FormControl>
                   <Input placeholder="Choir" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Category <span className="text-red-500">*</span>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="cursor-pointer">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="max-h-[400px] overflow-y-auto">
+                    {DEPARTMENT_CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem
+                        className="cursor-pointer"
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -153,7 +198,31 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
           />
           <FormField
             control={departmentForm.control}
-            name="budget"
+            name="establishedDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Established Date <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <DatePicker
+                    format="long"
+                    maxDate={getRelativeYear(1)}
+                    minDate={getRelativeYear(-30)}
+                    onChange={(date) =>
+                      field.onChange(date ? date.toISOString() : '')
+                    }
+                    placeholder="Select established date"
+                    value={field.value ? new Date(field.value) : undefined}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="totalBudget"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
@@ -168,11 +237,29 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
           />
           <FormField
             control={departmentForm.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Location <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g. Main Sanctuary or Room 101"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
             name="description"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-right" htmlFor="description">
-                  Description
+                  Description <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Textarea
