@@ -1,7 +1,11 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
+import { MultiSelect } from '@/components/multi-select';
+import { NumberInput } from '@/components/number-input';
+import { TimeInput } from '@/components/time-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +24,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -40,8 +52,22 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { UserListInput } from '@/components/user-list-input';
 import { useFetchDepartmentById } from '@/lib/hooks/church/department/use-department-queries';
-import { capitalizeFirstLetterOfEachWord, formatToNewDate } from '@/lib/utils';
+import type { UserResponse } from '@/lib/types/user';
+import {
+  capitalizeFirstLetter,
+  capitalizeFirstLetterOfEachWord,
+  DEPARTMENT_CATEGORY_OPTIONS,
+  formatToNewDate,
+  getRelativeYear,
+  MEETING_DAY_OPTIONS,
+} from '@/lib/utils';
+import {
+  type AddDepartmentPayload,
+  addDepartmentSchema,
+} from '@/lib/validations/department';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Activity,
   ArrowLeft,
@@ -62,7 +88,8 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 export default function DepartmentDetailsPage({
   params,
@@ -71,14 +98,50 @@ export default function DepartmentDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
+    null
+  );
   const {
     data: department,
     isLoading: isLoadingDepartment,
     isError: isErrorDepartment,
     error: errorDepartment,
   } = useFetchDepartmentById(id);
+  const form = useForm<AddDepartmentPayload>({
+    resolver: zodResolver(addDepartmentSchema),
+    defaultValues: {
+      departmentName: '',
+      category: undefined,
+      leaderId: undefined,
+      location: '',
+      establishedDate: '',
+      totalBudget: '',
+      meetingDay: [],
+      meetingTime: [],
+      description: '',
+    },
+  });
+  useEffect(() => {
+    if (department) {
+      const formData: any = {
+        departmentName: capitalizeFirstLetter(department?.departmentName || ''),
+        category: department?.category || '',
+        leaderId: department?.leaderId || '',
+        location: capitalizeFirstLetter(department?.location || ''),
+        totalBudget: department?.totalBudget || '',
+        meetingDay: department?.meetingDay || [],
+        meetingTime: department?.meetingTime || [],
+        // Convert to YYYY-MM-DD format for input type="date"
+        establishedDate: department?.establishedDate
+          ? new Date(department.establishedDate).toISOString().split('T')[0]
+          : '',
+        description: department?.description || '',
+      };
+      form.reset(formData);
+    }
+  }, [form, department]);
 
-  console.log('Fetched Department:', department);
+  console.log('Fetched Department:', JSON.stringify(department));
 
   // // Mock department data - in real app, fetch based on params.id
   // const department = {
@@ -294,7 +357,10 @@ export default function DepartmentDetailsPage({
               <CardContent>
                 <div className="font-bold text-2xl">4</div>
                 <p className="text-muted-foreground text-xs">
-                  Since {formatToNewDate(department?.establishedDate)}
+                  Since{' '}
+                  {department?.establishedDate
+                    ? formatToNewDate(new Date(department.establishedDate))
+                    : 'Not Provided'}
                 </p>
               </CardContent>
             </Card>
@@ -331,132 +397,263 @@ export default function DepartmentDetailsPage({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="deptName">Department Name</Label>
-                          <Input
-                            defaultValue={department?.departmentName}
-                            id="deptName"
+                      <Form {...form}>
+                        <form className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="departmentName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Department Name{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Choir" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="category">Category</Label>
-                          <Select
-                            defaultValue={department?.category.toLowerCase()}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ministry">Ministry</SelectItem>
-                              <SelectItem value="administrative">
-                                Administrative
-                              </SelectItem>
-                              <SelectItem value="service">Service</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="meetingLocation">
-                            Meeting Location
-                          </Label>
-                          <Input
-                            defaultValue={department?.location}
-                            id="meetingLocation"
+                          <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Category{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="cursor-pointer">
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="max-h-[400px] overflow-y-auto">
+                                    {DEPARTMENT_CATEGORY_OPTIONS.map(
+                                      (option) => (
+                                        <SelectItem
+                                          className="cursor-pointer"
+                                          key={option.value}
+                                          value={option.value}
+                                        >
+                                          {option.label}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="meetingDay">Meeting Day</Label>
-                            <Select
-                              defaultValue={
-                                Array.isArray(department?.meetingDay)
-                                  ? department?.meetingDay[0]
-                                  : department?.meetingDay
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="monday">Monday</SelectItem>
-                                <SelectItem value="tuesday">Tuesday</SelectItem>
-                                <SelectItem value="wednesday">
-                                  Wednesday
-                                </SelectItem>
-                                <SelectItem value="thursday">
-                                  Thursday
-                                </SelectItem>
-                                <SelectItem value="friday">Friday</SelectItem>
-                                <SelectItem value="saturday">
-                                  Saturday
-                                </SelectItem>
-                                <SelectItem value="sunday">Sunday</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="meetingTime">Meeting Time</Label>
-                            <Input
-                              defaultValue={
-                                Array.isArray(department?.meetingTime)
-                                  ? department?.meetingTime[0]
-                                  : department?.meetingTime
-                              }
-                              id="meetingTime"
+                          <FormField
+                            control={form.control}
+                            name="leaderId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Leader (Optional)</FormLabel>
+                                <FormControl>
+                                  <UserListInput
+                                    className="w-full"
+                                    onChange={(member) => {
+                                      setSelectedMember(member);
+                                      field.onChange(member?._id || ''); // ✅ Store only the ID
+                                    }}
+                                    placeholder="Search and select a leader"
+                                    value={selectedMember} // ✅ Use state for display
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="meetingDay"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    Meeting day(s){' '}
+                                    <span className="text-red-500">*</span>
+                                  </FormLabel>
+                                  <FormControl>
+                                    <MultiSelect
+                                      onChange={field.onChange}
+                                      options={MEETING_DAY_OPTIONS}
+                                      placeholder="Select meeting day(s)"
+                                      selected={field.value || []}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="meetingTime"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    Meeting Time(s){' '}
+                                    <span className="text-red-500">*</span>
+                                  </FormLabel>
+                                  <FormControl>
+                                    <TimeInput
+                                      multiSelect
+                                      onChange={field.onChange}
+                                      placeholder="Select meeting times"
+                                      value={field.value}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="budget">Budget</Label>
-                            <Input
-                              defaultValue={department?.totalBudget}
-                              id="budget"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="established">Established</Label>
-                            <Input
-                              defaultValue={department?.establishedDate}
-                              id="established"
-                            />
-                          </div>
-                        </div>
-                      </>
+                          <FormField
+                            control={form.control}
+                            name="establishedDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Established Date{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <DatePicker
+                                    format="long"
+                                    maxDate={getRelativeYear(1)}
+                                    minDate={getRelativeYear(-30)}
+                                    onChange={(date) =>
+                                      field.onChange(
+                                        date ? date.toISOString() : ''
+                                      )
+                                    }
+                                    placeholder="Select established date"
+                                    value={
+                                      field.value
+                                        ? new Date(field.value)
+                                        : undefined
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="totalBudget"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Budget (KES){' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <NumberInput placeholder="1000" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="location"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Location{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="e.g. Main Sanctuary or Room 101"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel
+                                  className="text-right"
+                                  htmlFor="description"
+                                >
+                                  Description{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    className="col-span-3"
+                                    id="description"
+                                    placeholder="Enter department description..."
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="col-span-3 col-start-2" />
+                              </FormItem>
+                            )}
+                          />
+                        </form>
+                      </Form>
                     ) : (
                       <>
                         <div className="flex items-center space-x-2">
                           <Building className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            Category: {department?.category}
+                            Category:{' '}
+                            {capitalizeFirstLetterOfEachWord(
+                              department?.category || 'Not Provided'
+                            )}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {department?.location}
+                            {capitalizeFirstLetterOfEachWord(
+                              department?.location || 'Not Provided'
+                            )}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {department?.meetingDay}s at{' '}
-                            {department?.meetingTime}
+                            {department?.meetingDay
+                              ?.map(
+                                (day) =>
+                                  day.charAt(0).toUpperCase() + day.slice(1)
+                              )
+                              .join(', ')}{' '}
+                            at {department?.meetingTime?.join(', ')}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {/* Budget: KES {department.budgetUsed.toLocaleString()} */}
-                            Budget: KES 0
+                            Budget: KES {department?.totalBudget.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
                             Established:{' '}
-                            {new Date(
-                              department?.establishedDate
-                            ).toLocaleDateString()}
+                            {department?.establishedDate
+                              ? new Date(
+                                  department.establishedDate
+                                ).toLocaleDateString()
+                              : 'Not Provided'}
                           </span>
                         </div>
                       </>
@@ -536,7 +733,7 @@ export default function DepartmentDetailsPage({
                     <Textarea defaultValue={department?.description} rows={4} />
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      {department?.description}
+                      {capitalizeFirstLetter(department?.description || 'No description provided.')}
                     </p>
                   )}
                 </CardContent>

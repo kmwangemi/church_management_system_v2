@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -494,166 +495,171 @@ export default function BranchDetailsPage({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="branchName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                Branch Name{' '}
-                                <span className="text-red-500">*</span>
-                              </FormLabel>
-                              <FormControl>
-                                <Input placeholder="Kawangware" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email Address</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter email address"
-                                  type="email"
-                                  {...field}
+                      <Form {...form}>
+                        <form>
+                          <FormField
+                            control={form.control}
+                            name="branchName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Branch Name{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Kawangware" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email Address</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter email address"
+                                    type="email"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Phone Number{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <PhoneInput
+                                    defaultCountry="KE"
+                                    onChange={field.onChange}
+                                    placeholder="Enter phone number"
+                                    value={field.value}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="pastorId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Pastor</FormLabel>
+                                <FormControl>
+                                  <UserListInput
+                                    className="w-full"
+                                    onChange={(member) => {
+                                      setSelectedMember(member);
+                                      field.onChange(member?._id || ''); // ✅ Store only the ID
+                                    }}
+                                    placeholder="Search and select a pastor"
+                                    value={selectedMember} // ✅ Use state for display
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="flex items-center space-x-2">
+                                <MapPin className="h-5 w-5" />
+                                <span>Address Information</span>
+                              </CardTitle>
+                              <CardDescription>
+                                Branch address information
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <FormField
+                                  control={form.control}
+                                  name="address.country"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>
+                                        Country{' '}
+                                        <span className="text-red-500">*</span>
+                                      </FormLabel>
+                                      <FormControl>
+                                        <CountrySelect
+                                          onChange={field.onChange}
+                                          placeholder="Select your country"
+                                          value={field.value}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="phoneNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                Phone Number{' '}
-                                <span className="text-red-500">*</span>
-                              </FormLabel>
-                              <FormControl>
-                                <PhoneInput
-                                  defaultCountry="KE"
-                                  onChange={field.onChange}
-                                  placeholder="Enter phone number"
-                                  value={field.value}
+                                <FormField
+                                  control={form.control}
+                                  name="address.city"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>
+                                        City{' '}
+                                        <span className="text-red-500">*</span>
+                                      </FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="Nairobi"
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="pastorId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Pastor</FormLabel>
-                              <FormControl>
-                                <UserListInput
-                                  className="w-full"
-                                  onChange={(member) => {
-                                    setSelectedMember(member);
-                                    field.onChange(member?._id || ''); // ✅ Store only the ID
-                                  }}
-                                  placeholder="Search and select a pastor"
-                                  value={selectedMember} // ✅ Use state for display
+                                <FormField
+                                  control={form.control}
+                                  name="address.street"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>
+                                        Street Address{' '}
+                                        <span className="text-red-500">*</span>
+                                      </FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="123 Main Street"
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
-                              <MapPin className="h-5 w-5" />
-                              <span>Address Information</span>
-                            </CardTitle>
-                            <CardDescription>
-                              Branch address information
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                              <FormField
-                                control={form.control}
-                                name="address.country"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>
-                                      Country{' '}
-                                      <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                      <CountrySelect
-                                        onChange={field.onChange}
-                                        placeholder="Select your country"
-                                        value={field.value}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="address.city"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>
-                                      City{' '}
-                                      <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input placeholder="Nairobi" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="address.street"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>
-                                      Street Address{' '}
-                                      <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        placeholder="123 Main Street"
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="address.zipCode"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Postal Code</FormLabel>
-                                    <FormControl>
-                                      <Input placeholder="00100" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </>
+                                <FormField
+                                  control={form.control}
+                                  name="address.zipCode"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Postal Code</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="00100" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </form>
+                      </Form>
                     ) : (
                       <>
                         <div className="flex items-center space-x-2">
