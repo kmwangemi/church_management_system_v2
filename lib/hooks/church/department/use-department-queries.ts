@@ -1,9 +1,11 @@
+import type { AddDepartmentMemberPayload } from '@/components/forms/add-department-member-form';
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
 import type {
   Department,
   DepartmentAddResponse,
   DepartmentListResponse,
+  DepartmentMembersResponse,
 } from '@/lib/types/department';
 import type { AddDepartmentPayload } from '@/lib/validations/department';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -127,5 +129,76 @@ export const useDeleteDepartmentById = () => {
         style: successToastStyle,
       });
     },
+  });
+};
+
+/* ========== ADD DEPARTMENT MEMBER ========== */
+const addDepartmentMember = async ({
+  departmentId,
+  payload,
+}: {
+  departmentId: string;
+  payload: AddDepartmentMemberPayload;
+}): Promise<any> => {
+  const { data } = await apiClient.post(
+    `/church/departments/${departmentId}/members`,
+    payload
+  );
+  return data;
+};
+
+export const useAddDepartmentMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addDepartmentMember,
+    onSuccess: () => {
+      // Invalidate department members query
+      queryClient.invalidateQueries({ queryKey: ['department-members'] });
+      toast.success('Department member has been added successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== FETCH DEPARTMENT MEMBER ========== */
+
+interface FetchDepartmentMembersParams {
+  departmentId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+  isActive?: boolean;
+}
+
+const fetchDepartmentMembers = async ({
+  departmentId,
+  page = 1,
+  limit = 20,
+  search = '',
+  role,
+  isActive,
+}: FetchDepartmentMembersParams): Promise<DepartmentMembersResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (role) params.append('role', role);
+  if (isActive !== undefined) params.append('isActive', isActive.toString());
+  const { data } = await apiClient.get(
+    `/church/departments/${departmentId}/members?${params.toString()}`
+  );
+  return data;
+};
+
+export const useFetchDepartmentMembers = (
+  params: FetchDepartmentMembersParams
+) => {
+  return useQuery({
+    queryKey: ['department-members', params.departmentId, params],
+    queryFn: () => fetchDepartmentMembers(params),
+    enabled: !!params.departmentId, // only fetch if departmentId is provided
   });
 };

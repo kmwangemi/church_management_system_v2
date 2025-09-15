@@ -603,6 +603,15 @@ export const DEPARTMENT_CATEGORY_OPTIONS = [
   { value: 'volunteer_coordination', label: 'Volunteer Coordination' },
 ];
 
+export const DEPARTMENT_MEMBER_ROLE_OPTIONS = [
+  { value: 'leader', label: 'Leader' },
+  { value: 'assistant_leader', label: 'Assistant Leader' },
+  { value: 'coordinator', label: 'Coordinator' },
+  { value: 'member', label: 'Member' },
+  { value: 'volunteer', label: 'Volunteer' },
+];
+
+
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;
   if (userId && typeof userId === 'object' && userId.toString) {
