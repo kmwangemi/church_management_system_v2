@@ -9,10 +9,18 @@ import type {
 } from '@/models/department';
 
 export interface DepartmentMember {
-  userId: string;
+  _id: string;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+    profilePictureUrl?: string;
+  };
   role: MemberRole;
   skills: string[];
-  joinedDate: Date;
+  joinedDate: string;
   isActive: boolean;
   notes?: string;
 }
@@ -129,4 +137,19 @@ export interface Department {
 export interface DepartmentListResponse {
   departments: Department[];
   pagination: Pagination;
+}
+
+interface DepartmentInfo {
+  id: string;
+  departmentName: string;
+  description?: string;
+}
+
+export interface DepartmentMembersResponse {
+  success: boolean;
+  data: {
+    members: DepartmentMember[];
+    department: DepartmentInfo;
+    pagination: Pagination;
+  };
 }

@@ -2,6 +2,7 @@
 
 import RenderApiError from '@/components/api-error';
 import { DatePicker } from '@/components/date-picker';
+import { AddDepartmentMemberForm } from '@/components/forms/add-department-member-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { MultiSelect } from '@/components/multi-select';
 import { NumberInput } from '@/components/number-input';
@@ -33,7 +34,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -53,13 +53,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { UserListInput } from '@/components/user-list-input';
-import { useFetchDepartmentById } from '@/lib/hooks/church/department/use-department-queries';
+import {
+  useFetchDepartmentById,
+  useFetchDepartmentMembers,
+} from '@/lib/hooks/church/department/use-department-queries';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
   DEPARTMENT_CATEGORY_OPTIONS,
   formatToNewDate,
+  getFirstLetter,
   getRelativeYear,
   MEETING_DAY_OPTIONS,
 } from '@/lib/utils';
@@ -98,6 +102,8 @@ export default function DepartmentDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] =
+    useState(false);
   const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
     null
   );
@@ -142,6 +148,19 @@ export default function DepartmentDetailsPage({
   }, [form, department]);
 
   console.log('Fetched Department:', JSON.stringify(department));
+  const {
+    data: departmentMembers,
+    isLoading: isLoadingDepartmentMembers,
+    isError: isErrorDepartmentMembers,
+    error: errorDepartmentMembers,
+  } = useFetchDepartmentMembers({
+    departmentId: id,
+    page: 1,
+    limit: 10,
+    // search: '',
+    // role: '',
+    // isActive: true,
+  });
 
   // // Mock department data - in real app, fetch based on params.id
   // const department = {
@@ -177,52 +196,52 @@ export default function DepartmentDetailsPage({
   //   ],
   // };
 
-  const departmentMembers = [
-    {
-      id: 1,
-      name: 'John Smith',
-      role: 'Lead Guitarist',
-      email: 'john.smith@email.com',
-      phone: '+1 (555) 234-5678',
-      joinDate: '2021-03-15',
-      status: 'Active',
-      skills: ['Guitar', 'Vocals', 'Music Theory'],
-      avatar: '/placeholder.svg?height=32&width=32',
-    },
-    {
-      id: 2,
-      name: 'Emily Davis',
-      role: 'Vocalist',
-      email: 'emily.davis@email.com',
-      phone: '+1 (555) 345-6789',
-      joinDate: '2021-06-20',
-      status: 'Active',
-      skills: ['Vocals', 'Piano', 'Songwriting'],
-      avatar: '/placeholder.svg?height=32&width=32',
-    },
-    {
-      id: 3,
-      name: 'Michael Brown',
-      role: 'Drummer',
-      email: 'michael.brown@email.com',
-      phone: '+1 (555) 456-7890',
-      joinDate: '2020-11-10',
-      status: 'Active',
-      skills: ['Drums', 'Percussion', 'Audio Engineering'],
-      avatar: '/placeholder.svg?height=32&width=32',
-    },
-    {
-      id: 4,
-      name: 'Lisa Wilson',
-      role: 'Keyboardist',
-      email: 'lisa.wilson@email.com',
-      phone: '+1 (555) 567-8901',
-      joinDate: '2022-01-05',
-      status: 'Active',
-      skills: ['Piano', 'Keyboard', 'Music Arrangement'],
-      avatar: '/placeholder.svg?height=32&width=32',
-    },
-  ];
+  // const departmentMembers = [
+  //   {
+  //     id: 1,
+  //     name: 'John Smith',
+  //     role: 'Lead Guitarist',
+  //     email: 'john.smith@email.com',
+  //     phone: '+1 (555) 234-5678',
+  //     joinDate: '2021-03-15',
+  //     status: 'Active',
+  //     skills: ['Guitar', 'Vocals', 'Music Theory'],
+  //     avatar: '/placeholder.svg?height=32&width=32',
+  //   },
+  //   {
+  //     id: 2,
+  //     name: 'Emily Davis',
+  //     role: 'Vocalist',
+  //     email: 'emily.davis@email.com',
+  //     phone: '+1 (555) 345-6789',
+  //     joinDate: '2021-06-20',
+  //     status: 'Active',
+  //     skills: ['Vocals', 'Piano', 'Songwriting'],
+  //     avatar: '/placeholder.svg?height=32&width=32',
+  //   },
+  //   {
+  //     id: 3,
+  //     name: 'Michael Brown',
+  //     role: 'Drummer',
+  //     email: 'michael.brown@email.com',
+  //     phone: '+1 (555) 456-7890',
+  //     joinDate: '2020-11-10',
+  //     status: 'Active',
+  //     skills: ['Drums', 'Percussion', 'Audio Engineering'],
+  //     avatar: '/placeholder.svg?height=32&width=32',
+  //   },
+  //   {
+  //     id: 4,
+  //     name: 'Lisa Wilson',
+  //     role: 'Keyboardist',
+  //     email: 'lisa.wilson@email.com',
+  //     phone: '+1 (555) 567-8901',
+  //     joinDate: '2022-01-05',
+  //     status: 'Active',
+  //     skills: ['Piano', 'Keyboard', 'Music Arrangement'],
+  //     avatar: '/placeholder.svg?height=32&width=32',
+  //   },
+  // ];
 
   const activities = [
     {
@@ -642,7 +661,8 @@ export default function DepartmentDetailsPage({
                         <div className="flex items-center space-x-2">
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            Budget: KES {department?.totalBudget.toLocaleString()}
+                            Budget: KES{' '}
+                            {department?.totalBudget.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -733,7 +753,9 @@ export default function DepartmentDetailsPage({
                     <Textarea defaultValue={department?.description} rows={4} />
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      {capitalizeFirstLetter(department?.description || 'No description provided.')}
+                      {capitalizeFirstLetter(
+                        department?.description || 'No description provided.'
+                      )}
                     </p>
                   )}
                 </CardContent>
@@ -747,52 +769,27 @@ export default function DepartmentDetailsPage({
                     Manage department membership and roles
                   </p>
                 </div>
-                <Dialog>
+                <Dialog
+                  onOpenChange={setIsAddDepartmentDialogOpen}
+                  open={isAddDepartmentDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button>
                       <UserPlus className="mr-2 h-4 w-4" />
                       Add Member
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add Department Member</DialogTitle>
                       <DialogDescription>
                         Add a member to this department
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="memberSelect">Select Member</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a church member" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="member-1">Jane Doe</SelectItem>
-                            <SelectItem value="member-2">Bob Smith</SelectItem>
-                            <SelectItem value="member-3">
-                              Alice Johnson
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="memberRole">Role in Department</Label>
-                        <Input
-                          id="memberRole"
-                          placeholder="e.g., Vocalist, Guitarist"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="skills">Skills</Label>
-                        <Input
-                          id="skills"
-                          placeholder="e.g., Guitar, Vocals, Piano"
-                        />
-                      </div>
-                      <Button className="w-full">Add Member</Button>
-                    </div>
+                    <AddDepartmentMemberForm
+                      departmentId={id}
+                      onCloseDialog={() => setIsAddDepartmentDialogOpen(false)}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
@@ -810,33 +807,35 @@ export default function DepartmentDetailsPage({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {departmentMembers.map((member) => (
-                        <TableRow key={member.id}>
+                      {departmentMembers?.data?.members?.map((member) => (
+                        <TableRow key={member?._id}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage
-                                  src={member.avatar || '/placeholder.svg'}
+                                  alt={member?.userId?.firstName || 'Member'}
+                                  src={member?.userId?.profilePictureUrl || ''}
                                 />
-                                <AvatarFallback>
-                                  {member.name
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')}
-                                </AvatarFallback>
+                                <AvatarFallback>{`${getFirstLetter(
+                                  member?.userId?.firstName || ''
+                                )}${getFirstLetter(member?.userId?.lastName || '')}`}</AvatarFallback>
                               </Avatar>
                               <div>
-                                <div className="font-medium">{member.name}</div>
+                                <div className="font-medium">{`${capitalizeFirstLetter(
+                                  member?.userId?.firstName || ''
+                                )} ${capitalizeFirstLetter(member?.userId?.lastName || '')}`}</div>
                                 <div className="text-muted-foreground text-sm">
-                                  {member.email}
+                                  {member?.userId?.email}
                                 </div>
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{member.role}</TableCell>
+                          <TableCell>
+                            {capitalizeFirstLetter(member?.role)}
+                          </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {member.skills.map((skill, index) => (
+                              {member?.skills.map((skill, index) => (
                                 <Badge
                                   className="text-xs"
                                   key={index}
@@ -848,17 +847,15 @@ export default function DepartmentDetailsPage({
                             </div>
                           </TableCell>
                           <TableCell>
-                            {new Date(member.joinDate).toLocaleDateString()}
+                            {new Date(member?.joinedDate).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                member.status === 'Active'
-                                  ? 'default'
-                                  : 'secondary'
+                                member?.isActive ? 'default' : 'secondary'
                               }
                             >
-                              {member.status}
+                              {member?.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </TableCell>
                           <TableCell>
