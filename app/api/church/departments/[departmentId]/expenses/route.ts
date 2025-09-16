@@ -14,6 +14,130 @@ interface RouteParams {
   };
 }
 
+// GET /api/church/departments/[departmentId]/expenses - Get department expenses
+async function getExpensesHandler(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
+  const { departmentId } = await params;
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    {
+      requestId,
+      endpoint: `/api/church/departments/${departmentId}/expenses`,
+    },
+    'api'
+  );
+  try {
+    // Check authentication and authorization
+    const authResult = await requireAuth(['superadmin', 'admin'])(request);
+    if (authResult instanceof Response) {
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
+    }
+    const user = authResult;
+    if (!user.user?.churchId) {
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
+    // Validate MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      return NextResponse.json(
+        { error: 'Invalid department ID' },
+        { status: 400 }
+      );
+    }
+    await dbConnect();
+    const { searchParams } = new URL(request.url);
+    const page = Number.parseInt(searchParams.get('page') || '1', 10);
+    const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
+    const category = searchParams.get('category') || '';
+    const search = searchParams.get('search') || '';
+    // Check if department exists and belongs to the user's church
+    const department = await DepartmentModel.findOne({
+      _id: departmentId,
+      churchId: user.user.churchId,
+    }).populate('expenses.approvedBy', 'firstName lastName');
+    if (!department) {
+      return NextResponse.json(
+        { error: 'Department not found' },
+        { status: 404 }
+      );
+    }
+    // Filter expenses based on query parameters
+    let filteredExpenses = [...department.expenses];
+    // Filter by category
+    if (
+      category &&
+      Object.values(ExpenseCategory).includes(category as ExpenseCategory)
+    ) {
+      filteredExpenses = filteredExpenses.filter(
+        (exp) => exp.category === category
+      );
+    }
+    // Filter by search term (description)
+    if (search) {
+      filteredExpenses = filteredExpenses.filter((exp) =>
+        exp.description.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    // Sort by date (most recent first)
+    filteredExpenses.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    // Calculate pagination
+    const total = filteredExpenses.length;
+    const skip = (page - 1) * limit;
+    const paginatedExpenses = filteredExpenses.slice(skip, skip + limit);
+    // Calculate total spent amount from filtered expenses
+    const totalSpent = filteredExpenses.reduce(
+      (sum, exp) => sum + exp.amount,
+      0
+    );
+    // Get budget summary
+    const budgetSummary = {
+      totalBudget: department.totalBudget,
+      totalSpent: department.expenses.reduce((sum, exp) => sum + exp.amount, 0),
+      remainingBudget:
+        department.totalBudget -
+        department.expenses.reduce((sum, exp) => sum + exp.amount, 0),
+      budgetCategories: department.budgetCategories,
+    };
+    contextLogger.info('Department expenses retrieved successfully', {
+      departmentId,
+      totalExpenses: total,
+      page,
+      limit,
+    });
+    return NextResponse.json({
+      expenses: paginatedExpenses,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+      summary: {
+        filteredTotal: totalSpent,
+        departmentName: department.departmentName,
+        ...budgetSummary,
+      },
+    });
+  } catch (error: any) {
+    contextLogger.error('Unexpected error in getExpensesHandler', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // POST /api/church/departments/[departmentId]/expenses - Add expense
 async function addExpenseHandler(
   request: NextRequest,
@@ -166,7 +290,13 @@ async function addExpenseHandler(
   }
 }
 
-// Export the handler wrapped with logging middleware
+// Export the handlers wrapped with logging middleware
+export const GET = withApiLogger(getExpensesHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
+
 export const POST = withApiLogger(addExpenseHandler, {
   logRequests: true,
   logResponses: true,

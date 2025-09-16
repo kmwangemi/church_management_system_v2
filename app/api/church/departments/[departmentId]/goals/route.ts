@@ -200,13 +200,11 @@ async function addGoalHandler(
       description,
       targetDate,
       assignedTo,
-      milestones,
-      createdBy,
     } = body;
     // Validate required fields
-    if (!(title && description && targetDate && createdBy)) {
+    if (!(title && description && targetDate)) {
       return NextResponse.json(
-        { error: 'title, description, targetDate, and createdBy are required' },
+        { error: 'title, description and targetDate are required' },
         { status: 400 }
       );
     }
@@ -229,15 +227,6 @@ async function addGoalHandler(
         { status: 404 }
       );
     }
-    // Process milestones if provided
-    const processedMilestones = milestones
-      ? milestones.map((milestone: any) => ({
-          title: milestone.title,
-          description: milestone.description || undefined,
-          targetDate: new Date(milestone.targetDate),
-          isCompleted: false,
-        }))
-      : [];
     // Create new goal
     const newGoal = {
       _id: new mongoose.Types.ObjectId(),
@@ -246,13 +235,8 @@ async function addGoalHandler(
       targetDate: target,
       status: GoalStatus.PLANNED,
       progress: 0,
-      assignedTo: assignedTo
-        ? assignedTo.map(
-            (userId: string) => new mongoose.Types.ObjectId(userId)
-          )
-        : [],
-      milestones: processedMilestones,
-      createdBy: new mongoose.Types.ObjectId(createdBy),
+      assignedTo,
+      createdBy: user.user.sub,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

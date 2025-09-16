@@ -190,17 +190,28 @@ async function addActivityHandler(
       description,
       type,
       date,
-      duration,
+      startTime,
+      endTime,
       location,
       participants,
-      organizedBy,
       notes,
     } = body;
     // Validate required fields
-    if (!(title && description && type && date && organizedBy)) {
+    if (
+      !(
+        title &&
+        description &&
+        type &&
+        date &&
+        startTime &&
+        endTime &&
+        location
+      )
+    ) {
       return NextResponse.json(
         {
-          error: 'title, description, type, date, and organizedBy are required',
+          error:
+            'title, description, type, date, startTime, endTime and location are required',
         },
         { status: 400 }
       );
@@ -230,12 +241,12 @@ async function addActivityHandler(
       description,
       type,
       date: new Date(date),
-      duration: duration || undefined,
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
       location: location || undefined,
       participants: participants
         ? participants.map((p: string) => new mongoose.Types.ObjectId(p))
         : [],
-      organizedBy: new mongoose.Types.ObjectId(organizedBy),
       notes: notes || undefined,
       isCompleted: false,
       createdAt: new Date(),
@@ -244,7 +255,6 @@ async function addActivityHandler(
     await department.save();
     // Populate the new activity
     await department.populate([
-      { path: 'activities.organizedBy', select: 'firstName lastName' },
       { path: 'activities.participants', select: 'firstName lastName' },
     ]);
     const addedActivity = department.activities.at(-1);

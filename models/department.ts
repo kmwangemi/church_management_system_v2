@@ -100,7 +100,7 @@ export interface IDepartmentActivity {
   endTime?: string;
   location?: string;
   participants: mongoose.Types.ObjectId[];
-  organizedBy: mongoose.Types.ObjectId;
+  // organizedBy: mongoose.Types.ObjectId;
   notes?: string;
   isCompleted: boolean;
   createdAt: Date;
@@ -298,18 +298,17 @@ const ActivitySchema = new Schema<IDepartmentActivity>(
       type: String,
       trim: true,
     },
-
     participants: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
       },
     ],
-    organizedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
+    // organizedBy: {
+    //   type: Schema.Types.ObjectId,
+    //   ref: 'User',
+    //   required: true,
+    // },
     notes: {
       type: String,
       trim: true,

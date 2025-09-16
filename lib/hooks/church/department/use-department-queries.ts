@@ -1,6 +1,6 @@
-import { AddDepartmentActivityPayload } from '@/components/forms/add-department-activity-form';
-import { AddDepartmentExpensePayload } from '@/components/forms/add-department-expense-form';
-import { AddDepartmentGoalPayload } from '@/components/forms/add-department-goal-form';
+import type { AddDepartmentActivityPayload } from '@/components/forms/add-department-activity-form';
+import type { AddDepartmentExpensePayload } from '@/components/forms/add-department-expense-form';
+import type { AddDepartmentGoalPayload } from '@/components/forms/add-department-goal-form';
 import type { AddDepartmentMemberPayload } from '@/components/forms/add-department-member-form';
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
@@ -8,6 +8,8 @@ import type {
   Department,
   DepartmentActivitiesResponse,
   DepartmentAddResponse,
+  DepartmentExpensesResponse,
+  DepartmentGoalsResponse,
   DepartmentListResponse,
   DepartmentMembersResponse,
 } from '@/lib/types/department';
@@ -314,10 +316,6 @@ interface FetchDepartmentExpensesParams {
   limit?: number;
   search?: string;
   category?: string;
-  startDate?: string;
-  endDate?: string;
-  minAmount?: number;
-  maxAmount?: number;
 }
 
 const fetchDepartmentExpenses = async ({
@@ -326,10 +324,6 @@ const fetchDepartmentExpenses = async ({
   limit = 20,
   search = '',
   category,
-  startDate,
-  endDate,
-  minAmount,
-  maxAmount,
 }: FetchDepartmentExpensesParams): Promise<DepartmentExpensesResponse> => {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -337,10 +331,6 @@ const fetchDepartmentExpenses = async ({
   });
   if (search) params.append('search', search);
   if (category) params.append('category', category);
-  if (startDate) params.append('startDate', startDate);
-  if (endDate) params.append('endDate', endDate);
-  if (minAmount !== undefined) params.append('minAmount', minAmount.toString());
-  if (maxAmount !== undefined) params.append('maxAmount', maxAmount.toString());
   const { data } = await apiClient.get(
     `/church/departments/${departmentId}/expenses?${params.toString()}`
   );
