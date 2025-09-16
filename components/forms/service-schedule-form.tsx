@@ -23,13 +23,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import {
   useCreateBranchServiceSchedule,
   useUpdateBranchServiceScheduleById,
 } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
 import type { ServiceSchedule } from '@/lib/types/service-schedule';
-import type { UserResponse } from '@/lib/types/user';
 import {
   getRelativeYear,
   MEETING_DAY_OPTIONS,
@@ -41,7 +40,7 @@ import {
 } from '@/lib/validations/service-schedule';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface ServiceScheduleFormProps {
@@ -56,9 +55,6 @@ export function ServiceScheduleForm({
   mode = 'add',
 }: ServiceScheduleFormProps) {
   const { id } = useParams();
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   // Hooks for both create and update
   const {
     mutateAsync: createServiceScheduleMutation,
@@ -145,7 +141,6 @@ export function ServiceScheduleForm({
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
-    setSelectedMember(null);
   };
   return (
     <>
@@ -284,21 +279,19 @@ export function ServiceScheduleForm({
                 </FormItem>
               )}
             />
+
             <FormField
               control={serviceScheduleForm.control}
-              name="facilitator"
+              name="facilitator" // Form field stores just the user ID string
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Facilitator/Leader</FormLabel>
                   <FormControl>
-                    <UserListInput
+                    <UserCombobox
                       className="w-full"
-                      onChange={(member) => {
-                        setSelectedMember(member);
-                        field.onChange(member?._id || '');
-                      }}
+                      onValueChange={field.onChange} // Use onValueChange for ID
                       placeholder="Search and select a facilitator"
-                      value={selectedMember}
+                      value={field.value} // Pass the ID directly
                     />
                   </FormControl>
                   <FormMessage />

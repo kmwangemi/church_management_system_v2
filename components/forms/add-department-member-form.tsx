@@ -26,13 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import { useAddDepartmentMember } from '@/lib/hooks/church/department/use-department-queries';
-import type { UserResponse } from '@/lib/types/user';
 import { DEPARTMENT_MEMBER_ROLE_OPTIONS, getRelativeYear } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Users } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -56,9 +54,6 @@ export function AddDepartmentMemberForm({
   departmentId,
   onCloseDialog,
 }: AddDepartmentMemberFormProps) {
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   const {
     mutateAsync: addDepartmentMemberMutation,
     isPending,
@@ -101,21 +96,18 @@ export function AddDepartmentMemberForm({
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="userId"
+                name="userId" // Form field stores just the user ID string
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
                       Select Member <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <UserListInput
+                      <UserCombobox
                         className="w-full"
-                        onChange={(member) => {
-                          setSelectedMember(member);
-                          field.onChange(member?._id || ''); // ✅ Store only the ID
-                        }}
+                        onValueChange={field.onChange} // Use onValueChange for ID
                         placeholder="Search and select a member"
-                        value={selectedMember} // ✅ Use state for display
+                        value={field.value} // Pass the ID directly
                       />
                     </FormControl>
                     <FormMessage />

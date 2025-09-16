@@ -1,6 +1,7 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
+import { DatePicker } from '@/components/date-picker';
 import { MultiSelect } from '@/components/multi-select';
 import { NumberInput } from '@/components/number-input';
 import { TimeInput } from '@/components/time-input';
@@ -22,9 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import { useRegisterDepartment } from '@/lib/hooks/church/department/use-department-queries';
-import type { UserResponse } from '@/lib/types/user';
 import {
   DEPARTMENT_CATEGORY_OPTIONS,
   getRelativeYear,
@@ -36,9 +36,7 @@ import {
 } from '@/lib/validations/department';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { DatePicker } from '../date-picker';
 
 interface AddDepartmentFormProps {
   onCloseDialog: () => void;
@@ -46,9 +44,6 @@ interface AddDepartmentFormProps {
 
 export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
   const { id } = useParams();
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   const {
     mutateAsync: registerDepartmentMutation,
     isPending,
@@ -137,19 +132,16 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
           />
           <FormField
             control={departmentForm.control}
-            name="leaderId"
+            name="leaderId" // Form field stores just the user ID string
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Leader (Optional)</FormLabel>
                 <FormControl>
-                  <UserListInput
+                  <UserCombobox
                     className="w-full"
-                    onChange={(member) => {
-                      setSelectedMember(member);
-                      field.onChange(member?._id || ''); // ✅ Store only the ID
-                    }}
+                    onValueChange={field.onChange} // Use onValueChange for ID
                     placeholder="Search and select a leader"
-                    value={selectedMember} // ✅ Use state for display
+                    value={field.value} // Pass the ID directly
                   />
                 </FormControl>
                 <FormMessage />

@@ -28,9 +28,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import { useRegisterOffering } from '@/lib/hooks/church/offering/use-offering-queries';
-import type { UserResponse } from '@/lib/types/user';
 import {
   CONTRIBUTION_TYPE_OPTIONS,
   getRelativeYear,
@@ -42,7 +41,6 @@ import {
 } from '@/lib/validations/offering';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DollarSign, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddOfferingFormProps {
@@ -50,9 +48,6 @@ interface AddOfferingFormProps {
 }
 
 export function AddOfferingForm({ onCloseDialog }: AddOfferingFormProps) {
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   const {
     mutateAsync: registerOfferingMutation,
     isPending,
@@ -102,21 +97,18 @@ export function AddOfferingForm({ onCloseDialog }: AddOfferingFormProps) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="memberId"
+                  name="memberId" // Form field stores just the user ID string
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <UserListInput
+                        <UserCombobox
                           className="w-full"
-                          onChange={(member) => {
-                            setSelectedMember(member);
-                            field.onChange(member?._id || ''); // ✅ Store only the ID
-                          }}
+                          onValueChange={field.onChange} // Use onValueChange for ID
                           placeholder="Search and select a member"
-                          value={selectedMember} // ✅ Use state for display
+                          value={field.value} // Pass the ID directly
                         />
                       </FormControl>
                       <FormMessage />

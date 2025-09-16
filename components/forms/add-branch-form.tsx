@@ -21,9 +21,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import { useRegisterBranch } from '@/lib/hooks/church/branch/use-branch-queries';
-import type { UserResponse } from '@/lib/types/user';
 import { getRelativeYear } from '@/lib/utils';
 import {
   type AddBranchPayload,
@@ -31,7 +30,6 @@ import {
 } from '@/lib/validations/branch';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, MapPin } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddBranchFormProps {
@@ -39,9 +37,6 @@ interface AddBranchFormProps {
 }
 
 export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   const {
     mutateAsync: registerBranchMutation,
     isPending,
@@ -109,19 +104,16 @@ export function AddBranchForm({ onCloseDialog }: AddBranchFormProps) {
               />
               <FormField
                 control={branchForm.control}
-                name="pastorId"
+                name="pastorId" // Form field stores just the user ID string
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Pastor (Optional)</FormLabel>
                     <FormControl>
-                      <UserListInput
+                      <UserCombobox
                         className="w-full"
-                        onChange={(member) => {
-                          setSelectedMember(member);
-                          field.onChange(member?._id || ''); // ✅ Store only the ID
-                        }}
+                        onValueChange={field.onChange} // Use onValueChange for ID
                         placeholder="Search and select a pastor"
-                        value={selectedMember} // ✅ Use state for display
+                        value={field.value} // Pass the ID directly
                       />
                     </FormControl>
                     <FormMessage />

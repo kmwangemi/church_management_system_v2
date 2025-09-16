@@ -40,6 +40,8 @@ export interface DepartmentExpense {
   date: Date;
   approvedBy?: string;
   receiptUrl?: string;
+  reference?: string;
+  vendor?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -150,6 +152,14 @@ export interface DepartmentMembersResponse {
   data: {
     members: DepartmentMember[];
     department: DepartmentInfo;
+    pagination: Pagination;
+  };
+}
+
+export interface DepartmentActivitiesResponse {
+  success: boolean;
+  data: {
+    activities: DepartmentActivity[];
     pagination: Pagination;
   };
 }

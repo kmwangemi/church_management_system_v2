@@ -26,9 +26,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import { useRegisterDisciple } from '@/lib/hooks/church/disciple/use-disciple-queries';
-import type { UserResponse } from '@/lib/types/user';
 import { DISCIPLE_LEVEL_OPTIONS, getRelativeYear } from '@/lib/utils';
 import {
   type AddDisciplePayload,
@@ -36,7 +35,6 @@ import {
 } from '@/lib/validations/disciple';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Heart, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddDiscipleFormProps {
@@ -44,12 +42,6 @@ interface AddDiscipleFormProps {
 }
 
 export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
-  const [selectedMentor, setSelectedMentor] = useState<UserResponse | null>(
-    null
-  );
   const {
     mutateAsync: registerDiscipleMutation,
     isPending,
@@ -97,21 +89,18 @@ export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="memberId"
+                  name="memberId" // Form field stores just the user ID string
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <UserListInput
+                        <UserCombobox
                           className="w-full"
-                          onChange={(member) => {
-                            setSelectedMember(member);
-                            field.onChange(member?._id || ''); // ✅ Store only the ID
-                          }}
+                          onValueChange={field.onChange} // Use onValueChange for ID
                           placeholder="Search and select a member"
-                          value={selectedMember} // ✅ Use state for display
+                          value={field.value} // Pass the ID directly
                         />
                       </FormControl>
                       <FormMessage />
@@ -120,21 +109,18 @@ export function AddDiscipleForm({ onCloseDialog }: AddDiscipleFormProps) {
                 />
                 <FormField
                   control={form.control}
-                  name="mentorId"
+                  name="mentorId" // Form field stores just the user ID string
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Mentor <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <UserListInput
+                        <UserCombobox
                           className="w-full"
-                          onChange={(mentor) => {
-                            setSelectedMentor(mentor);
-                            field.onChange(mentor?._id || ''); // ✅ Store only the ID
-                          }}
+                          onValueChange={field.onChange} // Use onValueChange for ID
                           placeholder="Search and select a mentor"
-                          value={selectedMentor} // ✅ Use state for display
+                          value={field.value} // Pass the ID directly
                         />
                       </FormControl>
                       <FormMessage />
