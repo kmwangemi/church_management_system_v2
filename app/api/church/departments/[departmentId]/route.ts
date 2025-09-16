@@ -54,10 +54,10 @@ async function getDepartmentByIdHandler(
       churchId: user.user.churchId,
     })
       .populate('churchId', 'name')
-      .populate('leaderId', 'firstName lastName email')
-      .populate('branchId', 'name')
+      // .populate('leaderId', 'firstName lastName email')
+      .populate('branchId', 'branchName')
       .populate('members.userId', 'firstName lastName email')
-      .populate('activities.organizedBy', 'firstName lastName')
+      // .populate('activities.organizedBy', 'firstName lastName')
       .populate('activities.participants', 'firstName lastName')
       .populate('goals.createdBy', 'firstName lastName')
       .populate('goals.assignedTo', 'firstName lastName')

@@ -698,48 +698,56 @@ export default function DepartmentDetailsPage({
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-16 w-16">
                         <AvatarImage
-                          src={
-                            department?.leaderId?.profilePictureUrl ||
-                            '/placeholder.svg'
-                          }
+                          // src={
+                          //   department?.leaderId?.profilePictureUrl ||
+                          //   '/placeholder.svg'
+                          // }
+                          src={'/placeholder.svg'}
                         />
                         <AvatarFallback>
-                          {department?.leaderId?.firstName
+                          {/* {department?.leaderId?.firstName
                             .split(' ')
                             .map((n) => n[0])
-                            .join('')}
+                            .join('')} */}
+                          {'KM'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <h3 className="font-semibold">
-                          {department?.leaderId?.firstName}
+                          {/* {department?.leaderId?.firstName} */}
+                          Kevin
                         </h3>
                         <p className="text-muted-foreground text-sm">
-                          {department?.leaderId?.position}
+                          {/* {department?.leaderId?.position} */}
+                          Head
                         </p>
-                        <Badge variant="outline">{department?.status}</Badge>
+                        {/* <Badge variant="outline">{department?.status}</Badge> */}
+                        <Badge variant="outline">active</Badge>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {department?.leaderId?.phoneNumber}
+                          {/* {department?.leaderId?.phoneNumber} */}
+                          076565657
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {department?.leaderId?.email}
+                          {/* {department?.leaderId?.email} */}
+                          mwas@gmail.com
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
                           Leading since{' '}
-                          {new Date(
+                          {/* {new Date(
                             department.leaderId?.joinDate
-                          ).toLocaleDateString()}
+                          ).toLocaleDateString()} */}
+                          Yesterday
                         </span>
                       </div>
                     </div>

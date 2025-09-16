@@ -1,11 +1,6 @@
-import { useFetchUsers } from '@/lib/hooks/church/user/use-user-queries';
-import type { UserResponse } from '@/lib/types/user';
-import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
-import { Check, ChevronDown, Loader2, Search, Users, X } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -13,8 +8,17 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from './ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { useFetchUsers } from '@/lib/hooks/church/user/use-user-queries';
+import type { UserResponse } from '@/lib/types/user';
+import { capitalizeFirstLetter, cn, getFirstLetter } from '@/lib/utils';
+import { Check, ChevronDown, Loader2, Search, Users, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 interface UserMultiSelectProps {
   value?: UserResponse[] | string[] | null;

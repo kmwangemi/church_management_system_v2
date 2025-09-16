@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { UserCombobox } from '@/components/user-combobox';
 import { useAddDepartmentGoal } from '@/lib/hooks/church/department/use-department-queries';
 import {
   DEPARTMENT_GOAL_CATEGORY_OPTIONS,
@@ -37,7 +38,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Target } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { UserCombobox } from '../user-combobox';
 
 export const addDepartmentGoalSchema = z.object({
   title: z.string().min(1, 'Goal title is required').trim(),

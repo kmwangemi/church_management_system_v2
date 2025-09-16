@@ -163,3 +163,23 @@ export interface DepartmentActivitiesResponse {
     pagination: Pagination;
   };
 }
+
+export interface DepartmentExpensesResponse {
+  success: boolean;
+  data: {
+    expenses: DepartmentExpense[];
+    pagination: Pagination;
+    summary: {
+      filteredTotal: number;
+      departmentName: string;
+    };
+  };
+}
+
+export interface DepartmentGoalsResponse {
+  success: boolean;
+  data: {
+    goals: DepartmentGoal[];
+    pagination: Pagination;
+  };
+}
