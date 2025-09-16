@@ -22,22 +22,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import type { VisitorUpdateCardProps } from '@/lib/types/index';
-import type { UserResponse } from '@/lib/types/user';
 import {
   FOLLOW_UP_STATUS_OPTIONS,
   getRelativeYear,
   REFERRAL_SOURCE_OPTIONS,
 } from '@/lib/utils';
-import { useState } from 'react';
 
 export const VisitorUpdateCard: React.FC<VisitorUpdateCardProps> = ({
   form,
 }) => {
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   return (
     <Card>
       <CardHeader>
@@ -157,19 +152,16 @@ export const VisitorUpdateCard: React.FC<VisitorUpdateCardProps> = ({
         />
         <FormField
           control={form.control}
-          name="visitorUpdate.invitedBy"
+          name="visitorUpdate.invitedBy" // Form field stores just the user ID string
           render={({ field }) => (
             <FormItem>
               <FormLabel>Invited By</FormLabel>
               <FormControl>
-                <UserListInput
+                <UserCombobox
                   className="w-full"
-                  onChange={(member) => {
-                    setSelectedMember(member);
-                    field.onChange(member?._id || '');
-                  }}
+                  onValueChange={field.onChange} // Use onValueChange for ID
                   placeholder="Search and select a member"
-                  value={selectedMember}
+                  value={field.value} // Pass the ID directly
                 />
               </FormControl>
               <FormMessage />

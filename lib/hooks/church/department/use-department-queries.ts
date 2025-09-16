@@ -1,8 +1,12 @@
+import { AddDepartmentActivityPayload } from '@/components/forms/add-department-activity-form';
+import { AddDepartmentExpensePayload } from '@/components/forms/add-department-expense-form';
+import { AddDepartmentGoalPayload } from '@/components/forms/add-department-goal-form';
 import type { AddDepartmentMemberPayload } from '@/components/forms/add-department-member-form';
 import apiClient from '@/lib/api-client';
 import { successToastStyle } from '@/lib/toast-styles';
 import type {
   Department,
+  DepartmentActivitiesResponse,
   DepartmentAddResponse,
   DepartmentListResponse,
   DepartmentMembersResponse,
@@ -200,5 +204,285 @@ export const useFetchDepartmentMembers = (
     queryKey: ['department-members', params.departmentId, params],
     queryFn: () => fetchDepartmentMembers(params),
     enabled: !!params.departmentId, // only fetch if departmentId is provided
+  });
+};
+
+/* ========== ADD DEPARTMENT ACTIVITY ========== */
+const addDepartmentActivity = async ({
+  departmentId,
+  payload,
+}: {
+  departmentId: string;
+  payload: AddDepartmentActivityPayload;
+}): Promise<any> => {
+  const { data } = await apiClient.post(
+    `/church/departments/${departmentId}/activities`,
+    payload
+  );
+  return data;
+};
+
+export const useAddDepartmentActivity = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addDepartmentActivity,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-activities'] });
+      toast.success('Department activity has been logged successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== FETCH DEPARTMENT ACTIVITIES ========== */
+interface FetchDepartmentActivitiesParams {
+  departmentId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  activityType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+const fetchDepartmentActivities = async ({
+  departmentId,
+  page = 1,
+  limit = 20,
+  search = '',
+  activityType,
+  startDate,
+  endDate,
+}: FetchDepartmentActivitiesParams): Promise<DepartmentActivitiesResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (activityType) params.append('activityType', activityType);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  const { data } = await apiClient.get(
+    `/church/departments/${departmentId}/activities?${params.toString()}`
+  );
+  return data;
+};
+
+export const useFetchDepartmentActivities = (
+  params: FetchDepartmentActivitiesParams
+) => {
+  return useQuery({
+    queryKey: ['department-activities', params.departmentId, params],
+    queryFn: () => fetchDepartmentActivities(params),
+    enabled: !!params.departmentId,
+  });
+};
+
+/* ========== ADD DEPARTMENT EXPENSE ========== */
+const addDepartmentExpense = async ({
+  departmentId,
+  payload,
+}: {
+  departmentId: string;
+  payload: AddDepartmentExpensePayload;
+}): Promise<any> => {
+  const { data } = await apiClient.post(
+    `/church/departments/${departmentId}/expenses`,
+    payload
+  );
+  return data;
+};
+
+export const useAddDepartmentExpense = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addDepartmentExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-expenses'] });
+      toast.success('Department expense has been added successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== FETCH DEPARTMENT EXPENSES ========== */
+interface FetchDepartmentExpensesParams {
+  departmentId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
+}
+
+const fetchDepartmentExpenses = async ({
+  departmentId,
+  page = 1,
+  limit = 20,
+  search = '',
+  category,
+  startDate,
+  endDate,
+  minAmount,
+  maxAmount,
+}: FetchDepartmentExpensesParams): Promise<DepartmentExpensesResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (category) params.append('category', category);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (minAmount !== undefined) params.append('minAmount', minAmount.toString());
+  if (maxAmount !== undefined) params.append('maxAmount', maxAmount.toString());
+  const { data } = await apiClient.get(
+    `/church/departments/${departmentId}/expenses?${params.toString()}`
+  );
+  return data;
+};
+
+export const useFetchDepartmentExpenses = (
+  params: FetchDepartmentExpensesParams
+) => {
+  return useQuery({
+    queryKey: ['department-expenses', params.departmentId, params],
+    queryFn: () => fetchDepartmentExpenses(params),
+    enabled: !!params.departmentId,
+  });
+};
+
+/* ========== ADD DEPARTMENT GOAL ========== */
+const addDepartmentGoal = async ({
+  departmentId,
+  payload,
+}: {
+  departmentId: string;
+  payload: AddDepartmentGoalPayload;
+}): Promise<any> => {
+  const { data } = await apiClient.post(
+    `/church/departments/${departmentId}/goals`,
+    payload
+  );
+  return data;
+};
+
+export const useAddDepartmentGoal = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addDepartmentGoal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-goals'] });
+      toast.success('Department goal has been added successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== FETCH DEPARTMENT GOALS ========== */
+interface FetchDepartmentGoalsParams {
+  departmentId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  priority?: string;
+  category?: string;
+  status?: string;
+  assigneeId?: string;
+}
+
+const fetchDepartmentGoals = async ({
+  departmentId,
+  page = 1,
+  limit = 20,
+  search = '',
+  priority,
+  category,
+  status,
+  assigneeId,
+}: FetchDepartmentGoalsParams): Promise<DepartmentGoalsResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (priority) params.append('priority', priority);
+  if (category) params.append('category', category);
+  if (status) params.append('status', status);
+  if (assigneeId) params.append('assigneeId', assigneeId);
+  const { data } = await apiClient.get(
+    `/church/departments/${departmentId}/goals?${params.toString()}`
+  );
+  return data;
+};
+
+export const useFetchDepartmentGoals = (params: FetchDepartmentGoalsParams) => {
+  return useQuery({
+    queryKey: ['department-goals', params.departmentId, params],
+    queryFn: () => fetchDepartmentGoals(params),
+    enabled: !!params.departmentId,
+  });
+};
+
+/* ========== UPDATE DEPARTMENT GOAL ========== */
+const updateDepartmentGoal = async ({
+  departmentId,
+  goalId,
+  payload,
+}: {
+  departmentId: string;
+  goalId: string;
+  payload: Partial<AddDepartmentGoalPayload>;
+}): Promise<any> => {
+  const { data } = await apiClient.put(
+    `/church/departments/${departmentId}/goals/${goalId}`,
+    payload
+  );
+  return data;
+};
+
+export const useUpdateDepartmentGoal = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateDepartmentGoal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-goals'] });
+      toast.success('Department goal has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== DELETE DEPARTMENT GOAL ========== */
+const deleteDepartmentGoal = async ({
+  departmentId,
+  goalId,
+}: {
+  departmentId: string;
+  goalId: string;
+}): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete(
+    `/church/departments/${departmentId}/goals/${goalId}`
+  );
+  return data;
+};
+
+export const useDeleteDepartmentGoal = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteDepartmentGoal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-goals'] });
+      toast.success('Department goal has been deleted successfully.', {
+        style: successToastStyle,
+      });
+    },
   });
 };

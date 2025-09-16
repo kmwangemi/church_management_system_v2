@@ -205,13 +205,6 @@ export const PRAYER_CATEGORY_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export const PRAYER_PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
-];
-
 export const MILESTONE_CATEGORY_OPTIONS = [
   { value: 'spiritual', label: 'Spiritual' },
   { value: 'bible_study', label: 'Bible Study' },
@@ -421,7 +414,7 @@ export const ANNOUNCEMENT_CATEGORY_OPTIONS = [
   { value: 'emergency', label: 'Emergency' },
 ];
 
-export const ANNOUNCEMENT_PRIORITY_OPTIONS = [
+export const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
@@ -611,6 +604,37 @@ export const DEPARTMENT_MEMBER_ROLE_OPTIONS = [
   { value: 'volunteer', label: 'Volunteer' },
 ];
 
+export const DEPARTMENT_EXPENSE_CATEGORY_OPTIONS = [
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'materials', label: 'Materials' },
+  { value: 'training', label: 'Training' },
+  { value: 'events', label: 'Events' },
+  { value: 'utilities', label: 'Utilities' },
+  { value: 'transportation', label: 'Transportation' },
+  { value: 'refreshments', label: 'Refreshments' },
+  { value: 'miscellaneous', label: 'Miscellaneous' },
+];
+
+export const DEPARTMENT_ACTIVITY_TYPE_OPTIONS = [
+  { value: 'meeting', label: 'Meeting' },
+  { value: 'event', label: 'Event' },
+  { value: 'training', label: 'Training' },
+  { value: 'planning', label: 'Planning' },
+  { value: 'rehearsal', label: 'Rehearsal' },
+  { value: 'workshop', label: 'Workshop' },
+  { value: 'outreach', label: 'Outreach' },
+  { value: 'other', label: 'Other' },
+];
+
+export const DEPARTMENT_GOAL_CATEGORY_OPTIONS = [
+  { value: 'growth', label: 'Growth' },
+  { value: 'training', label: 'Training' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'outreach', label: 'Outreach' },
+  { value: 'quality', label: 'Quality' },
+  { value: 'financial', label: 'Financial' },
+  { value: 'other', label: 'Other' },
+];
 
 export const getUserId = (userId: any): string => {
   if (typeof userId === 'string') return userId;

@@ -85,6 +85,8 @@ export interface IExpense {
   date: Date;
   approvedBy?: mongoose.Types.ObjectId;
   receiptUrl?: string;
+  reference?: string;
+  vendor?: string;
   createdAt: Date;
 }
 
@@ -94,7 +96,8 @@ export interface IDepartmentActivity {
   description: string;
   type: ActivityType;
   date: Date;
-  duration?: number; // in minutes
+  startTime?: string;
+  endTime?: string;
   location?: string;
   participants: mongoose.Types.ObjectId[];
   organizedBy: mongoose.Types.ObjectId;
@@ -234,6 +237,14 @@ const ExpenseSchema = new Schema<IExpense>(
       type: Date,
       required: true,
     },
+    reference: {
+      type: String,
+      trim: true,
+    },
+    vendor: {
+      type: String,
+      trim: true,
+    },
     approvedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -267,14 +278,27 @@ const ActivitySchema = new Schema<IDepartmentActivity>(
       type: Date,
       required: true,
     },
-    duration: {
-      type: Number,
-      min: 0,
+    startTime: {
+      type: String,
+      trim: true,
+      match: [
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]( (AM|PM))?$/i,
+        'Invalid time format',
+      ],
+    },
+    endTime: {
+      type: String,
+      trim: true,
+      match: [
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]( (AM|PM))?$/i,
+        'Invalid time format',
+      ],
     },
     location: {
       type: String,
       trim: true,
     },
+
     participants: [
       {
         type: Schema.Types.ObjectId,

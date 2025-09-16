@@ -59,7 +59,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import {
   useDeleteBranchActivityById,
   useFetchBranchActivities,
@@ -75,7 +75,6 @@ import {
 } from '@/lib/hooks/church/service-schedule/use-service-schedule-queries';
 import type { Activity } from '@/lib/types/activity';
 import type { ServiceSchedule } from '@/lib/types/service-schedule';
-import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
@@ -120,9 +119,6 @@ export default function BranchDetailsPage({
   const [isServiceScheduleDialogOpen, setIsServiceScheduleDialogOpen] =
     useState(false);
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedSchedule, setSelectedSchedule] =
     useState<ServiceSchedule | null>(null);
@@ -553,19 +549,16 @@ export default function BranchDetailsPage({
                           />
                           <FormField
                             control={form.control}
-                            name="pastorId"
+                            name="pastorId" // Form field stores just the user ID string
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Pastor</FormLabel>
                                 <FormControl>
-                                  <UserListInput
+                                  <UserCombobox
                                     className="w-full"
-                                    onChange={(member) => {
-                                      setSelectedMember(member);
-                                      field.onChange(member?._id || ''); // ✅ Store only the ID
-                                    }}
+                                    onValueChange={field.onChange} // Use onValueChange for ID
                                     placeholder="Search and select a pastor"
-                                    value={selectedMember} // ✅ Use state for display
+                                    value={field.value} // Pass the ID directly
                                   />
                                 </FormControl>
                                 <FormMessage />

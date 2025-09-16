@@ -1,24 +1,56 @@
-import { connectDB } from '@/lib/mongodb';
-import Department, { GoalStatus } from '@/models/Department';
+// /api/church/departments/[departmentId]/goals/[goalId]/milestones/route.ts
+import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
+import { withApiLogger } from '@/lib/middleware/api-logger';
+import dbConnect from '@/lib/mongodb';
+import { DepartmentModel } from '@/models';
+import { GoalStatus } from '@/models/department';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
-// PUT /api/church/departments/[id]/goals/[goalId]/milestones/[milestoneIndex] - Update milestone
-export async function PATCH(
+interface RouteParams {
+  params: {
+    departmentId: string;
+    goalId: string;
+  };
+}
+
+// PATCH /api/church/departments/[departmentId]/goals/[goalId]/milestones - Update milestone
+async function updateMilestoneHandler(
   request: NextRequest,
-  { params }: { params: { id: string; goalId: string } }
-) {
+  { params }: RouteParams
+): Promise<NextResponse> {
+  const { departmentId, goalId } = await params;
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    {
+      requestId,
+      endpoint: `/api/church/departments/${departmentId}/goals/${goalId}/milestones`,
+    },
+    'api'
+  );
   try {
-    await connectDB();
-
-    const { id, goalId } = params;
-    const body = await request.json();
-    const { milestoneIndex, isCompleted } = body;
-
-    // Validate ObjectIds
+    // Check authentication and authorization
+    const authResult = await requireAuth(['superadmin', 'admin'])(request);
+    if (authResult instanceof Response) {
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
+    }
+    const user = authResult;
+    if (!user.user?.churchId) {
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
+    // Validate MongoDB ObjectId format
     if (
       !(
-        mongoose.Types.ObjectId.isValid(id) &&
+        mongoose.Types.ObjectId.isValid(departmentId) &&
         mongoose.Types.ObjectId.isValid(goalId)
       )
     ) {
@@ -27,41 +59,51 @@ export async function PATCH(
         { status: 400 }
       );
     }
-
+    await dbConnect();
+    const body = await request.json();
+    const { milestoneIndex, isCompleted } = body;
     if (milestoneIndex === undefined || isCompleted === undefined) {
       return NextResponse.json(
         { error: 'milestoneIndex and isCompleted are required' },
         { status: 400 }
       );
     }
-
-    const department = await Department.findById(id);
-
+    // Check if department exists and belongs to the user's church
+    const department = await DepartmentModel.findOne({
+      _id: departmentId,
+      churchId: user.user.churchId,
+    });
     if (!department) {
       return NextResponse.json(
         { error: 'Department not found' },
         { status: 404 }
       );
     }
-
     // Find the goal
-    const goalIndex = department.goals.findIndex(
-      (goal) => goal._id?.toString() === goalId
+    interface Goal {
+      _id: mongoose.Types.ObjectId;
+      milestones: Milestone[];
+      progress: number;
+      status: GoalStatus;
+      updatedAt: Date;
+    }
+    interface Milestone {
+      isCompleted: boolean;
+      completedDate?: Date;
+    }
+    const goalIndex: number = department.goals.findIndex(
+      (goal: Goal) => goal._id?.toString() === goalId
     );
-
     if (goalIndex === -1) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
-
     const goal = department.goals[goalIndex];
-
     if (!goal.milestones || milestoneIndex >= goal.milestones.length) {
       return NextResponse.json(
         { error: 'Milestone not found' },
         { status: 404 }
       );
     }
-
     // Update milestone
     goal.milestones[milestoneIndex].isCompleted = isCompleted;
     if (isCompleted) {
@@ -69,16 +111,14 @@ export async function PATCH(
     } else {
       goal.milestones[milestoneIndex].completedDate = undefined;
     }
-
     // Auto-calculate progress based on completed milestones
     if (goal.milestones.length > 0) {
-      const completedMilestones = goal.milestones.filter(
-        (m) => m.isCompleted
+      const completedMilestones: number = goal.milestones.filter(
+        (m: Milestone) => m.isCompleted
       ).length;
       goal.progress = Math.round(
         (completedMilestones / goal.milestones.length) * 100
       );
-
       // Update status based on progress
       if (goal.progress === 100) {
         goal.status = GoalStatus.COMPLETED;
@@ -86,10 +126,16 @@ export async function PATCH(
         goal.status = GoalStatus.IN_PROGRESS;
       }
     }
-
     goal.updatedAt = new Date();
     await department.save();
-
+    contextLogger.info('Goal milestone updated successfully', {
+      departmentId,
+      goalId,
+      milestoneIndex,
+      isCompleted,
+      goalProgress: goal.progress,
+      goalStatus: goal.status,
+    });
     return NextResponse.json({
       success: true,
       message: 'Milestone updated successfully',
@@ -99,11 +145,24 @@ export async function PATCH(
         goalStatus: goal.status,
       },
     });
-  } catch (error) {
-    console.error('Error updating milestone:', error);
+  } catch (error: any) {
+    contextLogger.error('Unexpected error in updateMilestoneHandler', error);
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.message },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
+// Export the handler wrapped with logging middleware
+export const PATCH = withApiLogger(updateMilestoneHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});

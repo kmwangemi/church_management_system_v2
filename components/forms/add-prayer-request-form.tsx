@@ -27,17 +27,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import { useCreatePrayerRequest } from '@/lib/hooks/church/prayer-request/use-prayer-request-queries';
-import type { UserResponse } from '@/lib/types/user';
-import { PRAYER_CATEGORY_OPTIONS, PRAYER_PRIORITY_OPTIONS } from '@/lib/utils';
+import { PRAYER_CATEGORY_OPTIONS, PRIORITY_OPTIONS } from '@/lib/utils';
 import {
   type AddPrayerRequestPayload,
   AddPrayerRequestSchema,
 } from '@/lib/validations/prayer-request';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Headphones, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface AddPrayerRequestFormProps {
@@ -47,9 +46,6 @@ interface AddPrayerRequestFormProps {
 export function AddPrayerRequestForm({
   onCloseDialog,
 }: AddPrayerRequestFormProps) {
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   const {
     mutateAsync: registerDiscipleMutation,
     isPending,
@@ -73,7 +69,6 @@ export function AddPrayerRequestForm({
   // ✅ Clear member selection when anonymous is toggled
   useEffect(() => {
     if (isAnonymous) {
-      setSelectedMember(null);
       form.setValue('memberId', '');
     }
   }, [isAnonymous, form]);
@@ -194,7 +189,7 @@ export function AddPrayerRequestForm({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {PRAYER_PRIORITY_OPTIONS.map((option) => (
+                          {PRIORITY_OPTIONS.map((option) => (
                             <SelectItem
                               className="cursor-pointer"
                               key={option.value}
@@ -256,21 +251,18 @@ export function AddPrayerRequestForm({
               {!isAnonymous && (
                 <FormField
                   control={form.control}
-                  name="memberId"
+                  name="memberId" // Form field stores just the user ID string
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Member <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <UserListInput
+                        <UserCombobox
                           className="w-full"
-                          onChange={(member) => {
-                            setSelectedMember(member);
-                            field.onChange(member?._id || '');
-                          }}
+                          onValueChange={field.onChange} // Use onValueChange for ID
                           placeholder="Search and select a member"
-                          value={selectedMember}
+                          value={field.value} // Pass the ID directly
                         />
                       </FormControl>
                       <FormMessage />

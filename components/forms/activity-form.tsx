@@ -22,13 +22,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import {
   useCreateBranchActivity,
   useUpdateBranchActivityById,
 } from '@/lib/hooks/church/activity/use-activity-queries';
 import type { Activity } from '@/lib/types/activity';
-import type { UserResponse } from '@/lib/types/user';
 import {
   ACTIVITY_STATUS_OPTIONS,
   ACTIVITY_TYPE_OPTIONS,
@@ -40,7 +39,7 @@ import {
 } from '@/lib/validations/activity';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface ActivityFormProps {
@@ -55,9 +54,6 @@ export function ActivityForm({
   mode = 'add',
 }: ActivityFormProps) {
   const { id } = useParams();
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
   // Hooks for both create and update
   const {
     mutateAsync: createActivityMutation,
@@ -135,7 +131,6 @@ export function ActivityForm({
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
-    setSelectedMember(null);
   };
   return (
     <>
@@ -319,19 +314,16 @@ export function ActivityForm({
             />
             <FormField
               control={activityForm.control}
-              name="facilitator"
+              name="facilitator" // Form field stores just the user ID string
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Facilitator</FormLabel>
                   <FormControl>
-                    <UserListInput
+                    <UserCombobox
                       className="w-full"
-                      onChange={(member) => {
-                        setSelectedMember(member);
-                        field.onChange(member?._id || '');
-                      }}
+                      onValueChange={field.onChange} // Use onValueChange for ID
                       placeholder="Search and select a facilitator"
-                      value={selectedMember}
+                      value={field.value} // Pass the ID directly
                     />
                   </FormControl>
                   <FormMessage />

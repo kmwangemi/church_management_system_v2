@@ -2,6 +2,9 @@
 
 import RenderApiError from '@/components/api-error';
 import { DatePicker } from '@/components/date-picker';
+import { AddDepartmentActivityForm } from '@/components/forms/add-department-activity-form';
+import { AddDepartmentExpenseForm } from '@/components/forms/add-department-expense-form';
+import { AddDepartmentGoalForm } from '@/components/forms/add-department-goal-form';
 import { AddDepartmentMemberForm } from '@/components/forms/add-department-member-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { MultiSelect } from '@/components/multi-select';
@@ -52,12 +55,11 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { UserListInput } from '@/components/user-list-input';
+import { UserCombobox } from '@/components/user-combobox';
 import {
   useFetchDepartmentById,
   useFetchDepartmentMembers,
 } from '@/lib/hooks/church/department/use-department-queries';
-import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
@@ -102,11 +104,18 @@ export default function DepartmentDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
-  const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] =
+  const [isAddDepartmentMemberDialogOpen, setIsAddDepartmentMemberDialogOpen] =
     useState(false);
-  const [selectedMember, setSelectedMember] = useState<UserResponse | null>(
-    null
-  );
+  const [
+    isAddDepartmentExpenseDialogOpen,
+    setIsAddDepartmentExpenseDialogOpen,
+  ] = useState(false);
+  const [
+    isAddDepartmentActivityDialogOpen,
+    setIsAddDepartmentActivityDialogOpen,
+  ] = useState(false);
+  const [isAddDepartmentGoalDialogOpen, setIsAddDepartmentGoalDialogOpen] =
+    useState(false);
   const {
     data: department,
     isLoading: isLoadingDepartment,
@@ -472,19 +481,16 @@ export default function DepartmentDetailsPage({
                           />
                           <FormField
                             control={form.control}
-                            name="leaderId"
+                            name="leaderId" // Form field stores just the user ID string
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Leader (Optional)</FormLabel>
                                 <FormControl>
-                                  <UserListInput
+                                  <UserCombobox
                                     className="w-full"
-                                    onChange={(member) => {
-                                      setSelectedMember(member);
-                                      field.onChange(member?._id || ''); // ✅ Store only the ID
-                                    }}
+                                    onValueChange={field.onChange} // Use onValueChange for ID
                                     placeholder="Search and select a leader"
-                                    value={selectedMember} // ✅ Use state for display
+                                    value={field.value} // Pass the ID directly
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -770,8 +776,8 @@ export default function DepartmentDetailsPage({
                   </p>
                 </div>
                 <Dialog
-                  onOpenChange={setIsAddDepartmentDialogOpen}
-                  open={isAddDepartmentDialogOpen}
+                  onOpenChange={setIsAddDepartmentMemberDialogOpen}
+                  open={isAddDepartmentMemberDialogOpen}
                 >
                   <DialogTrigger asChild>
                     <Button>
@@ -788,7 +794,9 @@ export default function DepartmentDetailsPage({
                     </DialogHeader>
                     <AddDepartmentMemberForm
                       departmentId={id}
-                      onCloseDialog={() => setIsAddDepartmentDialogOpen(false)}
+                      onCloseDialog={() =>
+                        setIsAddDepartmentMemberDialogOpen(false)
+                      }
                     />
                   </DialogContent>
                 </Dialog>
@@ -886,10 +894,31 @@ export default function DepartmentDetailsPage({
                     Track department budget allocation and usage
                   </p>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Expense
-                </Button>
+                <Dialog
+                  onOpenChange={setIsAddDepartmentExpenseDialogOpen}
+                  open={isAddDepartmentExpenseDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Expense
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add Expense</DialogTitle>
+                      <DialogDescription>
+                        Add an expense to this department
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddDepartmentExpenseForm
+                      departmentId={id}
+                      onCloseDialog={() =>
+                        setIsAddDepartmentExpenseDialogOpen(false)
+                      }
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
@@ -967,10 +996,31 @@ export default function DepartmentDetailsPage({
                     Recent meetings, events, and activities
                   </p>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Log Activity
-                </Button>
+                <Dialog
+                  onOpenChange={setIsAddDepartmentActivityDialogOpen}
+                  open={isAddDepartmentActivityDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Log Activity
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Log Activity</DialogTitle>
+                      <DialogDescription>
+                        Add an activity to this department
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddDepartmentActivityForm
+                      departmentId={id}
+                      onCloseDialog={() =>
+                        setIsAddDepartmentActivityDialogOpen(false)
+                      }
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
               <Card>
                 <CardContent className="p-0">
@@ -1029,10 +1079,31 @@ export default function DepartmentDetailsPage({
                     Track progress on department objectives
                   </p>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Goal
-                </Button>
+                <Dialog
+                  onOpenChange={setIsAddDepartmentGoalDialogOpen}
+                  open={isAddDepartmentGoalDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Goal
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add Goal</DialogTitle>
+                      <DialogDescription>
+                        Add a goal to this department
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddDepartmentGoalForm
+                      departmentId={id}
+                      onCloseDialog={() =>
+                        setIsAddDepartmentGoalDialogOpen(false)
+                      }
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="grid gap-4">
                 {department?.goals.map((goal, index) => (
