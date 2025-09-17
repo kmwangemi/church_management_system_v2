@@ -69,7 +69,7 @@ async function getActivitiesHandler(
       _id: departmentId,
       churchId: user.user.churchId,
     })
-      .populate('activities.organizedBy', 'firstName lastName')
+      // .populate('activities.organizedBy', 'firstName lastName')
       .populate('activities.participants', 'firstName lastName');
     if (!department) {
       return NextResponse.json(
