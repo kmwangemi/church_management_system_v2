@@ -85,7 +85,6 @@ import {
   Clock,
   DollarSign,
   Edit,
-  Eye,
   Mail,
   MapPin,
   Phone,
@@ -612,62 +611,62 @@ export default function DepartmentDetailsPage({
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage
-                          // src={
-                          //   department?.leaderId?.profilePictureUrl ||
-                          //   '/placeholder.svg'
-                          // }
-                          src={'/placeholder.svg'}
-                        />
-                        <AvatarFallback>
-                          {/* {department?.leaderId?.firstName
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')} */}
-                          {'KM'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="font-semibold">
-                          {/* {department?.leaderId?.firstName} */}
-                          Kevin
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                          {/* {department?.leaderId?.position} */}
-                          Head
-                        </p>
-                        {/* <Badge variant="outline">{department?.status}</Badge> */}
-                        <Badge variant="outline">active</Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {/* {department?.leaderId?.phoneNumber} */}
-                          076565657
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {/* {department?.leaderId?.email} */}
-                          mwas@gmail.com
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          Leading since{' '}
-                          {/* {new Date(
-                            department.leaderId?.joinDate
-                          ).toLocaleDateString()} */}
-                          Yesterday
-                        </span>
-                      </div>
-                    </div>
+                    {departmentMembers?.data?.members?.map((member) => (
+                      <React.Fragment key={member._id}>
+                        {member?.role === 'leader' && (
+                          <>
+                            <div className="flex items-center space-x-4">
+                              <Avatar className="h-16 w-16">
+                                <AvatarImage
+                                  alt={member?.userId?.firstName || 'Member'}
+                                  src={member?.userId?.profilePictureUrl || ''}
+                                />
+                                <AvatarFallback>{`${getFirstLetter(
+                                  member?.userId?.firstName || ''
+                                )}${getFirstLetter(member?.userId?.lastName || '')}`}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="font-semibold">{`${capitalizeFirstLetter(
+                                  member?.userId?.firstName || ''
+                                )} ${capitalizeFirstLetter(member?.userId?.lastName || '')}`}</h3>
+                                <p className="text-muted-foreground text-sm">
+                                  {capitalizeFirstLetter(member?.role)}
+                                </p>
+                                <Badge variant="outline">
+                                  {member?.isActive ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {member?.userId?.phoneNumber ??
+                                    'Not Provided'}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {member?.userId?.email ?? 'Not Provided'}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">
+                                  Leading since{' '}
+                                  {new Date(
+                                    member?.joinedDate
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </React.Fragment>
+                    ))}
+                    {departmentMembers?.data?.members?.length === 0 &&
+                      'Not Assigned'}
                   </CardContent>
                 </Card>
               </div>
@@ -726,90 +725,110 @@ export default function DepartmentDetailsPage({
                   </DialogContent>
                 </Dialog>
               </div>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Member</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Skills</TableHead>
-                        <TableHead>Join Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {departmentMembers?.data?.members?.map((member) => (
-                        <TableRow key={member?._id}>
-                          <TableCell>
-                            <div className="flex items-center space-x-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage
-                                  alt={member?.userId?.firstName || 'Member'}
-                                  src={member?.userId?.profilePictureUrl || ''}
-                                />
-                                <AvatarFallback>{`${getFirstLetter(
-                                  member?.userId?.firstName || ''
-                                )}${getFirstLetter(member?.userId?.lastName || '')}`}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">{`${capitalizeFirstLetter(
-                                  member?.userId?.firstName || ''
-                                )} ${capitalizeFirstLetter(member?.userId?.lastName || '')}`}</div>
-                                <div className="text-muted-foreground text-sm">
-                                  {member?.userId?.email}
+              {isErrorDepartmentMembers && (
+                <RenderApiError error={errorDepartmentMembers} />
+              )}
+              {isLoadingDepartmentMembers ? (
+                <SpinnerLoader description="Loading department members..." />
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Member</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Skills</TableHead>
+                          <TableHead>Join Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {departmentMembers?.data?.members?.map((member) => (
+                          <TableRow key={member?._id}>
+                            <TableCell>
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage
+                                    alt={member?.userId?.firstName || 'Member'}
+                                    src={
+                                      member?.userId?.profilePictureUrl || ''
+                                    }
+                                  />
+                                  <AvatarFallback>{`${getFirstLetter(
+                                    member?.userId?.firstName || ''
+                                  )}${getFirstLetter(member?.userId?.lastName || '')}`}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium">{`${capitalizeFirstLetter(
+                                    member?.userId?.firstName || ''
+                                  )} ${capitalizeFirstLetter(member?.userId?.lastName || '')}`}</div>
+                                  <div className="text-muted-foreground text-sm">
+                                    {member?.userId?.email}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {capitalizeFirstLetter(member?.role)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {member?.skills.map((skill, index) => (
-                                <Badge
-                                  className="text-xs"
-                                  key={index}
-                                  variant="outline"
-                                >
-                                  {capitalizeFirstLetter(skill)}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(member?.joinedDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                member?.isActive ? 'default' : 'secondary'
-                              }
-                            >
-                              {member?.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button size="sm" variant="outline">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(member?.role)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {member?.skills.map((skill, index) => (
+                                  <Badge
+                                    className="text-xs"
+                                    key={index}
+                                    variant="outline"
+                                  >
+                                    {capitalizeFirstLetter(skill)}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                member?.joinedDate
+                              ).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  member?.isActive ? 'default' : 'secondary'
+                                }
+                              >
+                                {member?.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="outline">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+              {departmentMembers?.data?.members.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No members found
+                  </h3>
+                  <p className="text-gray-500">
+                    Try adding a new member or adjusting your search/filter
+                    criteria.
+                  </p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent className="space-y-6" value="budget">
               <div className="flex items-center justify-between">
@@ -845,85 +864,105 @@ export default function DepartmentDetailsPage({
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Budget Overview</CardTitle>
-                    <CardDescription>
-                      Annual budget allocation and usage
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">
-                          Total Allocated
-                        </span>
-                        <span className="text-sm">
-                          KES {department?.totalBudget.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">Used</span>
-                        <span className="text-sm">
-                          KES
-                          {departmentExpenses?.summary?.totalSpent.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">Remaining</span>
-                        <span className="font-medium text-green-600 text-sm">
-                          KES
-                          {departmentExpenses?.summary?.remainingBudget.toLocaleString()}
-                        </span>
-                      </div>
-                      <Progress
-                        className="w-full"
-                        value={
-                          department?.totalBudget
-                            ? ((departmentExpenses?.summary?.totalSpent ?? 0) /
-                                department.totalBudget) *
-                              100
-                            : 0
-                        }
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Budget Categories</CardTitle>
-                    <CardDescription>
-                      Breakdown by expense category
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {departmentExpenses?.expenses.map((expense) => (
-                        <div className="space-y-2" key={expense?._id}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-sm">
-                              {capitalizeFirstLetter(expense?.category)}
-                            </span>
-                            <span className="text-sm">
-                              KES {expense?.amount.toLocaleString()} /{' '}
-                              {departmentExpenses?.summary?.totalBudget.toLocaleString()}
-                            </span>
-                          </div>
-                          <Progress
-                            className="h-2 w-full"
-                            value={
-                              (expense?.amount /
-                                departmentExpenses?.summary?.totalBudget) *
-                              100
-                            }
-                          />
+              {isErrorDepartmentExpenses && (
+                <RenderApiError error={errorDepartmentExpenses} />
+              )}
+              {isLoadingDepartmentExpenses ? (
+                <SpinnerLoader description="Loading department expenses..." />
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Budget Overview</CardTitle>
+                      <CardDescription>
+                        Annual budget allocation and usage
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">
+                            Total Allocated
+                          </span>
+                          <span className="text-sm">
+                            KES {department?.totalBudget.toLocaleString()}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">Used</span>
+                          <span className="text-sm">
+                            KES
+                            {departmentExpenses?.summary?.totalSpent.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">Remaining</span>
+                          <span className="font-medium text-green-600 text-sm">
+                            KES
+                            {departmentExpenses?.summary?.remainingBudget.toLocaleString()}
+                          </span>
+                        </div>
+                        <Progress
+                          className="w-full"
+                          value={
+                            department?.totalBudget
+                              ? ((departmentExpenses?.summary?.totalSpent ??
+                                  0) /
+                                  department.totalBudget) *
+                                100
+                              : 0
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Budget Categories</CardTitle>
+                      <CardDescription>
+                        Breakdown by expense category
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {departmentExpenses?.expenses.map((expense) => (
+                          <div className="space-y-2" key={expense?._id}>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">
+                                {capitalizeFirstLetter(expense?.category)}
+                              </span>
+                              <span className="text-sm">
+                                KES {expense?.amount.toLocaleString()} /{' '}
+                                {departmentExpenses?.summary?.totalBudget.toLocaleString()}
+                              </span>
+                            </div>
+                            <Progress
+                              className="h-2 w-full"
+                              value={
+                                (expense?.amount /
+                                  departmentExpenses?.summary?.totalBudget) *
+                                100
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+              {departmentExpenses?.expenses.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No expenses found
+                  </h3>
+                  <p className="text-gray-500">
+                    Try adding a new expense or adjusting your search/filter
+                    criteria.
+                  </p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent className="space-y-6" value="activities">
               <div className="flex items-center justify-between">
@@ -959,72 +998,93 @@ export default function DepartmentDetailsPage({
                   </DialogContent>
                 </Dialog>
               </div>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Activity</TableHead>
-                        <TableHead>Participants</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {departmentActivities?.data?.activities.map(
-                        (activity) => (
-                          <TableRow key={activity?._id}>
-                            <TableCell className="font-medium">
-                              {new Date(activity?.date).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {capitalizeFirstLetter(activity?.type)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {capitalizeFirstLetter(activity?.title)}
-                                </div>
-                                <div className="text-muted-foreground text-sm">
-                                  {capitalizeFirstLetter(activity?.description)}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {activity?.participants.map((participant) => (
-                                  <Badge
-                                    className="text-xs"
-                                    key={participant?._id}
-                                    variant="outline"
-                                  >
-                                    {capitalizeFirstLetterOfEachWord(
-                                      participant?.fullName
+              {isErrorDepartmentActivities && (
+                <RenderApiError error={errorDepartmentActivities} />
+              )}
+              {isLoadingDepartmentActivities ? (
+                <SpinnerLoader description="Loading department activities..." />
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Activity</TableHead>
+                          <TableHead>Participants</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {departmentActivities?.data?.activities.map(
+                          (activity) => (
+                            <TableRow key={activity?._id}>
+                              <TableCell className="font-medium">
+                                {new Date(activity?.date).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {capitalizeFirstLetter(activity?.type)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">
+                                    {capitalizeFirstLetter(activity?.title)}
+                                  </div>
+                                  <div className="text-muted-foreground text-sm">
+                                    {capitalizeFirstLetter(
+                                      activity?.description
                                     )}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Button size="sm" variant="outline">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {activity?.participants.map((participant) => (
+                                    <Badge
+                                      className="text-xs"
+                                      key={participant?._id}
+                                      variant="outline"
+                                    >
+                                      {capitalizeFirstLetterOfEachWord(
+                                        participant?.fullName
+                                      )}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Button size="sm" variant="outline">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+              {departmentActivities?.data?.activities.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No activities found
+                  </h3>
+                  <p className="text-gray-500">
+                    Try adding a new activity or adjusting your search/filter
+                    criteria.
+                  </p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent className="space-y-6" value="goals">
               <div className="flex items-center justify-between">
@@ -1060,39 +1120,91 @@ export default function DepartmentDetailsPage({
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="grid gap-4">
-                {departmentGoals?.data?.goals.map((goal) => (
-                  <Card key={goal?._id}>
-                    <CardContent className="flex items-center space-x-4 p-4">
-                      <div className="flex-shrink-0">
-                        <Target className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">
-                          {capitalizeFirstLetter(goal?.title)}
-                        </h4>
-                        <div className="mt-2 flex items-center space-x-2">
-                          <Progress
-                            className="h-2 flex-1"
-                            value={Math.random() * 100}
-                          />
-                          <span className="text-muted-foreground text-sm">
-                            {Math.round(Math.random() * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {isErrorDepartmentGoals && (
+                <RenderApiError error={errorDepartmentGoals} />
+              )}
+              {isLoadingDepartmentGoals ? (
+                <SpinnerLoader description="Loading department goals..." />
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Target Date</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Assigned To</TableHead>
+                          <TableHead>Success Criteria</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {departmentGoals?.data?.goals.map((goal) => (
+                          <TableRow key={goal?._id}>
+                            <TableCell className="font-medium">
+                              {new Date(goal?.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {capitalizeFirstLetter(goal?.title)}
+                                </div>
+                                <div className="text-muted-foreground text-sm">
+                                  {capitalizeFirstLetter(goal?.description)}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {capitalizeFirstLetter(goal?.priority)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(goal?.targetDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(goal?.category)}
+                            </TableCell>
+                            <TableCell>
+                              {goal?.assignee?.firstName}
+                            </TableCell>
+                            <TableCell>
+                              {capitalizeFirstLetter(
+                                goal?.success ?? 'Not Provided'
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="outline">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+              {departmentGoals?.data?.goals.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No goals found
+                  </h3>
+                  <p className="text-gray-500">
+                    Try adding a new goal or adjusting your search/filter
+                    criteria.
+                  </p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </>

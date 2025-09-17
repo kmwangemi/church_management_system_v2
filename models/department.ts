@@ -112,15 +112,10 @@ export interface IDepartmentGoal {
   description: string;
   targetDate: Date;
   status: GoalStatus;
-  progress: number; // 0-100 percentage
-  assignedTo?: mongoose.Types.ObjectId[];
-  milestones?: {
-    title: string;
-    description?: string;
-    targetDate: Date;
-    isCompleted: boolean;
-    completedDate?: Date;
-  }[];
+  priority: string;
+  assignee?: mongoose.Types.ObjectId;
+  category: string;
+  success: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -342,42 +337,20 @@ const GoalSchema = new Schema<IDepartmentGoal>(
       enum: Object.values(GoalStatus),
       default: GoalStatus.PLANNED,
     },
-    progress: {
-      type: Number,
-      min: 0,
-      max: 100,
-      default: 0,
+    priority: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    assignedTo: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
-    milestones: [
-      {
-        title: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        description: {
-          type: String,
-          trim: true,
-        },
-        targetDate: {
-          type: Date,
-          required: true,
-        },
-        isCompleted: {
-          type: Boolean,
-          default: false,
-        },
-        completedDate: {
-          type: Date,
-        },
-      },
-    ],
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    assignee: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

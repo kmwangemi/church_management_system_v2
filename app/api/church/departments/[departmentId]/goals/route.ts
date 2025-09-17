@@ -198,13 +198,19 @@ async function addGoalHandler(
     const {
       title,
       description,
+      priority,
       targetDate,
-      assignedTo,
+      category,
+      assignee,
+      success,
     } = body;
     // Validate required fields
-    if (!(title && description && targetDate)) {
+    if (!(title && description && targetDate && category && priority)) {
       return NextResponse.json(
-        { error: 'title, description and targetDate are required' },
+        {
+          error:
+            'title, description, category, priority and targetDate are required',
+        },
         { status: 400 }
       );
     }
@@ -234,8 +240,10 @@ async function addGoalHandler(
       description,
       targetDate: target,
       status: GoalStatus.PLANNED,
-      progress: 0,
-      assignedTo,
+      priority,
+      assignee,
+      category,
+      success,
       createdBy: user.user.sub,
       createdAt: new Date(),
       updatedAt: new Date(),
