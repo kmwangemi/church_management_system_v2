@@ -1,14 +1,5 @@
 import type { Address, Pagination } from '@/lib/types';
 
-// interface pagination {
-//   currentPage: number;
-//   totalPages: number;
-//   totalMembers: number;
-//   limit: number;
-//   hasNextPage: boolean;
-//   hasPrevPage: boolean;
-// }
-
 import type {
   ActivityType,
   DepartmentCategory,

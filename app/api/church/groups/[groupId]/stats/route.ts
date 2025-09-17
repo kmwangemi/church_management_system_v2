@@ -1,6 +1,7 @@
 // api/church/groups/[id]/stats/route.ts
-import { connectDB } from '@/lib/mongodb';
-import Group, { AttendanceStatus } from '@/models/Group';
+import dbConnect from '@/lib/mongodb';
+import { GroupModel } from '@/models';
+import { AttendanceStatus } from '@/models/group';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // GET /api/church/groups/[id]/stats - Get group statistics
@@ -9,21 +10,17 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
-
-    const group = await Group.findById(params.id);
+    await dbConnect();
+    const group = await GroupModel.findById(params.id);
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
     }
-
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
     // Calculate additional stats
     const recentActivities = group.activities.filter(
       (activity) => activity.date >= thirtyDaysAgo
     );
-
     const attendanceData = recentActivities.flatMap(
       (activity) => activity.attendance
     );
@@ -33,19 +30,15 @@ export async function GET(
         record.status === AttendanceStatus.PRESENT ||
         record.status === AttendanceStatus.LATE
     ).length;
-
     const upcomingActivities = group.activities.filter(
       (activity) => activity.date > now && !activity.isCompleted
     );
-
     const completedActivities = group.activities.filter(
       (activity) => activity.isCompleted
     );
-
     const activeGoals = group.goals.filter(
       (goal) => goal.status === 'in_progress' || goal.status === 'planned'
     );
-
     const stats = {
       ...group.stats,
       recentStats: {
@@ -62,7 +55,6 @@ export async function GET(
         ).length,
       },
     };
-
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error fetching group stats:', error);
