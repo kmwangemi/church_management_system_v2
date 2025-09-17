@@ -57,7 +57,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/user-combobox';
 import {
+  useFetchDepartmentActivities,
   useFetchDepartmentById,
+  useFetchDepartmentExpenses,
+  useFetchDepartmentGoals,
   useFetchDepartmentMembers,
 } from '@/lib/hooks/church/department/use-department-queries';
 import {
@@ -122,6 +125,60 @@ export default function DepartmentDetailsPage({
     isError: isErrorDepartment,
     error: errorDepartment,
   } = useFetchDepartmentById(id);
+  const {
+    data: departmentMembers,
+    isLoading: isLoadingDepartmentMembers,
+    isError: isErrorDepartmentMembers,
+    error: errorDepartmentMembers,
+  } = useFetchDepartmentMembers({
+    departmentId: id,
+    page: 1,
+    limit: 10,
+    // search: '',
+    // role: '',
+    // isActive: true,
+  });
+  const {
+    data: departmentActivities,
+    isLoading: isLoadingDepartmentActivities,
+    isError: isErrorDepartmentActivities,
+    error: errorDepartmentActivities,
+  } = useFetchDepartmentActivities({
+    departmentId: id,
+    page: 1,
+    limit: 20,
+    // search: '',
+    // activityType: '',
+    // startDate: '',
+    // endDate: '',
+  });
+  const {
+    data: departmentExpenses,
+    isLoading: isLoadingDepartmentExpenses,
+    isError: isErrorDepartmentExpenses,
+    error: errorDepartmentExpenses,
+  } = useFetchDepartmentExpenses({
+    departmentId: id,
+    page: 1,
+    limit: 20,
+    // search: '',
+    // category: '',
+  });
+  const {
+    data: departmentGoals,
+    isLoading: isLoadingDepartmentGoals,
+    isError: isErrorDepartmentGoals,
+    error: errorDepartmentGoals,
+  } = useFetchDepartmentGoals({
+    departmentId: id,
+    page: 1,
+    limit: 20,
+    // search: '',
+    // priority: '',
+    // category: '',
+    // status: '',
+    // assigneeId: '',
+  });
   const form = useForm<AddDepartmentPayload>({
     resolver: zodResolver(addDepartmentSchema),
     defaultValues: {
@@ -155,150 +212,6 @@ export default function DepartmentDetailsPage({
       form.reset(formData);
     }
   }, [form, department]);
-
-  console.log('Fetched Department:', JSON.stringify(department));
-  const {
-    data: departmentMembers,
-    isLoading: isLoadingDepartmentMembers,
-    isError: isErrorDepartmentMembers,
-    error: errorDepartmentMembers,
-  } = useFetchDepartmentMembers({
-    departmentId: id,
-    page: 1,
-    limit: 10,
-    // search: '',
-    // role: '',
-    // isActive: true,
-  });
-
-  // // Mock department data - in real app, fetch based on params.id
-  // const department = {
-  //   id,
-  //   name: 'Worship Ministry',
-  //   head: {
-  //     name: 'Sarah Wilson',
-  //     id: 'staff-001',
-  //     phone: '+1 (555) 123-4567',
-  //     email: 'sarah.wilson@church.com',
-  //     avatar: '/placeholder.svg?height=64&width=64',
-  //     position: 'Worship Pastor',
-  //     joinDate: '2020-01-15',
-  //   },
-  //   branch: 'Main Campus',
-  //   branchId: 1,
-  //   members: 15,
-  //   budget: 25_000,
-  //   budgetUsed: 18_500,
-  //   status: 'Active',
-  //   category: 'Ministry',
-  //   description:
-  //     'Leads worship services and music ministry across all services, coordinating with musicians, vocalists, and technical teams to create meaningful worship experiences.',
-  //   established: '2020-01-15',
-  //   meetingDay: 'Thursday',
-  //   meetingTime: '7:00 PM',
-  //   location: 'Music Room',
-  //   goals: [
-  //     'Expand worship team to 20 members',
-  //     'Implement new sound system',
-  //     'Launch contemporary service',
-  //     'Train 5 new worship leaders',
-  //   ],
-  // };
-
-  // const departmentMembers = [
-  //   {
-  //     id: 1,
-  //     name: 'John Smith',
-  //     role: 'Lead Guitarist',
-  //     email: 'john.smith@email.com',
-  //     phone: '+1 (555) 234-5678',
-  //     joinDate: '2021-03-15',
-  //     status: 'Active',
-  //     skills: ['Guitar', 'Vocals', 'Music Theory'],
-  //     avatar: '/placeholder.svg?height=32&width=32',
-  //   },
-  //   {
-  //     id: 2,
-  //     name: 'Emily Davis',
-  //     role: 'Vocalist',
-  //     email: 'emily.davis@email.com',
-  //     phone: '+1 (555) 345-6789',
-  //     joinDate: '2021-06-20',
-  //     status: 'Active',
-  //     skills: ['Vocals', 'Piano', 'Songwriting'],
-  //     avatar: '/placeholder.svg?height=32&width=32',
-  //   },
-  //   {
-  //     id: 3,
-  //     name: 'Michael Brown',
-  //     role: 'Drummer',
-  //     email: 'michael.brown@email.com',
-  //     phone: '+1 (555) 456-7890',
-  //     joinDate: '2020-11-10',
-  //     status: 'Active',
-  //     skills: ['Drums', 'Percussion', 'Audio Engineering'],
-  //     avatar: '/placeholder.svg?height=32&width=32',
-  //   },
-  //   {
-  //     id: 4,
-  //     name: 'Lisa Wilson',
-  //     role: 'Keyboardist',
-  //     email: 'lisa.wilson@email.com',
-  //     phone: '+1 (555) 567-8901',
-  //     joinDate: '2022-01-05',
-  //     status: 'Active',
-  //     skills: ['Piano', 'Keyboard', 'Music Arrangement'],
-  //     avatar: '/placeholder.svg?height=32&width=32',
-  //   },
-  // ];
-
-  const activities = [
-    {
-      id: 1,
-      type: 'Meeting',
-      title: 'Weekly Worship Team Practice',
-      date: '2024-01-25',
-      description: 'Regular practice session for Sunday service',
-      participants: 12,
-    },
-    {
-      id: 2,
-      type: 'Event',
-      title: 'Christmas Concert Preparation',
-      date: '2024-01-22',
-      description: 'Special rehearsal for Christmas concert',
-      participants: 15,
-    },
-    {
-      id: 3,
-      type: 'Training',
-      title: 'New Member Orientation',
-      date: '2024-01-20',
-      description: 'Training session for new worship team members',
-      participants: 8,
-    },
-    {
-      id: 4,
-      type: 'Planning',
-      title: 'Q1 Worship Planning Meeting',
-      date: '2024-01-18',
-      description: 'Planning worship themes and songs for Q1',
-      participants: 6,
-    },
-  ];
-
-  const budget = {
-    allocated: 25_000,
-    used: 18_500,
-    remaining: 6500,
-    categories: [
-      { name: 'Equipment', allocated: 10_000, used: 8500 },
-      { name: 'Training', allocated: 5000, used: 3000 },
-      { name: 'Events', allocated: 7000, used: 5000 },
-      { name: 'Materials', allocated: 3000, used: 2000 },
-    ],
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -350,7 +263,7 @@ export default function DepartmentDetailsPage({
               </CardHeader>
               <CardContent>
                 <div className="font-bold text-2xl">
-                  {department?.members?.length}
+                  {departmentMembers?.data?.pagination?.totalMembers || 0}
                 </div>
                 <p className="text-muted-foreground text-xs">Active members</p>
               </CardContent>
@@ -364,14 +277,16 @@ export default function DepartmentDetailsPage({
               </CardHeader>
               <CardContent>
                 <div className="font-bold text-2xl">
-                  {/* {Math.round(
-                    (department.budgetUsed / department.budget) * 100
-                  )} */}
-                  0 %
+                  {Math.round(
+                    ((departmentExpenses?.summary?.totalSpent ?? 0) /
+                      (departmentExpenses?.summary?.totalBudget ?? 0)) *
+                      100
+                  )}
+                  %
                 </div>
                 <p className="text-muted-foreground text-xs">
-                  {/* KES {department.budgetUsed.toLocaleString()} used */}
-                  KES 0 used
+                  KES {departmentExpenses?.summary?.totalSpent.toLocaleString()}{' '}
+                  used
                 </p>
               </CardContent>
             </Card>
@@ -400,7 +315,9 @@ export default function DepartmentDetailsPage({
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="font-bold text-2xl">{activities.length}</div>
+                <div className="font-bold text-2xl">
+                  {departmentActivities?.data?.pagination?.totalActivities}
+                </div>
                 <p className="text-muted-foreground text-xs">This month</p>
               </CardContent>
             </Card>
@@ -857,7 +774,7 @@ export default function DepartmentDetailsPage({
                                   key={index}
                                   variant="outline"
                                 >
-                                  {skill}
+                                  {capitalizeFirstLetter(skill)}
                                 </Badge>
                               ))}
                             </div>
@@ -943,24 +860,32 @@ export default function DepartmentDetailsPage({
                           Total Allocated
                         </span>
                         <span className="text-sm">
-                          KES {budget.allocated.toLocaleString()}
+                          KES {department?.totalBudget.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Used</span>
                         <span className="text-sm">
-                          KES {budget.used.toLocaleString()}
+                          KES
+                          {departmentExpenses?.summary?.totalSpent.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Remaining</span>
                         <span className="font-medium text-green-600 text-sm">
-                          KES {budget.remaining.toLocaleString()}
+                          KES
+                          {departmentExpenses?.summary?.remainingBudget.toLocaleString()}
                         </span>
                       </div>
                       <Progress
                         className="w-full"
-                        value={(budget.used / budget.allocated) * 100}
+                        value={
+                          department?.totalBudget
+                            ? ((departmentExpenses?.summary?.totalSpent ?? 0) /
+                                department.totalBudget) *
+                              100
+                            : 0
+                        }
                       />
                     </div>
                   </CardContent>
@@ -974,20 +899,24 @@ export default function DepartmentDetailsPage({
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {budget.categories.map((category, index) => (
-                        <div className="space-y-2" key={index}>
+                      {departmentExpenses?.expenses.map((expense) => (
+                        <div className="space-y-2" key={expense?._id}>
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">
-                              {category.name}
+                              {capitalizeFirstLetter(expense?.category)}
                             </span>
                             <span className="text-sm">
-                              KES {category.used.toLocaleString()} /{' '}
-                              {category.allocated.toLocaleString()}
+                              KES {expense?.amount.toLocaleString()} /{' '}
+                              {departmentExpenses?.summary?.totalBudget.toLocaleString()}
                             </span>
                           </div>
                           <Progress
                             className="h-2 w-full"
-                            value={(category.used / category.allocated) * 100}
+                            value={
+                              (expense?.amount /
+                                departmentExpenses?.summary?.totalBudget) *
+                              100
+                            }
                           />
                         </div>
                       ))}
@@ -1043,37 +972,55 @@ export default function DepartmentDetailsPage({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {activities.map((activity) => (
-                        <TableRow key={activity.id}>
-                          <TableCell className="font-medium">
-                            {new Date(activity.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{activity.type}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">
-                                {activity.title}
+                      {departmentActivities?.data?.activities.map(
+                        (activity) => (
+                          <TableRow key={activity?._id}>
+                            <TableCell className="font-medium">
+                              {new Date(activity?.date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {capitalizeFirstLetter(activity?.type)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {capitalizeFirstLetter(activity?.title)}
+                                </div>
+                                <div className="text-muted-foreground text-sm">
+                                  {capitalizeFirstLetter(activity?.description)}
+                                </div>
                               </div>
-                              <div className="text-muted-foreground text-sm">
-                                {activity.description}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {activity?.participants.map((participant) => (
+                                  <Badge
+                                    className="text-xs"
+                                    key={participant?._id}
+                                    variant="outline"
+                                  >
+                                    {capitalizeFirstLetterOfEachWord(
+                                      participant?.fullName
+                                    )}
+                                  </Badge>
+                                ))}
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{activity.participants}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button size="sm" variant="outline">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="outline">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="outline">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -1114,14 +1061,16 @@ export default function DepartmentDetailsPage({
                 </Dialog>
               </div>
               <div className="grid gap-4">
-                {department?.goals.map((goal, index) => (
-                  <Card key={index}>
+                {departmentGoals?.data?.goals.map((goal) => (
+                  <Card key={goal?._id}>
                     <CardContent className="flex items-center space-x-4 p-4">
                       <div className="flex-shrink-0">
                         <Target className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium">{goal}</h4>
+                        <h4 className="font-medium">
+                          {capitalizeFirstLetter(goal?.title)}
+                        </h4>
                         <div className="mt-2 flex items-center space-x-2">
                           <Progress
                             className="h-2 flex-1"

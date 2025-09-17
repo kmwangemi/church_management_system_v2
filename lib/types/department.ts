@@ -54,7 +54,13 @@ export interface DepartmentActivity {
   date: Date;
   duration?: number;
   location?: string;
-  participants: string[];
+  participants: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    isLocked: boolean;
+    fullName: string;
+  }[];
   organizedBy: string;
   notes?: string;
   isCompleted: boolean;
@@ -124,13 +130,7 @@ export interface Department {
   establishedDate: string;
   isActive: boolean;
   isDeleted: boolean;
-  // enhanced fields
-  members: DepartmentMember[];
   totalBudget: number;
-  budgetCategories: DepartmentBudgetCategory[];
-  expenses: DepartmentExpense[];
-  activities: DepartmentActivity[];
-  goals: DepartmentGoal[];
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -152,7 +152,14 @@ export interface DepartmentMembersResponse {
   data: {
     members: DepartmentMember[];
     department: DepartmentInfo;
-    pagination: Pagination;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalMembers: number;
+      limit: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   };
 }
 
@@ -160,19 +167,26 @@ export interface DepartmentActivitiesResponse {
   success: boolean;
   data: {
     activities: DepartmentActivity[];
-    pagination: Pagination;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalActivities: number;
+      hasMore: boolean;
+    };
   };
 }
 
 export interface DepartmentExpensesResponse {
   success: boolean;
-  data: {
-    expenses: DepartmentExpense[];
-    pagination: Pagination;
-    summary: {
-      filteredTotal: number;
-      departmentName: string;
-    };
+  expenses: DepartmentExpense[];
+  pagination: Pagination;
+  summary: {
+    filteredTotal: number;
+    departmentName: string;
+    totalBudget: number;
+    totalSpent: number;
+    remainingBudget: number;
+    budgetCategories: [];
   };
 }
 

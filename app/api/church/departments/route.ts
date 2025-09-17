@@ -52,6 +52,7 @@ async function getDepartmentHandler(
     const [departments, total] = await Promise.all([
       DepartmentModel.find(query)
         .populate('branchId', 'branchName address')
+        .select('-members -budgetCategories -expenses -activities -goals')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
