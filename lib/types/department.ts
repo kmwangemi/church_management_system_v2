@@ -75,14 +75,16 @@ export interface DepartmentGoal {
   targetDate: Date;
   status: GoalStatus;
   progress: number;
-  assignedTo?: string[];
-  milestones?: {
-    title: string;
-    description?: string;
-    targetDate: Date;
-    isCompleted: boolean;
-    completedDate?: Date;
-  }[];
+  assignee?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+  };
+  priority: string
+  category: string;
+  success: string;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

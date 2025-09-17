@@ -167,8 +167,8 @@ export function AddDepartmentActivityForm({
                     <FormControl>
                       <DatePicker
                         format="long"
-                        maxDate={new Date()}
-                        minDate={getRelativeYear(-1)}
+                        maxDate={getRelativeYear(1)}
+                        minDate={new Date()}
                         onChange={(date) =>
                           field.onChange(date ? date.toISOString() : '')
                         }
