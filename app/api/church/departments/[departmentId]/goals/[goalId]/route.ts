@@ -1,5 +1,6 @@
-import { connectDB } from '@/lib/mongodb';
-import Department, { GoalStatus } from '@/models/Department';
+import dbConnect from '@/lib/mongodb';
+import { DepartmentModel } from '@/models';
+import { GoalStatus } from '@/models/department';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -10,11 +11,9 @@ export async function PUT(
   { params }: { params: { id: string; goalId: string } }
 ) {
   try {
-    await connectDB();
-
+    await dbConnect();
     const { id, goalId } = params;
     const body = await request.json();
-
     // Validate ObjectIds
     if (
       !(
@@ -27,7 +26,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
     const {
       title,
       description,
@@ -37,7 +35,6 @@ export async function PUT(
       assignedTo,
       milestones,
     } = body;
-
     // Validate status if provided
     if (status && !Object.values(GoalStatus).includes(status)) {
       return NextResponse.json(
@@ -45,7 +42,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
     // Validate progress if provided
     if (progress !== undefined && (progress < 0 || progress > 100)) {
       return NextResponse.json(
@@ -53,28 +49,22 @@ export async function PUT(
         { status: 400 }
       );
     }
-
-    const department = await Department.findById(id);
-
+    const department = await DepartmentModel.findById(id);
     if (!department) {
       return NextResponse.json(
         { error: 'Department not found' },
         { status: 404 }
       );
     }
-
     // Find the goal
     const goalIndex = department.goals.findIndex(
       (goal) => goal._id?.toString() === goalId
     );
-
     if (goalIndex === -1) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
-
     // Update goal fields
     const goal = department.goals[goalIndex];
-
     if (title !== undefined) goal.title = title;
     if (description !== undefined) goal.description = description;
     if (targetDate !== undefined) goal.targetDate = new Date(targetDate);
@@ -104,17 +94,13 @@ export async function PUT(
           : undefined,
       }));
     }
-
     goal.updatedAt = new Date();
-
     await department.save();
-
     // Populate the updated goal
     await department.populate([
       { path: 'goals.createdBy', select: 'firstName lastName' },
       { path: 'goals.assignedTo', select: 'firstName lastName' },
     ]);
-
     return NextResponse.json({
       success: true,
       message: 'Goal updated successfully',
