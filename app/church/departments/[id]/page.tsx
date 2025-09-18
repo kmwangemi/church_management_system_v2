@@ -107,6 +107,7 @@ export default function DepartmentDetailsPage({
   const [isEditing, setIsEditing] = useState(false);
   const [isAddDepartmentMemberDialogOpen, setIsAddDepartmentMemberDialogOpen] =
     useState(false);
+  const PAGE_LIMIT = 10;
   const [
     isAddDepartmentExpenseDialogOpen,
     setIsAddDepartmentExpenseDialogOpen,
@@ -131,10 +132,7 @@ export default function DepartmentDetailsPage({
   } = useFetchDepartmentMembers({
     departmentId: id,
     page: 1,
-    limit: 10,
-    // search: '',
-    // role: '',
-    // isActive: true,
+    limit: PAGE_LIMIT,
   });
   const {
     data: departmentActivities,
@@ -144,11 +142,7 @@ export default function DepartmentDetailsPage({
   } = useFetchDepartmentActivities({
     departmentId: id,
     page: 1,
-    limit: 20,
-    // search: '',
-    // activityType: '',
-    // startDate: '',
-    // endDate: '',
+    limit: PAGE_LIMIT,
   });
   const {
     data: departmentExpenses,
@@ -158,9 +152,7 @@ export default function DepartmentDetailsPage({
   } = useFetchDepartmentExpenses({
     departmentId: id,
     page: 1,
-    limit: 20,
-    // search: '',
-    // category: '',
+    limit: PAGE_LIMIT,
   });
   const {
     data: departmentGoals,
@@ -170,12 +162,7 @@ export default function DepartmentDetailsPage({
   } = useFetchDepartmentGoals({
     departmentId: id,
     page: 1,
-    limit: 20,
-    // search: '',
-    // priority: '',
-    // category: '',
-    // status: '',
-    // assigneeId: '',
+    limit: PAGE_LIMIT,
   });
   const form = useForm<AddDepartmentPayload>({
     resolver: zodResolver(addDepartmentSchema),
@@ -670,25 +657,23 @@ export default function DepartmentDetailsPage({
                 </Card>
               </div>
               {/* Description */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Description</CardTitle>
-                  <CardDescription>
-                    Department mission and overview
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isEditing ? (
-                    <Textarea defaultValue={department?.description} rows={4} />
-                  ) : (
+              {!isEditing && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Description</CardTitle>
+                    <CardDescription>
+                      Department mission and overview
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
                     <p className="text-muted-foreground text-sm">
                       {capitalizeFirstLetter(
                         department?.description || 'No description provided.'
                       )}
                     </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
             <TabsContent className="space-y-6" value="members">
               <div className="flex items-center justify-between">
