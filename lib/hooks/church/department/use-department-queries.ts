@@ -450,6 +450,33 @@ export const useUpdateDepartmentGoal = () => {
   });
 };
 
+/* ========== DELETE DEPARTMENT ACTIVITY ========== */
+const deleteDepartmentActivity = async ({
+  departmentId,
+  activityId,
+}: {
+  departmentId: string;
+  activityId: string;
+}): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete(
+    `/church/departments/${departmentId}/activities/${activityId}`
+  );
+  return data;
+};
+
+export const useDeleteDepartmentActivity = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteDepartmentActivity,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-activities'] });
+      toast.success('Department activity has been deleted successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
 /* ========== DELETE DEPARTMENT GOAL ========== */
 const deleteDepartmentGoal = async ({
   departmentId,

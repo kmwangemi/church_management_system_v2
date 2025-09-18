@@ -281,8 +281,105 @@ async function updateDepartmentGoalHandler(
   }
 }
 
-// Export the handler wrapped with logging middleware
+// DELETE /api/church/departments/[departmentId]/goals/[goalId] - Remove department goal
+async function removeDepartmentGoalHandler(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
+  const { departmentId, goalId } = await params;
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    {
+      requestId,
+      endpoint: `/api/church/departments/${departmentId}/goals/${goalId}`,
+    },
+    'api'
+  );
+  try {
+    // Check authentication and authorization
+    const authResult = await requireAuth(['superadmin', 'admin'])(request);
+    if (authResult instanceof Response) {
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
+    }
+    const user = authResult;
+    if (!user.user?.churchId) {
+      return NextResponse.json(
+        { error: 'Church ID not found' },
+        { status: 400 }
+      );
+    }
+    // Validate MongoDB ObjectId format
+    if (
+      !(
+        mongoose.Types.ObjectId.isValid(departmentId) &&
+        mongoose.Types.ObjectId.isValid(goalId)
+      )
+    ) {
+      return NextResponse.json(
+        { error: 'Invalid department ID or goal ID' },
+        { status: 400 }
+      );
+    }
+    await dbConnect();
+    // Check if department exists and belongs to the user's church
+    const department = await DepartmentModel.findOne({
+      _id: departmentId,
+      churchId: user.user.churchId,
+    });
+    if (!department) {
+      return NextResponse.json(
+        { error: 'Department not found' },
+        { status: 404 }
+      );
+    }
+    // Find and remove the goal
+    const goalIndex = department.goals.findIndex(
+      (goal: any) => goal._id?.toString() === goalId
+    );
+    if (goalIndex === -1) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
+    // Store goal info for logging before removal
+    const removedGoal = department.goals[goalIndex];
+    // Remove goal from array
+    department.goals.splice(goalIndex, 1);
+    await department.save();
+    contextLogger.info('Department goal removed successfully', {
+      departmentId,
+      goalId,
+      goalTitle: removedGoal.title,
+      goalStatus: removedGoal.status,
+    });
+    return NextResponse.json({
+      success: true,
+      message: 'Goal removed successfully',
+      data: { goalId },
+    });
+  } catch (error: any) {
+    contextLogger.error(
+      'Unexpected error in removeDepartmentGoalHandler',
+      error
+    );
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// Export the handlers wrapped with logging middleware
 export const PUT = withApiLogger(updateDepartmentGoalHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
+
+export const DELETE = withApiLogger(removeDepartmentGoalHandler, {
   logRequests: true,
   logResponses: true,
   logErrors: true,

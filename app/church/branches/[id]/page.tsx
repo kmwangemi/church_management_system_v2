@@ -2,6 +2,7 @@
 
 import RenderApiError from '@/components/api-error';
 import { CountrySelect } from '@/components/country-list-input';
+import { DatePicker } from '@/components/date-picker';
 import { DeleteActivityDialog } from '@/components/dialogs/delete-activity-dialog';
 import { DeleteScheduleDialog } from '@/components/dialogs/delete-schedule-dialog';
 import { ActivityForm } from '@/components/forms/activity-form';
@@ -9,6 +10,7 @@ import { AddDepartmentForm } from '@/components/forms/add-department-form';
 import { ServiceScheduleForm } from '@/components/forms/service-schedule-form';
 import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
+import { NumberInput } from '@/components/number-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import ReusableSelect from '@/components/reusable-select';
 import SearchInput from '@/components/search-input';
@@ -47,7 +49,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
   Table,
@@ -80,6 +81,7 @@ import {
   capitalizeFirstLetterOfEachWord,
   formatToNewDate,
   getFirstLetter,
+  getRelativeYear,
 } from '@/lib/utils';
 import {
   type UpdateBranchPayload,
@@ -492,7 +494,7 @@ export default function BranchDetailsPage({
                   <CardContent className="space-y-4">
                     {isEditing ? (
                       <Form {...form}>
-                        <form>
+                        <form className="space-y-4">
                           <FormField
                             control={form.control}
                             name="branchName"
@@ -531,10 +533,7 @@ export default function BranchDetailsPage({
                             name="phoneNumber"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>
-                                  Phone Number{' '}
-                                  <span className="text-red-500">*</span>
-                                </FormLabel>
+                                <FormLabel>Phone Number</FormLabel>
                                 <FormControl>
                                   <PhoneInput
                                     defaultCountry="KE"
@@ -559,6 +558,53 @@ export default function BranchDetailsPage({
                                     onValueChange={field.onChange} // Use onValueChange for ID
                                     placeholder="Search and select a pastor"
                                     value={field.value} // Pass the ID directly
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="capacity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Capacity (1-100,000 Members){' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <NumberInput placeholder="300" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="establishedDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Established Date{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <DatePicker
+                                    format="long"
+                                    maxDate={new Date()}
+                                    minDate={getRelativeYear(-50)}
+                                    onChange={(date) =>
+                                      field.onChange(
+                                        date ? date.toISOString() : ''
+                                      )
+                                    }
+                                    placeholder="Select established date"
+                                    value={
+                                      field.value
+                                        ? new Date(field.value)
+                                        : undefined
+                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -651,6 +697,19 @@ export default function BranchDetailsPage({
                               </div>
                             </CardContent>
                           </Card>
+                          <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} rows={4} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </form>
                       </Form>
                     ) : (
@@ -722,47 +781,25 @@ export default function BranchDetailsPage({
                         }
                       />
                     </div>
-                    {isEditing && (
-                      <div className="space-y-2">
-                        <Label htmlFor="capacity">Capacity</Label>
-                        <Input
-                          defaultValue={branch?.capacity}
-                          id="capacity"
-                          type="number"
-                        />
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </div>
               {/* Description */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Description</CardTitle>
-                  <CardDescription>Branch mission and overview</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isEditing ? (
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} rows={4} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
+              {!isEditing && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Description</CardTitle>
+                    <CardDescription>
+                      Branch mission and overview
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
                     <p className="text-muted-foreground text-sm">
                       {branch?.description}
                     </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
             <TabsContent className="space-y-6" value="members">
               {/* Search and Filter */}
@@ -1359,7 +1396,7 @@ export default function BranchDetailsPage({
                                     }
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Service
+                                    Delete Activity
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -1398,7 +1435,7 @@ export default function BranchDetailsPage({
       />
       {/* Delete Activity Dialog */}
       <DeleteActivityDialog
-        activity={selectedActivity}
+        activityId={selectedActivity?._id}
         isDeleting={isPendingDeleteActivity}
         onDelete={handleDeleteActivity}
         onOpenChange={(open) => {
