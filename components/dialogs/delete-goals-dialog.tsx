@@ -12,34 +12,34 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Trash2 } from 'lucide-react';
 
-interface DeleteActivityDialogProps {
+interface DeleteGoalDialogProps {
   open: boolean;
   isDeleting: boolean;
   onOpenChange: (open: boolean) => void;
-  activityId: string | undefined;
-  onDelete: (activityId: string) => Promise<void>; // Updated to accept string and return Promise
+  goalId: string | undefined;
+  onDelete: (goalId: string) => Promise<void>; // Updated to accept string and return Promise
 }
 
-export function DeleteActivityDialog({
+export function DeleteGoalDialog({
   open,
   isDeleting,
   onOpenChange,
-  activityId,
+  goalId,
   onDelete,
-}: DeleteActivityDialogProps) {
-  if (!activityId) return null;
-  const handleDelete = async () => await onDelete(activityId);
+}: DeleteGoalDialogProps) {
+  if (!goalId) return null;
+  const handleDelete = async () => await onDelete(goalId);
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 text-red-600">
             <Trash2 className="h-5 w-5" />
-            <span>Delete Activity</span>
+            <span>Delete Goal</span>
           </DialogTitle>
           <DialogDescription>
             This action cannot be undone. This will permanently delete all the
-            activity data.
+            goal data.
           </DialogDescription>
         </DialogHeader>
         <Separator />
@@ -61,12 +61,12 @@ export function DeleteActivityDialog({
             {isDeleting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting Activity...
+                Deleting Goal...
               </>
             ) : (
               <>
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Activity
+                Delete Goal
               </>
             )}
           </Button>
