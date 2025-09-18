@@ -69,7 +69,7 @@ async function getGoalsHandler(
       churchId: user.user.churchId,
     })
       .populate('goals.createdBy', 'firstName lastName')
-      .populate('goals.assignedTo', 'firstName lastName');
+      .populate('goals.assignee', 'firstName lastName');
     if (!department) {
       return NextResponse.json(
         { error: 'Department not found' },
@@ -253,7 +253,7 @@ async function addGoalHandler(
     // Populate the new goal
     await department.populate([
       { path: 'goals.createdBy', select: 'firstName lastName' },
-      { path: 'goals.assignedTo', select: 'firstName lastName' },
+      { path: 'goals.assignee', select: 'firstName lastName' },
     ]);
     const addedGoal = department.goals.at(-1);
     contextLogger.info('Department goal added successfully', {

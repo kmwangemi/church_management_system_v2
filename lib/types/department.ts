@@ -52,8 +52,9 @@ export interface DepartmentActivity {
   description: string;
   type: ActivityType;
   date: Date;
-  duration?: number;
-  location?: string;
+  startTime: string;
+  endTime: string;
+  location: string;
   participants: {
     _id: string;
     firstName: string;

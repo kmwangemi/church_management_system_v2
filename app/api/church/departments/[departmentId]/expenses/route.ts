@@ -223,7 +223,7 @@ async function addExpenseHandler(
     );
     if (
       department.totalBudget > 0 &&
-      totalExpenses + amount > department.totalBudget
+      totalExpenses + Number(amount) > department.totalBudget
     ) {
       return NextResponse.json(
         {

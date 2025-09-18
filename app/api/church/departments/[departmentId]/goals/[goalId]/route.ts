@@ -1,55 +1,137 @@
+import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
+import { withApiLogger } from '@/lib/middleware/api-logger';
 import dbConnect from '@/lib/mongodb';
 import { DepartmentModel } from '@/models';
 import { GoalStatus } from '@/models/department';
 import mongoose from 'mongoose';
 import { type NextRequest, NextResponse } from 'next/server';
 
-// /api/church/departments/[id]/goals/[goalId]/route.ts
-// PUT /api/church/departments/[id]/goals/[goalId] - Update goal progress
-export async function PUT(
+interface RouteParams {
+  params: {
+    departmentId: string;
+    goalId: string;
+  };
+}
+
+// PUT /api/church/departments/[id]/goals/[goalId] - Update department goal progress
+async function updateDepartmentGoalHandler(
   request: NextRequest,
-  { params }: { params: { id: string; goalId: string } }
-) {
+  { params }: RouteParams
+): Promise<NextResponse> {
+  const { departmentId, goalId } = await params;
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  const contextLogger = logger.createContextLogger(
+    {
+      requestId,
+      endpoint: `/api/church/departments/${departmentId}/goals/${goalId}`,
+    },
+    'api'
+  );
   try {
-    await dbConnect();
-    const { id, goalId } = params;
-    const body = await request.json();
-    // Validate ObjectIds
-    if (
-      !(
-        mongoose.Types.ObjectId.isValid(id) &&
-        mongoose.Types.ObjectId.isValid(goalId)
-      )
-    ) {
+    // Check authentication and authorization
+    const authResult = await requireAuth(['superadmin', 'admin'])(request);
+    if (authResult instanceof Response) {
+      const body = await authResult.text();
+      return new NextResponse(body, {
+        status: authResult.status,
+        statusText: authResult.statusText,
+        headers: authResult.headers,
+      });
+    }
+    const user = authResult;
+    if (!user.user?.churchId) {
       return NextResponse.json(
-        { error: 'Invalid department ID or goal ID' },
+        { error: 'Church ID not found' },
         { status: 400 }
       );
     }
+    // Validate MongoDB ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      return NextResponse.json(
+        { error: 'Invalid department ID format' },
+        { status: 400 }
+      );
+    }
+    if (!mongoose.Types.ObjectId.isValid(goalId)) {
+      return NextResponse.json(
+        { error: 'Invalid goal ID format' },
+        { status: 400 }
+      );
+    }
+    await dbConnect();
+    const body = await request.json();
     const {
       title,
       description,
       targetDate,
       status,
       progress,
-      assignedTo,
-      milestones,
+      assignee,
+      priority,
+      category,
+      success,
     } = body;
+    // Validate request body
+    if (!body || Object.keys(body).length === 0) {
+      return NextResponse.json(
+        { error: 'Request body cannot be empty' },
+        { status: 400 }
+      );
+    }
     // Validate status if provided
     if (status && !Object.values(GoalStatus).includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid goal status' },
+        {
+          error: `Invalid goal status. Must be one of: ${Object.values(GoalStatus).join(', ')}`,
+        },
         { status: 400 }
       );
     }
     // Validate progress if provided
-    if (progress !== undefined && (progress < 0 || progress > 100)) {
+    if (
+      progress !== undefined &&
+      (typeof progress !== 'number' || progress < 0 || progress > 100)
+    ) {
       return NextResponse.json(
-        { error: 'Progress must be between 0 and 100' },
+        { error: 'Progress must be a number between 0 and 100' },
         { status: 400 }
       );
     }
-    const department = await DepartmentModel.findById(id);
+    // Validate priority if provided
+    if (priority && !['low', 'medium', 'high'].includes(priority)) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid priority. Must be one of: low, medium, high, critical',
+        },
+        { status: 400 }
+      );
+    }
+    // Validate target date if provided
+    if (targetDate) {
+      const parsedDate = new Date(targetDate);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid target date format' },
+          { status: 400 }
+        );
+      }
+      // Check if target date is in the past (only for new goals or when moving date backwards)
+      const now = new Date();
+      if (parsedDate < now) {
+        contextLogger.warn('Target date is in the past', {
+          departmentId,
+          goalId,
+          targetDate: parsedDate.toISOString(),
+        });
+      }
+    }
+    // Check if department exists and belongs to the user's church
+    const department = await DepartmentModel.findOne({
+      _id: departmentId,
+      churchId: user.user.churchId,
+    });
     if (!department) {
       return NextResponse.json(
         { error: 'Department not found' },
@@ -63,54 +145,145 @@ export async function PUT(
     if (goalIndex === -1) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
-    // Update goal fields
     const goal = department.goals[goalIndex];
-    if (title !== undefined) goal.title = title;
-    if (description !== undefined) goal.description = description;
-    if (targetDate !== undefined) goal.targetDate = new Date(targetDate);
-    if (status !== undefined) goal.status = status;
-    if (progress !== undefined) {
+    const originalStatus = goal.status;
+    const originalProgress = goal.progress || 0;
+    // Track what fields are being updated
+    const updatedFields: string[] = [];
+    // Update goal fields
+    if (title !== undefined && title !== goal.title) {
+      if (typeof title !== 'string' || title.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Title must be a non-empty string' },
+          { status: 400 }
+        );
+      }
+      goal.title = title.trim();
+      updatedFields.push('title');
+    }
+    if (description !== undefined && description !== goal.description) {
+      goal.description =
+        typeof description === 'string' ? description.trim() : description;
+      updatedFields.push('description');
+    }
+    if (targetDate !== undefined) {
+      const parsedTargetDate = new Date(targetDate);
+      if (parsedTargetDate.getTime() !== goal.targetDate?.getTime()) {
+        goal.targetDate = parsedTargetDate;
+        updatedFields.push('targetDate');
+      }
+    }
+    if (status !== undefined && status !== goal.status) {
+      goal.status = status;
+      updatedFields.push('status');
+    }
+    if (progress !== undefined && progress !== goal.progress) {
       goal.progress = progress;
+      updatedFields.push('progress');
       // Auto-update status based on progress
       if (progress === 100 && goal.status !== GoalStatus.COMPLETED) {
         goal.status = GoalStatus.COMPLETED;
+        goal.completedAt = new Date();
+        updatedFields.push('status (auto-updated)');
       } else if (progress > 0 && goal.status === GoalStatus.PLANNED) {
         goal.status = GoalStatus.IN_PROGRESS;
+        updatedFields.push('status (auto-updated)');
+      } else if (progress === 0 && goal.status === GoalStatus.IN_PROGRESS) {
+        goal.status = GoalStatus.PLANNED;
+        updatedFields.push('status (auto-updated)');
       }
     }
-    if (assignedTo !== undefined) {
-      goal.assignedTo = assignedTo.map(
-        (userId: string) => new mongoose.Types.ObjectId(userId)
-      );
+    if (priority !== undefined && priority !== goal.priority) {
+      goal.priority = priority;
+      updatedFields.push('priority');
     }
-    if (milestones !== undefined) {
-      goal.milestones = milestones.map((milestone: any) => ({
-        title: milestone.title,
-        description: milestone.description || undefined,
-        targetDate: new Date(milestone.targetDate),
-        isCompleted: milestone.isCompleted,
-        completedDate: milestone.completedDate
-          ? new Date(milestone.completedDate)
-          : undefined,
-      }));
+    if (category !== undefined && category !== goal.category) {
+      goal.category = category;
+      updatedFields.push('category');
     }
+    if (success !== undefined && success !== goal.success) {
+      goal.success = success;
+      updatedFields.push('success');
+    }
+    if (assignee !== undefined && assignee !== goal.assignee) {
+      goal.assignee = assignee;
+      updatedFields.push('assignee');
+    }
+    // Check if any changes were made
+    if (updatedFields.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No changes detected',
+        data: goal,
+      });
+    }
+    // Update metadata
     goal.updatedAt = new Date();
+    goal.updatedBy = user.user.sub;
+    // Save the department
     await department.save();
-    // Populate the updated goal
+    // Populate the updated goal for response
     await department.populate([
-      { path: 'goals.createdBy', select: 'firstName lastName' },
-      { path: 'goals.assignedTo', select: 'firstName lastName' },
+      { path: 'goals.createdBy', select: 'firstName lastName email' },
+      { path: 'goals.assignee', select: 'firstName lastName email' },
+      { path: 'goals.updatedBy', select: 'firstName lastName email' },
     ]);
+    const updatedGoal = department.goals[goalIndex];
+    contextLogger.info('Department goal updated successfully', {
+      departmentId,
+      goalId,
+      updatedFields,
+      statusChange:
+        originalStatus !== goal.status
+          ? `${originalStatus} -> ${goal.status}`
+          : null,
+      progressChange:
+        originalProgress !== goal.progress
+          ? `${originalProgress}% -> ${goal.progress}%`
+          : null,
+    });
     return NextResponse.json({
       success: true,
       message: 'Goal updated successfully',
-      data: department.goals[goalIndex],
+      data: {
+        ...updatedGoal.toObject(),
+      },
+      changes: {
+        updatedFields,
+        statusChanged: originalStatus !== goal.status,
+        progressChanged: originalProgress !== goal.progress,
+      },
     });
-  } catch (error) {
-    console.error('Error updating goal:', error);
+  } catch (error: any) {
+    contextLogger.error(
+      'Unexpected error in updateDepartmentGoalHandler',
+      error
+    );
+    if (error.name === 'CastError') {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+    }
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.message },
+        { status: 400 }
+      );
+    }
+    if (error.code === 11_000) {
+      return NextResponse.json(
+        { error: 'Duplicate field value' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
+// Export the handler wrapped with logging middleware
+export const PUT = withApiLogger(updateDepartmentGoalHandler, {
+  logRequests: true,
+  logResponses: true,
+  logErrors: true,
+});
