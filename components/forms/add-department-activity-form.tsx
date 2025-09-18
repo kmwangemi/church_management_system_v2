@@ -47,7 +47,6 @@ export const addDepartmentActivitySchema = z.object({
     .array(z.string())
     .min(1, 'At least one participant is required'),
   description: z.string().min(1, 'Description is required').trim(),
-  notes: z.string().optional(),
 });
 
 export type AddDepartmentActivityPayload = z.infer<
@@ -80,7 +79,6 @@ export function AddDepartmentActivityForm({
       location: '',
       participants: [],
       description: '',
-      notes: '',
     },
   });
   const { reset } = form;
@@ -269,23 +267,6 @@ export function AddDepartmentActivityForm({
                       <Textarea
                         placeholder="Brief description of the activity"
                         rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Additional Notes</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Any additional notes or outcomes"
-                        rows={2}
                         {...field}
                       />
                     </FormControl>

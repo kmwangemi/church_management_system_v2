@@ -90,7 +90,6 @@ import {
   Phone,
   Plus,
   Save,
-  Target,
   Trash2,
   UserPlus,
   Users,
@@ -325,7 +324,7 @@ export default function DepartmentDetailsPage({
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="members">Members</TabsTrigger>
-              <TabsTrigger value="budget">Budget</TabsTrigger>
+              <TabsTrigger value="expenses">Expenses</TabsTrigger>
               <TabsTrigger value="activities">Activities</TabsTrigger>
               <TabsTrigger value="goals">Goals</TabsTrigger>
             </TabsList>
@@ -830,7 +829,7 @@ export default function DepartmentDetailsPage({
                 </div>
               )}
             </TabsContent>
-            <TabsContent className="space-y-6" value="budget">
+            <TabsContent className="space-y-6" value="expenses">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium text-lg">Budget Management</h3>
@@ -870,16 +869,21 @@ export default function DepartmentDetailsPage({
               {isLoadingDepartmentExpenses ? (
                 <SpinnerLoader description="Loading department expenses..." />
               ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Budget Overview</CardTitle>
-                      <CardDescription>
-                        Annual budget allocation and usage
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Budget Overview</CardTitle>
+                    <CardDescription>
+                      Annual budget allocation, usage, and detailed expense
+                      breakdown
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Budget Summary Section */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-900 text-sm">
+                        Budget Summary
+                      </h4>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">
                             Total Allocated
@@ -891,14 +895,14 @@ export default function DepartmentDetailsPage({
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">Used</span>
                           <span className="text-sm">
-                            KES
+                            KES{' '}
                             {departmentExpenses?.summary?.totalSpent.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">Remaining</span>
                           <span className="font-medium text-green-600 text-sm">
-                            KES
+                            KES{' '}
                             {departmentExpenses?.summary?.remainingBudget.toLocaleString()}
                           </span>
                         </div>
@@ -914,54 +918,83 @@ export default function DepartmentDetailsPage({
                           }
                         />
                       </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Budget Categories</CardTitle>
-                      <CardDescription>
-                        Breakdown by expense category
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {departmentExpenses?.expenses.map((expense) => (
-                          <div className="space-y-2" key={expense?._id}>
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">
-                                {capitalizeFirstLetter(expense?.category)}
-                              </span>
-                              <span className="text-sm">
-                                KES {expense?.amount.toLocaleString()} /{' '}
-                                {departmentExpenses?.summary?.totalBudget.toLocaleString()}
-                              </span>
-                            </div>
-                            <Progress
-                              className="h-2 w-full"
-                              value={
-                                (expense?.amount /
-                                  departmentExpenses?.summary?.totalBudget) *
-                                100
-                              }
-                            />
-                          </div>
-                        ))}
+                    </div>
+                    {/* Divider */}
+                    <div className="border-gray-200 border-t" />
+                    {/* Expense Breakdown Section */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-900 text-sm">
+                        Expense Breakdown
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Amount</TableHead>
+                              <TableHead>Receipt/Ref</TableHead>
+                              <TableHead>Vendor</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {departmentExpenses?.expenses.map((expense) => (
+                              <TableRow key={expense?._id}>
+                                <TableCell className="font-medium">
+                                  {new Date(expense?.date).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {capitalizeFirstLetter(expense?.category)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">
+                                  KES {expense?.amount.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {expense?.reference ?? 'Not Provided'}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {capitalizeFirstLetter(
+                                    expense?.vendor ?? 'Not Provided'
+                                  )}
+                                </TableCell>
+                                <TableCell className="max-w-xs truncate text-sm">
+                                  {capitalizeFirstLetter(
+                                    expense?.description ?? 'Not Provided'
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-1">
+                                    <Button size="sm" variant="outline">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="sm" variant="destructive">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {(!departmentExpenses?.expenses ||
+                              departmentExpenses.expenses.length === 0) && (
+                              <TableRow>
+                                <TableCell
+                                  className="py-8 text-center text-gray-500"
+                                  colSpan={7}
+                                >
+                                  No expenses recorded yet
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-              {departmentExpenses?.expenses.length === 0 && (
-                <div className="py-12 text-center">
-                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
-                    No expenses found
-                  </h3>
-                  <p className="text-gray-500">
-                    Try adding a new expense or adjusting your search/filter
-                    criteria.
-                  </p>
-                </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
             <TabsContent className="space-y-6" value="activities">
@@ -1012,7 +1045,10 @@ export default function DepartmentDetailsPage({
                           <TableHead>Date</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Activity</TableHead>
+                          <TableHead>Time (Hrs)</TableHead>
+                          <TableHead>Location</TableHead>
                           <TableHead>Participants</TableHead>
+                          <TableHead>Description</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1031,7 +1067,9 @@ export default function DepartmentDetailsPage({
                               <TableCell>
                                 <div>
                                   <div className="font-medium">
-                                    {capitalizeFirstLetter(activity?.title)}
+                                    {capitalizeFirstLetterOfEachWord(
+                                      activity?.title
+                                    )}
                                   </div>
                                   <div className="text-muted-foreground text-sm">
                                     {capitalizeFirstLetter(
@@ -1039,6 +1077,19 @@ export default function DepartmentDetailsPage({
                                     )}
                                   </div>
                                 </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                <div className="flex space-x-2">
+                                  <div className="text-sm">
+                                    {activity?.startTime ?? 'N/A'} -{' '}
+                                    {activity?.endTime ?? 'N/A'}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {capitalizeFirstLetterOfEachWord(
+                                  activity?.location
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
@@ -1054,6 +1105,9 @@ export default function DepartmentDetailsPage({
                                     </Badge>
                                   ))}
                                 </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {capitalizeFirstLetter(activity?.description)}
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-2">
@@ -1168,9 +1222,7 @@ export default function DepartmentDetailsPage({
                             <TableCell>
                               {capitalizeFirstLetter(goal?.category)}
                             </TableCell>
-                            <TableCell>
-                              {goal?.assignee?.firstName}
-                            </TableCell>
+                            <TableCell>{goal?.assignee?.firstName}</TableCell>
                             <TableCell>
                               {capitalizeFirstLetter(
                                 goal?.success ?? 'Not Provided'
