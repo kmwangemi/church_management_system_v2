@@ -140,7 +140,7 @@ async function updateDepartmentGoalHandler(
     }
     // Find the goal
     const goalIndex = department.goals.findIndex(
-      (goal) => goal._id?.toString() === goalId
+      (goal: any) => goal._id?.toString() === goalId
     );
     if (goalIndex === -1) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });

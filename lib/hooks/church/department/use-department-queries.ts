@@ -503,3 +503,87 @@ export const useDeleteDepartmentGoal = () => {
     },
   });
 };
+
+/* ========== DELETE DEPARTMENT EXPENSE ========== */
+const deleteDepartmentExpense = async ({
+  departmentId,
+  expenseId,
+}: {
+  departmentId: string;
+  expenseId: string;
+}): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete(
+    `/church/departments/${departmentId}/expenses/${expenseId}`
+  );
+  return data;
+};
+
+export const useDeleteDepartmentExpense = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteDepartmentExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-expenses'] });
+      toast.success('Department expense has been deleted successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== DELETE DEPARTMENT MEMBER ========== */
+const deleteDepartmentMember = async ({
+  departmentId,
+  memberId,
+}: {
+  departmentId: string;
+  memberId: string;
+}): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete(
+    `/church/departments/${departmentId}/members/${memberId}`
+  );
+  return data;
+};
+
+export const useDeleteDepartmentMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteDepartmentMember,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-members'] });
+      toast.success('Department member has been deleted successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== UPDATE DEPARTMENT MEMBER ========== */
+const updateDepartmentMember = async ({
+  departmentId,
+  memberId,
+  payload,
+}: {
+  departmentId: string;
+  memberId: string;
+  payload: Partial<AddDepartmentMemberPayload>;
+}): Promise<any> => {
+  const { data } = await apiClient.put(
+    `/church/departments/${departmentId}/members/${memberId}`,
+    payload
+  );
+  return data;
+};
+
+export const useUpdateDepartmentMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateDepartmentMember,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-members'] });
+      toast.success('Department member has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
