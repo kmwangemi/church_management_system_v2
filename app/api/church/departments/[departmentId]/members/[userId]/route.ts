@@ -60,7 +60,14 @@ async function updateDepartmentMemberHandler(
     }
     await dbConnect();
     const body = await request.json();
-    const { role, skills, isActive, notes } = body;
+    const {
+      role,
+      skills,
+      isActive,
+      notes,
+      userId: updateUserId,
+      joinedDate,
+    } = body;
     // Validate role if provided
     if (role && !Object.values(MemberRole).includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
@@ -78,7 +85,7 @@ async function updateDepartmentMemberHandler(
     }
     // Find the member
     const memberIndex = department.members.findIndex(
-      (member) => member.userId.toString() === userId
+      (member) => member._id.toString() === userId
     );
     if (memberIndex === -1) {
       return NextResponse.json(
@@ -88,9 +95,17 @@ async function updateDepartmentMemberHandler(
     }
     // Update member fields
     const updateFields: string[] = [];
+    if (updateUserId !== undefined) {
+      department.members[memberIndex].userId = updateUserId;
+      updateFields.push('userId');
+    }
     if (role !== undefined) {
       department.members[memberIndex].role = role;
       updateFields.push('role');
+    }
+    if (joinedDate !== undefined) {
+      department.members[memberIndex].joinedDate = joinedDate;
+      updateFields.push('joinedDate');
     }
     if (skills !== undefined) {
       department.members[memberIndex].skills = skills;
@@ -193,7 +208,7 @@ async function removeDepartmentMemberHandler(
     }
     // Find and remove the member
     const memberIndex = department.members.findIndex(
-      (member) => member.userId.toString() === userId
+      (member: any) => member._id.toString() === userId
     );
     if (memberIndex === -1) {
       return NextResponse.json(

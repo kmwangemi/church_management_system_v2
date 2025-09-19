@@ -27,10 +27,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UserCombobox } from '@/components/user-combobox';
-import { useAddDepartmentMember } from '@/lib/hooks/church/department/use-department-queries';
+import {
+  useAddDepartmentMember,
+  useUpdateDepartmentMember,
+} from '@/lib/hooks/church/department/use-department-queries';
+import type { DepartmentMember } from '@/lib/types/department';
 import { DEPARTMENT_MEMBER_ROLE_OPTIONS, getRelativeYear } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Users } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -48,18 +53,34 @@ export type AddDepartmentMemberPayload = z.infer<
 interface AddDepartmentMemberFormProps {
   departmentId: string;
   onCloseDialog: () => void;
+  member?: DepartmentMember; // Optional member for edit mode
+  mode?: 'add' | 'edit'; // Form mode
 }
 
 export function AddDepartmentMemberForm({
   departmentId,
   onCloseDialog,
+  member,
+  mode = 'add',
 }: AddDepartmentMemberFormProps) {
+  // Hooks for both create and update
   const {
     mutateAsync: addDepartmentMemberMutation,
-    isPending,
-    isError,
-    error,
+    isPending: isPendingAddDepartmentMember,
+    isError: isErrorAddDepartmentMember,
+    error: errorAddDepartmentMember,
   } = useAddDepartmentMember();
+  const {
+    mutateAsync: UpdateDepartmentMemberMutation,
+    isPending: isPendingUpdateDepartmentMember,
+    isError: isErrorUpdateDepartmentMember,
+    error: errorUpdateDepartmentMember,
+  } = useUpdateDepartmentMember();
+  // Determine which mutation is pending/errored
+  const isPending =
+    isPendingAddDepartmentMember || isPendingUpdateDepartmentMember;
+  const isError = isErrorAddDepartmentMember || isErrorUpdateDepartmentMember;
+  const error = errorAddDepartmentMember || errorUpdateDepartmentMember;
   const form = useForm<AddDepartmentMemberPayload>({
     resolver: zodResolver(addDepartmentMemberSchema),
     defaultValues: {
@@ -70,9 +91,32 @@ export function AddDepartmentMemberForm({
     },
   });
   const { reset } = form;
+  // Effect to populate form when in edit mode
+  console.log('member--->', member?.role);
+  useEffect(() => {
+    if (mode === 'edit' && member) {
+      reset({
+        userId: member?.userId?._id ?? undefined,
+        role: member?.role ?? '',
+        skills: member?.skills,
+        joinedDate: member?.joinedDate,
+      });
+    }
+  }, [mode, member, reset]);
   // Handle form submission
   const onSubmit = async (payload: AddDepartmentMemberPayload) => {
-    await addDepartmentMemberMutation({ departmentId, payload });
+    if (mode === 'edit' && member) {
+      await UpdateDepartmentMemberMutation({
+        departmentId,
+        memberId: member?._id,
+        payload,
+      });
+    } else {
+      await addDepartmentMemberMutation({
+        departmentId,
+        payload,
+      });
+    }
     onCloseDialog();
     reset();
   };
@@ -198,10 +242,19 @@ export function AddDepartmentMemberForm({
             </Button>
             <Button disabled={isPending} type="submit">
               {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding Member...
-                </>
+                mode === 'edit' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating Member...
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding Member...
+                  </>
+                )
+              ) : mode === 'edit' ? (
+                'Update Member'
               ) : (
                 'Add Member'
               )}

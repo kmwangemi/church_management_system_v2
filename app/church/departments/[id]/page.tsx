@@ -3,7 +3,9 @@
 import RenderApiError from '@/components/api-error';
 import { DatePicker } from '@/components/date-picker';
 import { DeleteActivityDialog } from '@/components/dialogs/delete-activity-dialog';
+import { DeleteExpenseDialog } from '@/components/dialogs/delete-expense-dialog';
 import { DeleteGoalDialog } from '@/components/dialogs/delete-goals-dialog';
+import { DeleteMemberDialog } from '@/components/dialogs/delete-member-dialog';
 import { AddDepartmentActivityForm } from '@/components/forms/add-department-activity-form';
 import { AddDepartmentExpenseForm } from '@/components/forms/add-department-expense-form';
 import { AddDepartmentGoalForm } from '@/components/forms/add-department-goal-form';
@@ -60,7 +62,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/user-combobox';
 import {
   useDeleteDepartmentActivity,
+  useDeleteDepartmentExpense,
   useDeleteDepartmentGoal,
+  useDeleteDepartmentMember,
   useFetchDepartmentActivities,
   useFetchDepartmentById,
   useFetchDepartmentExpenses,
@@ -69,7 +73,9 @@ import {
 } from '@/lib/hooks/church/department/use-department-queries';
 import type {
   DepartmentActivity,
+  DepartmentExpense,
   DepartmentGoal,
+  DepartmentMember,
 } from '@/lib/types/department';
 import {
   capitalizeFirstLetter,
@@ -113,7 +119,8 @@ export default function DepartmentDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [isEditing, setIsEditing] = useState(false);
-  const [isAddDepartmentMemberDialogOpen, setIsAddDepartmentMemberDialogOpen] =
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
+  const [isDepartmentMemberDialogOpen, setIsDepartmentMemberDialogOpen] =
     useState(false);
   const PAGE_LIMIT = 10;
   const [
@@ -129,6 +136,11 @@ export default function DepartmentDetailsPage({
   const [selectedActivity, setSelectedActivity] =
     useState<DepartmentActivity | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<DepartmentGoal | null>(null);
+  const [selectedExpense, setSelectedExpense] =
+    useState<DepartmentExpense | null>(null);
+  const [selectedMember, setSelectedMember] = useState<DepartmentMember | null>(
+    null
+  );
   const {
     data: department,
     isLoading: isLoadingDepartment,
@@ -215,6 +227,27 @@ export default function DepartmentDetailsPage({
     isError: isErrorDeleteActivity,
     error: errorDeleteActivity,
   } = useDeleteDepartmentActivity();
+  // Delete department expense mutation
+  const {
+    mutateAsync: deleteExpenseMutation,
+    isPending: isPendingDeleteExpense,
+    isError: isErrorDeleteExpense,
+    error: errorDeleteExpense,
+  } = useDeleteDepartmentExpense();
+  // Delete goal mutation
+  const {
+    mutateAsync: deleteGoalMutation,
+    isPending: isPendingDeleteGoal,
+    isError: isErrorDeleteGoal,
+    error: errorDeleteGoal,
+  } = useDeleteDepartmentGoal();
+  // Delete member mutation
+  const {
+    mutateAsync: deleteMemberMutation,
+    isPending: isPendingDeleteMember,
+    isError: isErrorDeleteMember,
+    error: errorDeleteMember,
+  } = useDeleteDepartmentMember();
   const handleDeleteActivity = async (activityId: string) => {
     await deleteActivityMutation({
       departmentId: id,
@@ -225,13 +258,6 @@ export default function DepartmentDetailsPage({
   const openActivityDeleteDialog = (activity: DepartmentActivity) => {
     setSelectedActivity(activity);
   };
-  // Delete goal activity mutation
-  const {
-    mutateAsync: deleteGoalMutation,
-    isPending: isPendingDeleteGoal,
-    isError: isErrorDeleteGoal,
-    error: errorDeleteGoal,
-  } = useDeleteDepartmentGoal();
   const handleDeleteGoal = async (goalId: string) => {
     await deleteGoalMutation({
       departmentId: id,
@@ -242,6 +268,47 @@ export default function DepartmentDetailsPage({
   const openGoalDeleteDialog = (goal: DepartmentGoal) => {
     setSelectedGoal(goal);
   };
+  const handleDeleteExpense = async (expenseId: string) => {
+    await deleteExpenseMutation({
+      departmentId: id,
+      expenseId,
+    });
+    setSelectedExpense(null);
+  };
+  const openExpenseDeleteDialog = (expense: DepartmentExpense) => {
+    setSelectedExpense(expense);
+  };
+  const handleDeleteMember = async (memberId: string) => {
+    await deleteMemberMutation({
+      departmentId: id,
+      memberId,
+    });
+    setSelectedMember(null);
+  };
+  const openMemberDeleteDialog = (member: DepartmentMember) => {
+    setSelectedMember(member);
+  };
+
+  // Function to open member dialog in add mode
+  const handleAddDepartmentMember = () => {
+    setSelectedMember(null);
+    setDialogMode('add');
+    setIsDepartmentMemberDialogOpen(true);
+  };
+  // Function to open member dialog in edit mode
+  const handleEditDepartmentMember = (member: DepartmentMember) => {
+    setSelectedMember(member);
+    setDialogMode('edit');
+    setIsDepartmentMemberDialogOpen(true);
+  };
+
+  // Function to close member dialog and reset state
+  const handleCloseDepartmentMemberDialog = () => {
+    setIsDepartmentMemberDialogOpen(false);
+    setSelectedMember(null);
+    setDialogMode('add');
+  };
+
   return (
     <>
       <div className="space-y-6">
@@ -738,33 +805,45 @@ export default function DepartmentDetailsPage({
                     </p>
                   </div>
                   <Dialog
-                    onOpenChange={setIsAddDepartmentMemberDialogOpen}
-                    open={isAddDepartmentMemberDialogOpen}
+                    onOpenChange={(open) => {
+                      if (open) setIsDepartmentMemberDialogOpen(open);
+                      else handleCloseDepartmentMemberDialog();
+                    }}
+                    open={isDepartmentMemberDialogOpen}
                   >
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={handleAddDepartmentMember}>
                         <UserPlus className="mr-2 h-4 w-4" />
                         Add Member
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Add Department Member</DialogTitle>
+                        <DialogTitle>
+                          {dialogMode === 'edit'
+                            ? 'Edit Department Member'
+                            : 'Add Department Member'}
+                        </DialogTitle>
                         <DialogDescription>
-                          Add a member to this department
+                          {dialogMode === 'edit'
+                            ? 'Update a member of this department'
+                            : 'Add a member to this department'}
                         </DialogDescription>
                       </DialogHeader>
                       <AddDepartmentMemberForm
                         departmentId={id}
-                        onCloseDialog={() =>
-                          setIsAddDepartmentMemberDialogOpen(false)
-                        }
+                        member={selectedMember ?? undefined}
+                        mode={dialogMode}
+                        onCloseDialog={handleCloseDepartmentMemberDialog}
                       />
                     </DialogContent>
                   </Dialog>
                 </div>
                 {isErrorDepartmentMembers && (
                   <RenderApiError error={errorDepartmentMembers} />
+                )}
+                {isErrorDeleteMember && (
+                  <RenderApiError error={errorDeleteMember} />
                 )}
                 {isLoadingDepartmentMembers ? (
                   <SpinnerLoader description="Loading department members..." />
@@ -842,10 +921,22 @@ export default function DepartmentDetailsPage({
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-2">
-                                  <Button size="sm" variant="outline">
+                                  <Button
+                                    onClick={() =>
+                                      handleEditDepartmentMember(member)
+                                    }
+                                    size="sm"
+                                    variant="outline"
+                                  >
                                     <Edit className="h-4 w-4" />
                                   </Button>
-                                  <Button size="sm" variant="destructive">
+                                  <Button
+                                    onClick={() =>
+                                      openMemberDeleteDialog(member)
+                                    }
+                                    size="sm"
+                                    variant="destructive"
+                                  >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -906,6 +997,9 @@ export default function DepartmentDetailsPage({
                 </div>
                 {isErrorDepartmentExpenses && (
                   <RenderApiError error={errorDepartmentExpenses} />
+                )}
+                {isErrorDeleteExpense && (
+                  <RenderApiError error={errorDeleteExpense} />
                 )}
                 {isLoadingDepartmentExpenses ? (
                   <SpinnerLoader description="Loading department expenses..." />
@@ -1016,7 +1110,13 @@ export default function DepartmentDetailsPage({
                                       <Button size="sm" variant="outline">
                                         <Edit className="h-4 w-4" />
                                       </Button>
-                                      <Button size="sm" variant="destructive">
+                                      <Button
+                                        onClick={() =>
+                                          openExpenseDeleteDialog(expense)
+                                        }
+                                        size="sm"
+                                        variant="destructive"
+                                      >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </div>
@@ -1350,6 +1450,26 @@ export default function DepartmentDetailsPage({
           if (!open) setSelectedGoal(null);
         }}
         open={!!selectedGoal}
+      />
+      {/* Delete Expense Dialog */}
+      <DeleteExpenseDialog
+        expenseId={selectedExpense?._id}
+        isDeleting={isPendingDeleteExpense}
+        onDelete={handleDeleteExpense}
+        onOpenChange={(open) => {
+          if (!open) setSelectedExpense(null);
+        }}
+        open={!!selectedExpense}
+      />
+      {/* Delete Member Dialog */}
+      <DeleteMemberDialog
+        isDeleting={isPendingDeleteMember}
+        memberId={selectedMember?._id}
+        onDelete={handleDeleteMember}
+        onOpenChange={(open) => {
+          if (!open) setSelectedMember(null);
+        }}
+        open={!!selectedMember}
       />
     </>
   );
