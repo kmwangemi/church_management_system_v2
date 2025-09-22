@@ -28,13 +28,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useAddDepartmentExpense } from '@/lib/hooks/church/department/use-department-queries';
 import {
+  useAddDepartmentExpense,
+  useUpdateDepartmentExpense,
+} from '@/lib/hooks/church/department/use-department-queries';
+import type { DepartmentExpense } from '@/lib/types/department';
+import {
+  capitalizeFirstLetter,
   DEPARTMENT_EXPENSE_CATEGORY_OPTIONS,
   getRelativeYear,
 } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DollarSign, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -70,18 +76,34 @@ export type AddDepartmentExpensePayload = z.infer<
 interface AddDepartmentExpenseFormProps {
   departmentId: string;
   onCloseDialog: () => void;
+  expense?: DepartmentExpense; // Optional expense for edit mode
+  mode?: 'add' | 'edit'; // Form mode
 }
 
 export function AddDepartmentExpenseForm({
   departmentId,
   onCloseDialog,
+  expense,
+  mode = 'add',
 }: AddDepartmentExpenseFormProps) {
+  // Hooks for both create and update
   const {
     mutateAsync: addDepartmentExpenseMutation,
-    isPending,
-    isError,
-    error,
+    isPending: isPendingAddDepartmentExpense,
+    isError: isErrorAddDepartmentExpense,
+    error: errorAddDepartmentExpense,
   } = useAddDepartmentExpense();
+  const {
+    mutateAsync: UpdateDepartmentExpenseMutation,
+    isPending: isPendingUpdateDepartmentExpense,
+    isError: isErrorUpdateDepartmentExpense,
+    error: errorUpdateDepartmentExpense,
+  } = useUpdateDepartmentExpense();
+  // Determine which mutation is pending/errored
+  const isPending =
+    isPendingAddDepartmentExpense || isPendingUpdateDepartmentExpense;
+  const isError = isErrorAddDepartmentExpense || isErrorUpdateDepartmentExpense;
+  const error = errorAddDepartmentExpense || errorUpdateDepartmentExpense;
   const form = useForm<AddDepartmentExpensePayload>({
     resolver: zodResolver(addDepartmentExpenseSchema),
     defaultValues: {
@@ -94,9 +116,36 @@ export function AddDepartmentExpenseForm({
     },
   });
   const { reset } = form;
+  // Effect to populate form when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && expense) {
+      reset({
+        amount: expense?.amount ? String(expense?.amount) : '',
+        category: expense?.category,
+        // Convert to YYYY-MM-DD format for input type="date"
+        date: expense?.date
+          ? new Date(expense.date).toISOString().split('T')[0]
+          : '',
+        description: capitalizeFirstLetter(expense?.description ?? ''),
+        reference: expense?.reference ?? '',
+        vendor: expense?.vendor ?? '',
+      });
+    }
+  }, [mode, expense, reset]);
   // Handle form submission
   const onSubmit = async (payload: AddDepartmentExpensePayload) => {
-    await addDepartmentExpenseMutation({ departmentId, payload });
+    if (mode === 'edit' && expense) {
+      await UpdateDepartmentExpenseMutation({
+        departmentId,
+        expenseId: expense?._id,
+        payload,
+      });
+    } else {
+      await addDepartmentExpenseMutation({
+        departmentId,
+        payload,
+      });
+    }
     onCloseDialog();
     reset();
   };
@@ -250,15 +299,21 @@ export function AddDepartmentExpenseForm({
             </Button>
             <Button disabled={isPending} type="submit">
               {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding Expense...
-                </>
+                mode === 'edit' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating Expense...
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding Expense...
+                  </>
+                )
+              ) : mode === 'edit' ? (
+                'Update Expense'
               ) : (
-                <>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Add Expense
-                </>
+                'Add Expense'
               )}
             </Button>
           </div>

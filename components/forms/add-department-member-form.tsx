@@ -39,13 +39,30 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-export const addDepartmentMemberSchema = z.object({
+// Form input schema (what the form fields contain)
+export const departmentMemberFormSchema = z.object({
   userId: z.string().min(1, 'Please select department member'),
   role: z.string().min(1, 'Please select a role'),
   skills: z.string().min(1, 'Please enter at least one skill').trim(),
   joinedDate: z.string().min(1, 'Joined date is required'),
 });
 
+// API payload schema (what gets sent to the server)
+export const addDepartmentMemberSchema = z.object({
+  userId: z.string().min(1, 'Please select department member'),
+  role: z.string().min(1, 'Please select a role'),
+  skills: z
+    .array(z.string().min(1, 'Skill cannot be empty'))
+    .min(1, 'Please enter at least one skill'),
+  joinedDate: z.string().min(1, 'Joined date is required'),
+});
+
+// Form input type
+export type DepartmentMemberFormInput = z.infer<
+  typeof departmentMemberFormSchema
+>;
+
+// API payload type
 export type AddDepartmentMemberPayload = z.infer<
   typeof addDepartmentMemberSchema
 >;
@@ -53,8 +70,8 @@ export type AddDepartmentMemberPayload = z.infer<
 interface AddDepartmentMemberFormProps {
   departmentId: string;
   onCloseDialog: () => void;
-  member?: DepartmentMember; // Optional member for edit mode
-  mode?: 'add' | 'edit'; // Form mode
+  member?: DepartmentMember;
+  mode?: 'add' | 'edit';
 }
 
 export function AddDepartmentMemberForm({
@@ -63,7 +80,6 @@ export function AddDepartmentMemberForm({
   member,
   mode = 'add',
 }: AddDepartmentMemberFormProps) {
-  // Hooks for both create and update
   const {
     mutateAsync: addDepartmentMemberMutation,
     isPending: isPendingAddDepartmentMember,
@@ -76,35 +92,48 @@ export function AddDepartmentMemberForm({
     isError: isErrorUpdateDepartmentMember,
     error: errorUpdateDepartmentMember,
   } = useUpdateDepartmentMember();
-  // Determine which mutation is pending/errored
   const isPending =
     isPendingAddDepartmentMember || isPendingUpdateDepartmentMember;
   const isError = isErrorAddDepartmentMember || isErrorUpdateDepartmentMember;
   const error = errorAddDepartmentMember || errorUpdateDepartmentMember;
-  const form = useForm<AddDepartmentMemberPayload>({
-    resolver: zodResolver(addDepartmentMemberSchema),
+  const form = useForm<DepartmentMemberFormInput>({
+    resolver: zodResolver(departmentMemberFormSchema),
     defaultValues: {
-      userId: undefined,
+      userId: '',
       role: '',
       skills: '',
       joinedDate: '',
     },
   });
   const { reset } = form;
-  // Effect to populate form when in edit mode
-  console.log('member--->', member?.role);
   useEffect(() => {
     if (mode === 'edit' && member) {
       reset({
-        userId: member?.userId?._id ?? undefined,
+        userId: member?.userId?._id ?? '',
         role: member?.role ?? '',
-        skills: member?.skills,
-        joinedDate: member?.joinedDate,
+        skills: Array.isArray(member?.skills)
+          ? member.skills.join(', ')
+          : member?.skills || '',
+        joinedDate: member?.joinedDate
+          ? new Date(member.joinedDate).toISOString().split('T')[0]
+          : '',
       });
     }
   }, [mode, member, reset]);
-  // Handle form submission
-  const onSubmit = async (payload: AddDepartmentMemberPayload) => {
+  // Transform form input to API payload
+  const transformToPayload = (
+    formData: DepartmentMemberFormInput
+  ): AddDepartmentMemberPayload => {
+    return {
+      ...formData,
+      skills: formData.skills
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    };
+  };
+  const onSubmit = async (formData: DepartmentMemberFormInput) => {
+    const payload = transformToPayload(formData);
     if (mode === 'edit' && member) {
       await UpdateDepartmentMemberMutation({
         departmentId,
@@ -135,12 +164,16 @@ export function AddDepartmentMemberForm({
                 <Users className="h-5 w-5" />
                 <span>Member Information</span>
               </CardTitle>
-              <CardDescription>Add a new department member</CardDescription>
+              <CardDescription>
+                {mode === 'edit'
+                  ? 'Edit department member'
+                  : 'Add a new department member'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="userId" // Form field stores just the user ID string
+                name="userId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
@@ -149,9 +182,9 @@ export function AddDepartmentMemberForm({
                     <FormControl>
                       <UserCombobox
                         className="w-full"
-                        onValueChange={field.onChange} // Use onValueChange for ID
+                        onValueChange={field.onChange}
                         placeholder="Search and select a member"
-                        value={field.value} // Pass the ID directly
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -222,7 +255,7 @@ export function AddDepartmentMemberForm({
                         onChange={(date) =>
                           field.onChange(date ? date.toISOString() : '')
                         }
-                        placeholder="Select established date"
+                        placeholder="Select joined date"
                         value={field.value ? new Date(field.value) : undefined}
                       />
                     </FormControl>

@@ -144,8 +144,8 @@ async function updateActivityHandler(
     await department.save();
     // Populate the updated activity
     await department.populate([
-      { path: 'activities.organizedBy', select: 'firstName lastName' },
-      { path: 'activities.participants', select: 'firstName lastName' },
+      // { path: 'activities.organizedBy', select: 'firstName lastName' },
+      { path: 'activities.participants', select: 'firstName lastName email' },
     ]);
     contextLogger.info('Department activity updated successfully', {
       departmentId,

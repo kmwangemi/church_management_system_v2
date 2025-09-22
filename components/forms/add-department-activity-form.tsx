@@ -29,10 +29,19 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserMultiSelect } from '@/components/user-multi-select-combobox';
-import { useAddDepartmentActivity } from '@/lib/hooks/church/department/use-department-queries';
-import { DEPARTMENT_ACTIVITY_TYPE_OPTIONS, getRelativeYear } from '@/lib/utils';
+import {
+  useAddDepartmentActivity,
+  useUpdateDepartmentActivity,
+} from '@/lib/hooks/church/department/use-department-queries';
+import type { DepartmentActivity } from '@/lib/types/department';
+import {
+  capitalizeFirstLetter,
+  DEPARTMENT_ACTIVITY_TYPE_OPTIONS,
+  getRelativeYear,
+} from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Activity, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -56,18 +65,35 @@ export type AddDepartmentActivityPayload = z.infer<
 interface AddDepartmentActivityFormProps {
   departmentId: string;
   onCloseDialog: () => void;
+  activity?: DepartmentActivity; // Optional activity for edit mode
+  mode?: 'add' | 'edit'; // Form mode
 }
 
 export function AddDepartmentActivityForm({
   departmentId,
   onCloseDialog,
+  activity,
+  mode = 'add',
 }: AddDepartmentActivityFormProps) {
+  // Hooks for both create and update
   const {
     mutateAsync: addDepartmentActivityMutation,
-    isPending,
-    isError,
-    error,
+    isPending: isPendingAddDepartmentActivity,
+    isError: isErrorAddDepartmentActivity,
+    error: errorAddDepartmentActivity,
   } = useAddDepartmentActivity();
+  const {
+    mutateAsync: UpdateDepartmentActivityMutation,
+    isPending: isPendingUpdateDepartmentActivity,
+    isError: isErrorUpdateDepartmentActivity,
+    error: errorUpdateDepartmentActivity,
+  } = useUpdateDepartmentActivity();
+  // Determine which mutation is pending/errored
+  const isPending =
+    isPendingAddDepartmentActivity || isPendingUpdateDepartmentActivity;
+  const isError =
+    isErrorAddDepartmentActivity || isErrorUpdateDepartmentActivity;
+  const error = errorAddDepartmentActivity || errorUpdateDepartmentActivity;
   const form = useForm<AddDepartmentActivityPayload>({
     resolver: zodResolver(addDepartmentActivitySchema),
     defaultValues: {
@@ -82,9 +108,38 @@ export function AddDepartmentActivityForm({
     },
   });
   const { reset } = form;
+  // Effect to populate form when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && activity) {
+      reset({
+        type: activity?.type ?? '',
+        title: capitalizeFirstLetter(activity?.title ?? ''),
+        // Convert to YYYY-MM-DD format for input type="date"
+        date: activity?.date
+          ? new Date(activity.date).toISOString().split('T')[0]
+          : '',
+        startTime: activity?.startTime ?? '',
+        endTime: activity?.endTime ?? '',
+        location: capitalizeFirstLetter(activity?.location ?? ''),
+        participants: activity?.participants?.map((p) => p._id) ?? [], // ✅ map to IDs
+        description: capitalizeFirstLetter(activity?.description ?? ''),
+      });
+    }
+  }, [mode, activity, reset]);
   // Handle form submission
   const onSubmit = async (payload: AddDepartmentActivityPayload) => {
-    await addDepartmentActivityMutation({ departmentId, payload });
+    if (mode === 'edit' && activity) {
+      await UpdateDepartmentActivityMutation({
+        departmentId,
+        activityId: activity?._id,
+        payload,
+      });
+    } else {
+      await addDepartmentActivityMutation({
+        departmentId,
+        payload,
+      });
+    }
     onCloseDialog();
     reset();
   };
@@ -286,15 +341,21 @@ export function AddDepartmentActivityForm({
             </Button>
             <Button disabled={isPending} type="submit">
               {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging Activity...
-                </>
+                mode === 'edit' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating Activity...
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding Activity...
+                  </>
+                )
+              ) : mode === 'edit' ? (
+                'Update Activity'
               ) : (
-                <>
-                  <Activity className="mr-2 h-4 w-4" />
-                  Log Activity
-                </>
+                'Add Activity'
               )}
             </Button>
           </div>

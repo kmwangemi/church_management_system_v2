@@ -70,6 +70,7 @@ import {
   useFetchDepartmentExpenses,
   useFetchDepartmentGoals,
   useFetchDepartmentMembers,
+  useUpdateDepartmentById,
 } from '@/lib/hooks/church/department/use-department-queries';
 import type {
   DepartmentActivity,
@@ -99,6 +100,7 @@ import {
   Clock,
   DollarSign,
   Edit,
+  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -123,15 +125,11 @@ export default function DepartmentDetailsPage({
   const [isDepartmentMemberDialogOpen, setIsDepartmentMemberDialogOpen] =
     useState(false);
   const PAGE_LIMIT = 10;
-  const [
-    isAddDepartmentExpenseDialogOpen,
-    setIsAddDepartmentExpenseDialogOpen,
-  ] = useState(false);
-  const [
-    isAddDepartmentActivityDialogOpen,
-    setIsAddDepartmentActivityDialogOpen,
-  ] = useState(false);
-  const [isAddDepartmentGoalDialogOpen, setIsAddDepartmentGoalDialogOpen] =
+  const [isDepartmentExpenseDialogOpen, setIsDepartmentExpenseDialogOpen] =
+    useState(false);
+  const [isDepartmentActivityDialogOpen, setIsDepartmentActivityDialogOpen] =
+    useState(false);
+  const [isDepartmentGoalDialogOpen, setIsDepartmentGoalDialogOpen] =
     useState(false);
   const [selectedActivity, setSelectedActivity] =
     useState<DepartmentActivity | null>(null);
@@ -147,6 +145,19 @@ export default function DepartmentDetailsPage({
     isError: isErrorDepartment,
     error: errorDepartment,
   } = useFetchDepartmentById(id);
+  const {
+    mutateAsync: UpdateDepartmentMutation,
+    isPending: isPendingUpdateDepartment,
+    isError: isErrorUpdateDepartment,
+    error: errorUpdateDepartment,
+  } = useUpdateDepartmentById(id);
+  const onSubmitDepartmentForm = async (payload: AddDepartmentPayload) => {
+    await UpdateDepartmentMutation({
+      departmentId: id,
+      payload,
+    });
+    setIsEditing(false);
+  };
   const {
     data: departmentMembers,
     isLoading: isLoadingDepartmentMembers,
@@ -288,7 +299,6 @@ export default function DepartmentDetailsPage({
   const openMemberDeleteDialog = (member: DepartmentMember) => {
     setSelectedMember(member);
   };
-
   // Function to open member dialog in add mode
   const handleAddDepartmentMember = () => {
     setSelectedMember(null);
@@ -301,14 +311,66 @@ export default function DepartmentDetailsPage({
     setDialogMode('edit');
     setIsDepartmentMemberDialogOpen(true);
   };
-
   // Function to close member dialog and reset state
   const handleCloseDepartmentMemberDialog = () => {
     setIsDepartmentMemberDialogOpen(false);
     setSelectedMember(null);
     setDialogMode('add');
   };
-
+  // Function to open expense dialog in add mode
+  const handleAddDepartmentExpense = () => {
+    setSelectedExpense(null);
+    setDialogMode('add');
+    setIsDepartmentExpenseDialogOpen(true);
+  };
+  // Function to open expense dialog in edit mode
+  const handleEditDepartmentExpense = (expense: DepartmentExpense) => {
+    setSelectedExpense(expense);
+    setDialogMode('edit');
+    setIsDepartmentExpenseDialogOpen(true);
+  };
+  // Function to close expense dialog and reset state
+  const handleCloseDepartmentExpenseDialog = () => {
+    setIsDepartmentExpenseDialogOpen(false);
+    setSelectedExpense(null);
+    setDialogMode('add');
+  };
+  // Function to open activity dialog in add mode
+  const handleAddDepartmentActivity = () => {
+    setSelectedActivity(null);
+    setDialogMode('add');
+    setIsDepartmentActivityDialogOpen(true);
+  };
+  // Function to open activity dialog in edit mode
+  const handleEditDepartmentActivity = (activity: DepartmentActivity) => {
+    setSelectedActivity(activity);
+    setDialogMode('edit');
+    setIsDepartmentActivityDialogOpen(true);
+  };
+  // Function to close activity dialog and reset state
+  const handleCloseDepartmentActivityDialog = () => {
+    setIsDepartmentActivityDialogOpen(false);
+    setSelectedActivity(null);
+    setDialogMode('add');
+  };
+  // Function to open goal dialog in add mode
+  const handleAddDepartmentGoal = () => {
+    setSelectedGoal(null);
+    setDialogMode('add');
+    setIsDepartmentGoalDialogOpen(true);
+  };
+  // Function to open goal dialog in edit mode
+  const handleEditDepartmentGoal = (goal: DepartmentGoal) => {
+    setSelectedGoal(goal);
+    setDialogMode('edit');
+    setIsDepartmentGoalDialogOpen(true);
+  };
+  // Function to close goal dialog and reset state
+  const handleCloseDepartmentGoalDialog = () => {
+    setIsDepartmentGoalDialogOpen(false);
+    setSelectedGoal(null);
+    setDialogMode('add');
+  };
   return (
     <>
       <div className="space-y-6">
@@ -338,15 +400,29 @@ export default function DepartmentDetailsPage({
               {isEditing ? 'Cancel' : 'Edit'}
             </Button>
             {isEditing && (
-              <Button>
+              <Button
+                disabled={isPendingUpdateDepartment}
+                onClick={form.handleSubmit(onSubmitDepartmentForm)}
+                type="submit"
+              >
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {isPendingUpdateDepartment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Changes...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             )}
           </div>
         </div>
         {/* Department Stats */}
         {isErrorDepartment && <RenderApiError error={errorDepartment} />}
+        {isErrorUpdateDepartment && (
+          <RenderApiError error={errorUpdateDepartment} />
+        )}
         {isLoadingDepartment ? (
           <SpinnerLoader description="Loading department data..." />
         ) : (
@@ -970,27 +1046,36 @@ export default function DepartmentDetailsPage({
                     </p>
                   </div>
                   <Dialog
-                    onOpenChange={setIsAddDepartmentExpenseDialogOpen}
-                    open={isAddDepartmentExpenseDialogOpen}
+                    onOpenChange={(open) => {
+                      if (open) setIsDepartmentExpenseDialogOpen(open);
+                      else handleCloseDepartmentExpenseDialog();
+                    }}
+                    open={isDepartmentExpenseDialogOpen}
                   >
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={handleAddDepartmentExpense}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Expense
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Add Expense</DialogTitle>
+                        <DialogTitle>
+                          {dialogMode === 'edit'
+                            ? 'Edit Department Expense'
+                            : 'Add Department Expense'}
+                        </DialogTitle>
                         <DialogDescription>
-                          Add an expense to this department
+                          {dialogMode === 'edit'
+                            ? 'Update a department expense of this department'
+                            : 'Add a department expense to this department'}
                         </DialogDescription>
                       </DialogHeader>
                       <AddDepartmentExpenseForm
                         departmentId={id}
-                        onCloseDialog={() =>
-                          setIsAddDepartmentExpenseDialogOpen(false)
-                        }
+                        expense={selectedExpense ?? undefined}
+                        mode={dialogMode}
+                        onCloseDialog={handleCloseDepartmentExpenseDialog}
                       />
                     </DialogContent>
                   </Dialog>
@@ -1107,7 +1192,13 @@ export default function DepartmentDetailsPage({
                                   </TableCell>
                                   <TableCell>
                                     <div className="flex items-center space-x-1">
-                                      <Button size="sm" variant="outline">
+                                      <Button
+                                        onClick={() =>
+                                          handleEditDepartmentExpense(expense)
+                                        }
+                                        size="sm"
+                                        variant="outline"
+                                      >
                                         <Edit className="h-4 w-4" />
                                       </Button>
                                       <Button
@@ -1153,27 +1244,36 @@ export default function DepartmentDetailsPage({
                     </p>
                   </div>
                   <Dialog
-                    onOpenChange={setIsAddDepartmentActivityDialogOpen}
-                    open={isAddDepartmentActivityDialogOpen}
+                    onOpenChange={(open) => {
+                      if (open) setIsDepartmentActivityDialogOpen(open);
+                      else handleCloseDepartmentActivityDialog();
+                    }}
+                    open={isDepartmentActivityDialogOpen}
                   >
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={handleAddDepartmentActivity}>
                         <Plus className="mr-2 h-4 w-4" />
                         Log Activity
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Log Activity</DialogTitle>
+                        <DialogTitle>
+                          {dialogMode === 'edit'
+                            ? 'Edit Department Activity'
+                            : 'Add Department Activity'}
+                        </DialogTitle>
                         <DialogDescription>
-                          Add an activity to this department
+                          {dialogMode === 'edit'
+                            ? 'Update department activity of this department'
+                            : 'Add department activity to this department'}
                         </DialogDescription>
                       </DialogHeader>
                       <AddDepartmentActivityForm
+                        activity={selectedActivity ?? undefined}
                         departmentId={id}
-                        onCloseDialog={() =>
-                          setIsAddDepartmentActivityDialogOpen(false)
-                        }
+                        mode={dialogMode}
+                        onCloseDialog={handleCloseDepartmentActivityDialog}
                       />
                     </DialogContent>
                   </Dialog>
@@ -1265,7 +1365,13 @@ export default function DepartmentDetailsPage({
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center space-x-2">
-                                    <Button size="sm" variant="outline">
+                                    <Button
+                                      onClick={() =>
+                                        handleEditDepartmentActivity(activity)
+                                      }
+                                      size="sm"
+                                      variant="outline"
+                                    >
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                     <Button
@@ -1309,27 +1415,36 @@ export default function DepartmentDetailsPage({
                     </p>
                   </div>
                   <Dialog
-                    onOpenChange={setIsAddDepartmentGoalDialogOpen}
-                    open={isAddDepartmentGoalDialogOpen}
+                    onOpenChange={(open) => {
+                      if (open) setIsDepartmentGoalDialogOpen(open);
+                      else handleCloseDepartmentGoalDialog();
+                    }}
+                    open={isDepartmentGoalDialogOpen}
                   >
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={handleAddDepartmentGoal}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Goal
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Add Goal</DialogTitle>
+                        <DialogTitle>
+                          {dialogMode === 'edit'
+                            ? 'Edit Department Goal'
+                            : 'Add Department Goal'}
+                        </DialogTitle>
                         <DialogDescription>
-                          Add a goal to this department
+                          {dialogMode === 'edit'
+                            ? 'Update department goal of this department'
+                            : 'Add department goal to this department'}
                         </DialogDescription>
                       </DialogHeader>
                       <AddDepartmentGoalForm
                         departmentId={id}
-                        onCloseDialog={() =>
-                          setIsAddDepartmentGoalDialogOpen(false)
-                        }
+                        goal={selectedGoal ?? undefined}
+                        mode={dialogMode}
+                        onCloseDialog={handleCloseDepartmentGoalDialog}
                       />
                     </DialogContent>
                   </Dialog>
@@ -1395,7 +1510,13 @@ export default function DepartmentDetailsPage({
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-2">
-                                  <Button size="sm" variant="outline">
+                                  <Button
+                                    onClick={() =>
+                                      handleEditDepartmentGoal(goal)
+                                    }
+                                    size="sm"
+                                    variant="outline"
+                                  >
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                   <Button

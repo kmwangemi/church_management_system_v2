@@ -226,7 +226,7 @@ async function updateDepartmentGoalHandler(
     await department.populate([
       { path: 'goals.createdBy', select: 'firstName lastName email' },
       { path: 'goals.assignee', select: 'firstName lastName email' },
-      { path: 'goals.updatedBy', select: 'firstName lastName email' },
+      // { path: 'goals.updatedBy', select: 'firstName lastName email' },
     ]);
     const updatedGoal = department.goals[goalIndex];
     contextLogger.info('Department goal updated successfully', {

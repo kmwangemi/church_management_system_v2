@@ -89,12 +89,12 @@ async function updateExpenseHandler(
       );
     }
     // Validate amount if provided
-    if (amount !== undefined && (typeof amount !== 'number' || amount <= 0)) {
-      return NextResponse.json(
-        { error: 'Amount must be a positive number' },
-        { status: 400 }
-      );
-    }
+    // if (amount !== undefined && (typeof amount !== 'number' || amount <= 0)) {
+    //   return NextResponse.json(
+    //     { error: 'Amount must be a positive number' },
+    //     { status: 400 }
+    //   );
+    // }
     // Validate date if provided
     if (date) {
       const parsedDate = new Date(date);
