@@ -420,6 +420,36 @@ export const useFetchDepartmentGoals = (params: FetchDepartmentGoalsParams) => {
   });
 };
 
+/* ========== UPDATE DEPARTMENT MEMBER ========== */
+const updateDepartmentMember = async ({
+  departmentId,
+  memberId,
+  payload,
+}: {
+  departmentId: string;
+  memberId: string;
+  payload: Partial<AddDepartmentMemberPayload>;
+}): Promise<any> => {
+  const { data } = await apiClient.put(
+    `/church/departments/${departmentId}/members/${memberId}`,
+    payload
+  );
+  return data;
+};
+
+export const useUpdateDepartmentMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateDepartmentMember,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-members'] });
+      toast.success('Department member has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
 /* ========== UPDATE DEPARTMENT GOAL ========== */
 const updateDepartmentGoal = async ({
   departmentId,
@@ -444,6 +474,66 @@ export const useUpdateDepartmentGoal = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['department-goals'] });
       toast.success('Department goal has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== UPDATE DEPARTMENT EXPENSE ========== */
+const updateDepartmentExpense = async ({
+  departmentId,
+  expenseId,
+  payload,
+}: {
+  departmentId: string;
+  expenseId: string;
+  payload: Partial<AddDepartmentExpensePayload>;
+}): Promise<any> => {
+  const { data } = await apiClient.put(
+    `/church/departments/${departmentId}/expenses/${expenseId}`,
+    payload
+  );
+  return data;
+};
+
+export const useUpdateDepartmentExpense = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateDepartmentExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-expenses'] });
+      toast.success('Department expense has been updated successfully.', {
+        style: successToastStyle,
+      });
+    },
+  });
+};
+
+/* ========== UPDATE DEPARTMENT ACTIVITY ========== */
+const updateDepartmentActivity = async ({
+  departmentId,
+  activityId,
+  payload,
+}: {
+  departmentId: string;
+  activityId: string;
+  payload: Partial<AddDepartmentActivityPayload>;
+}): Promise<any> => {
+  const { data } = await apiClient.put(
+    `/church/departments/${departmentId}/activities/${activityId}`,
+    payload
+  );
+  return data;
+};
+
+export const useUpdateDepartmentActivity = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateDepartmentActivity,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['department-activities'] });
+      toast.success('Department activity has been updated successfully.', {
         style: successToastStyle,
       });
     },
@@ -552,36 +642,6 @@ export const useDeleteDepartmentMember = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['department-members'] });
       toast.success('Department member has been deleted successfully.', {
-        style: successToastStyle,
-      });
-    },
-  });
-};
-
-/* ========== UPDATE DEPARTMENT MEMBER ========== */
-const updateDepartmentMember = async ({
-  departmentId,
-  memberId,
-  payload,
-}: {
-  departmentId: string;
-  memberId: string;
-  payload: Partial<AddDepartmentMemberPayload>;
-}): Promise<any> => {
-  const { data } = await apiClient.put(
-    `/church/departments/${departmentId}/members/${memberId}`,
-    payload
-  );
-  return data;
-};
-
-export const useUpdateDepartmentMember = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updateDepartmentMember,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['department-members'] });
-      toast.success('Department member has been updated successfully.', {
         style: successToastStyle,
       });
     },

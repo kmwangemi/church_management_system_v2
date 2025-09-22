@@ -28,14 +28,20 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/user-combobox';
-import { useAddDepartmentGoal } from '@/lib/hooks/church/department/use-department-queries';
 import {
+  useAddDepartmentGoal,
+  useUpdateDepartmentGoal,
+} from '@/lib/hooks/church/department/use-department-queries';
+import type { DepartmentGoal } from '@/lib/types/department';
+import {
+  capitalizeFirstLetter,
   DEPARTMENT_GOAL_CATEGORY_OPTIONS,
   getRelativeYear,
   PRIORITY_OPTIONS,
 } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Target } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -54,18 +60,33 @@ export type AddDepartmentGoalPayload = z.infer<typeof addDepartmentGoalSchema>;
 interface AddDepartmentGoalFormProps {
   departmentId: string;
   onCloseDialog: () => void;
+  goal?: DepartmentGoal; // Optional goal for edit mode
+  mode?: 'add' | 'edit'; // Form mode
 }
 
 export function AddDepartmentGoalForm({
   departmentId,
   onCloseDialog,
+  goal,
+  mode = 'add',
 }: AddDepartmentGoalFormProps) {
+  // Hooks for both create and update
   const {
     mutateAsync: addDepartmentGoalMutation,
-    isPending,
-    isError,
-    error,
+    isPending: isPendingAddDepartmentGoal,
+    isError: isErrorAddDepartmentGoal,
+    error: errorAddDepartmentGoal,
   } = useAddDepartmentGoal();
+  const {
+    mutateAsync: UpdateDepartmentGoalMutation,
+    isPending: isPendingUpdateDepartmentGoal,
+    isError: isErrorUpdateDepartmentGoal,
+    error: errorUpdateDepartmentGoal,
+  } = useUpdateDepartmentGoal();
+  // Determine which mutation is pending/errored
+  const isPending = isPendingAddDepartmentGoal || isPendingUpdateDepartmentGoal;
+  const isError = isErrorAddDepartmentGoal || isErrorUpdateDepartmentGoal;
+  const error = errorAddDepartmentGoal || errorUpdateDepartmentGoal;
   const form = useForm<AddDepartmentGoalPayload>({
     resolver: zodResolver(addDepartmentGoalSchema),
     defaultValues: {
@@ -79,9 +100,36 @@ export function AddDepartmentGoalForm({
     },
   });
   const { reset } = form;
+  // Effect to populate form when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && goal) {
+      reset({
+        title: capitalizeFirstLetter(goal?.title ?? ''),
+        description: capitalizeFirstLetter(goal?.description ?? ''),
+        priority: goal?.priority ?? '',
+        targetDate: goal?.targetDate
+          ? new Date(goal.targetDate).toISOString().split('T')[0]
+          : '',
+        category: capitalizeFirstLetter(goal?.category ?? ''),
+        assignee: goal?.assignee?._id ?? undefined,
+        success: capitalizeFirstLetter(goal?.success ?? ''),
+      });
+    }
+  }, [mode, goal, reset]);
   // Handle form submission
   const onSubmit = async (payload: AddDepartmentGoalPayload) => {
-    await addDepartmentGoalMutation({ departmentId, payload });
+    if (mode === 'edit' && goal) {
+      await UpdateDepartmentGoalMutation({
+        departmentId,
+        goalId: goal?._id,
+        payload,
+      });
+    } else {
+      await addDepartmentGoalMutation({
+        departmentId,
+        payload,
+      });
+    }
     onCloseDialog();
     reset();
   };
@@ -273,15 +321,21 @@ export function AddDepartmentGoalForm({
             </Button>
             <Button disabled={isPending} type="submit">
               {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding Goal...
-                </>
+                mode === 'edit' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating Goal...
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding Goal...
+                  </>
+                )
+              ) : mode === 'edit' ? (
+                'Update Goal'
               ) : (
-                <>
-                  <Target className="mr-2 h-4 w-4" />
-                  Add Goal
-                </>
+                'Add Goal'
               )}
             </Button>
           </div>
