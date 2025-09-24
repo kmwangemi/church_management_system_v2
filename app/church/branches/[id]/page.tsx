@@ -69,6 +69,7 @@ import {
   useFetchBranchById,
   useFetchBranchDepartments,
   useFetchBranchMembers,
+  useUpdateBranchById,
 } from '@/lib/hooks/church/branch/use-branch-queries';
 import {
   useDeleteBranchServiceScheduleById,
@@ -84,6 +85,7 @@ import {
   getRelativeYear,
 } from '@/lib/utils';
 import {
+  type AddBranchPayload,
   type UpdateBranchPayload,
   updateBranchSchema,
 } from '@/lib/validations/branch';
@@ -94,6 +96,7 @@ import {
   Calendar,
   Edit,
   Eye,
+  Loader2,
   Mail,
   MapPin,
   MoreHorizontal,
@@ -138,6 +141,19 @@ export default function BranchDetailsPage({
     isError: isErrorBranch,
     error: errorBranch,
   } = useFetchBranchById(id);
+  const {
+    mutateAsync: UpdateBranchMutation,
+    isPending: isPendingUpdateBranch,
+    isError: isErrorUpdateBranch,
+    error: errorUpdateBranch,
+  } = useUpdateBranchById(id);
+  const onSubmitBranchForm = async (payload: AddBranchPayload) => {
+    await UpdateBranchMutation({
+      branchId: id,
+      payload,
+    });
+    setIsEditing(false);
+  };
   const form = useForm<UpdateBranchPayload>({
     resolver: zodResolver(updateBranchSchema),
     defaultValues: {
@@ -337,32 +353,29 @@ export default function BranchDetailsPage({
     setSelectedSchedule(null);
     setDialogMode('add');
   };
-
   // Function to open dialog in add mode
   const handleAddActivity = () => {
     setSelectedActivity(null);
     setDialogMode('add');
     setIsActivityDialogOpen(true);
   };
-
   // Function to open dialog in edit mode
   const handleEditActivity = (activity: Activity) => {
     setSelectedActivity(activity);
     setDialogMode('edit');
     setIsActivityDialogOpen(true);
   };
-
   // Function to close dialog and reset state
   const handleCloseActivityDialog = () => {
     setIsActivityDialogOpen(false);
     setSelectedActivity(null);
     setDialogMode('add');
   };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       {isErrorBranch && <RenderApiError error={errorBranch} />}
+      {isErrorUpdateBranch && <RenderApiError error={errorUpdateBranch} />}
       {isLoadingBranch ? (
         <SpinnerLoader description="Loading branch data..." />
       ) : (
@@ -377,7 +390,7 @@ export default function BranchDetailsPage({
               </Link>
               <div>
                 <h1 className="font-bold text-3xl tracking-tight">
-                  {branch?.branchName}
+                  {capitalizeFirstLetter(branch?.branchName ?? 'Not Provided')}
                 </h1>
                 <p className="text-muted-foreground">
                   Branch details and management
@@ -393,9 +406,20 @@ export default function BranchDetailsPage({
                 {isEditing ? 'Cancel' : 'Edit'}
               </Button>
               {isEditing && (
-                <Button>
+                <Button
+                  disabled={isPendingUpdateBranch}
+                  onClick={form.handleSubmit(onSubmitBranchForm)}
+                  type="submit"
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  Save Changes
+                  {isPendingUpdateBranch ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving Changes...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </Button>
               )}
             </div>
@@ -717,7 +741,9 @@ export default function BranchDetailsPage({
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {branch?.address?.street ?? 'Not Provided'}
+                            {capitalizeFirstLetter(
+                              branch?.address?.street ?? 'Not Provided'
+                            )}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -736,7 +762,9 @@ export default function BranchDetailsPage({
                           <Users className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
                             Pastor:{' '}
-                            {branch?.pastorId?.firstName ?? 'Not Provided'}
+                            {branch?.pastorId
+                              ? `${capitalizeFirstLetter(branch.pastorId.firstName ?? '')} ${capitalizeFirstLetter(branch.pastorId.lastName ?? '')}`.trim()
+                              : 'Not Provided'}
                           </span>
                         </div>
                       </>
@@ -795,7 +823,7 @@ export default function BranchDetailsPage({
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground text-sm">
-                      {branch?.description}
+                      {capitalizeFirstLetter(branch?.description ?? '')}
                     </p>
                   </CardContent>
                 </Card>
@@ -1054,13 +1082,14 @@ export default function BranchDetailsPage({
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">Members</span>
                             <span className="text-muted-foreground text-sm">
-                              {dept?.members || 0}
+                              {/* {dept?.members || 0} */}
+                              {0}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">Budget</span>
                             <span className="text-muted-foreground text-sm">
-                              {dept?.budget || 0}
+                              {dept?.totalBudget || 0}
                             </span>
                           </div>
                         </div>

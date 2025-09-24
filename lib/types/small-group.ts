@@ -24,7 +24,14 @@ export interface Group {
     country: string;
   };
   groupName: string;
-  leaderId: string;
+  leaderId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    profilePictureUrl: string;
+  } | null;
   meetingDay: string[];
   meetingTime: string[];
   description: string;

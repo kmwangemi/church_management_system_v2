@@ -130,64 +130,48 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={departmentForm.control}
-            name="leaderId" // Form field stores just the user ID string
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Leader (Optional)</FormLabel>
-                <FormControl>
-                  <UserCombobox
-                    className="w-full"
-                    onValueChange={field.onChange} // Use onValueChange for ID
-                    placeholder="Search and select a leader"
-                    value={field.value} // Pass the ID directly
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={departmentForm.control}
-            name="meetingDay"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Meeting day(s) <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <MultiSelect
-                    onChange={field.onChange}
-                    options={MEETING_DAY_OPTIONS}
-                    placeholder="Select meeting day(s)"
-                    selected={field.value || []}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={departmentForm.control}
-            name="meetingTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Meeting Time(s) <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <TimeInput
-                    multiSelect
-                    onChange={field.onChange}
-                    placeholder="Select meeting times"
-                    value={field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={departmentForm.control}
+              name="meetingDay"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Meeting day(s) <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      onChange={field.onChange}
+                      options={MEETING_DAY_OPTIONS}
+                      placeholder="Select meeting day(s)"
+                      selected={field.value || []}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={departmentForm.control}
+              name="meetingTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Meeting Time(s) <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <TimeInput
+                      multiSelect
+                      onChange={field.onChange}
+                      placeholder="Select meeting times"
+                      value={field.value}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={departmentForm.control}
             name="establishedDate"
@@ -206,6 +190,24 @@ export function AddDepartmentForm({ onCloseDialog }: AddDepartmentFormProps) {
                     }
                     placeholder="Select established date"
                     value={field.value ? new Date(field.value) : undefined}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="leaderId" // Form field stores just the user ID string
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Leader (Optional)</FormLabel>
+                <FormControl>
+                  <UserCombobox
+                    className="w-full"
+                    onValueChange={field.onChange} // Use onValueChange for ID
+                    placeholder="Search and select a leader"
+                    value={field.value} // Pass the ID directly
                   />
                 </FormControl>
                 <FormMessage />
