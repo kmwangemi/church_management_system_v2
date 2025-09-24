@@ -23,13 +23,19 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useRegisterGroup } from '@/lib/hooks/church/group/use-group-queries';
-import { GROUP_CATEGORY_OPTIONS, MEETING_DAY_OPTIONS } from '@/lib/utils';
+import {
+  getRelativeYear,
+  GROUP_CATEGORY_OPTIONS,
+  MEETING_DAY_OPTIONS,
+} from '@/lib/utils';
 import {
   type AddGroupPayload,
   addGroupSchema,
 } from '@/lib/validations/small-group';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { DatePicker } from '../date-picker';
+import { UserCombobox } from '../user-combobox';
 
 interface AddSmallGroupFormProps {
   onCloseDialog: () => void;
@@ -47,6 +53,7 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
     defaultValues: {
       groupName: '',
       leaderId: '',
+      establishedDate: '',
       meetingDay: [],
       meetingTime: [],
       description: '',
@@ -90,19 +97,6 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
           />
           <FormField
             control={groupForm.control}
-            name="leaderId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Group Leader</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter leader name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={groupForm.control}
             name="category"
             render={({ field }) => (
               <FormItem>
@@ -133,18 +127,22 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
           />
           <FormField
             control={groupForm.control}
-            name="meetingDay"
+            name="establishedDate"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Meeting day(s) <span className="text-red-500">*</span>
+                  Established Date <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <MultiSelect
-                    onChange={field.onChange}
-                    options={MEETING_DAY_OPTIONS}
-                    placeholder="Select meeting day(s)"
-                    selected={field.value || []}
+                  <DatePicker
+                    format="long"
+                    maxDate={getRelativeYear(1)}
+                    minDate={getRelativeYear(-30)}
+                    onChange={(date) =>
+                      field.onChange(date ? date.toISOString() : '')
+                    }
+                    placeholder="Select established date"
+                    value={field.value ? new Date(field.value) : undefined}
                   />
                 </FormControl>
                 <FormMessage />
@@ -153,26 +151,65 @@ export function AddSmallGroupForm({ onCloseDialog }: AddSmallGroupFormProps) {
           />
           <FormField
             control={groupForm.control}
-            name="meetingTime"
+            name="leaderId" // Form field stores just the user ID string
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Meeting Time(s) <span className="text-red-500">*</span>
-                </FormLabel>
+                <FormLabel>Leader (Optional)</FormLabel>
                 <FormControl>
-                  <TimeInput
-                    multiSelect
-                    onChange={field.onChange}
-                    placeholder="Select meeting times"
-                    value={field.value}
+                  <UserCombobox
+                    className="w-full"
+                    onValueChange={field.onChange} // Use onValueChange for ID
+                    placeholder="Search and select a leader"
+                    value={field.value} // Pass the ID directly
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={groupForm.control}
+              name="meetingDay"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Meeting day(s) <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      onChange={field.onChange}
+                      options={MEETING_DAY_OPTIONS}
+                      placeholder="Select meeting day(s)"
+                      selected={field.value || []}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={groupForm.control}
+              name="meetingTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Meeting Time(s) <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <TimeInput
+                      multiSelect
+                      onChange={field.onChange}
+                      placeholder="Select meeting times"
+                      value={field.value}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               control={groupForm.control}
               name="location"

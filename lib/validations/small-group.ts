@@ -3,6 +3,7 @@ import z from 'zod';
 export const addGroupSchema = z.object({
   groupName: z.string().min(1, 'Group name is required'),
   leaderId: z.string().optional(),
+  establishedDate: z.string().min(1, 'Established date is required'),
   meetingDay: z
     .array(z.string())
     .min(1, 'At least one meeting day is required'),

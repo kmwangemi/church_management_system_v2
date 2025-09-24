@@ -1,6 +1,8 @@
 'use client';
 
 import { AddSmallGroupForm } from '@/components/forms/add-small-group-form';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,7 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -48,7 +49,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFetchGroups } from '@/lib/hooks/church/group/use-group-queries';
+import { capitalizeFirstLetter } from '@/lib/utils';
 import {
+  Activity,
   Baby,
   BookOpen,
   Calendar,
@@ -61,13 +65,12 @@ import {
   MoreHorizontal,
   Music,
   Plus,
-  Search,
-  TrendingDown,
-  TrendingUp,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   Bar,
   BarChart,
@@ -205,6 +208,45 @@ const smallGroups = [
   },
 ];
 
+const activityData = [
+  {
+    month: 'Jan',
+    worship: 10,
+    children: 6,
+    youth: 12,
+    outreach: 4,
+    education: 8,
+    prayer: 3,
+  },
+  {
+    month: 'Feb',
+    worship: 11,
+    children: 7,
+    youth: 13,
+    outreach: 5,
+    education: 9,
+    prayer: 4,
+  },
+  {
+    month: 'Mar',
+    worship: 12,
+    children: 8,
+    youth: 15,
+    outreach: 6,
+    education: 10,
+    prayer: 4,
+  },
+  {
+    month: 'Apr',
+    worship: 12,
+    children: 8,
+    youth: 15,
+    outreach: 6,
+    education: 10,
+    prayer: 4,
+  },
+];
+
 const attendanceData = [
   { month: 'Jan', total: 95, active: 88, new: 7 },
   { month: 'Feb', total: 102, active: 92, new: 10 },
@@ -233,38 +275,38 @@ const meetingDays = [
 ];
 
 export default function SmallGroupsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDay, setSelectedDay] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const filteredGroups = smallGroups.filter((group) => {
-    const matchesSearch =
-      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      group.leader.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      group.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === 'all' ||
-      group.category.toLowerCase() === selectedCategory.toLowerCase();
-    const matchesDay =
-      selectedDay === 'all' ||
-      group.meetingDay.toLowerCase() === selectedDay.toLowerCase();
-    return matchesSearch && matchesCategory && matchesDay;
+  const searchParams = useSearchParams();
+  const page = Number.parseInt(searchParams.get('page') || '1', 10);
+  const searchQuery = searchParams.get('query') || '';
+  const {
+    register,
+    // reset: resetSearchInput,
+    handleSubmit,
+  } = useForm({
+    defaultValues: {
+      query: searchQuery,
+    },
   });
+  const {
+    data: smallGroups,
+    isLoading: isLoadingSmallGroups,
+    isError: isErrorSmallGroups,
+    error: errorSmallGroups,
+  } = useFetchGroups(page, searchQuery);
 
-  const totalMembers = smallGroups.reduce(
-    (sum, group) => sum + group.members,
+  const totalMembers = 0;
+
+  const totalCapacity = smallGroups?.groups.reduce(
+    (sum, group) => sum + group?.capacity,
     0
   );
-  const totalCapacity = smallGroups.reduce(
-    (sum, group) => sum + group.capacity,
-    0
-  );
-  const averageGrowth =
-    smallGroups.reduce((sum, group) => sum + group.growth, 0) /
-    smallGroups.length;
-  const activeGroups = smallGroups.filter(
-    (group) => group.status === 'Active'
+
+  const activeGroups = smallGroups?.groups.filter(
+    (group) => group?.isActive
   ).length;
 
   return (
@@ -303,7 +345,9 @@ export default function SmallGroupsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">{smallGroups.length}</div>
+            <div className="font-bold text-2xl">
+              {smallGroups?.groups.length}
+            </div>
             <p className="text-muted-foreground text-xs">
               {activeGroups} active groups
             </p>
@@ -338,22 +382,13 @@ export default function SmallGroupsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="font-medium text-sm">
-              Average Growth
+              Monthly Activities
             </CardTitle>
-            {averageGrowth >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            )}
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div
-              className={`font-bold text-2xl ${averageGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}
-            >
-              {averageGrowth > 0 ? '+' : ''}
-              {averageGrowth.toFixed(1)}%
-            </div>
-            <p className="text-muted-foreground text-xs">This quarter</p>
+            <div className="font-bold text-2xl">{0}</div>
+            <p className="text-muted-foreground text-xs">This month</p>
           </CardContent>
         </Card>
       </div>
@@ -474,38 +509,54 @@ export default function SmallGroupsPage() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Group Performance</CardTitle>
-                <CardDescription>Growth rates by group</CardDescription>
+                <CardTitle>Group Activities</CardTitle>
+                <CardDescription>Monthly activities by group</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {smallGroups.slice(0, 5).map((group) => (
-                    <div
-                      className="flex items-center justify-between"
-                      key={group.id}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <group.icon className="h-5 w-5 text-gray-500" />
-                        <span className="font-medium text-sm">
-                          {group.name}
-                        </span>
-                      </div>
-                      <div
-                        className={`flex items-center ${group.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        {group.growth >= 0 ? (
-                          <TrendingUp className="mr-1 h-4 w-4" />
-                        ) : (
-                          <TrendingDown className="mr-1 h-4 w-4" />
-                        )}
-                        <span className="font-medium text-sm">
-                          {group.growth > 0 ? '+' : ''}
-                          {group.growth}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ChartContainer
+                  className="h-[300px]"
+                  config={{
+                    worship: { label: 'Worship', color: '#3b82f6' },
+                    children: { label: 'Children', color: '#10b981' },
+                    youth: { label: 'Youth', color: '#f59e0b' },
+                    outreach: { label: 'Outreach', color: '#ef4444' },
+                    education: { label: 'Education', color: '#8b5cf6' },
+                    prayer: { label: 'Prayer', color: '#06b6d4' },
+                  }}
+                >
+                  <ResponsiveContainer height="100%" width="100%">
+                    <LineChart data={activityData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line
+                        dataKey="worship"
+                        stroke="var(--color-worship)"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                      <Line
+                        dataKey="children"
+                        stroke="var(--color-children)"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                      <Line
+                        dataKey="youth"
+                        stroke="var(--color-youth)"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                      <Line
+                        dataKey="outreach"
+                        stroke="var(--color-outreach)"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
               </CardContent>
             </Card>
           </div>
@@ -513,15 +564,11 @@ export default function SmallGroupsPage() {
         <TabsContent className="space-y-6" value="management">
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-gray-400" />
-              <Input
-                className="pl-10"
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search groups..."
-                value={searchTerm}
-              />
-            </div>
+            <SearchInput
+              handleSubmit={handleSubmit}
+              placeholder="Search groups..."
+              register={register}
+            />
             <Select
               onValueChange={setSelectedCategory}
               value={selectedCategory}
@@ -565,129 +612,134 @@ export default function SmallGroupsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Group</TableHead>
-                    <TableHead>Leader</TableHead>
-                    <TableHead>Schedule</TableHead>
-                    <TableHead>Members</TableHead>
-                    <TableHead>Growth</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredGroups.map((group) => (
-                    <TableRow key={group.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="rounded-lg bg-blue-100 p-1.5">
-                            <group.icon className="h-4 w-4 text-blue-600" />
+              {isLoadingSmallGroups ? (
+                <SpinnerLoader description="Loading groups..." />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Group</TableHead>
+                      <TableHead>Leader</TableHead>
+                      <TableHead>Schedule</TableHead>
+                      <TableHead>Members</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {smallGroups?.groups?.map((group) => (
+                      <TableRow key={group._id}>
+                        <TableCell>
+                          <div className="flex flex-col items-start">
+                            <div className="font-medium">
+                              {capitalizeFirstLetter(group?.groupName ?? '')}
+                            </div>
+                            <div className="text-gray-500 text-sm">
+                              {capitalizeFirstLetter(group?.category ?? '')}
+                            </div>
                           </div>
+                        </TableCell>
+                        <TableCell>
                           <div>
-                            <div className="font-medium">{group.name}</div>
-                            <div className="text-gray-500 text-sm">
-                              {group.category}
+                            <div className="font-medium">
+                              {group?.leaderId?.firstName
+                                ? `${capitalizeFirstLetter(group.leaderId.firstName)} ${capitalizeFirstLetter(group.leaderId.lastName)}`
+                                : 'Not Assigned'}
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{group.leader}</div>
-                          {group.coLeader && (
-                            <div className="text-gray-500 text-sm">
-                              Co-leader: {group.coLeader}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1 text-sm">
-                          <Calendar className="h-3 w-3" />
-                          <span>{group.meetingDay}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 text-gray-500 text-sm">
-                          <Clock className="h-3 w-3" />
-                          <span>{group.meetingTime}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 text-gray-500 text-sm">
-                          <MapPin className="h-3 w-3" />
-                          <span>{group.location}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <span className="font-medium">{group.members}</span>
-                          <span className="text-gray-500">
-                            /{group.capacity}
-                          </span>
-                        </div>
-                        <div className="mt-1 h-1.5 w-full rounded-full bg-gray-200">
-                          <div
-                            className="h-1.5 rounded-full bg-blue-600"
-                            style={{
-                              width: `${(group.members / group.capacity) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className={`flex items-center ${group.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {group.growth >= 0 ? (
-                            <TrendingUp className="mr-1 h-4 w-4" />
-                          ) : (
-                            <TrendingDown className="mr-1 h-4 w-4" />
-                          )}
-                          {group.growth > 0 ? '+' : ''}
-                          {group.growth}%
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            group.status === 'Active' ? 'default' : 'secondary'
-                          }
-                        >
-                          {group.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button className="h-8 w-8 p-0" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              asChild
-                              className="cursor-pointer"
-                            >
-                              <Link href={`/church/groups/${123}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Group
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {/* <DropdownMenuItem
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1 text-sm">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              {group?.meetingDay
+                                ?.map(
+                                  (day) =>
+                                    day.charAt(0).toUpperCase() + day.slice(1)
+                                )
+                                .join(', ')}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1 text-gray-500 text-sm">
+                            <Clock className="h-3 w-3" />
+                            <span>{group?.meetingTime?.join(', ')}</span>
+                          </div>
+                          <div className="flex items-center space-x-1 text-gray-500 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            <span>
+                              {capitalizeFirstLetter(group?.location)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <span className="font-medium">{group.members}</span>
+                            <span className="text-gray-500">
+                              /{group.capacity}
+                            </span>
+                          </div>
+                          <div className="mt-1 h-1.5 w-full rounded-full bg-gray-200">
+                            <div
+                              className="h-1.5 rounded-full bg-blue-600"
+                              style={{
+                                width: `${(group.members / group.capacity) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={group.isActive ? 'default' : 'secondary'}
+                          >
+                            {group.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-start">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button className="h-8 w-8 p-0" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                asChild
+                                className="cursor-pointer"
+                              >
+                                <Link href={`/church/groups/${group?._id}`}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Group
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {/* <DropdownMenuItem
                               className="cursor-pointer text-red-600"
-                              onClick={() => openDeleteDialog(branch)}
+                              onClick={() => openDeleteDialog(group)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Group
                             </DropdownMenuItem> */}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              {smallGroups?.groups?.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                    No groups found
+                  </h3>
+                  <p className="text-gray-500">
+                    Couldn’t find any groups. Try adjusting your filters or add
+                    a new department.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
