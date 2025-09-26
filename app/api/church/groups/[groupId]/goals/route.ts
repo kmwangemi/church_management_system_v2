@@ -75,13 +75,7 @@ async function getGroupGoalsHandler(
       );
     }
     // Validate sort parameters
-    const validSortFields = [
-      'createdAt',
-      'updatedAt',
-      'targetDate',
-      'title',
-      'progress',
-    ];
+    const validSortFields = ['createdAt', 'updatedAt', 'targetDate', 'title'];
     if (!validSortFields.includes(sortBy)) {
       return NextResponse.json(
         { error: `Invalid sort field: ${sortBy}` },
@@ -100,7 +94,7 @@ async function getGroupGoalsHandler(
       churchId: user.user.churchId,
     })
       .populate('goals.createdBy', 'firstName lastName')
-      .populate('goals.assignedTo', 'firstName lastName');
+      .populate('goals.assignee', 'firstName lastName');
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
     }
@@ -244,20 +238,18 @@ async function createGroupGoalHandler(
     const {
       title,
       description,
+      priority,
       targetDate,
-      assignedTo = [],
-      milestones = [],
-      metrics,
-      priority = 'medium',
-      tags = [],
-      createdBy,
+      category,
+      assignee,
+      success,
     } = body;
     // Validate required fields
-    if (!(title && description && targetDate && createdBy)) {
+    if (!(title && description && targetDate && category && priority)) {
       return NextResponse.json(
         {
-          error: 'Missing required fields',
-          required: ['title', 'description', 'targetDate', 'createdBy'],
+          error:
+            'title, description, category, priority and targetDate are required',
         },
         { status: 400 }
       );
@@ -275,52 +267,16 @@ async function createGroupGoalHandler(
         { status: 400 }
       );
     }
-    // Validate target date
-    const targetDateTime = new Date(targetDate);
-    if (Number.isNaN(targetDateTime.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid target date format' },
-        { status: 400 }
-      );
-    }
     // Validate target date is in the future
-    if (targetDateTime <= new Date()) {
+    const target = new Date(targetDate);
+    if (target <= new Date()) {
       return NextResponse.json(
         { error: 'Target date must be in the future' },
         { status: 400 }
       );
     }
-    // Validate createdBy is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(createdBy)) {
-      return NextResponse.json(
-        { error: 'Invalid creator ID format' },
-        { status: 400 }
-      );
-    }
-    // Validate assignedTo array
-    if (!Array.isArray(assignedTo)) {
-      return NextResponse.json(
-        { error: 'assignedTo must be an array' },
-        { status: 400 }
-      );
-    }
-    for (const userId of assignedTo) {
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return NextResponse.json(
-          { error: `Invalid assigned user ID format: ${userId}` },
-          { status: 400 }
-        );
-      }
-    }
-    // Validate milestones array
-    if (!Array.isArray(milestones)) {
-      return NextResponse.json(
-        { error: 'milestones must be an array' },
-        { status: 400 }
-      );
-    }
     // Validate priority
-    const validPriorities = ['low', 'medium', 'high', 'critical'];
+    const validPriorities = ['low', 'medium', 'high'];
     if (!validPriorities.includes(priority)) {
       return NextResponse.json(
         {
@@ -339,54 +295,37 @@ async function createGroupGoalHandler(
     }
     const newGoal = {
       _id: new mongoose.Types.ObjectId(),
-      title: title.trim(),
-      description: description.trim(),
-      targetDate: targetDateTime,
+      title,
+      description,
+      targetDate: target,
       status: GroupGoalStatus.PLANNED,
-      progress: 0,
-      assignedTo,
-      milestones: milestones.map((milestone: any) => ({
-        ...milestone,
-        title: milestone.title?.trim(),
-        description: milestone.description?.trim(),
-        isCompleted: false,
-        completedAt: null,
-      })),
-      metrics: metrics
-        ? {
-            ...metrics,
-            target: Number(metrics.target) || 0,
-            current: Number(metrics.current) || 0,
-            unit: metrics.unit?.trim() || '',
-          }
-        : null,
       priority,
-      tags: tags.map((tag: string) => tag.trim()).filter(Boolean),
-      createdBy,
+      assignee,
+      category,
+      success,
+      createdBy: user.user.sub,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     group.goals.push(newGoal);
     await group.save();
-    const updatedGroup = await GroupModel.findById(groupId)
-      .populate('goals.createdBy', 'firstName lastName')
-      .populate('goals.assignedTo', 'firstName lastName');
-    const createdGoal = updatedGroup.goals.find(
-      (goal) => goal._id?.toString() === newGoal._id.toString()
-    );
+    // Populate the new goal
+    await group.populate([
+      { path: 'goals.createdBy', select: 'firstName lastName' },
+      { path: 'goals.assignee', select: 'firstName lastName' },
+    ]);
+    const addedGoal = group.goals.at(-1);
     contextLogger.info('Group goal created successfully', {
       groupId,
       goalId: newGoal._id,
-      goalTitle: title.trim(),
-      targetDate: targetDateTime,
-      assignedToCount: assignedTo.length,
-      milestonesCount: milestones.length,
+      title,
+      targetDate: target.toISOString(),
     });
     return NextResponse.json(
       {
         success: true,
         message: 'Goal created successfully',
-        data: createdGoal,
+        data: addedGoal,
       },
       { status: 201 }
     );

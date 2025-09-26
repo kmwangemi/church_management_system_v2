@@ -626,7 +626,7 @@ export const DEPARTMENT_ACTIVITY_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export const DEPARTMENT_GOAL_CATEGORY_OPTIONS = [
+export const GOAL_CATEGORY_OPTIONS = [
   { value: 'growth', label: 'Growth' },
   { value: 'training', label: 'Training' },
   { value: 'equipment', label: 'Equipment' },

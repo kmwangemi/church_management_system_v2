@@ -222,6 +222,16 @@ async function addGoalHandler(
         { status: 400 }
       );
     }
+    // Validate priority
+    const validPriorities = ['low', 'medium', 'high'];
+    if (!validPriorities.includes(priority)) {
+      return NextResponse.json(
+        {
+          error: `Invalid priority. Must be one of: ${validPriorities.join(', ')}`,
+        },
+        { status: 400 }
+      );
+    }
     // Check if department exists and belongs to the user's church
     const department = await DepartmentModel.findOne({
       _id: departmentId,

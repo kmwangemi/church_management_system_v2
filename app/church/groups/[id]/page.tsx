@@ -1,5 +1,9 @@
 'use client';
 
+import RenderApiError from '@/components/api-error';
+import { DeleteGoalDialog } from '@/components/dialogs/delete-goals-dialog';
+import { AddGroupGoalForm } from '@/components/forms/add-group-goal-form';
+import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,6 +44,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  useDeleteGroupGoal,
+  useFetchGroupGoals,
+} from '@/lib/hooks/church/group/use-group-queries';
+import type { GroupGoal } from '@/lib/types/small-group';
+import { capitalizeFirstLetter } from '@/lib/utils';
+import {
   Activity,
   ArrowLeft,
   Calendar,
@@ -48,7 +58,9 @@ import {
   Mail,
   MapPin,
   Phone,
+  Plus,
   Target,
+  Trash2,
   TrendingUp,
   UserPlus,
   Users,
@@ -171,12 +183,68 @@ export default function GroupDetailsPage({
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
   const [searchTerm, setSearchTerm] = useState('');
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
+  const [isGroupGoalDialogOpen, setIsGroupGoalDialogOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<GroupGoal | null>(null);
+
+  const PAGE_LIMIT = 10;
+
   const filteredMembers = groupMembers.filter(
     (member) =>
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
   console.log({ id });
+
+  const {
+    data: groupGoals,
+    isLoading: isLoadingGroupGoals,
+    isError: isErrorGroupGoals,
+    error: errorGroupGoals,
+  } = useFetchGroupGoals({
+    groupId: id,
+    page: 1,
+    limit: PAGE_LIMIT,
+  });
+
+  // Delete goal mutation
+  const {
+    mutateAsync: deleteGoalMutation,
+    isPending: isPendingDeleteGoal,
+    isError: isErrorDeleteGoal,
+    error: errorDeleteGoal,
+  } = useDeleteGroupGoal();
+
+  const handleDeleteGoal = async (goalId: string) => {
+    await deleteGoalMutation({
+      groupId: id,
+      goalId,
+    });
+    setSelectedGoal(null);
+  };
+  const openGoalDeleteDialog = (goal: GroupGoal) => {
+    setSelectedGoal(goal);
+  };
+
+  // Function to open goal dialog in add mode
+  const handleAddGroupGoal = () => {
+    setSelectedGoal(null);
+    setDialogMode('add');
+    setIsGroupGoalDialogOpen(true);
+  };
+  // Function to open goal dialog in edit mode
+  const handleEditGroupGoal = (goal: GroupGoal) => {
+    setSelectedGoal(goal);
+    setDialogMode('edit');
+    setIsGroupGoalDialogOpen(true);
+  };
+  // Function to close goal dialog and reset state
+  const handleCloseGroupGoalDialog = () => {
+    setIsGroupGoalDialogOpen(false);
+    setSelectedGoal(null);
+    setDialogMode('add');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -461,10 +529,11 @@ export default function GroupDetailsPage({
       </div>
       {/* Detailed Tabs */}
       <Tabs className="space-y-4" defaultValue="members">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
         </TabsList>
         <TabsContent className="space-y-4" value="members">
           <Card>
@@ -668,7 +737,150 @@ export default function GroupDetailsPage({
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent className="space-y-6" value="goals">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-lg">Group Goals</h3>
+              <p className="text-muted-foreground text-sm">
+                Track progress on group objectives
+              </p>
+            </div>
+            <Dialog
+              onOpenChange={(open) => {
+                if (open) setIsGroupGoalDialogOpen(open);
+                else handleCloseGroupGoalDialog();
+              }}
+              open={isGroupGoalDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button onClick={handleAddGroupGoal}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Goal
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {dialogMode === 'edit'
+                      ? 'Edit Group Goal'
+                      : 'Add Group Goal'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {dialogMode === 'edit'
+                      ? 'Update group goal of this group'
+                      : 'Add group goal to this group'}
+                  </DialogDescription>
+                </DialogHeader>
+                <AddGroupGoalForm
+                  goal={selectedGoal ?? undefined}
+                  groupId={id}
+                  mode={dialogMode}
+                  onCloseDialog={handleCloseGroupGoalDialog}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+          {isErrorGroupGoals && <RenderApiError error={errorGroupGoals} />}
+          {isErrorDeleteGoal && <RenderApiError error={errorDeleteGoal} />}
+          {isLoadingGroupGoals ? (
+            <SpinnerLoader description="Loading group goals..." />
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Target Date</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Assigned To</TableHead>
+                      <TableHead>Success Criteria</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupGoals?.data?.goals.map((goal) => (
+                      <TableRow key={goal?._id}>
+                        <TableCell className="font-medium">
+                          {new Date(goal?.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {capitalizeFirstLetter(goal?.title)}
+                            </div>
+                            <div className="text-muted-foreground text-sm">
+                              {capitalizeFirstLetter(goal?.description)}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {capitalizeFirstLetter(goal?.priority)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(goal?.targetDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {capitalizeFirstLetter(goal?.category)}
+                        </TableCell>
+                        <TableCell>{`${capitalizeFirstLetter(goal?.assignee?.firstName ?? '')} ${capitalizeFirstLetter(goal?.assignee?.lastName ?? '')}`}</TableCell>
+                        <TableCell>
+                          {capitalizeFirstLetter(
+                            goal?.success ?? 'Not Provided'
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              onClick={() => handleEditGroupGoal(goal)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() => openGoalDeleteDialog(goal)}
+                              size="sm"
+                              variant="destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+          {groupGoals?.data?.goals.length === 0 && (
+            <div className="py-12 text-center">
+              <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                No goals found
+              </h3>
+              <p className="text-gray-500">
+                Try adding a new goal or adjusting your search/filter criteria.
+              </p>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+      {/* Delete Goal Dialog */}
+      <DeleteGoalDialog
+        goalId={selectedGoal?._id}
+        isDeleting={isPendingDeleteGoal}
+        onDelete={handleDeleteGoal}
+        onOpenChange={(open) => {
+          if (!open) setSelectedGoal(null);
+        }}
+        open={!!selectedGoal}
+      />
     </div>
   );
 }

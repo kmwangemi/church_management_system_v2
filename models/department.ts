@@ -347,6 +347,11 @@ const GoalSchema = new Schema<IDepartmentGoal>(
       required: true,
       trim: true,
     },
+    success: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     assignee: {
       type: Schema.Types.ObjectId,
       ref: 'User',
