@@ -29,10 +29,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/user-combobox';
 import {
-  useAddDepartmentGoal,
-  useUpdateDepartmentGoal,
-} from '@/lib/hooks/church/department/use-department-queries';
-import type { DepartmentGoal } from '@/lib/types/department';
+  useAddGroupGoal,
+  useUpdateGroupGoal,
+} from '@/lib/hooks/church/group/use-group-queries';
+import type { GroupGoal } from '@/lib/types/small-group';
 import {
   capitalizeFirstLetter,
   getRelativeYear,
@@ -45,7 +45,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-export const addDepartmentGoalSchema = z.object({
+export const addGroupGoalSchema = z.object({
   title: z.string().min(1, 'Goal title is required').trim(),
   description: z.string().min(1, 'Description is required').trim(),
   priority: z.string().min(1, 'Please select priority level'),
@@ -55,40 +55,40 @@ export const addDepartmentGoalSchema = z.object({
   success: z.string().min(1, 'Success criteria is required').trim(),
 });
 
-export type AddDepartmentGoalPayload = z.infer<typeof addDepartmentGoalSchema>;
+export type AddGroupGoalPayload = z.infer<typeof addGroupGoalSchema>;
 
-interface AddDepartmentGoalFormProps {
-  departmentId: string;
+interface AddGroupGoalFormProps {
+  groupId: string;
   onCloseDialog: () => void;
-  goal?: DepartmentGoal; // Optional goal for edit mode
+  goal?: GroupGoal; // Optional goal for edit mode
   mode?: 'add' | 'edit'; // Form mode
 }
 
-export function AddDepartmentGoalForm({
-  departmentId,
+export function AddGroupGoalForm({
+  groupId,
   onCloseDialog,
   goal,
   mode = 'add',
-}: AddDepartmentGoalFormProps) {
+}: AddGroupGoalFormProps) {
   // Hooks for both create and update
   const {
-    mutateAsync: addDepartmentGoalMutation,
-    isPending: isPendingAddDepartmentGoal,
-    isError: isErrorAddDepartmentGoal,
-    error: errorAddDepartmentGoal,
-  } = useAddDepartmentGoal();
+    mutateAsync: addGroupGoalMutation,
+    isPending: isPendingAddGroupGoal,
+    isError: isErrorAddGroupGoal,
+    error: errorAddGroupGoal,
+  } = useAddGroupGoal();
   const {
-    mutateAsync: UpdateDepartmentGoalMutation,
-    isPending: isPendingUpdateDepartmentGoal,
-    isError: isErrorUpdateDepartmentGoal,
-    error: errorUpdateDepartmentGoal,
-  } = useUpdateDepartmentGoal();
+    mutateAsync: UpdateGroupGoalMutation,
+    isPending: isPendingUpdateGroupGoal,
+    isError: isErrorUpdateGroupGoal,
+    error: errorUpdateGroupGoal,
+  } = useUpdateGroupGoal();
   // Determine which mutation is pending/errored
-  const isPending = isPendingAddDepartmentGoal || isPendingUpdateDepartmentGoal;
-  const isError = isErrorAddDepartmentGoal || isErrorUpdateDepartmentGoal;
-  const error = errorAddDepartmentGoal || errorUpdateDepartmentGoal;
-  const form = useForm<AddDepartmentGoalPayload>({
-    resolver: zodResolver(addDepartmentGoalSchema),
+  const isPending = isPendingAddGroupGoal || isPendingUpdateGroupGoal;
+  const isError = isErrorAddGroupGoal || isErrorUpdateGroupGoal;
+  const error = errorAddGroupGoal || errorUpdateGroupGoal;
+  const form = useForm<AddGroupGoalPayload>({
+    resolver: zodResolver(addGroupGoalSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -117,16 +117,16 @@ export function AddDepartmentGoalForm({
     }
   }, [mode, goal, reset]);
   // Handle form submission
-  const onSubmit = async (payload: AddDepartmentGoalPayload) => {
+  const onSubmit = async (payload: AddGroupGoalPayload) => {
     if (mode === 'edit' && goal) {
-      await UpdateDepartmentGoalMutation({
-        departmentId,
+      await UpdateGroupGoalMutation({
+        groupId,
         goalId: goal?._id,
         payload,
       });
     } else {
-      await addDepartmentGoalMutation({
-        departmentId,
+      await addGroupGoalMutation({
+        groupId,
         payload,
       });
     }
@@ -148,7 +148,7 @@ export function AddDepartmentGoalForm({
                 <Target className="h-5 w-5" />
                 <span>Goal Information</span>
               </CardTitle>
-              <CardDescription>Add a new department goal</CardDescription>
+              <CardDescription>Add a new group goal</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField

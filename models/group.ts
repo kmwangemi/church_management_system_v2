@@ -92,20 +92,10 @@ export interface IGroupGoal {
   description: string;
   targetDate: Date;
   status: GroupGoalStatus;
-  progress: number; // 0-100 percentage
-  assignedTo?: mongoose.Types.ObjectId[];
-  milestones?: {
-    title: string;
-    description?: string;
-    targetDate: Date;
-    isCompleted: boolean;
-    completedDate?: Date;
-  }[];
-  metrics?: {
-    target: number;
-    current: number;
-    unit: string; // e.g., "members", "activities", "hours"
-  };
+  priority: string;
+  assignee?: mongoose.Types.ObjectId;
+  category: string;
+  success: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -309,56 +299,24 @@ const GroupGoalSchema = new Schema<IGroupGoal>(
       enum: Object.values(GroupGoalStatus),
       default: GroupGoalStatus.PLANNED,
     },
-    progress: {
-      type: Number,
-      min: 0,
-      max: 100,
-      default: 0,
+    priority: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    assignedTo: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
-    milestones: [
-      {
-        title: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        description: {
-          type: String,
-          trim: true,
-        },
-        targetDate: {
-          type: Date,
-          required: true,
-        },
-        isCompleted: {
-          type: Boolean,
-          default: false,
-        },
-        completedDate: {
-          type: Date,
-        },
-      },
-    ],
-    metrics: {
-      target: {
-        type: Number,
-        required: true,
-      },
-      current: {
-        type: Number,
-        default: 0,
-      },
-      unit: {
-        type: String,
-        required: true,
-        trim: true,
-      },
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    success: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    assignee: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -419,6 +377,7 @@ const GroupSchema = new Schema<GroupSchemaType>(
     leaderId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      trim: true,
     },
     description: {
       type: String,

@@ -1502,7 +1502,7 @@ export default function DepartmentDetailsPage({
                               <TableCell>
                                 {capitalizeFirstLetter(goal?.category)}
                               </TableCell>
-                              <TableCell>{goal?.assignee?.firstName}</TableCell>
+                              <TableCell>{`${capitalizeFirstLetter(goal?.assignee?.firstName ?? '')} ${capitalizeFirstLetter(goal?.assignee?.lastName ?? '')}`}</TableCell>
                               <TableCell>
                                 {capitalizeFirstLetter(
                                   goal?.success ?? 'Not Provided'
