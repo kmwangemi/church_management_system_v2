@@ -30,10 +30,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { UserMultiSelect } from '@/components/user-multi-select-combobox';
 import {
-  useAddDepartmentActivity,
-  useUpdateDepartmentActivity,
-} from '@/lib/hooks/church/department/use-department-queries';
-import type { DepartmentActivity } from '@/lib/types/department';
+  useAddGroupActivity,
+  useUpdateGroupActivity,
+} from '@/lib/hooks/church/group/use-group-queries';
+import type { GroupActivity } from '@/lib/types/small-group';
 import {
   ACTIVITY_TYPE_OPTIONS,
   capitalizeFirstLetter,
@@ -45,7 +45,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-export const addDepartmentActivitySchema = z.object({
+export const addGroupActivitySchema = z.object({
   type: z.string().min(1, 'Please select activity type'),
   title: z.string().min(1, 'Activity title is required').trim(),
   date: z.string().min(1, 'Activity date is required'),
@@ -58,44 +58,40 @@ export const addDepartmentActivitySchema = z.object({
   description: z.string().min(1, 'Description is required').trim(),
 });
 
-export type AddDepartmentActivityPayload = z.infer<
-  typeof addDepartmentActivitySchema
->;
+export type AddGroupActivityPayload = z.infer<typeof addGroupActivitySchema>;
 
-interface AddDepartmentActivityFormProps {
-  departmentId: string;
+interface AddGroupActivityFormProps {
+  groupId: string;
   onCloseDialog: () => void;
-  activity?: DepartmentActivity; // Optional activity for edit mode
+  activity?: GroupActivity; // Optional activity for edit mode
   mode?: 'add' | 'edit'; // Form mode
 }
 
-export function AddDepartmentActivityForm({
-  departmentId,
+export function AddGroupActivityForm({
+  groupId,
   onCloseDialog,
   activity,
   mode = 'add',
-}: AddDepartmentActivityFormProps) {
+}: AddGroupActivityFormProps) {
   // Hooks for both create and update
   const {
-    mutateAsync: addDepartmentActivityMutation,
-    isPending: isPendingAddDepartmentActivity,
-    isError: isErrorAddDepartmentActivity,
-    error: errorAddDepartmentActivity,
-  } = useAddDepartmentActivity();
+    mutateAsync: addGroupActivityMutation,
+    isPending: isPendingAddGroupActivity,
+    isError: isErrorAddGroupActivity,
+    error: errorAddGroupActivity,
+  } = useAddGroupActivity();
   const {
-    mutateAsync: UpdateDepartmentActivityMutation,
-    isPending: isPendingUpdateDepartmentActivity,
-    isError: isErrorUpdateDepartmentActivity,
-    error: errorUpdateDepartmentActivity,
-  } = useUpdateDepartmentActivity();
+    mutateAsync: UpdateGroupActivityMutation,
+    isPending: isPendingUpdateGroupActivity,
+    isError: isErrorUpdateGroupActivity,
+    error: errorUpdateGroupActivity,
+  } = useUpdateGroupActivity();
   // Determine which mutation is pending/errored
-  const isPending =
-    isPendingAddDepartmentActivity || isPendingUpdateDepartmentActivity;
-  const isError =
-    isErrorAddDepartmentActivity || isErrorUpdateDepartmentActivity;
-  const error = errorAddDepartmentActivity || errorUpdateDepartmentActivity;
-  const form = useForm<AddDepartmentActivityPayload>({
-    resolver: zodResolver(addDepartmentActivitySchema),
+  const isPending = isPendingAddGroupActivity || isPendingUpdateGroupActivity;
+  const isError = isErrorAddGroupActivity || isErrorUpdateGroupActivity;
+  const error = errorAddGroupActivity || errorUpdateGroupActivity;
+  const form = useForm<AddGroupActivityPayload>({
+    resolver: zodResolver(addGroupActivitySchema),
     defaultValues: {
       type: '',
       title: '',
@@ -127,16 +123,16 @@ export function AddDepartmentActivityForm({
     }
   }, [mode, activity, reset]);
   // Handle form submission
-  const onSubmit = async (payload: AddDepartmentActivityPayload) => {
+  const onSubmit = async (payload: AddGroupActivityPayload) => {
     if (mode === 'edit' && activity) {
-      await UpdateDepartmentActivityMutation({
-        departmentId,
+      await UpdateGroupActivityMutation({
+        groupId,
         activityId: activity?._id,
         payload,
       });
     } else {
-      await addDepartmentActivityMutation({
-        departmentId,
+      await addGroupActivityMutation({
+        groupId,
         payload,
       });
     }
@@ -158,7 +154,7 @@ export function AddDepartmentActivityForm({
                 <Activity className="h-5 w-5" />
                 <span>Activity Information</span>
               </CardTitle>
-              <CardDescription>Log a new department activity</CardDescription>
+              <CardDescription>Log a new group activity</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField

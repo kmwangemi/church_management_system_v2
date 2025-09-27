@@ -545,16 +545,6 @@ export const VOLUNTEER_STATUS_OPTIONS = [
   { value: 'suspended', label: 'Suspended' },
 ];
 
-export const ACTIVITY_TYPE_OPTIONS = [
-  { label: 'Service', value: 'service' },
-  { label: 'Meeting', value: 'meeting' },
-  { label: 'Event', value: 'event' },
-  { label: 'Program', value: 'program' },
-  { label: 'Ministry', value: 'ministry' },
-  { label: 'Social', value: 'social' },
-  { label: 'Outreach', value: 'outreach' },
-];
-
 export const ACTIVITY_STATUS_OPTIONS = [
   { label: 'Planned', value: 'planned' },
   { label: 'Ongoing', value: 'ongoing' },
@@ -596,7 +586,7 @@ export const DEPARTMENT_CATEGORY_OPTIONS = [
   { value: 'volunteer_coordination', label: 'Volunteer Coordination' },
 ];
 
-export const DEPARTMENT_MEMBER_ROLE_OPTIONS = [
+export const GROUP_DEPARTMENT_MEMBER_ROLE_OPTIONS = [
   { value: 'leader', label: 'Leader' },
   { value: 'assistant_leader', label: 'Assistant Leader' },
   { value: 'coordinator', label: 'Coordinator' },
@@ -604,7 +594,7 @@ export const DEPARTMENT_MEMBER_ROLE_OPTIONS = [
   { value: 'volunteer', label: 'Volunteer' },
 ];
 
-export const DEPARTMENT_EXPENSE_CATEGORY_OPTIONS = [
+export const EXPENSE_CATEGORY_OPTIONS = [
   { value: 'equipment', label: 'Equipment' },
   { value: 'materials', label: 'Materials' },
   { value: 'training', label: 'Training' },
@@ -615,7 +605,7 @@ export const DEPARTMENT_EXPENSE_CATEGORY_OPTIONS = [
   { value: 'miscellaneous', label: 'Miscellaneous' },
 ];
 
-export const DEPARTMENT_ACTIVITY_TYPE_OPTIONS = [
+export const ACTIVITY_TYPE_OPTIONS = [
   { value: 'meeting', label: 'Meeting' },
   { value: 'event', label: 'Event' },
   { value: 'training', label: 'Training' },
@@ -623,6 +613,10 @@ export const DEPARTMENT_ACTIVITY_TYPE_OPTIONS = [
   { value: 'rehearsal', label: 'Rehearsal' },
   { value: 'workshop', label: 'Workshop' },
   { value: 'outreach', label: 'Outreach' },
+  { value: 'service', label: 'Service' },
+  { value: 'program', label: 'Program' },
+  { value: 'ministry', label: 'Ministry' },
+  { value: 'social', label: 'Social' },
   { value: 'other', label: 'Other' },
 ];
 
