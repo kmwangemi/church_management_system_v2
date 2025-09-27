@@ -53,16 +53,7 @@ async function getGroupByIdHandler(
       _id: groupId,
       churchId: user.user.churchId,
     })
-      .populate('churchId', 'name')
-      .populate('leaderId', 'firstName lastName email phone')
-      .populate('branchId', 'branchName')
-      .populate('members.userId', 'firstName lastName email phone')
-      .populate('activities.organizedBy', 'firstName lastName')
-      .populate('activities.plannedParticipants', 'firstName lastName')
-      .populate('activities.actualParticipants', 'firstName lastName')
-      .populate('goals.createdBy', 'firstName lastName')
-      .populate('goals.assignedTo', 'firstName lastName')
-      .populate('expenses.approvedBy', 'firstName lastName');
+      .populate('leaderId', 'firstName lastName email phoneNumber');
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
     }

@@ -1,5 +1,7 @@
 'use client';
 
+import RenderApiError from '@/components/api-error';
+import { DeleteGroupDialog } from '@/components/dialogs/delete-group-dialog';
 import { AddSmallGroupForm } from '@/components/forms/add-small-group-form';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
@@ -49,22 +51,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFetchGroups } from '@/lib/hooks/church/group/use-group-queries';
+import {
+  useDeleteGroupById,
+  useFetchGroups,
+} from '@/lib/hooks/church/group/use-group-queries';
+import type { Group } from '@/lib/types/small-group';
 import { capitalizeFirstLetter } from '@/lib/utils';
 import {
   Activity,
-  Baby,
-  BookOpen,
   Calendar,
   Clock,
-  Coffee,
   Eye,
-  Gamepad2,
-  Heart,
   MapPin,
   MoreHorizontal,
-  Music,
   Plus,
+  Trash2,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -84,129 +85,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-// Mock data
-const smallGroups = [
-  {
-    id: 1,
-    name: 'Young Adults Bible Study',
-    leader: 'Sarah Johnson',
-    coLeader: 'Mike Davis',
-    category: 'Bible Study',
-    members: 12,
-    capacity: 15,
-    meetingDay: 'Wednesday',
-    meetingTime: '7:00 PM',
-    location: 'Room 201',
-    description: 'Deep dive into scripture for young adults',
-    status: 'Active',
-    growth: 20,
-    established: '2023',
-    icon: BookOpen,
-  },
-  {
-    id: 2,
-    name: 'Marriage Enrichment',
-    leader: 'John & Mary Smith',
-    coLeader: 'David Wilson',
-    category: 'Marriage',
-    members: 8,
-    capacity: 10,
-    meetingDay: 'Friday',
-    meetingTime: '7:30 PM',
-    location: 'Fellowship Hall',
-    description: 'Strengthening marriages through biblical principles',
-    status: 'Active',
-    growth: 14,
-    established: '2022',
-    icon: Heart,
-  },
-  {
-    id: 3,
-    name: "Men's Fellowship",
-    leader: 'Robert Taylor',
-    coLeader: 'James Brown',
-    category: 'Fellowship',
-    members: 15,
-    capacity: 20,
-    meetingDay: 'Saturday',
-    meetingTime: '8:00 AM',
-    location: 'Coffee Shop',
-    description: 'Men gathering for fellowship and accountability',
-    status: 'Active',
-    growth: 7,
-    established: '2021',
-    icon: Coffee,
-  },
-  {
-    id: 4,
-    name: "Women's Prayer Circle",
-    leader: 'Lisa Davis',
-    coLeader: 'Jennifer Lee',
-    category: 'Prayer',
-    members: 18,
-    capacity: 25,
-    meetingDay: 'Tuesday',
-    meetingTime: '10:00 AM',
-    location: 'Prayer Room',
-    description: 'Women united in prayer and support',
-    status: 'Active',
-    growth: 12,
-    established: '2020',
-    icon: Heart,
-  },
-  {
-    id: 5,
-    name: 'Youth Discipleship',
-    leader: 'Michael Brown',
-    coLeader: 'Sarah Wilson',
-    category: 'Youth',
-    members: 22,
-    capacity: 30,
-    meetingDay: 'Sunday',
-    meetingTime: '6:00 PM',
-    location: 'Youth Center',
-    description: 'Discipling teenagers in their faith journey',
-    status: 'Growing',
-    growth: 35,
-    established: '2023',
-    icon: Gamepad2,
-  },
-  {
-    id: 6,
-    name: "Children's Ministry Team",
-    leader: 'Amanda Johnson',
-    coLeader: 'Tom Davis',
-    category: 'Children',
-    members: 10,
-    capacity: 12,
-    meetingDay: 'Thursday',
-    meetingTime: '6:30 PM',
-    location: "Children's Room",
-    description: "Planning and coordinating children's activities",
-    status: 'Active',
-    growth: -5,
-    established: '2022',
-    icon: Baby,
-  },
-  {
-    id: 7,
-    name: 'Worship Team',
-    leader: 'Daniel Lee',
-    coLeader: 'Grace Kim',
-    category: 'Worship',
-    members: 14,
-    capacity: 16,
-    meetingDay: 'Thursday',
-    meetingTime: '7:00 PM',
-    location: 'Sanctuary',
-    description: 'Musicians and vocalists serving in worship',
-    status: 'Active',
-    growth: 8,
-    established: '2021',
-    icon: Music,
-  },
-];
 
 const activityData = [
   {
@@ -278,7 +156,7 @@ export default function SmallGroupsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDay, setSelectedDay] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const searchParams = useSearchParams();
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
@@ -297,18 +175,27 @@ export default function SmallGroupsPage() {
     isError: isErrorSmallGroups,
     error: errorSmallGroups,
   } = useFetchGroups(page, searchQuery);
-
+  const {
+    mutateAsync: deleteGroupMutation,
+    isPending: isPendingDeleteGroup,
+    isError: isErrorDeleteGroup,
+    error: errorDeleteGroup,
+  } = useDeleteGroupById();
+  const handleDeleteGroup = async (groupId: string) => {
+    await deleteGroupMutation({ groupId, options: { force: true } });
+    setDeletingGroup(null);
+  };
+  const openDeleteDialog = (group: Group) => {
+    setDeletingGroup(group);
+  };
   const totalMembers = 0;
-
   const totalCapacity = smallGroups?.groups.reduce(
     (sum, group) => sum + group?.capacity,
     0
   );
-
   const activeGroups = smallGroups?.groups.filter(
     (group) => group?.isActive
   ).length;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -612,9 +499,16 @@ export default function SmallGroupsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Error Handling */}
+              {isErrorSmallGroups && (
+                <RenderApiError error={errorSmallGroups} />
+              )}
+              {isErrorDeleteGroup && (
+                <RenderApiError error={errorDeleteGroup} />
+              )}
               {isLoadingSmallGroups ? (
                 <SpinnerLoader description="Loading groups..." />
-              ) : (
+              ) : smallGroups?.groups && smallGroups.groups.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -627,7 +521,7 @@ export default function SmallGroupsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {smallGroups?.groups?.map((group) => (
+                    {smallGroups.groups.map((group) => (
                       <TableRow key={group._id}>
                         <TableCell>
                           <div className="flex flex-col items-start">
@@ -713,13 +607,13 @@ export default function SmallGroupsPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              {/* <DropdownMenuItem
-                              className="cursor-pointer text-red-600"
-                              onClick={() => openDeleteDialog(group)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete Group
-                            </DropdownMenuItem> */}
+                              <DropdownMenuItem
+                                className="cursor-pointer text-red-600"
+                                onClick={() => openDeleteDialog(group)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Group
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -727,15 +621,14 @@ export default function SmallGroupsPage() {
                     ))}
                   </TableBody>
                 </Table>
-              )}
-              {smallGroups?.groups?.length === 0 && (
+              ) : (
                 <div className="py-12 text-center">
                   <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                   <h3 className="mb-2 font-medium text-gray-900 text-lg">
                     No groups found
                   </h3>
                   <p className="text-gray-500">
-                    Couldn’t find any groups. Try adjusting your filters or add
+                    Couldn't find any groups. Try adjusting your filters or add
                     a new department.
                   </p>
                 </div>
@@ -744,6 +637,16 @@ export default function SmallGroupsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Delete Group Dialog */}
+      <DeleteGroupDialog
+        group={deletingGroup}
+        isDeleting={isPendingDeleteGroup}
+        onDelete={handleDeleteGroup}
+        onOpenChange={(open) => {
+          if (!open) setDeletingGroup(null);
+        }}
+        open={!!deletingGroup}
+      />
     </div>
   );
 }

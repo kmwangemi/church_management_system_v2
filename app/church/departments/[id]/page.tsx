@@ -875,11 +875,19 @@ export default function DepartmentDetailsPage({
               <TabsContent className="space-y-6" value="members">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-lg">Department Members</h3>
-                    <p className="text-muted-foreground text-sm">
+                    <CardTitle>Department Members</CardTitle>
+                    <CardDescription>
                       Manage department membership and roles
-                    </p>
+                    </CardDescription>
                   </div>
+                  {/* <div className="relative">
+                    <Input
+                      className="w-64"
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search members..."
+                      value={searchTerm}
+                    />
+                  </div> */}
                   <Dialog
                     onOpenChange={(open) => {
                       if (open) setIsDepartmentMemberDialogOpen(open);
@@ -923,7 +931,8 @@ export default function DepartmentDetailsPage({
                 )}
                 {isLoadingDepartmentMembers ? (
                   <SpinnerLoader description="Loading department members..." />
-                ) : (
+                ) : departmentMembers?.data?.members &&
+                  departmentMembers.data.members.length > 0 ? (
                   <Card>
                     <CardContent className="p-0">
                       <Table>
@@ -938,7 +947,7 @@ export default function DepartmentDetailsPage({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {departmentMembers?.data?.members?.map((member) => (
+                          {departmentMembers.data.members.map((member) => (
                             <TableRow key={member?._id}>
                               <TableCell>
                                 <div className="flex items-center space-x-3">
@@ -1023,8 +1032,7 @@ export default function DepartmentDetailsPage({
                       </Table>
                     </CardContent>
                   </Card>
-                )}
-                {departmentMembers?.data?.members.length === 0 && (
+                ) : (
                   <div className="py-12 text-center">
                     <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                     <h3 className="mb-2 font-medium text-gray-900 text-lg">
@@ -1149,84 +1157,89 @@ export default function DepartmentDetailsPage({
                           Expense Breakdown
                         </h4>
                         <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Receipt/Ref</TableHead>
-                                <TableHead>Vendor</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {departmentExpenses?.expenses.map((expense) => (
-                                <TableRow key={expense?._id}>
-                                  <TableCell className="font-medium">
-                                    {new Date(
-                                      expense?.date
-                                    ).toLocaleDateString()}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">
-                                      {capitalizeFirstLetter(expense?.category)}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="font-mono text-sm">
-                                    KES {expense?.amount.toLocaleString()}
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    {expense?.reference ?? 'Not Provided'}
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    {capitalizeFirstLetter(
-                                      expense?.vendor ?? 'Not Provided'
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="max-w-xs truncate text-sm">
-                                    {capitalizeFirstLetter(
-                                      expense?.description ?? 'Not Provided'
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center space-x-1">
-                                      <Button
-                                        onClick={() =>
-                                          handleEditDepartmentExpense(expense)
-                                        }
-                                        size="sm"
-                                        variant="outline"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        onClick={() =>
-                                          openExpenseDeleteDialog(expense)
-                                        }
-                                        size="sm"
-                                        variant="destructive"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                              {(!departmentExpenses?.expenses ||
-                                departmentExpenses.expenses.length === 0) && (
+                          {departmentExpenses?.expenses &&
+                          departmentExpenses.expenses.length > 0 ? (
+                            <Table>
+                              <TableHeader>
                                 <TableRow>
-                                  <TableCell
-                                    className="py-8 text-center text-gray-500"
-                                    colSpan={7}
-                                  >
-                                    No expenses recorded yet
-                                  </TableCell>
+                                  <TableHead>Date</TableHead>
+                                  <TableHead>Category</TableHead>
+                                  <TableHead>Amount</TableHead>
+                                  <TableHead>Receipt/Ref</TableHead>
+                                  <TableHead>Vendor</TableHead>
+                                  <TableHead>Description</TableHead>
+                                  <TableHead>Actions</TableHead>
                                 </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {departmentExpenses.expenses.map((expense) => (
+                                  <TableRow key={expense?._id}>
+                                    <TableCell className="font-medium">
+                                      {new Date(
+                                        expense?.date
+                                      ).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline">
+                                        {capitalizeFirstLetter(
+                                          expense?.category
+                                        )}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-sm">
+                                      KES {expense?.amount.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {expense?.reference ?? 'Not Provided'}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {capitalizeFirstLetter(
+                                        expense?.vendor ?? 'Not Provided'
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="max-w-xs truncate text-sm">
+                                      {capitalizeFirstLetter(
+                                        expense?.description ?? 'Not Provided'
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center space-x-1">
+                                        <Button
+                                          onClick={() =>
+                                            handleEditDepartmentExpense(expense)
+                                          }
+                                          size="sm"
+                                          variant="outline"
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          onClick={() =>
+                                            openExpenseDeleteDialog(expense)
+                                          }
+                                          size="sm"
+                                          variant="destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          ) : (
+                            <div className="py-12 text-center">
+                              <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                              <h3 className="mb-2 font-medium text-gray-900 text-lg">
+                                No expenses recorded yet
+                              </h3>
+                              <p className="text-gray-500">
+                                Add your first expense to start tracking
+                                department budget usage.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -1286,7 +1299,8 @@ export default function DepartmentDetailsPage({
                 )}
                 {isLoadingDepartmentActivities ? (
                   <SpinnerLoader description="Loading department activities..." />
-                ) : (
+                ) : departmentActivities?.data?.activities &&
+                  departmentActivities.data.activities.length > 0 ? (
                   <Card>
                     <CardContent className="p-0">
                       <Table>
@@ -1303,7 +1317,7 @@ export default function DepartmentDetailsPage({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {departmentActivities?.data?.activities.map(
+                          {departmentActivities.data.activities.map(
                             (activity) => (
                               <TableRow key={activity?._id}>
                                 <TableCell className="font-medium">
@@ -1392,8 +1406,7 @@ export default function DepartmentDetailsPage({
                       </Table>
                     </CardContent>
                   </Card>
-                )}
-                {departmentActivities?.data?.activities.length === 0 && (
+                ) : (
                   <div className="py-12 text-center">
                     <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                     <h3 className="mb-2 font-medium text-gray-900 text-lg">
@@ -1457,7 +1470,8 @@ export default function DepartmentDetailsPage({
                 )}
                 {isLoadingDepartmentGoals ? (
                   <SpinnerLoader description="Loading department goals..." />
-                ) : (
+                ) : departmentGoals?.data?.goals &&
+                  departmentGoals.data.goals.length > 0 ? (
                   <Card>
                     <CardContent className="p-0">
                       <Table>
@@ -1474,7 +1488,7 @@ export default function DepartmentDetailsPage({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {departmentGoals?.data?.goals.map((goal) => (
+                          {departmentGoals.data.goals.map((goal) => (
                             <TableRow key={goal?._id}>
                               <TableCell className="font-medium">
                                 {new Date(goal?.createdAt).toLocaleDateString()}
@@ -1534,8 +1548,7 @@ export default function DepartmentDetailsPage({
                       </Table>
                     </CardContent>
                   </Card>
-                )}
-                {departmentGoals?.data?.goals.length === 0 && (
+                ) : (
                   <div className="py-12 text-center">
                     <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                     <h3 className="mb-2 font-medium text-gray-900 text-lg">

@@ -28,10 +28,10 @@ import {
 } from '@/components/ui/select';
 import { UserCombobox } from '@/components/user-combobox';
 import {
-  useAddDepartmentMember,
-  useUpdateDepartmentMember,
-} from '@/lib/hooks/church/department/use-department-queries';
-import type { DepartmentMember } from '@/lib/types/department';
+  useAddGroupMember,
+  useUpdateGroupMember,
+} from '@/lib/hooks/church/group/use-group-queries';
+import type { GroupMember } from '@/lib/types/small-group';
 import {
   GROUP_DEPARTMENT_MEMBER_ROLE_OPTIONS,
   getRelativeYear,
@@ -43,16 +43,16 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
 // Form input schema (what the form fields contain)
-export const departmentMemberFormSchema = z.object({
-  userId: z.string().min(1, 'Please select department member'),
+export const groupMemberFormSchema = z.object({
+  userId: z.string().min(1, 'Please select group member'),
   role: z.string().min(1, 'Please select a role'),
   skills: z.string().min(1, 'Please enter at least one skill').trim(),
   joinedDate: z.string().min(1, 'Joined date is required'),
 });
 
 // API payload schema (what gets sent to the server)
-export const addDepartmentMemberSchema = z.object({
-  userId: z.string().min(1, 'Please select department member'),
+export const addGroupMemberSchema = z.object({
+  userId: z.string().min(1, 'Please select group member'),
   role: z.string().min(1, 'Please select a role'),
   skills: z
     .array(z.string().min(1, 'Skill cannot be empty'))
@@ -61,46 +61,41 @@ export const addDepartmentMemberSchema = z.object({
 });
 
 // Form input type
-export type DepartmentMemberFormInput = z.infer<
-  typeof departmentMemberFormSchema
->;
+export type GroupMemberFormInput = z.infer<typeof groupMemberFormSchema>;
 
 // API payload type
-export type AddDepartmentMemberPayload = z.infer<
-  typeof addDepartmentMemberSchema
->;
+export type AddGroupMemberPayload = z.infer<typeof addGroupMemberSchema>;
 
-interface AddDepartmentMemberFormProps {
-  departmentId: string;
+interface AddGroupMemberFormProps {
+  groupId: string;
   onCloseDialog: () => void;
-  member?: DepartmentMember;
+  member?: GroupMember;
   mode?: 'add' | 'edit';
 }
 
-export function AddDepartmentMemberForm({
-  departmentId,
+export function AddGroupMemberForm({
+  groupId,
   onCloseDialog,
   member,
   mode = 'add',
-}: AddDepartmentMemberFormProps) {
+}: AddGroupMemberFormProps) {
   const {
-    mutateAsync: addDepartmentMemberMutation,
-    isPending: isPendingAddDepartmentMember,
-    isError: isErrorAddDepartmentMember,
-    error: errorAddDepartmentMember,
-  } = useAddDepartmentMember();
+    mutateAsync: addGroupMemberMutation,
+    isPending: isPendingAddGroupMember,
+    isError: isErrorAddGroupMember,
+    error: errorAddGroupMember,
+  } = useAddGroupMember();
   const {
-    mutateAsync: UpdateDepartmentMemberMutation,
-    isPending: isPendingUpdateDepartmentMember,
-    isError: isErrorUpdateDepartmentMember,
-    error: errorUpdateDepartmentMember,
-  } = useUpdateDepartmentMember();
-  const isPending =
-    isPendingAddDepartmentMember || isPendingUpdateDepartmentMember;
-  const isError = isErrorAddDepartmentMember || isErrorUpdateDepartmentMember;
-  const error = errorAddDepartmentMember || errorUpdateDepartmentMember;
-  const form = useForm<DepartmentMemberFormInput>({
-    resolver: zodResolver(departmentMemberFormSchema),
+    mutateAsync: UpdateGroupMemberMutation,
+    isPending: isPendingUpdateGroupMember,
+    isError: isErrorUpdateGroupMember,
+    error: errorUpdateGroupMember,
+  } = useUpdateGroupMember();
+  const isPending = isPendingAddGroupMember || isPendingUpdateGroupMember;
+  const isError = isErrorAddGroupMember || isErrorUpdateGroupMember;
+  const error = errorAddGroupMember || errorUpdateGroupMember;
+  const form = useForm<GroupMemberFormInput>({
+    resolver: zodResolver(groupMemberFormSchema),
     defaultValues: {
       userId: '',
       role: '',
@@ -125,8 +120,8 @@ export function AddDepartmentMemberForm({
   }, [mode, member, reset]);
   // Transform form input to API payload
   const transformToPayload = (
-    formData: DepartmentMemberFormInput
-  ): AddDepartmentMemberPayload => {
+    formData: GroupMemberFormInput
+  ): AddGroupMemberPayload => {
     return {
       ...formData,
       skills: formData.skills
@@ -135,17 +130,17 @@ export function AddDepartmentMemberForm({
         .filter(Boolean),
     };
   };
-  const onSubmit = async (formData: DepartmentMemberFormInput) => {
+  const onSubmit = async (formData: GroupMemberFormInput) => {
     const payload = transformToPayload(formData);
     if (mode === 'edit' && member) {
-      await UpdateDepartmentMemberMutation({
-        departmentId,
+      await UpdateGroupMemberMutation({
+        groupId,
         memberId: member?._id,
         payload,
       });
     } else {
-      await addDepartmentMemberMutation({
-        departmentId,
+      await addGroupMemberMutation({
+        groupId,
         payload,
       });
     }
@@ -169,8 +164,8 @@ export function AddDepartmentMemberForm({
               </CardTitle>
               <CardDescription>
                 {mode === 'edit'
-                  ? 'Edit department member'
-                  : 'Add a new department member'}
+                  ? 'Edit group member'
+                  : 'Add a new group member'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -200,7 +195,7 @@ export function AddDepartmentMemberForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Role in Department <span className="text-red-500">*</span>
+                      Role in Group <span className="text-red-500">*</span>
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>

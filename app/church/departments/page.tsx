@@ -459,16 +459,17 @@ export default function DepartmentsPage() {
               </SelectContent>
             </Select>
           </div>
-          {/* Departments Grid */}
+          {/* Error Handling */}
           {isErrorDepartments && <RenderApiError error={errorDepartments} />}
           {isErrorDeleteDepartment && (
             <RenderApiError error={errorDeleteDepartment} />
           )}
+          {/* Departments Grid */}
           {isLoadingDepartments ? (
             <SpinnerLoader description="Loading departments..." />
-          ) : (
+          ) : departments?.departments && departments.departments.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {departments?.departments.map((dept) => (
+              {departments.departments.map((dept) => (
                 <Card key={dept?._id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -504,7 +505,7 @@ export default function DepartmentsPage() {
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">Budget</span>
                         <span className="text-muted-foreground text-sm">
-                          {dept?.totalBudget || 0}
+                          KES {dept?.totalBudget?.toLocaleString() || 0}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -538,15 +539,14 @@ export default function DepartmentsPage() {
                 </Card>
               ))}
             </div>
-          )}
-          {departments?.departments?.length === 0 && (
+          ) : (
             <div className="py-12 text-center">
               <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <h3 className="mb-2 font-medium text-gray-900 text-lg">
                 No departments found
               </h3>
               <p className="text-gray-500">
-                Couldn’t find any departments. Try adjusting your filters or add
+                Couldn't find any departments. Try adjusting your filters or add
                 a new department.
               </p>
             </div>
