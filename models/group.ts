@@ -11,15 +11,17 @@ export enum GroupMemberRole {
 
 export enum GroupActivityType {
   BIBLE_STUDY = 'bible_study',
-  FELLOWSHIP = 'fellowship',
   PRAYER_MEETING = 'prayer_meeting',
-  WORSHIP = 'worship',
-  OUTREACH = 'outreach',
   SOCIAL_EVENT = 'social_event',
-  TRAINING = 'training',
-  SERVICE = 'service',
   DISCUSSION = 'discussion',
   RETREAT = 'retreat',
+  MEETING = 'meeting',
+  TRAINING = 'training',
+  EVENT = 'event',
+  OUTREACH = 'outreach',
+  WORSHIP = 'worship',
+  FELLOWSHIP = 'fellowship',
+  SERVICE = 'service',
 }
 
 export enum GroupGoalStatus {
@@ -74,14 +76,13 @@ export interface IGroupActivity {
   description: string;
   type: GroupActivityType;
   date: Date;
-  duration?: number; // in minutes
+  startTime?: string;
+  endTime?: string;
   location?: string;
-  plannedParticipants: mongoose.Types.ObjectId[]; // Expected attendees
-  actualParticipants: mongoose.Types.ObjectId[]; // Who actually attended
+  participants: mongoose.Types.ObjectId[]; // Expected attendees
   organizedBy: mongoose.Types.ObjectId;
-  materials?: string[]; // Resources needed/used
   notes?: string;
-  attendance: IAttendanceRecord[];
+  attendance?: IAttendanceRecord[];
   isCompleted: boolean;
   createdAt: Date;
 }
@@ -121,6 +122,7 @@ export interface IGroup extends Document {
   description?: string;
   category: GroupCategory;
   location?: string;
+  establishedDate: Date;
   capacity: number;
   isActive: boolean;
   // Enhanced fields
@@ -234,35 +236,30 @@ const GroupActivitySchema = new Schema<IGroupActivity>(
       type: Date,
       required: true,
     },
-    duration: {
-      type: Number,
-      min: 0,
+    startTime: {
+      type: String,
+      trim: true,
+      match: [
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]( (AM|PM))?$/i,
+        'Invalid time format',
+      ],
+    },
+    endTime: {
+      type: String,
+      trim: true,
+      match: [
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]( (AM|PM))?$/i,
+        'Invalid time format',
+      ],
     },
     location: {
       type: String,
       trim: true,
     },
-    plannedParticipants: [
+    participants: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
-      },
-    ],
-    actualParticipants: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
-    organizedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    materials: [
-      {
-        type: String,
-        trim: true,
       },
     ],
     notes: {
@@ -424,6 +421,10 @@ const GroupSchema = new Schema<GroupSchemaType>(
       type: [String],
       required: true,
       trim: true,
+    },
+    establishedDate: {
+      type: Date,
+      required: true,
     },
     location: {
       type: String,

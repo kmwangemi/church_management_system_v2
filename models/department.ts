@@ -10,6 +10,11 @@ export enum MemberRole {
 }
 
 export enum ActivityType {
+  BIBLE_STUDY = 'bible_study',
+  PRAYER_MEETING = 'prayer_meeting',
+  SOCIAL_EVENT = 'social_event',
+  DISCUSSION = 'discussion',
+  RETREAT = 'retreat',
   MEETING = 'meeting',
   TRAINING = 'training',
   EVENT = 'event',

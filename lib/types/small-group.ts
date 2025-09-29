@@ -19,34 +19,41 @@ export interface GroupAddResponse {
   __v: number;
 }
 
+export interface GroupStats {
+  totalMembers: number;
+  activeMembers: number;
+  averageAttendance: number;
+  totalActivities: number;
+  completedGoals: number;
+}
+
+export interface Leader {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  isLocked: boolean;
+  fullName: string;
+  id: string;
+}
+
 export interface Group {
+  stats: GroupStats;
   _id: string;
   churchId: string;
-  branchId: {
-    _id: string;
-    branchName: string;
-    address: string;
-    country: string;
-  };
   groupName: string;
-  leaderId: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber: string;
-    profilePictureUrl: string;
-  } | null;
-  establishedDate: string;
-  meetingDay: string[];
-  meetingTime: string[];
+  leaderId: Leader;
   description: string;
   category: string;
-  capacity: number;
+  establishedDate: string;
+  meetingDay: string[]; // e.g., ["monday", "tuesday"]
+  meetingTime: string[]; // e.g., ["02:30", "03:15"]
   location: string;
+  capacity: number;
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
   __v: number;
 }
 
@@ -81,43 +88,52 @@ export interface GroupGoalsResponse {
   success: boolean;
   data: {
     goals: GroupGoal[];
+    summary: {
+      total: number;
+      planned: number;
+      inProgress: number;
+      completed: number;
+      cancelled: number;
+      overdue: number;
+      averageProgress: number;
+    };
     pagination: Pagination;
   };
 }
 
-export interface GroupActivity {
+export interface Participant {
   _id: string;
+  firstName: string;
+  lastName: string;
+  isLocked: boolean;
+  fullName: string;
+  id: string;
+}
+
+export interface GroupActivity {
   title: string;
   description: string;
-  type: GroupActivityType;
-  date: Date;
-  startTime: string;
-  endTime: string;
+  type: GroupActivityType; // e.g., "meeting"
+  date: string; // ISO date string
+  startTime: string; // e.g., "01:00"
+  endTime: string; // e.g., "03:15"
   location: string;
-  participants: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    isLocked: boolean;
-    fullName: string;
-  }[];
-  organizedBy: string;
-  notes?: string;
+  participants: Participant[];
+  attendance: any[]; // could be refined later if attendance has structure
   isCompleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  _id: string;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
 }
 
 export interface GroupActivitiesResponse {
   success: boolean;
-  data: {
-    activities: GroupActivity[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalActivities: number;
-      hasMore: boolean;
-    };
+  activities: GroupActivity[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
   };
 }
 
@@ -132,23 +148,25 @@ export interface GroupMember {
     profilePictureUrl?: string;
   };
   role: GroupMemberRole;
-  skills: string[];
   joinedDate: string;
   isActive: boolean;
   notes?: string;
-}
-
-interface GroupInfo {
-  id: string;
-  departmentName: string;
-  description?: string;
 }
 
 export interface GroupMembersResponse {
   success: boolean;
   data: {
     members: GroupMember[];
-    group: GroupInfo;
+    summary: {
+      total: number;
+      active: number;
+      inactive: number;
+      leaders: number;
+      assistantLeaders: number;
+      members: number;
+      capacity: number;
+      capacityUsed: number;
+    };
     pagination: {
       currentPage: number;
       totalPages: number;

@@ -18,7 +18,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -46,7 +45,6 @@ import * as z from 'zod';
 export const groupMemberFormSchema = z.object({
   userId: z.string().min(1, 'Please select group member'),
   role: z.string().min(1, 'Please select a role'),
-  skills: z.string().min(1, 'Please enter at least one skill').trim(),
   joinedDate: z.string().min(1, 'Joined date is required'),
 });
 
@@ -54,9 +52,6 @@ export const groupMemberFormSchema = z.object({
 export const addGroupMemberSchema = z.object({
   userId: z.string().min(1, 'Please select group member'),
   role: z.string().min(1, 'Please select a role'),
-  skills: z
-    .array(z.string().min(1, 'Skill cannot be empty'))
-    .min(1, 'Please enter at least one skill'),
   joinedDate: z.string().min(1, 'Joined date is required'),
 });
 
@@ -99,7 +94,6 @@ export function AddGroupMemberForm({
     defaultValues: {
       userId: '',
       role: '',
-      skills: '',
       joinedDate: '',
     },
   });
@@ -109,9 +103,6 @@ export function AddGroupMemberForm({
       reset({
         userId: member?.userId?._id ?? '',
         role: member?.role ?? '',
-        skills: Array.isArray(member?.skills)
-          ? member.skills.join(', ')
-          : member?.skills || '',
         joinedDate: member?.joinedDate
           ? new Date(member.joinedDate).toISOString().split('T')[0]
           : '',
@@ -124,10 +115,6 @@ export function AddGroupMemberForm({
   ): AddGroupMemberPayload => {
     return {
       ...formData,
-      skills: formData.skills
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
     };
   };
   const onSubmit = async (formData: GroupMemberFormInput) => {
@@ -215,24 +202,6 @@ export function AddGroupMemberForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="skills"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Skills <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter skills separated by commas (e.g., guitar, vocals, piano)"
-                        {...field}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -567,16 +567,23 @@ export default function SmallGroupsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <span className="font-medium">{group.members}</span>
+                            {/* <span className="font-medium">{group.members}</span> */}
+                            <span className="font-medium">{0}</span>
                             <span className="text-gray-500">
                               /{group.capacity}
                             </span>
                           </div>
                           <div className="mt-1 h-1.5 w-full rounded-full bg-gray-200">
-                            <div
+                            {/* <div
                               className="h-1.5 rounded-full bg-blue-600"
                               style={{
                                 width: `${(group.members / group.capacity) * 100}%`,
+                              }}
+                            /> */}
+                            <div
+                              className="h-1.5 rounded-full bg-blue-600"
+                              style={{
+                                width: `${(1 / group.capacity) * 100}%`,
                               }}
                             />
                           </div>

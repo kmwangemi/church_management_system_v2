@@ -83,7 +83,7 @@ export interface DepartmentGoal {
     email: string;
     phoneNumber: string;
   };
-  priority: string
+  priority: string;
   category: string;
   success: string;
   createdBy: string;
