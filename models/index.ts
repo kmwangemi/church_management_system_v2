@@ -1,6 +1,7 @@
 export { default as ActivityModel } from './activity';
 export { default as AnnouncementModel } from './announcement';
 export { default as AssetModel } from './asset';
+export { default as AttendanceModel } from './attendance';
 export { default as BranchModel } from './branch';
 export { default as ChurchModel } from './church';
 export { default as ChurchSubscriptionModel } from './church-subscription';
@@ -55,6 +56,7 @@ const models = {
   User: require('./user').default,
   ServiceSchedule: require('./service-schedule').default,
   Activity: require('./activity').default,
+  Attendance: require('./attendance').default,
 };
 
 export default models;
