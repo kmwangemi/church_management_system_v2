@@ -21,9 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useFetchUsers } from '@/lib/hooks/church/user/use-user-queries';
+import type { UserResponse } from '@/lib/types/user';
+import { capitalizeFirstLetter, getFirstLetter } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Clock, Loader2, Search, UserCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -39,44 +42,33 @@ interface AttendanceCheckInFormProps {
   onSuccess: () => void;
 }
 
-const mockMembers = [
-  {
-    id: '1',
-    name: 'John Smith',
-    department: 'Choir',
-    avatar: '/placeholder.svg?height=40&width=40',
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    department: 'Ushering',
-    avatar: '/placeholder.svg?height=40&width=40',
-  },
-  {
-    id: '3',
-    name: 'Emily Davis',
-    department: 'Youth',
-    avatar: '/placeholder.svg?height=40&width=40',
-  },
-  {
-    id: '4',
-    name: 'David Wilson',
-    department: 'Administration',
-    avatar: '/placeholder.svg?height=40&width=40',
-  },
-  {
-    id: '5',
-    name: 'Michael Brown',
-    department: 'Leadership',
-    avatar: '/placeholder.svg?height=40&width=40',
-  },
-];
-
 export function AttendanceCheckInForm({
   onSuccess,
 }: AttendanceCheckInFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch users using the provided hook
+  const {
+    data,
+    isLoading: isLoadingUsers,
+    error,
+  } = useFetchUsers(1, debouncedSearchTerm);
+
+  // Extract users array from the API response
+  const members: UserResponse[] = useMemo(() => {
+    if (!data?.users) return [];
+    return data.users;
+  }, [data]);
 
   const form = useForm<CheckInForm>({
     resolver: zodResolver(checkInSchema),
@@ -87,11 +79,9 @@ export function AttendanceCheckInForm({
     },
   });
 
-  const filteredMembers = mockMembers.filter(
-    (member) =>
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getFullName = (member: UserResponse): string => {
+    return `${capitalizeFirstLetter(member?.firstName || '')} ${capitalizeFirstLetter(member?.lastName || '')}`.trim();
+  };
 
   const onSubmit = async (data: CheckInForm) => {
     setIsLoading(true);
@@ -154,7 +144,6 @@ export function AttendanceCheckInForm({
             </div>
           </div>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -179,68 +168,112 @@ export function AttendanceCheckInForm({
               name="members"
               render={() => (
                 <FormItem>
-                  <div className="max-h-60 space-y-3 overflow-y-auto">
-                    {filteredMembers.map((member) => (
-                      <FormField
-                        control={form.control}
-                        key={member.id}
-                        name="members"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              className="flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-3 hover:bg-gray-50"
-                              key={member.id}
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(member.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([
-                                          ...field.value,
-                                          member.id,
-                                        ])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== member.id
-                                          )
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage
-                                  alt={member.name}
-                                  src={member.avatar || '/placeholder.svg'}
-                                />
-                                <AvatarFallback className="bg-blue-100 text-blue-600">
-                                  {member.name
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <FormLabel className="cursor-pointer font-medium text-sm">
-                                  {member.name}
-                                </FormLabel>
-                                <p className="text-gray-500 text-xs">
-                                  {member.department}
-                                </p>
-                              </div>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
+                  {isLoadingUsers ? (
+                    <div className="flex items-center justify-center gap-2 py-6">
+                      <Loader2 className="size-4 animate-spin" />
+                      <span className="text-muted-foreground text-sm">
+                        Loading members...
+                      </span>
+                    </div>
+                  ) : error ? (
+                    <div className="py-6 text-center text-destructive text-sm">
+                      Error loading members. Please try again.
+                    </div>
+                  ) : (
+                    <div className="max-h-60 space-y-3 overflow-y-auto">
+                      {members.length === 0 ? (
+                        <div className="py-6 text-center text-muted-foreground text-sm">
+                          {searchTerm
+                            ? `No members found for "${searchTerm}"`
+                            : 'Start typing to search members'}
+                        </div>
+                      ) : (
+                        members.map((member) => (
+                          <FormField
+                            control={form.control}
+                            key={member._id}
+                            name="members"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  className="flex flex-row items-center space-x-3 space-y-0 rounded-lg border p-3 hover:bg-gray-50"
+                                  key={member._id}
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(
+                                        member._id
+                                      )}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([
+                                              ...field.value,
+                                              member._id,
+                                            ])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== member._id
+                                              )
+                                            );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage
+                                      alt={getFullName(member)}
+                                      src={member?.profilePictureUrl || ''}
+                                    />
+                                    <AvatarFallback className="bg-blue-100 text-blue-600">
+                                      {`${getFirstLetter(member?.firstName || '')}${getFirstLetter(member?.lastName || '')}`}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <FormLabel className="cursor-pointer font-medium text-sm">
+                                      {getFullName(member)}
+                                    </FormLabel>
+                                    <div className="flex items-center gap-2 text-gray-500 text-xs">
+                                      {member.email && (
+                                        <span className="truncate">
+                                          {member.email}
+                                        </span>
+                                      )}
+                                      {member.branchId && (
+                                        <>
+                                          {member.email && <span>•</span>}
+                                          <span>
+                                            {member?.branchId?.branchName}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
           </CardContent>
         </Card>
-
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Add any additional notes..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="flex justify-end space-x-4">
           <Button onClick={onSuccess} type="button" variant="outline">
             Cancel
