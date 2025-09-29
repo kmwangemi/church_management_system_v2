@@ -13,13 +13,13 @@ export const addGroupSchema = z.object({
   description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
   capacity: z
-      .string()
-      .min(1, 'Capacity is required')
-      .regex(/^\d+(\.\d+)?$/, 'Capacity must be a valid number')
-      .refine((val) => {
-        const num = Number.parseFloat(val);
-        return num >= 1 && num <= 20;
-      }, 'Capacity must be between 1 and 20'),
+    .string()
+    .min(1, 'Capacity is required')
+    .regex(/^\d+(\.\d+)?$/, 'Capacity must be a valid number')
+    .refine((val) => {
+      const num = Number.parseFloat(val);
+      return num >= 1 && num <= 20;
+    }, 'Capacity must be between 1 and 20'),
   location: z.string().min(1, 'Location is required'),
 });
 

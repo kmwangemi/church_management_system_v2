@@ -53,8 +53,8 @@ async function getDepartmentByIdHandler(
       _id: departmentId,
       churchId: user.user.churchId,
     }).select('-members -budgetCategories -expenses -activities -goals');
-      // .populate('leaderId', 'firstName lastName email')
-      // .populate('activities.organizedBy', 'firstName lastName');
+    // .populate('leaderId', 'firstName lastName email')
+    // .populate('activities.organizedBy', 'firstName lastName');
     if (!department) {
       return NextResponse.json(
         { error: 'Department not found' },

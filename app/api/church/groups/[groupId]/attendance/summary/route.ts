@@ -94,10 +94,13 @@ async function getAttendanceSummaryHandler(
       );
     }
     // Check if group exists and belongs to the user's church
+    // Fixed: Use correct population paths based on your model
     const group = await GroupModel.findOne({
       _id: groupId,
       churchId: user.user.churchId,
-    }).populate('activities.attendance.userId', 'firstName lastName');
+    })
+      .populate('activities.attendance.userId', 'firstName lastName')
+      .populate('members.userId', 'firstName lastName');
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
     }
@@ -123,7 +126,8 @@ async function getAttendanceSummaryHandler(
       .slice(0, limit);
     // Generate summary for each activity
     const summaries = activities.map((activity) => {
-      const totalExpected = activity.plannedParticipants.length;
+      // Fixed: Use 'participants' instead of 'plannedParticipants' based on your model
+      const totalExpected = activity.participants.length;
       const attendance = activity.attendance || [];
       const totalPresent = attendance.filter(
         (a) => a.status === AttendanceStatus.PRESENT
@@ -137,6 +141,7 @@ async function getAttendanceSummaryHandler(
       const totalExcused = attendance.filter(
         (a) => a.status === AttendanceStatus.EXCUSED
       ).length;
+
       const attendanceRate =
         totalExpected > 0
           ? Math.round(((totalPresent + totalLate) / totalExpected) * 100)
@@ -145,7 +150,12 @@ async function getAttendanceSummaryHandler(
         date: activity.date,
         activityId: activity._id,
         title: activity.title,
+        description: activity.description, // Added from model
         type: activity.type,
+        location: activity.location, // Added from model
+        startTime: activity.startTime, // Added from model
+        endTime: activity.endTime, // Added from model
+        organizedBy: activity.organizedBy, // Added from model
         isCompleted: activity.isCompleted,
         totalExpected,
         totalPresent,
@@ -204,6 +214,7 @@ async function getAttendanceSummaryHandler(
             title: bestAttendanceActivity.title,
             date: bestAttendanceActivity.date,
             rate: bestAttendanceActivity.attendanceRate,
+            type: bestAttendanceActivity.type, // Added
           }
         : null,
       worstAttendanceActivity: worstAttendanceActivity
@@ -211,8 +222,19 @@ async function getAttendanceSummaryHandler(
             title: worstAttendanceActivity.title,
             date: worstAttendanceActivity.date,
             rate: worstAttendanceActivity.attendanceRate,
+            type: worstAttendanceActivity.type, // Added
           }
         : null,
+      // Added group-level insights from your model
+      groupStats: {
+        totalMembers: group.stats.totalMembers,
+        activeMembers: group.stats.activeMembers,
+        averageAttendance: group.stats.averageAttendance,
+        totalActivities: group.stats.totalActivities,
+        completedGoals: group.stats.completedGoals,
+        isAtCapacity: group.isAtCapacity(),
+        currentAttendanceRate: group.getCurrentAttendanceRate(),
+      },
     };
     contextLogger.info('Attendance summary generated successfully', {
       groupId,
@@ -321,7 +343,11 @@ async function generateAttendanceReportHandler(
     const group = await GroupModel.findOne({
       _id: groupId,
       churchId: user.user.churchId,
-    }).populate('activities.attendance.userId', 'firstName lastName');
+    })
+      .populate('activities.attendance.userId', 'firstName lastName')
+      .populate('activities.organizedBy', 'firstName lastName')
+      .populate('members.userId', 'firstName lastName')
+      .populate('leaderId', 'firstName lastName'); // Added leader population
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
     }
@@ -346,7 +372,17 @@ async function generateAttendanceReportHandler(
       groupInfo: {
         id: group._id,
         name: group.groupName,
+        description: group.description, // Added from model
+        category: group.category, // Added from model
+        location: group.location, // Added from model
+        capacity: group.capacity, // Added from model
+        meetingDay: group.meetingDay, // Added from model
+        meetingTime: group.meetingTime, // Added from model
+        leader: group.leaderId, // Added from model
         totalMembers: group.members.length,
+        activeMembers: group.getActiveMembers().length, // Use model method
+        isAtCapacity: group.isAtCapacity(), // Use model method
+        stats: group.stats, // Include all stats from model
       },
       reportPeriod: { startDate, endDate },
       filters: { activityTypes, includeCompleted, includeIncomplete },
@@ -375,7 +411,8 @@ async function generateAttendanceReportHandler(
         const excused = attendance.filter(
           (a) => a.status === AttendanceStatus.EXCUSED
         ).length;
-        const expected = activity.plannedParticipants.length;
+        // Fixed: Use 'participants' instead of 'plannedParticipants'
+        const expected = activity.participants.length;
         const rate =
           expected > 0 ? Math.round(((present + late) / expected) * 100) : 0;
         report.summary.totalExpected += expected;
@@ -386,8 +423,13 @@ async function generateAttendanceReportHandler(
         return {
           id: activity._id,
           title: activity.title,
+          description: activity.description, // Added from model
           type: activity.type,
           date: activity.date,
+          startTime: activity.startTime, // Added from model
+          endTime: activity.endTime, // Added from model
+          location: activity.location, // Added from model
+          organizedBy: activity.organizedBy, // Added from model
           isCompleted: activity.isCompleted,
           expected,
           present,
@@ -395,6 +437,7 @@ async function generateAttendanceReportHandler(
           absent,
           excused,
           attendanceRate: rate,
+          notes: activity.notes, // Added from model
         };
       }),
     };
@@ -426,6 +469,7 @@ async function generateAttendanceReportHandler(
             totalAbsent: 0,
             totalExcused: 0,
             averageRate: 0,
+            activityTypes: new Set(), // Track activity types per month
           });
         }
         const monthData = monthlyData.get(monthKey);
@@ -435,8 +479,9 @@ async function generateAttendanceReportHandler(
         monthData.totalLate += activity.late;
         monthData.totalAbsent += activity.absent;
         monthData.totalExcused += activity.excused;
+        monthData.activityTypes.add(activity.type);
       });
-      // Calculate average rates for each month
+      // Calculate average rates for each month and convert Set to Array
       monthlyData.forEach((data) => {
         data.averageRate =
           data.totalExpected > 0
@@ -445,16 +490,84 @@ async function generateAttendanceReportHandler(
                   100
               )
             : 0;
+        data.activityTypes = Array.from(data.activityTypes); // Convert Set to Array
       });
       report.monthlyBreakdown = Array.from(monthlyData.values()).sort((a, b) =>
         a.month.localeCompare(b.month)
       );
+    }
+    // Generate individual member statistics if requested
+    if (includeIndividualStats) {
+      const memberStats = new Map();
+      // Initialize stats for all active members
+      group.getActiveMembers().forEach((member) => {
+        memberStats.set(member.userId.toString(), {
+          userId: member.userId,
+          memberInfo: member,
+          totalExpected: 0,
+          totalPresent: 0,
+          totalLate: 0,
+          totalAbsent: 0,
+          totalExcused: 0,
+          attendanceRate: 0,
+          activitiesParticipated: 0,
+        });
+      });
+      // Calculate stats from activities
+      activities.forEach((activity) => {
+        activity.participants.forEach((participantId) => {
+          const participantIdStr = participantId.toString();
+          if (memberStats.has(participantIdStr)) {
+            const stats = memberStats.get(participantIdStr);
+            stats.totalExpected++;
+            const attendance = activity.attendance?.find(
+              (a) => a.userId.toString() === participantIdStr
+            );
+            if (attendance) {
+              switch (attendance.status) {
+                case AttendanceStatus.PRESENT:
+                  stats.totalPresent++;
+                  break;
+                case AttendanceStatus.LATE:
+                  stats.totalLate++;
+                  break;
+                case AttendanceStatus.ABSENT:
+                  stats.totalAbsent++;
+                  break;
+                case AttendanceStatus.EXCUSED:
+                  stats.totalExcused++;
+                  break;
+                default:
+                  throw new Error('An Error Occurred');
+              }
+              stats.activitiesParticipated++;
+            } else {
+              stats.totalAbsent++; // No attendance record = absent
+            }
+          }
+        });
+      });
+      // Calculate attendance rates
+      memberStats.forEach((stats) => {
+        stats.attendanceRate =
+          stats.totalExpected > 0
+            ? Math.round(
+                ((stats.totalPresent + stats.totalLate) / stats.totalExpected) *
+                  100
+              )
+            : 0;
+      });
+      report.individualStats = Array.from(memberStats.values())
+        .filter((stats) => stats.totalExpected > 0) // Only include members who were expected
+        .sort((a, b) => b.attendanceRate - a.attendanceRate); // Sort by attendance rate desc
     }
     contextLogger.info('Custom attendance report generated successfully', {
       groupId,
       reportPeriod: { startDate, endDate },
       totalActivities: report.summary.totalActivities,
       averageAttendanceRate: report.summary.averageAttendanceRate,
+      includeIndividualStats,
+      groupByMonth,
     });
     return NextResponse.json({
       success: true,

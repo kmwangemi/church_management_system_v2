@@ -53,6 +53,7 @@ async function getGroupByIdHandler(
       _id: groupId,
       churchId: user.user.churchId,
     })
+      .select('-members -attendanceSummaries -activities -goals')
       .populate('leaderId', 'firstName lastName email phoneNumber');
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
@@ -157,10 +158,7 @@ async function updateGroupHandler(
         updatedAt: new Date(),
       },
       { new: true, runValidators: true }
-    )
-      .populate('churchId', 'name')
-      .populate('leaderId', 'firstName lastName email')
-      .populate('branchId', 'name');
+    ).populate('leaderId', 'firstName lastName email');
     contextLogger.info('Group updated successfully', {
       groupId,
       updatedFields: Object.keys(updateData),

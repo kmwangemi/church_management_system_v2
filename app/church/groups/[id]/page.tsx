@@ -160,7 +160,7 @@ export default function GroupDetailsPage({
     if (groupDetails) {
       const formData: any = {
         groupName: capitalizeFirstLetter(groupDetails?.groupName || ''),
-        leaderId: groupDetails?.leaderId || '',
+        leaderId: groupDetails?.leaderId?._id || '',
         // Convert to YYYY-MM-DD format for input type="date"
         establishedDate: groupDetails?.establishedDate
           ? new Date(groupDetails.establishedDate).toISOString().split('T')[0]
@@ -169,7 +169,7 @@ export default function GroupDetailsPage({
         meetingTime: groupDetails?.meetingTime || [],
         description: groupDetails?.description || '',
         category: groupDetails?.category || '',
-        capacity: groupDetails?.capacity || '',
+        capacity: String(groupDetails?.capacity || ''),
         location: capitalizeFirstLetter(groupDetails?.location || ''),
       };
       groupForm.reset(formData);
@@ -879,7 +879,6 @@ export default function GroupDetailsPage({
                         <TableRow>
                           <TableHead>Member</TableHead>
                           <TableHead>Role</TableHead>
-                          <TableHead>Skills</TableHead>
                           <TableHead>Join Date</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Actions</TableHead>
@@ -913,19 +912,6 @@ export default function GroupDetailsPage({
                             </TableCell>
                             <TableCell>
                               {capitalizeFirstLetter(member?.role)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {member?.skills.map((skill, index) => (
-                                  <Badge
-                                    className="text-xs"
-                                    key={index}
-                                    variant="outline"
-                                  >
-                                    {capitalizeFirstLetter(skill)}
-                                  </Badge>
-                                ))}
-                              </div>
                             </TableCell>
                             <TableCell>
                               {new Date(
@@ -1207,8 +1193,8 @@ export default function GroupDetailsPage({
               )}
               {isLoadingGroupActivities ? (
                 <SpinnerLoader description="Loading group activities..." />
-              ) : groupActivities?.data?.activities &&
-                groupActivities.data.activities.length > 0 ? (
+              ) : groupActivities?.activities &&
+                groupActivities.activities.length > 0 ? (
                 <Card>
                   <CardContent className="p-0">
                     <Table>
@@ -1225,7 +1211,7 @@ export default function GroupDetailsPage({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {groupActivities.data.activities.map((activity) => (
+                        {groupActivities.activities.map((activity) => (
                           <TableRow key={activity?._id}>
                             <TableCell className="font-medium">
                               {new Date(activity?.date).toLocaleDateString()}

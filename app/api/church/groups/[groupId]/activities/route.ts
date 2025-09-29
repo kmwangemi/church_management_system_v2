@@ -69,10 +69,7 @@ async function getGroupActivitiesHandler(
     const group = await GroupModel.findOne({
       _id: groupId,
       churchId: user.user.churchId,
-    })
-      .populate('activities.organizedBy', 'firstName lastName')
-      .populate('activities.plannedParticipants', 'firstName lastName')
-      .populate('activities.actualParticipants', 'firstName lastName');
+    }).populate('activities.participants', 'firstName lastName');
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
     }
@@ -163,23 +160,28 @@ async function createGroupActivityHandler(
     await dbConnect();
     const body = await request.json();
     const {
-      title,
-      description,
       type,
+      title,
       date,
-      duration,
+      startTime,
+      endTime,
       location,
-      plannedParticipants = [],
-      organizedBy,
-      materials = [],
-      notes,
+      participants = [],
+      description,
     } = body;
     // Validate required fields
-    if (!(title && description && type && date && organizedBy)) {
+    if (!(title && description && type && date && startTime && endTime)) {
       return NextResponse.json(
         {
           error: 'Missing required fields',
-          required: ['title', 'description', 'type', 'date', 'organizedBy'],
+          required: [
+            'title',
+            'description',
+            'type',
+            'date',
+            'startTime',
+            'endTime',
+          ],
         },
         { status: 400 }
       );
@@ -189,13 +191,6 @@ async function createGroupActivityHandler(
     if (Number.isNaN(activityDate.getTime())) {
       return NextResponse.json(
         { error: 'Invalid date format' },
-        { status: 400 }
-      );
-    }
-    // Validate organizedBy is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(organizedBy)) {
-      return NextResponse.json(
-        { error: 'Invalid organizer ID format' },
         { status: 400 }
       );
     }
@@ -213,22 +208,18 @@ async function createGroupActivityHandler(
       description: description.trim(),
       type,
       date: activityDate,
-      duration,
+      startTime,
+      endTime,
       location: location?.trim() || '',
-      plannedParticipants,
+      participants,
       actualParticipants: [],
-      organizedBy,
-      materials,
-      notes: notes?.trim() || '',
       attendance: [],
       isCompleted: false,
       createdAt: new Date(),
     };
     group.activities.push(newActivity);
     await group.save();
-    const updatedGroup = await GroupModel.findById(groupId)
-      .populate('activities.organizedBy', 'firstName lastName')
-      .populate('activities.plannedParticipants', 'firstName lastName');
+    const updatedGroup = await GroupModel.findById(groupId);
     const createdActivity = updatedGroup.activities.find(
       (activity) => activity._id?.toString() === newActivity._id.toString()
     );
