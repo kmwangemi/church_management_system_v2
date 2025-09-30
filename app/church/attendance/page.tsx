@@ -1,6 +1,16 @@
 'use client';
 
 import { AttendanceCheckInForm } from '@/components/forms/attendance-check-in-form';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +23,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -31,118 +47,179 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  useDeleteAttendance,
+  useFetchAttendance,
+} from '@/lib/hooks/church/attendance/use-attendance-queries';
+import type { AttendanceResponse } from '@/lib/types/attendance';
+import type { UserResponse } from '@/lib/types/user';
+import { capitalizeFirstLetter, getFirstLetter } from '@/lib/utils';
+import {
   Calendar,
   CheckCircle,
   Clock,
   Download,
+  Loader2,
+  MoreVertical,
+  Pencil,
   QrCode,
   Search,
+  Trash2,
   TrendingUp,
   UserCheck,
   UserX,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
-
-// Mock data
-const attendanceRecords = [
-  {
-    id: 1,
-    date: '2024-01-07',
-    service: 'Sunday Morning Service',
-    totalAttendance: 456,
-    expectedAttendance: 520,
-    attendanceRate: 87.7,
-    checkInTime: '09:00 AM',
-    checkOutTime: '11:30 AM',
-  },
-  {
-    id: 2,
-    date: '2024-01-03',
-    service: 'Wednesday Bible Study',
-    totalAttendance: 89,
-    expectedAttendance: 120,
-    attendanceRate: 74.2,
-    checkInTime: '07:00 PM',
-    checkOutTime: '08:30 PM',
-  },
-  {
-    id: 3,
-    date: '2023-12-31',
-    service: "New Year's Eve Service",
-    totalAttendance: 678,
-    expectedAttendance: 600,
-    attendanceRate: 113.0,
-    checkInTime: '10:00 PM',
-    checkOutTime: '12:30 AM',
-  },
-];
-
-const memberAttendance = [
-  {
-    id: 1,
-    name: 'John Smith',
-    email: 'john.smith@email.com',
-    avatar: '/placeholder.svg?height=40&width=40',
-    status: 'Present',
-    checkInTime: '09:15 AM',
-    department: 'Choir',
-    attendanceRate: 95,
-  },
-  {
-    id: 2,
-    name: 'Sarah Johnson',
-    email: 'sarah.j@email.com',
-    avatar: '/placeholder.svg?height=40&width=40',
-    status: 'Present',
-    checkInTime: '09:05 AM',
-    department: 'Ushering',
-    attendanceRate: 88,
-  },
-  {
-    id: 3,
-    name: 'Emily Davis',
-    email: 'emily.davis@email.com',
-    avatar: '/placeholder.svg?height=40&width=40',
-    status: 'Absent',
-    checkInTime: '-',
-    department: 'Youth',
-    attendanceRate: 72,
-  },
-  {
-    id: 4,
-    name: 'David Wilson',
-    email: 'david.w@email.com',
-    avatar: '/placeholder.svg?height=40&width=40',
-    status: 'Late',
-    checkInTime: '09:45 AM',
-    department: 'Administration',
-    attendanceRate: 91,
-  },
-];
+import { useMemo, useState } from 'react';
 
 export default function AttendancePage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedService, setSelectedService] = useState('all');
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
-
-  const filteredMembers = memberAttendance.filter(
-    (member) =>
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const stats = {
-    totalPresent: memberAttendance.filter((m) => m.status === 'Present').length,
-    totalAbsent: memberAttendance.filter((m) => m.status === 'Absent').length,
-    totalLate: memberAttendance.filter((m) => m.status === 'Late').length,
-    attendanceRate: Math.round(
-      (memberAttendance.filter((m) => m.status === 'Present').length /
-        memberAttendance.length) *
-        100
-    ),
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [editingAttendance, setEditingAttendance] =
+    useState<AttendanceResponse | null>(null);
+  const [deletingAttendance, setDeletingAttendance] =
+    useState<AttendanceResponse | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  // Get today's date for filtering
+  const today = new Date().toISOString().split('T')[0];
+  // Mutations
+  const { mutate: deleteAttendance, isPending: isDeleting } =
+    useDeleteAttendance();
+  // Fetch today's attendance
+  const {
+    data: todayData,
+    isLoading: isLoadingToday,
+    error: todayError,
+  } = useFetchAttendance({
+    page: 1,
+    limit: 50,
+    startDate: today,
+    endDate: today,
+  });
+  // Fetch attendance history
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    error: historyError,
+  } = useFetchAttendance({
+    page: 1,
+    limit: 20,
+  });
+  // Get today's attendance record
+  const todayAttendance = todayData?.attendance?.[0];
+  // Extract member attendance from today's record
+  const memberAttendance = useMemo(() => {
+    if (!todayAttendance?.records) return [];
+    return todayAttendance.records.map((record) => {
+      const user = record.userId as UserResponse;
+      return {
+        id: typeof record.userId === 'string' ? record.userId : user._id,
+        user,
+        status: record.status,
+        checkInTime: record.checkInTime
+          ? new Date(record.checkInTime).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '-',
+        notes: record.notes,
+      };
+    });
+  }, [todayAttendance]);
+  // Filter members based on search and status
+  const filteredMembers = useMemo(() => {
+    return memberAttendance.filter((member) => {
+      const matchesSearch =
+        member.user?.firstName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        member.user?.lastName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        member.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        selectedStatus === 'all' || member.status === selectedStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [memberAttendance, searchTerm, selectedStatus]);
+  // Calculate stats
+  const stats = useMemo(() => {
+    if (!todayAttendance) {
+      return {
+        totalPresent: 0,
+        totalAbsent: 0,
+        totalLate: 0,
+        totalExcused: 0,
+        attendanceRate: 0,
+      };
+    }
+    return {
+      totalPresent: todayAttendance.totalPresent,
+      totalAbsent: todayAttendance.totalAbsent,
+      totalLate: todayAttendance.totalLate,
+      totalExcused: todayAttendance.totalExcused,
+      attendanceRate: todayAttendance.attendancePercentage,
+    };
+  }, [todayAttendance]);
+  const getFullName = (user: UserResponse): string => {
+    return `${capitalizeFirstLetter(user?.firstName || '')} ${capitalizeFirstLetter(user?.lastName || '')}`.trim();
   };
-
+  const handleEdit = (attendance: AttendanceResponse) => {
+    setEditingAttendance(attendance);
+    setIsEditOpen(true);
+  };
+  const handleDelete = (attendance: AttendanceResponse) => {
+    setDeletingAttendance(attendance);
+    setIsDeleteOpen(true);
+  };
+  const confirmDelete = () => {
+    if (deletingAttendance) {
+      deleteAttendance(
+        { attendanceId: deletingAttendance._id },
+        {
+          onSuccess: () => {
+            setIsDeleteOpen(false);
+            setDeletingAttendance(null);
+          },
+        }
+      );
+    }
+  };
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'present':
+        return (
+          <Badge className="border-green-200 bg-green-100 text-green-800">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Present
+          </Badge>
+        );
+      case 'absent':
+        return (
+          <Badge className="border-red-200 bg-red-100 text-red-800">
+            <XCircle className="mr-1 h-3 w-3" />
+            Absent
+          </Badge>
+        );
+      case 'late':
+        return (
+          <Badge className="border-orange-200 bg-orange-100 text-orange-800">
+            <Clock className="mr-1 h-3 w-3" />
+            Late
+          </Badge>
+        );
+      case 'excused':
+        return (
+          <Badge className="border-blue-200 bg-blue-100 text-blue-800">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Excused
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -171,7 +248,7 @@ export default function AttendancePage() {
                 Manual Check-in
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Manual Check-in</DialogTitle>
                 <DialogDescription>
@@ -179,13 +256,13 @@ export default function AttendancePage() {
                 </DialogDescription>
               </DialogHeader>
               <AttendanceCheckInForm
+                mode="create"
                 onSuccess={() => setIsCheckInOpen(false)}
               />
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card className="transition-shadow hover:shadow-lg">
@@ -253,15 +330,12 @@ export default function AttendancePage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Tabs className="space-y-6" defaultValue="today">
         <TabsList>
           <TabsTrigger value="today">Today's Attendance</TabsTrigger>
           <TabsTrigger value="history">Attendance History</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
-
         <TabsContent className="space-y-6" value="today">
           <Card>
             <CardHeader>
@@ -276,265 +350,322 @@ export default function AttendancePage() {
                   />
                 </div>
                 <Select
-                  onValueChange={setSelectedService}
-                  value={selectedService}
+                  onValueChange={setSelectedStatus}
+                  value={selectedStatus}
                 >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select service" />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Services</SelectItem>
-                    <SelectItem value="morning">Morning Service</SelectItem>
-                    <SelectItem value="evening">Evening Service</SelectItem>
-                    <SelectItem value="bible-study">Bible Study</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="present">Present</SelectItem>
+                    <SelectItem value="late">Late</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                    <SelectItem value="excused">Excused</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Member</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Check-in Time</TableHead>
-                      <TableHead>Attendance Rate</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMembers.map((member) => (
-                      <TableRow className="hover:bg-gray-50" key={member.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                alt={member.name}
-                                src={member.avatar || '/placeholder.svg'}
-                              />
-                              <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {member.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {member.name}
-                              </div>
-                              <div className="text-gray-500 text-sm">
-                                {member.email}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{member.department}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {member.status === 'Present' && (
-                            <Badge className="border-green-200 bg-green-100 text-green-800">
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                              Present
-                            </Badge>
-                          )}
-                          {member.status === 'Absent' && (
-                            <Badge className="border-red-200 bg-red-100 text-red-800">
-                              <XCircle className="mr-1 h-3 w-3" />
-                              Absent
-                            </Badge>
-                          )}
-                          {member.status === 'Late' && (
-                            <Badge className="border-orange-200 bg-orange-100 text-orange-800">
-                              <Clock className="mr-1 h-3 w-3" />
-                              Late
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-gray-900 text-sm">
-                            {member.checkInTime}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <div className="h-2 w-16 rounded-full bg-gray-200">
-                              <div
-                                className="h-2 rounded-full bg-blue-600"
-                                style={{ width: `${member.attendanceRate}%` }}
-                              />
-                            </div>
-                            <span className="font-medium text-sm">
-                              {member.attendanceRate}%
-                            </span>
-                          </div>
-                        </TableCell>
+              {isLoadingToday ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <span className="ml-3 text-gray-600">
+                    Loading attendance data...
+                  </span>
+                </div>
+              ) : todayError ? (
+                <div className="py-12 text-center text-destructive">
+                  Error loading attendance data. Please try again.
+                </div>
+              ) : todayAttendance ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {/* <TableHead>Service</TableHead> */}
+                        <TableHead>Member</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Check-in Time</TableHead>
+                        <TableHead>Notes</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredMembers.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            className="py-12 text-center text-muted-foreground"
+                            colSpan={5}
+                          >
+                            No members found matching your filters
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredMembers.map((member) => (
+                          <TableRow
+                            className="hover:bg-gray-50"
+                            key={member.id}
+                          >
+                            {/* <TableCell>
+                              <span className="font-medium">{member.}</span>
+                            </TableCell> */}
+                            <TableCell>
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage
+                                    alt={getFullName(member.user)}
+                                    src={member.user?.profilePictureUrl || ''}
+                                  />
+                                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                                    {`${getFirstLetter(member.user?.firstName || '')}${getFirstLetter(member.user?.lastName || '')}`}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {getFullName(member.user)}
+                                  </div>
+                                  <div className="text-gray-500 text-sm">
+                                    {member.user?.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(member.status)}
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-900 text-sm">
+                                {member.checkInTime}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-600 text-sm">
+                                {member.notes || '-'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="ghost">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleEdit(todayAttendance)}
+                                  >
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Attendance
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() =>
+                                      handleDelete(todayAttendance)
+                                    }
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Attendance
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-muted-foreground">
+                  <p className="mb-4">No attendance record for today yet.</p>
+                  <Button onClick={() => setIsCheckInOpen(true)}>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Start Check-in
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent className="space-y-6" value="history">
           <Card>
             <CardHeader>
               <CardTitle>Attendance History</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Attendance</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>Duration</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attendanceRecords.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>
-                              {new Date(record.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{record.service}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {record.totalAttendance} /{' '}
-                            {record.expectedAttendance}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={
-                              record.attendanceRate >= 80
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }
-                            variant={
-                              record.attendanceRate >= 80
-                                ? 'default'
-                                : 'secondary'
-                            }
-                          >
-                            {record.attendanceRate}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-gray-600 text-sm">
-                            {record.checkInTime} - {record.checkOutTime}
-                          </span>
-                        </TableCell>
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <span className="ml-3 text-gray-600">Loading history...</span>
+                </div>
+              ) : historyError ? (
+                <div className="py-12 text-center text-destructive">
+                  Error loading attendance history. Please try again.
+                </div>
+              ) : historyData?.attendance?.length ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Attendance</TableHead>
+                        <TableHead>Rate</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {historyData.attendance.map(
+                        (record: AttendanceResponse) => {
+                          const service =
+                            typeof record.serviceScheduleId === 'string'
+                              ? 'Service'
+                              : record.serviceScheduleId?.service || 'Service';
+                          return (
+                            <TableRow key={record._id}>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Calendar className="h-4 w-4 text-gray-400" />
+                                  <span>
+                                    {new Date(
+                                      record.attendanceDate
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium">{service}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">
+                                  {record.totalPresent + record.totalLate} /{' '}
+                                  {record.records.length}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={
+                                    record.attendancePercentage >= 80
+                                      ? 'bg-green-100 text-green-800'
+                                      : record.attendancePercentage >= 60
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                  }
+                                >
+                                  {record.attendancePercentage}%
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    record.status === 'approved'
+                                      ? 'default'
+                                      : 'secondary'
+                                  }
+                                >
+                                  {capitalizeFirstLetter(record.status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="ghost">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => handleEdit(record)}
+                                    >
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => handleDelete(record)}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-muted-foreground">
+                  No attendance history found.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent className="space-y-6" value="analytics">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Weekly Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Sunday Service</span>
-                    <span className="text-gray-600 text-sm">456 avg</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-blue-600"
-                      style={{ width: '87%' }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Wednesday Study</span>
-                    <span className="text-gray-600 text-sm">89 avg</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-green-600"
-                      style={{ width: '74%' }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Friday Youth</span>
-                    <span className="text-gray-600 text-sm">67 avg</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-purple-600"
-                      style={{ width: '82%' }}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Department Attendance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Choir</span>
-                    <span className="text-gray-600 text-sm">95%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-blue-600"
-                      style={{ width: '95%' }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Ushering</span>
-                    <span className="text-gray-600 text-sm">88%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-green-600"
-                      style={{ width: '88%' }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">Youth</span>
-                    <span className="text-gray-600 text-sm">72%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-orange-600"
-                      style={{ width: '72%' }}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
+      {/* Edit Dialog */}
+      <Dialog onOpenChange={setIsEditOpen} open={isEditOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Attendance</DialogTitle>
+            <DialogDescription>
+              Update attendance record for{' '}
+              {editingAttendance &&
+                new Date(editingAttendance.attendanceDate).toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+          {editingAttendance && (
+            <AttendanceCheckInForm
+              existingAttendance={editingAttendance}
+              mode="edit"
+              onSuccess={() => {
+                setIsEditOpen(false);
+                setEditingAttendance(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog onOpenChange={setIsDeleteOpen} open={isDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will archive the attendance record for{' '}
+              {deletingAttendance &&
+                new Date(
+                  deletingAttendance.attendanceDate
+                ).toLocaleDateString()}
+              . This action can be reversed by administrators.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingAttendance(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+              onClick={confirmDelete}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
