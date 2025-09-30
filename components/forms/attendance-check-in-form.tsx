@@ -192,9 +192,9 @@ export function AttendanceCheckInForm({
               <FormItem>
                 <FormLabel>Service</FormLabel>
                 <Select
-                  defaultValue={field.value}
                   disabled={isLoadingServices}
                   onValueChange={field.onChange}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
