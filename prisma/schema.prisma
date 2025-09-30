@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -13,6 +10,10 @@ datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// BETTER AUTH MODELS (Existing)
+// ============================================
 
 model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -24,25 +25,91 @@ model User {
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
-
-  members     Member[]
-  invitations Invitation[]
+  members       Member[]
+  invitations   Invitation[]
+  // Extended fields for church management
+  phoneNumber            String?
+  dateOfBirth            DateTime?
+  gender                 Gender?
+  occupation             String?
+  maritalStatus          MaritalStatus?
+  skills                 String[]
+  notes                  String?
+  // Church associations
+  churchId               String?              @db.ObjectId
+  church                 Church?              @relation("ChurchMembers", fields: [churchId], references: [id])
+  branchId               String?              @db.ObjectId
+  branch                 Branch?              @relation("BranchMembers", fields: [branchId], references: [id])
+  // Role system
+  isMember               Boolean              @default(false)
+  role                   UserRole             @default(VISITOR)
+  isStaff                Boolean              @default(false)
+  isVolunteer            Boolean              @default(false)
+  // Address - normalized to separate model
+  address                Address?
+  // Emergency contact - normalized to separate model
+  emergencyContact       EmergencyContact?
+  // Role-specific details (separate models for normalization)
+  memberDetails          MemberDetails?
+  pastorDetails          PastorDetails?
+  bishopDetails          BishopDetails?
+  staffDetails           StaffDetails?
+  volunteerDetails       VolunteerDetails?
+  adminDetails           AdminDetails?
+  visitorDetails         VisitorDetails?
+  // Account status
+  status                 AccountStatus        @default(ACTIVE)
+  lastLogin              DateTime?
+  // Security
+  isPasswordUpdated      Boolean              @default(false)
+  agreeToTerms           Boolean              @default(true)
+  isDeleted              Boolean              @default(false)
+  // Audit
+  createdBy              String?              @db.ObjectId
+  createdByUser          User?                @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersCreated           User[]               @relation("UserCreatedBy")
+  updatedBy              String?              @db.ObjectId
+  updatedByUser          User?                @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersUpdated           User[]               @relation("UserUpdatedBy")
+  // Relations
+  churchesCreated        Church[]             @relation("ChurchCreator")
+  offerings              Offering[]
+  pledges                Pledge[]
+  prayerRequestsSubmitted PrayerRequest[]     @relation("PrayerRequestSubmitter")
+  userSubscriptions      UserSubscription[]
+  departmentMemberships  DepartmentMember[]
+  groupMemberships       GroupMember[]
+  attendanceRecords      AttendanceRecord[]
+  activitiesOrganized    GroupActivity[]
+  goalsCreated           GroupGoal[]
+  departmentGoalsCreated DepartmentGoal[]
+  announcementsCreated   Announcement[]
+  logsGenerated          Log[]
+  branchesPastored       Branch[]             @relation("BranchPastor")
+  attendancesTaken       Attendance[]
+  expensesApproved       Expense[]
+  departmentActivitiesOrganized DepartmentActivity[]
+  departmentsLed         Department[]         @relation("DepartmentLeader")
+  groupsLed              Group[]              @relation("GroupLeader")
 
   @@unique([email])
+  @@index([churchId, status])
+  @@index([role, status])
+  @@index([branchId])
+  @@index([isDeleted])
   @@map("user")
 }
 
 model Session {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String   @db.ObjectId
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   activeOrganizationId String?
 
   @@unique([token])
@@ -117,4 +184,1838 @@ model Invitation {
   user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
   @@map("invitation")
+}
+
+// ============================================
+// CHURCH MANAGEMENT MODELS
+// ============================================
+
+// Normalized Address Model (used by multiple entities)
+model Address {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  street    String?
+  city      String?
+  state     String?
+  zipCode   String?
+  country   String   @default("Kenya")
+  // Relations - one address can belong to one entity
+  userId    String?  @unique @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  churchId  String?  @unique @db.ObjectId
+  church    Church?  @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  branchId  String?  @unique @db.ObjectId
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("address")
+}
+
+// Normalized Emergency Contact Model
+model EmergencyContact {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  fullName     String
+  email        String?
+  phoneNumber  String
+  relationship String
+  address      String?
+  notes        String?
+  // Relations
+  userId       String  @unique @db.ObjectId
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("emergency_contact")
+}
+
+// ============================================
+// USER ROLE-SPECIFIC DETAIL MODELS
+// ============================================
+
+model MemberDetails {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  memberId         String
+  membershipDate   DateTime    @default(now())
+  membershipStatus MembershipStatus @default(ACTIVE)
+  departmentIds    String[]    @db.ObjectId
+  groupIds         String[]    @db.ObjectId
+  occupation       String?
+  baptismDate      DateTime?
+  joinedDate       DateTime    @default(now())
+  userId           String      @unique @db.ObjectId
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@map("member_details")
+}
+
+model PastorDetails {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  pastorId         String
+  ordinationDate   DateTime?
+  qualifications   String[]
+  specializations  String[]
+  assignments      PastorAssignment[]
+  sermonCount      Int                 @default(0)
+  counselingSessions Int               @default(0)
+  biography        String?
+  userId           String              @unique @db.ObjectId
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@map("pastor_details")
+}
+
+model PastorAssignment {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  branchId         String?        @db.ObjectId
+  position         String
+  startDate        DateTime
+  endDate          DateTime?
+  isActive         Boolean        @default(true)
+  pastorDetailsId  String         @db.ObjectId
+  pastorDetails    PastorDetails  @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("pastor_assignment")
+}
+
+model BishopDetails {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  bishopId         String
+  appointmentDate  DateTime?
+  jurisdictionArea String?
+  branchIds        String[]       @db.ObjectId
+  pastorIds        String[]       @db.ObjectId
+  qualifications   String[]
+  achievements     String[]
+  biography        String?
+  userId           String         @unique @db.ObjectId
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("bishop_details")
+}
+
+model StaffDetails {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  staffId        String
+  jobTitle       String
+  department     String
+  startDate      DateTime
+  endDate        DateTime?
+  salary         Float?
+  employmentType EmploymentType @default(CASUAL)
+  isActive       Boolean        @default(true)
+  userId         String         @unique @db.ObjectId
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@map("staff_details")
+}
+
+model VolunteerDetails {
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  volunteerId          String
+  volunteerStatus      VolunteerStatus     @default(ACTIVE)
+  availabilitySchedule AvailabilitySchedule?
+  departments          String[]            @db.ObjectId
+  volunteerRoles       VolunteerRole[]
+  backgroundCheck      BackgroundCheck?
+  hoursContributed     Int                 @default(0)
+  userId               String              @unique @db.ObjectId
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@map("volunteer_details")
+}
+
+model AvailabilitySchedule {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  days                String[]
+  timeSlots           String[]
+  preferredTimes      String[]
+  volunteerDetailsId  String           @unique @db.ObjectId
+  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+  
+  @@map("availability_schedule")
+}
+
+model VolunteerRole {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  role                String
+  department          String?
+  startDate           DateTime         @default(now())
+  endDate             DateTime?
+  isActive            Boolean          @default(true)
+  volunteerDetailsId  String           @db.ObjectId
+  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("volunteer_role")
+}
+
+model BackgroundCheck {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  completed           Boolean          @default(false)
+  completedDate       DateTime?
+  expiryDate          DateTime?
+  clearanceLevel      ClearanceLevel?
+  volunteerDetailsId  String           @unique @db.ObjectId
+  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("background_check")
+}
+
+model AdminDetails {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  adminId          String
+  accessLevel      AdminAccessLevel @default(NATIONAL)
+  assignedBranches String[]     @db.ObjectId
+  userId           String       @unique @db.ObjectId
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@map("admin_details")
+}
+
+model VisitorDetails {
+  id                      String         @id @default(auto()) @map("_id") @db.ObjectId
+  visitorId               String
+  visitDate               DateTime       @default(now())
+  invitedBy               String?        @db.ObjectId
+  howDidYouHear           HowDidYouHear  @default(OTHER)
+  followUpStatus          FollowUpStatus @default(PENDING)
+  followUpDate            DateTime?
+  followUpNotes           String?
+  interestedInMembership  Boolean        @default(false)
+  servicesAttended        String[]
+  userId                  String         @unique @db.ObjectId
+  user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  @@map("visitor_details")
+}
+
+model Church {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  churchName       String
+  denomination     String
+  email            String      @unique
+  phoneNumber      String      @unique
+  website          String?
+  establishedDate  DateTime
+  churchLogoUrl    String?
+  churchSize       String
+  numberOfBranches Int         @default(1)
+  description      String?
+  isSuspended      Boolean     @default(false)
+  isDeleted        Boolean     @default(false)
+  // Address relationship (1:1)
+  address          Address?
+  // Relations
+  createdBy        String      @db.ObjectId
+  creator          User        @relation("ChurchCreator", fields: [createdBy], references: [id])
+  members          User[]      @relation("ChurchMembers")
+  branches         Branch[]
+  departments      Department[]
+  groups           Group[]
+  events           Event[]
+  offerings        Offering[]
+  pledges          Pledge[]
+  prayerRequests   PrayerRequest[]
+  serviceSchedules ServiceSchedule[]
+  activities       Activity[]
+  assets           Asset[]
+  announcements    Announcement[]
+  attendances      Attendance[]
+  subscription     ChurchSubscription?
+  logs             Log[]
+  payments         Payment[]
+  reports          Report[]
+  milestones       Milestone[]
+  messageTemplates MessageTemplate[]
+  messages         Message[]
+  messageRecipients MessageRecipient[]
+  disciples        Disciple[]
+  content          Content[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([denomination])
+  @@index([churchSize])
+  @@index([isSuspended, isDeleted])
+  @@map("church")
+}
+
+model Branch {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  churchId        String      @db.ObjectId
+  church          Church      @relation(fields: [churchId], references: [id])
+  branchName      String      @unique
+  email           String?
+  phoneNumber     String?
+  capacity        Int
+  members         Int         @default(0)
+  establishedDate DateTime
+  description     String?
+  isActive        Boolean     @default(true)
+  isDeleted       Boolean     @default(false)
+  // Relations
+  pastorId        String?     @db.ObjectId
+  pastor          User?       @relation("BranchPastor", fields: [pastorId], references: [id])
+  users           User[]      @relation("BranchMembers")
+  serviceSchedules ServiceSchedule[]
+  prayerRequests  PrayerRequest[]
+  activities      Activity[]
+  assets          Asset[]
+  announcements   Announcement[]
+  attendances     Attendance[]
+  events          Event[]
+  reports         Report[]
+  milestones      Milestone[]
+  disciples       Disciple[]
+  discipleProgress DiscipleProgress[]
+  content         Content[]
+  messageRecipients MessageRecipient[]
+  messages        Message[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([churchId, isActive])
+  @@index([churchId, isDeleted])
+  @@index([pastorId])
+  @@map("branch")
+}
+
+model Department {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  churchId        String               @db.ObjectId
+  church          Church               @relation(fields: [churchId], references: [id])
+  branchId        String?              @db.ObjectId
+  departmentName  String
+  description     String
+  location        String?
+  category        DepartmentCategory
+  establishedDate DateTime
+  meetingDay      String[]
+  meetingTime     String[]
+  isActive        Boolean              @default(true)
+  isDeleted       Boolean              @default(false)
+  totalBudget     Float                @default(0)
+  // Leadership
+  leaderId        String?              @db.ObjectId
+  leader          User?                @relation("DepartmentLeader", fields: [leaderId], references: [id])
+  // Relations
+  members      DepartmentMember[]
+  budgetCategories BudgetCategory[]
+  expenses     Expense[]
+  activities   DepartmentActivity[]
+  goals        DepartmentGoal[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([churchId])
+  @@index([leaderId])
+  @@map("department")
+}
+
+model DepartmentMember {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  departmentId String       @db.ObjectId
+  department   Department   @relation(fields: [departmentId], references: [id])
+  userId       String       @db.ObjectId
+  user         User         @relation(fields: [userId], references: [id])
+  role         MemberRole
+  skills       String[]
+  joinedDate   DateTime     @default(now())
+  isActive     Boolean      @default(true)
+  notes        String?
+
+  @@map("department_member")
+}
+
+model BudgetCategory {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  departmentId    String         @db.ObjectId
+  department      Department     @relation(fields: [departmentId], references: [id])
+  category        ExpenseCategory
+  allocatedAmount Float
+  spentAmount     Float          @default(0)
+  description     String?
+
+  @@map("budget_category")
+}
+
+model Expense {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  departmentId String          @db.ObjectId
+  department   Department      @relation(fields: [departmentId], references: [id])
+  category     ExpenseCategory
+  amount       Float
+  description  String
+  date         DateTime
+  reference    String?
+  vendor       String?
+  receiptUrl   String?
+  approvedBy   String?         @db.ObjectId
+  approver     User?           @relation(fields: [approvedBy], references: [id])
+  createdAt    DateTime        @default(now())
+
+  @@map("expense")
+}
+
+model DepartmentActivity {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  departmentId String       @db.ObjectId
+  department   Department   @relation(fields: [departmentId], references: [id])
+  title        String
+  description  String
+  type         ActivityType
+  date         DateTime
+  startTime    String?
+  endTime      String?
+  location     String?
+  participants String[]     @db.ObjectId
+  notes        String?
+  isCompleted  Boolean      @default(false)
+  organizedBy  String       @db.ObjectId
+  organizer    User         @relation(fields: [organizedBy], references: [id])
+  createdAt    DateTime     @default(now())
+
+  @@map("department_activity")
+}
+
+model DepartmentGoal {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  departmentId String     @db.ObjectId
+  department   Department @relation(fields: [departmentId], references: [id])
+  title        String
+  description  String
+  targetDate   DateTime
+  status       GoalStatus @default(PLANNED)
+  priority     String
+  category     String
+  success      String
+  assignee     String?    @db.ObjectId
+  createdBy    String     @db.ObjectId
+  creator      User       @relation(fields: [createdBy], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("department_goal")
+}
+
+model Group {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  churchId        String              @db.ObjectId
+  church          Church              @relation(fields: [churchId], references: [id])
+  groupName       String
+  description     String?
+  category        GroupCategory
+  meetingDay      String[]
+  meetingTime     String[]
+  location        String?
+  establishedDate DateTime
+  capacity        Int
+  isActive        Boolean             @default(true)
+  // Statistics
+  totalMembers    Int                 @default(0)
+  activeMembers   Int                 @default(0)
+  averageAttendance Float             @default(0)
+  totalActivities Int                 @default(0)
+  completedGoals  Int                 @default(0)
+  // Relations
+  leaderId        String?             @db.ObjectId
+  leader          User?               @relation("GroupLeader", fields: [leaderId], references: [id])
+  members         GroupMember[]
+  activities      GroupActivity[]
+  goals           GroupGoal[]
+  attendanceSummaries AttendanceSummary[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([churchId])
+  @@index([leaderId])
+  @@index([category])
+  @@map("group")
+}
+
+model GroupMember {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  groupId     String     @db.ObjectId
+  group       Group      @relation(fields: [groupId], references: [id])
+  userId      String     @db.ObjectId
+  user        User       @relation(fields: [userId], references: [id])
+  role        GroupMemberRole
+  joinedDate  DateTime   @default(now())
+  isActive    Boolean    @default(true)
+  notes       String?
+  phone       String?
+  email       String?
+
+  @@map("group_member")
+}
+
+model GroupActivity {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  groupId      String             @db.ObjectId
+  group        Group              @relation(fields: [groupId], references: [id])
+  title        String
+  description  String
+  type         GroupActivityType
+  date         DateTime
+  startTime    String?
+  endTime      String?
+  location     String?
+  participants String[]           @db.ObjectId
+  notes        String?
+  isCompleted  Boolean            @default(false)
+  organizedBy  String             @db.ObjectId
+  organizer    User               @relation(fields: [organizedBy], references: [id])
+  attendance   AttendanceRecord[]
+  createdAt    DateTime           @default(now())
+
+  @@map("group_activity")
+}
+
+model GroupGoal {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  groupId    String     @db.ObjectId
+  group      Group      @relation(fields: [groupId], references: [id])
+  title      String
+  description String
+  targetDate DateTime
+  status     GroupGoalStatus @default(PLANNED)
+  priority   String
+  category   String
+  success    String
+  assignee   String?    @db.ObjectId
+  createdBy  String     @db.ObjectId
+  creator    User       @relation(fields: [createdBy], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("group_goal")
+}
+
+model AttendanceSummary {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  groupId       String             @db.ObjectId
+  group         Group              @relation(fields: [groupId], references: [id])
+  date          DateTime
+  totalExpected Int
+  totalPresent  Int
+  totalAbsent   Int
+  totalLate     Int                @default(0)
+  attendanceRate Float
+  records       AttendanceRecord[]
+
+  @@map("attendance_summary")
+}
+
+model AttendanceRecord {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String             @db.ObjectId
+  user               User               @relation(fields: [userId], references: [id])
+  status             AttendanceStatus
+  arrivalTime        DateTime?
+  notes              String?
+  // Relations (one of these will be set)
+  groupActivityId    String?            @db.ObjectId
+  groupActivity      GroupActivity?     @relation(fields: [groupActivityId], references: [id])
+  attendanceSummaryId String?           @db.ObjectId
+  attendanceSummary  AttendanceSummary? @relation(fields: [attendanceSummaryId], references: [id])
+  attendanceId       String?            @db.ObjectId
+  attendance         Attendance?        @relation(fields: [attendanceId], references: [id])
+
+  @@map("attendance_record")
+}
+
+model Event {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  churchId             String   @db.ObjectId
+  church               Church   @relation(fields: [churchId], references: [id])
+  branchId             String?  @db.ObjectId
+  branch               Branch?  @relation(fields: [branchId], references: [id])
+  title                String
+  description          String
+  type                 String
+  startDate            DateTime
+  endDate              DateTime
+  startTime            String
+  endTime              String
+  location             String
+  expectedAttendees    Int
+  organizer            String
+  maxAttendees         Int?
+  requiresRegistration Boolean  @default(false)
+  isRecurring          Boolean  @default(false)
+  recurringPattern     String?
+  registrationDeadline DateTime?
+  notes                String?
+  isPublic             Boolean  @default(true)
+  status               EventStatus @default(ACTIVE)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([churchId, startDate])
+  @@index([status])
+  @@index([branchId])
+  @@map("event")
+}
+
+model Offering {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  churchId  String        @db.ObjectId
+  church    Church        @relation(fields: [churchId], references: [id])
+  memberId  String        @db.ObjectId
+  member    User          @relation(fields: [memberId], references: [id])
+  type      OfferingType
+  amount    Float
+  method    PaymentMethod
+  date      DateTime
+  reference String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([churchId, date])
+  @@index([memberId, date])
+  @@map("offering")
+}
+
+model Pledge {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  churchId        String          @db.ObjectId
+  church          Church          @relation(fields: [churchId], references: [id])
+  memberId        String          @db.ObjectId
+  member          User            @relation(fields: [memberId], references: [id])
+  amount          Float
+  paid            Float           @default(0)
+  remaining       Float
+  dueDate         DateTime
+  purpose         PledgePurpose
+  paymentSchedule PaymentSchedule @default(ONE_TIME)
+  notes           String?
+  status          PledgeStatus    @default(ACTIVE)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([churchId, status])
+  @@index([memberId, status])
+  @@index([dueDate, status])
+  @@map("pledge")
+}
+
+model PrayerRequest {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  churchId          String              @db.ObjectId
+  church            Church              @relation(fields: [churchId], references: [id])
+  branchId          String?             @db.ObjectId
+  branch            Branch?             @relation(fields: [branchId], references: [id])
+  memberId          String?             @db.ObjectId
+  title             String
+  description       String
+  category          PrayerCategory
+  priority          Priority            @default(MEDIUM)
+  status            PrayerStatus        @default(ACTIVE)
+  isAnonymous       Boolean             @default(false)
+  isPublic          Boolean             @default(true)
+  submittedBy       String              @db.ObjectId
+  submitter         User                @relation("PrayerRequestSubmitter", fields: [submittedBy], references: [id])
+  answeredDate      DateTime?
+  answerDescription String?
+  prayerCount       Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, category])
+  @@index([churchId, status])
+  @@map("prayer_request")
+}
+
+model ServiceSchedule {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  churchId     String        @db.ObjectId
+  church       Church        @relation(fields: [churchId], references: [id])
+  branchId     String        @db.ObjectId
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  day          DayOfWeek
+  time         String
+  service      String
+  attendance   Int?
+  type         ServiceType   @default(WORSHIP)
+  duration     Int?          @default(90)
+  facilitator  String?
+  location     String?
+  recurring    Boolean       @default(true)
+  isActive     Boolean       @default(true)
+  startDate    DateTime?
+  endDate      DateTime?
+  notes        String?
+  attendances  Attendance[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, day, time])
+  @@index([day, isActive])
+  @@map("service_schedule")
+}
+
+model Attendance {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  churchId          String             @db.ObjectId
+  church            Church             @relation(fields: [churchId], references: [id])
+  branchId          String             @db.ObjectId
+  branch            Branch             @relation(fields: [branchId], references: [id])
+  serviceScheduleId String             @db.ObjectId
+  serviceSchedule   ServiceSchedule    @relation(fields: [serviceScheduleId], references: [id])
+  attendanceDate    DateTime
+  totalExpected     Int?
+  totalPresent      Int                @default(0)
+  totalLate         Int                @default(0)
+  totalAbsent       Int                @default(0)
+  totalExcused      Int                @default(0)
+  attendancePercentage Float           @default(0)
+  records           AttendanceRecord[]
+  takenBy           String             @db.ObjectId
+  taker             User               @relation(fields: [takenBy], references: [id])
+  status            AttendanceRecordStatus @default(DRAFT)
+  remarks           String?
+  weatherConditions String?
+  specialEvents     String[]
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@unique([serviceScheduleId, attendanceDate])
+  @@index([churchId, branchId])
+  @@index([attendanceDate, status])
+  @@map("attendance")
+}
+
+model Activity {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  churchId     String         @db.ObjectId
+  church       Church         @relation(fields: [churchId], references: [id])
+  branchId     String         @db.ObjectId
+  branch       Branch         @relation(fields: [branchId], references: [id])
+  date         DateTime
+  activity     String
+  participants Int
+  type         ActivityTypeEnum @default(EVENT)
+  status       ActivityStatus @default(PLANNED)
+  startTime    String?
+  endTime      String?
+  location     String?
+  facilitator  String?
+  budget       Float?
+  description  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, date])
+  @@index([date, status])
+  @@map("activity")
+}
+
+model Asset {
+  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
+  churchId            String          @db.ObjectId
+  church              Church          @relation(fields: [churchId], references: [id])
+  branchId            String          @db.ObjectId
+  branch              Branch          @relation(fields: [branchId], references: [id])
+  name                String
+  type                AssetType
+  value               Float
+  purchaseDate        DateTime
+  condition           AssetCondition
+  status              AssetStatus     @default(ACTIVE)
+  serialNumber        String?
+  warranty            String?
+  supplier            String?
+  maintenanceSchedule MaintenanceSchedule?
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, type])
+  @@index([churchId, status])
+  @@map("asset")
+}
+
+model Announcement {
+  id               String             @id @default(auto()) @map("_id") @db.ObjectId
+  churchId         String             @db.ObjectId
+  church           Church             @relation(fields: [churchId], references: [id])
+  branchId         String?            @db.ObjectId
+  branch           Branch?            @relation(fields: [branchId], references: [id])
+  title            String
+  content          String
+  category         AnnouncementCategory
+  priority         Priority           @default(MEDIUM)
+  publishDate      DateTime
+  expiryDate       DateTime?
+  status           AnnouncementStatus @default(DRAFT)
+  authorId         String             @db.ObjectId
+  author           User               @relation(fields: [authorId], references: [id])
+  viewCount        Int                @default(0)
+  targetAudience   String[]
+  attachments      String[]
+  isSticky         Boolean            @default(false)
+  notificationSent Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, category])
+  @@index([churchId, status])
+  @@index([publishDate])
+  @@map("announcement")
+}
+
+model ChurchSubscription {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  churchId         String   @unique @db.ObjectId
+  church           Church   @relation(fields: [churchId], references: [id])
+  plan             ChurchPlan
+  status           SubscriptionStatus @default(TRIAL)
+  isPaid           Boolean  @default(false)
+  invoiceAmount    Float    @default(0)
+  paidAmount       Float    @default(0)
+  balAmount        Float    @default(0)
+  maxUsers         Int?
+  maxBranches      Int?     @default(1)
+  maxSmallGroups   Int?
+  currentUsers     Int      @default(0)
+  currentBranches  Int      @default(0)
+  currentSmallGroups Int    @default(0)
+  features         String[]
+  startDate        DateTime
+  endDate          DateTime
+  isAutoRenew      Boolean  @default(true)
+  paymentMethod    PaymentMethodType? @default(M_PESA)
+  lastPaymentDate  DateTime?
+  nextBillingDate  DateTime?
+  canceledAt       DateTime?
+  cancelReason     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([churchId, status])
+  @@index([status, endDate])
+  @@index([plan, status])
+  @@map("church_subscription")
+}
+
+model UserSubscription {
+  id                    String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String             @db.ObjectId
+  user                  User               @relation(fields: [userId], references: [id])
+  plan                  UserPlan
+  status                SubscriptionStatus @default(TRIAL)
+  isPaid                Boolean            @default(false)
+  invoiceAmount         Float              @default(0)
+  paidAmount            Float              @default(0)
+  balAmount             Float              @default(0)
+  features              String[]
+  churchId              String?            @db.ObjectId
+  maxSmallGroupsLead    Int?               @default(0)
+  currentSmallGroupsLead Int?              @default(0)
+  maxEventsManage       Int?               @default(0)
+  currentEventsManage   Int?               @default(0)
+  startDate             DateTime
+  endDate               DateTime
+  isAutoRenew           Boolean            @default(true)
+  paymentMethod         PaymentMethodType? @default(M_PESA)
+  lastPaymentDate       DateTime?
+  nextBillingDate       DateTime?
+  canceledAt            DateTime?
+  cancelReason          String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([status, endDate])
+  @@index([plan, status])
+  @@map("user_subscription")
+}
+
+model Payment {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  churchId       String            @db.ObjectId
+  church         Church            @relation(fields: [churchId], references: [id])
+  subscriptionId String            @db.ObjectId
+  amount         Float
+  currency       String            @default("KES")
+  paymentMethod  PaymentMethodType
+  paymentDate    DateTime
+  status         PaymentStatus     @default(PAID)
+  transactionId  String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@map("payment")
+}
+
+model Log {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  level       LogLevel
+  message     String
+  errorName   String?
+  errorMessage String?
+  errorStack  String?
+  errorCode   String?
+  metadata    Json?
+  timestamp   DateTime    @default(now())
+  source      LogSource
+  environment Environment
+  userId      String?     @db.ObjectId
+  user        User?       @relation(fields: [userId], references: [id])
+  churchId    String?     @db.ObjectId
+  church      Church?     @relation(fields: [churchId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([level, timestamp])
+  @@index([source, level, timestamp])
+  @@index([environment, timestamp])
+  @@map("log")
+}
+
+model Report {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  churchId        String     @db.ObjectId
+  church          Church     @relation(fields: [churchId], references: [id])
+  branchId        String?    @db.ObjectId
+  branch          Branch?    @relation(fields: [branchId], references: [id])
+  name            String
+  type            ReportType
+  description     String
+  dateRange       DateRange  @default(LAST_30_DAYS)
+  customStartDate DateTime?
+  customEndDate   DateTime?
+  format          ReportFormat @default(PDF)
+  includeCharts   Boolean    @default(true)
+  includeComparisons Boolean @default(false)
+  departments     String[]
+  status          ReportStatus @default(GENERATING)
+  fileUrl         String?
+  fileName        String?
+  fileSize        Int?
+  generatedAt     DateTime?
+  downloadCount   Int        @default(0)
+  // Normalized report data
+  reportData      ReportData?
+  createdBy       String     @db.ObjectId
+  creator         User       @relation(fields: [createdBy], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, status])
+  @@index([churchId, type])
+  @@index([createdBy])
+  @@index([status, createdAt])
+  @@index([generatedAt])
+  @@map("report")
+}
+
+// Normalized Report Data
+model ReportData {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  totalRecords      Int      @default(0)
+  departmentCounts  DepartmentCount[]
+  startDate         DateTime
+  endDate           DateTime
+  generationTime    Int      // in milliseconds
+  reportId          String   @unique @db.ObjectId
+  report            Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("report_data")
+}
+
+// Department Count for Reports
+model DepartmentCount {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  departmentId   String
+  departmentName String
+  count          Int
+  reportDataId   String     @db.ObjectId
+  reportData     ReportData @relation(fields: [reportDataId], references: [id], onDelete: Cascade)
+  
+  @@map("department_count")
+}
+
+model MessageRecipient {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  churchId     String     @db.ObjectId
+  church       Church     @relation(fields: [churchId], references: [id])
+  branchId     String?    @db.ObjectId
+  branch       Branch?    @relation(fields: [branchId], references: [id])
+  recipientId  String     @unique
+  name         String
+  description  String?
+  type         RecipientType @default(CUSTOM)
+  targetModel  TargetModel
+  targetId     String?    @db.ObjectId
+  memberCount  Int        @default(0)
+  isActive     Boolean    @default(true)
+  autoUpdate   Boolean    @default(true)
+  lastUpdated  DateTime   @default(now())
+  // Normalized criteria
+  criteria     RecipientCriteria?
+  createdBy    String     @db.ObjectId
+  creator      User       @relation(fields: [createdBy], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([churchId, recipientId])
+  @@index([churchId, isActive])
+  @@index([churchId, type, isActive])
+  @@index([branchId])
+  @@index([targetModel, targetId])
+  @@map("message_recipient")
+}
+
+model RecipientCriteria {
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  userStatus       String[]
+  roles            String[]
+  minAge           Int?
+  maxAge           Int?
+  gender           Gender?
+  departmentIds    String[]          @db.ObjectId
+  groupIds         String[]          @db.ObjectId
+  customQuery      String?           // JSON string if needed for complex queries
+  recipientId      String            @unique @db.ObjectId
+  recipient        MessageRecipient  @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@map("recipient_criteria")
+}
+
+model Milestone {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  churchId               String       @db.ObjectId
+  branchId               String?      @db.ObjectId
+  branch                 Branch?      @relation(fields: [branchId], references: [id])
+  name                   String
+  description            String
+  category               MilestoneCategory
+  points                 Int
+  requirements           String?
+  isActive               Boolean      @default(true)
+  order                  Int          @default(0)
+  level                  DiscipleLevel
+  prerequisiteMilestones String[]     @db.ObjectId
+  completionCount        Int          @default(0)
+  discipleProgress       DiscipleProgress[]
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, category])
+  @@index([churchId, level])
+  @@index([churchId, isActive])
+  @@index([category, order])
+  @@index([level, order])
+  @@map("milestone")
+}
+
+model MessageTemplate {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  churchId    String              @db.ObjectId
+  name        String
+  type        MessageType
+  category    TemplateCategory
+  title       String
+  content     String
+  variables   String[]
+  isActive    Boolean             @default(true)
+  usageCount  Int                 @default(0)
+  createdBy   String              @db.ObjectId
+  creator     User                @relation(fields: [createdBy], references: [id])
+  messages    Message[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([churchId, name])
+  @@index([churchId, isActive])
+  @@index([churchId, type, isActive])
+  @@index([churchId, category, isActive])
+  @@index([createdBy])
+  @@map("message_template")
+}
+
+model Message {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  churchId       String         @db.ObjectId
+  church         Church         @relation(fields: [churchId], references: [id])
+  branchId       String?        @db.ObjectId
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  type           MessageType
+  title          String
+  content        String
+  recipients     String[]
+  scheduleType   ScheduleType   @default(NOW)
+  scheduleDate   DateTime?
+  scheduleTime   String?
+  templateId     String?        @db.ObjectId
+  template       MessageTemplate? @relation(fields: [templateId], references: [id])
+  status         MessageStatus  @default(DRAFT)
+  sentAt         DateTime?
+  // Normalized delivery stats
+  deliveryStats  MessageDeliveryStats?
+  createdBy      String         @db.ObjectId
+  creator        User           @relation(fields: [createdBy], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, status])
+  @@index([churchId, type])
+  @@index([scheduleDate, status])
+  @@index([createdBy])
+  @@map("message")
+}
+
+// Normalized Message Delivery Statistics
+model MessageDeliveryStats {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  total      Int     @default(0)
+  sent       Int     @default(0)
+  delivered  Int     @default(0)
+  failed     Int     @default(0)
+  messageId  String  @unique @db.ObjectId
+  message    Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("message_delivery_stats")
+}
+
+model Disciple {
+  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
+  churchId            String             @db.ObjectId
+  branchId            String?            @db.ObjectId
+  branch              Branch?            @relation(fields: [branchId], references: [id])
+  memberId            String             @db.ObjectId
+  member              User               @relation("DiscipleMember", fields: [memberId], references: [id])
+  mentorId            String             @db.ObjectId
+  mentor              User               @relation("DiscipleMentor", fields: [mentorId], references: [id])
+  startDate           DateTime
+  endDate             DateTime?
+  currentLevel        DiscipleLevel
+  status              DiscipleStatus     @default(ACTIVE)
+  goals               String
+  notes               String?
+  progress            Int                @default(0)
+  milestonesCompleted String[]           @db.ObjectId
+  discipleProgress    DiscipleProgress[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, memberId])
+  @@index([churchId, mentorId])
+  @@index([churchId, status])
+  @@index([churchId, currentLevel])
+  @@index([startDate])
+  @@map("disciple")
+}
+
+model DiscipleProgress {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  churchId      String     @db.ObjectId
+  branchId      String     @db.ObjectId
+  branch        Branch     @relation(fields: [branchId], references: [id])
+  discipleId    String     @db.ObjectId
+  disciple      Disciple   @relation(fields: [discipleId], references: [id])
+  milestoneId   String     @db.ObjectId
+  milestone     Milestone  @relation(fields: [milestoneId], references: [id])
+  completedDate DateTime   @default(now())
+  pointsEarned  Int
+  verifiedBy    String     @db.ObjectId
+  verifier      User       @relation(fields: [verifiedBy], references: [id])
+  notes         String?
+  evidence      String?
+  status        ProgressStatus @default(PENDING)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([discipleId, milestoneId])
+  @@index([churchId, branchId])
+  @@index([discipleId, completedDate])
+  @@index([milestoneId])
+  @@index([verifiedBy])
+  @@index([status])
+  @@map("disciple_progress")
+}
+
+model Demo {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  // Normalized relations
+  churchData DemoChurchData?
+  userData   DemoUserData?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@map("demo")
+}
+
+model DemoChurchData {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  churchName       String
+  denomination     String
+  churchSize       String
+  numberOfBranches String
+  address          String
+  country          String
+  demoId           String   @unique @db.ObjectId
+  demo             Demo     @relation(fields: [demoId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("demo_church_data")
+}
+
+model DemoUserData {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName    String
+  lastName     String
+  email        String
+  phoneNumber  String
+  agreeToTerms Boolean  @default(false)
+  demoId       String   @unique @db.ObjectId
+  demo         Demo     @relation(fields: [demoId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("demo_user_data")
+}
+
+model Content {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  churchId      String         @db.ObjectId
+  branchId      String?        @db.ObjectId
+  branch        Branch?        @relation(fields: [branchId], references: [id])
+  title         String
+  description   String
+  type          ContentType
+  category      ContentCategory
+  tags          String[]
+  status        ContentStatus  @default(DRAFT)
+  fileUrl       String?
+  fileName      String?
+  fileSize      Int?
+  fileMimeType  String?
+  author        String?
+  publishedAt   DateTime?
+  viewCount     Int            @default(0)
+  downloadCount Int            @default(0)
+  isPublic      Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([churchId, branchId])
+  @@index([churchId, type])
+  @@index([churchId, category])
+  @@index([churchId, status])
+  @@index([churchId, tags])
+  @@index([publishedAt])
+  @@index([viewCount])
+  @@map("content")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum UserRole {
+  MEMBER
+  PASTOR
+  BISHOP
+  ADMIN
+  SUPERADMIN
+  VISITOR
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum DepartmentCategory {
+  MINISTRY
+  ADMINISTRATION
+  OPERATIONS
+  EDUCATION
+  OUTREACH
+  SUPPORT
+  FINANCE
+  FACILITIES
+  TECHNOLOGY
+  COMMUNICATIONS
+  PASTORAL_CARE
+  MISSIONS
+  YOUTH
+  CHILDREN
+  WORSHIP
+  DISCIPLESHIP
+  COMMUNITY
+  EVENTS
+  SECURITY
+  VOLUNTEER_COORDINATION
+}
+
+enum MemberRole {
+  LEADER
+  ASSISTANT_LEADER
+  COORDINATOR
+  MEMBER
+  VOLUNTEER
+}
+
+enum ExpenseCategory {
+  EQUIPMENT
+  MATERIALS
+  TRAINING
+  EVENTS
+  UTILITIES
+  TRANSPORTATION
+  REFRESHMENTS
+  MISCELLANEOUS
+}
+
+enum ActivityType {
+  BIBLE_STUDY
+  PRAYER_MEETING
+  SOCIAL_EVENT
+  DISCUSSION
+  RETREAT
+  MEETING
+  TRAINING
+  EVENT
+  OUTREACH
+  WORSHIP
+  FELLOWSHIP
+  SERVICE
+}
+
+enum GoalStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GroupCategory {
+  BIBLE_STUDY
+  FELLOWSHIP
+  PRAYER
+  YOUTH
+  CHILDREN
+  MARRIAGE
+  WORSHIP
+  CONTRIBUTION
+  OTHERS
+}
+
+enum GroupMemberRole {
+  LEADER
+  ASSISTANT_LEADER
+  FACILITATOR
+  SECRETARY
+  MEMBER
+}
+
+enum GroupActivityType {
+  BIBLE_STUDY
+  PRAYER_MEETING
+  SOCIAL_EVENT
+  DISCUSSION
+  RETREAT
+  MEETING
+  TRAINING
+  EVENT
+  OUTREACH
+  WORSHIP
+  FELLOWSHIP
+  SERVICE
+}
+
+enum GroupGoalStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum EventStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferingType {
+  TITHE
+  OFFERING
+  SPECIAL_OFFERING
+  BUILDING_FUND
+  THANKSGIVING
+  PARTNERSHIP
+  DONATION
+  MISSION
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  M_PESA
+  BANK_TRANSFER
+  CARD
+  ONLINE
+  CHECK
+  OTHER
+}
+
+enum PledgePurpose {
+  BUILDING_FUND
+  MISSION_TRIP
+  YOUTH_PROGRAM
+  EQUIPMENT
+  OUTREACH
+  EDUCATION
+  OTHER
+}
+
+enum PaymentSchedule {
+  ONE_TIME
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum PledgeStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum PrayerCategory {
+  HEALTH
+  FAMILY
+  CAREER
+  FINANCIAL
+  SPIRITUAL
+  THANKSGIVING
+  GUIDANCE
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum PrayerStatus {
+  ACTIVE
+  ANSWERED
+  CLOSED
+  ARCHIVED
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum ServiceType {
+  WORSHIP
+  PRAYER
+  BIBLE_STUDY
+  YOUTH
+  CHILDREN
+  SPECIAL
+  FELLOWSHIP
+}
+
+enum AttendanceRecordStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  ARCHIVED
+}
+
+enum ActivityTypeEnum {
+  SERVICE
+  MEETING
+  EVENT
+  PROGRAM
+  MINISTRY
+  SOCIAL
+  OUTREACH
+}
+
+enum ActivityStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum AssetType {
+  VEHICLE
+  PROPERTY
+  EQUIPMENT
+  FURNITURE
+  TECHNOLOGY
+  MUSICAL
+}
+
+enum AssetCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum AssetStatus {
+  ACTIVE
+  MAINTENANCE
+  DISPOSED
+  SOLD
+  DONATED
+  LOST
+  STOLEN
+}
+
+enum MaintenanceSchedule {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum AnnouncementCategory {
+  GENERAL
+  SERVICE
+  EVENT
+  PRAYER
+  MINISTRY
+  YOUTH
+  CHILDREN
+  FINANCE
+  VOLUNTEER
+  EMERGENCY
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  EXPIRED
+}
+
+enum ChurchPlan {
+  BASIC
+  MINISTRY
+  CATHEDRAL
+}
+
+enum UserPlan {
+  CONNECT
+  ENGAGE
+  SERVE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+  TRIAL
+}
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  PAYPAL
+  STRIPE
+  M_PESA
+}
+
+enum PaymentStatus {
+  PAID
+  FAILED
+  PENDING
+  REFUNDED
+}
+
+enum LogLevel {
+  ERROR
+  WARN
+  INFO
+  DEBUG
+}
+
+enum LogSource {
+  API
+  CLIENT
+  SERVER
+  DATABASE
+  AUTH
+  PAYMENT
+  EMAIL
+}
+
+enum Environment {
+  DEVELOPMENT
+  STAGING
+  PRODUCTION
+  TEST
+}
+
+enum ReportType {
+  ATTENDANCE
+  FINANCIAL
+  MEMBERSHIP
+  EVENTS
+  GIVING
+  ACTIVITIES
+}
+
+enum DateRange {
+  LAST_7_DAYS
+  LAST_30_DAYS
+  LAST_3_MONTHS
+  LAST_6_MONTHS
+  LAST_YEAR
+  CUSTOM
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+enum ReportStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum RecipientType {
+  ALL_USERS
+  ACTIVE_USERS
+  DEPARTMENT
+  GROUP
+  CUSTOM
+}
+
+enum TargetModel {
+  USER
+  DEPARTMENT
+  GROUP
+}
+
+enum MilestoneCategory {
+  SPIRITUAL_GROWTH
+  BIBLE_STUDY
+  PRAYER
+  SERVICE
+  LEADERSHIP
+  EVANGELISM
+  FELLOWSHIP
+  WORSHIP
+  DISCIPLESHIP
+}
+
+enum DiscipleLevel {
+  NEW_CONVERT
+  GROWING
+  MATURE
+  LEADER
+}
+
+enum MessageType {
+  SMS
+  EMAIL
+}
+
+enum TemplateCategory {
+  SERVICE_REMINDER
+  EVENT_REGISTRATION
+  WELCOME_MEMBER
+  ANNOUNCEMENT
+  CUSTOM
+}
+
+enum ScheduleType {
+  NOW
+  SCHEDULED
+  DRAFT
+}
+
+enum MessageStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum DiscipleStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  DISCONTINUED
+}
+
+enum ProgressStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ContentType {
+  SERMON
+  BIBLE_STUDY
+  PRAYER
+  WORSHIP
+  ANNOUNCEMENT
+  EVENT
+  DEVOTIONAL
+  TESTIMONY
+  MUSIC
+  VIDEO
+  DOCUMENT
+  IMAGE
+  AUDIO
+}
+
+enum ContentCategory {
+  SPIRITUAL
+  EDUCATIONAL
+  ADMINISTRATIVE
+  WORSHIP
+  YOUTH
+  CHILDREN
+  MISSIONS
+  FELLOWSHIP
+  OUTREACH
+  DISCIPLESHIP
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  PRIVATE
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  TRANSFERRED
+  DECEASED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  CASUAL
+}
+
+enum VolunteerStatus {
+  ACTIVE
+  INACTIVE
+  ON_HOLD
+  SUSPENDED
+}
+
+enum ClearanceLevel {
+  BASIC
+  ENHANCED
+  CHILDREN_MINISTRY
+}
+
+enum AdminAccessLevel {
+  BRANCH
+  REGIONAL
+  NATIONAL
+}
+
+enum SuperAdminAccessLevel {
+  GLOBAL
+}
+
+enum HowDidYouHear {
+  FRIEND
+  FAMILY
+  ONLINE
+  FLYER
+  OTHER
+}
+
+enum FollowUpStatus {
+  PENDING
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
 }
