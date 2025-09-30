@@ -70,7 +70,6 @@ const fetchBranchServiceSchedules = async ({
   if (day) params.append('day', day);
   if (type) params.append('type', type);
   if (status) params.append('status', status);
-
   const { data } = await apiClient.get(
     `/church/branches/${branchId}/service-schedules?${params.toString()}`
   );
@@ -116,7 +115,6 @@ const fetchAllServiceSchedules = async ({
   if (type) params.append('type', type);
   if (branchId) params.append('branchId', branchId);
   if (status) params.append('status', status);
-
   const { data } = await apiClient.get(
     `/church/service-schedules?${params.toString()}`
   );
@@ -267,11 +265,9 @@ const deleteBranchServiceScheduleById = async ({
 }): Promise<{ message: string; schedule?: ServiceSchedule; branch?: any }> => {
   const params = new URLSearchParams();
   if (options?.force) params.append('force', 'true');
-
   const url = params.toString()
     ? `/church/branches/${branchId}/service-schedules/${scheduleId}?${params.toString()}`
     : `/church/branches/${branchId}/service-schedules/${scheduleId}`;
-
   const { data } = await apiClient.delete(url);
   return data;
 };
@@ -297,7 +293,6 @@ export const useDeleteBranchServiceScheduleById = () => {
         queryKey: ['service-schedule', variables.scheduleId],
       });
       queryClient.invalidateQueries({ queryKey: ['service-schedule-stats'] });
-
       const message = variables.options?.force
         ? 'Service schedule has been permanently deleted.'
         : 'Service schedule has been deactivated successfully.';
