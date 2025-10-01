@@ -1171,6 +1171,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@prisma/extension-accelerate@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@prisma/extension-accelerate@npm:2.0.2"
+  peerDependencies:
+    "@prisma/client": ">=4.16.1"
+  checksum: 10c0/bd98344d59fe1fd5161b79c59e74defd54f2860b003a34bf0d4fd911eb94ef84c4c190bf69942fd99a9a14e46e78e0774dbe8ac1b5137d056c9005b69e58cfe6
+  languageName: node
+  linkType: hard
+
 "@prisma/fetch-engine@npm:6.16.3":
   version: 6.16.3
   resolution: "@prisma/fetch-engine@npm:6.16.3"
@@ -3606,6 +3615,7 @@ __metadata:
     "@biomejs/biome": "npm:2.1.1"
     "@hookform/resolvers": "npm:latest"
     "@prisma/client": "npm:^6.16.3"
+    "@prisma/extension-accelerate": "npm:^2.0.2"
     "@radix-ui/react-accordion": "npm:1.2.2"
     "@radix-ui/react-alert-dialog": "npm:1.1.4"
     "@radix-ui/react-aspect-ratio": "npm:1.1.1"
