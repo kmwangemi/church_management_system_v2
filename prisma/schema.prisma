@@ -1,12 +1,13 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Complete Prisma Schema for Church Management System
+// Aligned with Better Auth Organization Plugin
+
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -34,10 +35,8 @@ enum AccountStatus {
 }
 
 enum UserRole {
-  // Global system roles (outside the church's organization context)
   SUPER_ADMIN
   VISITOR
-  // Organization roles are defined in the 'Member' model
 }
 
 enum ORGANIZATIONUserRole {
@@ -607,23 +606,24 @@ enum MilestoneCategory {
 }
 
 // ============================================
-// BETTER AUTH MODELS (Augmented)
+// BETTER AUTH MODELS
 // ============================================
 
 model User {
-  id            String    @id @default(auto()) 
+  id            String    @id @default(cuid())
   name          String
-  email         String
+  email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
+  updatedAt     DateTime  @updatedAt
+  // Better Auth relations
   sessions      Session[]
   accounts      Account[]
-  // CRITICAL: Relations to Organization via Member model
+  // Organization membership
   members       Member[]
   invitations   Invitation[]
-  // Extended fields for church management (Global User Data)
+  // Extended profile fields
   phoneNumber            String?
   dateOfBirth            DateTime?
   gender                 Gender?
@@ -631,17 +631,21 @@ model User {
   maritalStatus          MaritalStatus?
   skills                 String[]
   notes                  String?
-  // CRITICAL: Removed churchId and branchId - Membership is now defined by the 'Member' model.
-  // Role system (Global Role - use Member.role for organizational role)
+  // Global role (SUPER_ADMIN or VISITOR)
+  role                   UserRole             @default(VISITOR)
+  status                 AccountStatus        @default(ACTIVE)
+  lastLogin              DateTime?
+  // Flags
   isMember               Boolean              @default(false)
-  role                   UserRole             @default(VISITOR) // For SuperAdmin/System roles
   isStaff                Boolean              @default(false)
   isVolunteer            Boolean              @default(false)
-  // Address - normalized to separate model
+  isPasswordUpdated      Boolean              @default(false)
+  agreeToTerms           Boolean              @default(true)
+  isDeleted              Boolean              @default(false)
+  // Normalized relations
   address                Address?
-  // Emergency contact - normalized to separate model
   emergencyContact       EmergencyContact?
-  // Role-specific details (Separate models are fine for normalization)
+  // Role-specific details
   memberDetails          MemberDetails?
   pastorDetails          PastorDetails?
   bishopDetails          BishopDetails?
@@ -649,30 +653,27 @@ model User {
   volunteerDetails       VolunteerDetails?
   adminDetails           AdminDetails?
   visitorDetails         VisitorDetails?
-  // Account status
-  status                 AccountStatus        @default(ACTIVE)
-  lastLogin              DateTime?
-  // Security
-  isPasswordUpdated      Boolean              @default(false)
-  agreeToTerms           Boolean              @default(true)
-  isDeleted              Boolean              @default(false)
-  // Audit (Relations to itself)
-  createdBy              String?              @id
+  // Self-referential relations
+  createdBy              String?
   createdByUser          User?                @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usersCreated           User[]               @relation("UserCreatedBy")
-  updatedBy              String?              @id
+  updatedBy              String?
   updatedByUser          User?                @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usersUpdated           User[]               @relation("UserUpdatedBy")
-  // Relations to other CM models (Keep these)
-  churchesCreated        Organization[]       @relation("ChurchCreator") // Links to Organization now
+  // Church/Organization relations
+  churchesCreated        Organization[]       @relation("ChurchCreator")
+  branchesPastored       Branch[]             @relation("BranchPastor")
+  departmentsLed         Department[]         @relation("DepartmentLeader")
+  groupsLed              Group[]              @relation("GroupLeader")
+  // Activity relations
   offerings              Offering[]
   pledges                Pledge[]
   reports                Report[]
   messageTemplates       MessageTemplate[]
   messages               Message[]
   messageRecipients      MessageRecipient[]
-  disciplesAsMember      Disciple[] @relation("DiscipleMember")
-  disciplesAsMentor      Disciple[] @relation("DiscipleMentor")
+  disciplesAsMember      Disciple[]           @relation("DiscipleMember")
+  disciplesAsMentor      Disciple[]           @relation("DiscipleMentor")
   prayerRequestsSubmitted PrayerRequest[]     @relation("PrayerRequestSubmitter")
   userSubscriptions      UserSubscription[]
   departmentMemberships  DepartmentMember[]
@@ -683,38 +684,35 @@ model User {
   departmentGoalsCreated DepartmentGoal[]
   announcementsCreated   Announcement[]
   logsGenerated          Log[]
-  branchesPastored       Branch[]             @relation("BranchPastor")
   attendancesTaken       Attendance[]
   expensesApproved       Expense[]
   departmentActivitiesOrganized DepartmentActivity[]
-  departmentsLed         Department[]         @relation("DepartmentLeader")
-  groupsLed              Group[]              @relation("GroupLeader")
-  @@unique([email])
+  @@index([email])
   @@index([role, status])
   @@index([isDeleted])
   @@map("user")
 }
 
 model Session {
-  id                   String   @id @default(auto()) 
+  id                   String   @id @default(cuid())
   expiresAt            DateTime
-  token                String
+  token                String   @unique
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   ipAddress            String?
   userAgent            String?
-  userId               String   @id
+  userId               String
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activeOrganizationId String? // Used by Better Auth to track active church
-  @@unique([token])
+  // Better Auth uses this to track active organization
+  activeOrganizationId String?
   @@map("session")
 }
 
 model Account {
-  id                    String    @id @default(auto()) 
+  id                    String    @id @default(cuid())
   accountId             String
   providerId            String
-  userId                String    @id
+  userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
@@ -729,26 +727,31 @@ model Account {
 }
 
 model Verification {
-  id         String   @id @default(auto()) 
+  id         String   @id @default(cuid())
   identifier String
   value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  updatedAt  DateTime @updatedAt
   @@map("verification")
 }
 
-// CRITICAL: The Organization model is now your Church entity
+// ============================================
+// ORGANIZATION (CHURCH) MODEL
+// ============================================
+
 model Organization {
-  id          String       @id @default(auto()) 
-  name        String       @map("churchName") // Remap 'name' to your domain language
-  slug        String?
-  logo        String?      @map("churchLogoUrl")
-  createdAt   DateTime
+  id          String       @id @default(cuid())
+  name        String
+  slug        String?      @unique
+  logo        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   metadata    String?
+  // Better Auth requires these relations
   members     Member[]
   invitations Invitation[]
-  // ADD: Church-specific fields from your original Church model
+  // Church-specific fields
   denomination     String
   email            String      @unique
   phoneNumber      String      @unique
@@ -759,11 +762,10 @@ model Organization {
   description      String?
   isSuspended      Boolean     @default(false)
   isDeleted        Boolean     @default(false)
-  // Relations
-  address          Address? // 1:1 relation to Address
-  // CRITICAL: Relations pointing to Organization
-  createdBy        String      @id
+  createdBy        String
   creator          User        @relation("ChurchCreator", fields: [createdBy], references: [id])
+  // Relations
+  address          Address?
   branches         Branch[]
   departments      Department[]
   groups           Group[]
@@ -786,150 +788,163 @@ model Organization {
   messageRecipients MessageRecipient[]
   disciples        Disciple[]
   content          Content[]
-  updatedAt        DateTime    @updatedAt
-  @@unique([slug])
   @@index([denomination])
   @@index([churchSize])
   @@index([isSuspended, isDeleted])
-  @@map("organization") // CRITICAL: Must be mapped to "organization" for the plugin
+  @@map("organization")
 }
 
+// ============================================
+// MEMBER MODEL
+// ============================================
+
 model Member {
-  id             String       @id @default(auto()) 
-  organizationId String       @id
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  userId         String       @id
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // CRITICAL: This is the user's role *within the church* (e.g., ADMIN, PASTOR, MEMBER)
-  role           ORGANIZATIONUserRole 
-  createdAt      DateTime
-  // ADD: Branch association for the member within the church
-  branchId       String?      @id
-  branch         Branch?      @relation("BranchMembers", fields: [branchId], references: [id])
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Role within the organization
+  role           ORGANIZATIONUserRole @default(MEMBER)
+  createdAt      DateTime             @default(now())
+  // Branch assignment within church
+  branchId       String?
+  branch         Branch?              @relation("BranchMembers", fields: [branchId], references: [id])
+  // Composite unique constraint required by Better Auth
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([branchId])
   @@map("member")
 }
 
+// ============================================
+// INVITATION MODEL
+// ============================================
+
 model Invitation {
-  id             String       @id @default(auto()) 
-  organizationId String       @id
+  id             String       @id @default(cuid())
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   email          String
   role           String?
   status         String
   expiresAt      DateTime
-  inviterId      String       @id
-  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  inviterId      String
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  // Unique constraint for email per organization
+  @@unique([organizationId, email])
+  @@index([email])
   @@map("invitation")
 }
 
-// Normalized Address Model (used by multiple entities)
+// ============================================
+// NORMALIZED MODELS
+// ============================================
+
 model Address {
-  id        String   @id @default(auto()) 
+  id        String        @id @default(cuid())
   street    String?
   city      String?
   state     String?
   zipCode   String?
-  country   String   @default("Kenya")
-  // Relations - one address can belong to one entity
-  userId    String?  @unique @id
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // CRITICAL: Pointing to Organization
-  churchId  String?  @unique @id
-  church    Organization?  @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  branchId  String?  @unique @id
-  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  country   String        @default("Kenya")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  userId    String?       @unique
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  churchId  String?       @unique
+  church    Organization? @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  branchId  String?       @unique
+  branch    Branch?       @relation(fields: [branchId], references: [id], onDelete: Cascade)
   @@map("address")
 }
 
-// Normalized Emergency Contact Model (No changes)
 model EmergencyContact {
-  id           String  @id @default(auto()) 
+  id           String   @id @default(cuid())
   fullName     String
   email        String?
   phoneNumber  String
   relationship String
   address      String?
   notes        String?
-  // Relations
-  userId       String  @unique @id
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("emergency_contact")
 }
 
 // ============================================
-// USER ROLE-SPECIFIC DETAIL MODELS
+// USER ROLE-SPECIFIC DETAILS
 // ============================================
+
 model MemberDetails {
-  id               String      @id @default(auto()) 
-  memberId         String // Should ideally be related to the 'Member' model, but using userId is fine if 1:1 with User
-  membershipDate   DateTime    @default(now())
+  id               String           @id @default(cuid())
+  memberId         String
+  membershipDate   DateTime         @default(now())
   membershipStatus MembershipStatus @default(ACTIVE)
-  departmentIds    String[]    @id
-  groupIds         String[]    @id
   occupation       String?
   baptismDate      DateTime?
-  joinedDate       DateTime    @default(now())
-  userId           String      @unique @id
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  joinedDate       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  departmentIds    String[]
+  groupIds         String[]
+  userId           String           @unique
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("member_details")
 }
 
 model PastorDetails {
-  id               String              @id @default(auto()) 
-  pastorId         String
-  ordinationDate   DateTime?
-  qualifications   String[]
-  specializations  String[]
-  assignments      PastorAssignment[]
-  sermonCount      Int                 @default(0)
-  counselingSessions Int               @default(0)
-  biography        String?
-  userId           String              @unique @id
-  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id                 String             @id @default(cuid())
+  pastorId           String
+  ordinationDate     DateTime?
+  qualifications     String[]
+  specializations    String[]
+  sermonCount        Int                @default(0)
+  counselingSessions Int                @default(0)
+  biography          String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  assignments        PastorAssignment[]
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("pastor_details")
 }
 
 model PastorAssignment {
-  id               String         @id @default(auto()) 
-  branchId         String?        @id
+  id               String        @id @default(cuid())
   position         String
   startDate        DateTime
   endDate          DateTime?
-  isActive         Boolean        @default(true)
-  pastorDetailsId  String         @id
-  pastorDetails    PastorDetails  @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  branchId         String?
+  pastorDetailsId  String
+  pastorDetails    PastorDetails @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
   @@map("pastor_assignment")
 }
 
 model BishopDetails {
-  id               String         @id @default(auto()) 
+  id               String   @id @default(cuid())
   bishopId         String
   appointmentDate  DateTime?
   jurisdictionArea String?
-  branchIds        String[]       @id
-  pastorIds        String[]       @id
   qualifications   String[]
   achievements     String[]
   biography        String?
-  userId           String         @unique @id
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchIds        String[]
+  pastorIds        String[]
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("bishop_details")
 }
 
 model StaffDetails {
-  id             String         @id @default(auto()) 
+  id             String         @id @default(cuid())
   staffId        String
   jobTitle       String
   department     String
@@ -938,133 +953,136 @@ model StaffDetails {
   salary         Float?
   employmentType EmploymentType @default(CASUAL)
   isActive       Boolean        @default(true)
-  userId         String         @unique @id
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("staff_details")
 }
 
 model VolunteerDetails {
-  id                   String              @id @default(auto()) 
+  id                   String                @id @default(cuid())
   volunteerId          String
-  volunteerStatus      VolunteerStatus     @default(ACTIVE)
+  volunteerStatus      VolunteerStatus       @default(ACTIVE)
+  hoursContributed     Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  departments          String[]
   availabilitySchedule AvailabilitySchedule?
-  departments          String[]            @id
   volunteerRoles       VolunteerRole[]
   backgroundCheck      BackgroundCheck?
-  hoursContributed     Int                 @default(0)
-  userId               String              @unique @id
-  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  userId               String                @unique
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("volunteer_details")
 }
 
 model AvailabilitySchedule {
-  id                  String           @id @default(auto()) 
+  id                  String           @id @default(cuid())
   days                String[]
   timeSlots           String[]
   preferredTimes      String[]
-  volunteerDetailsId  String           @unique @id
+  volunteerDetailsId  String           @unique
   volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
   @@map("availability_schedule")
 }
 
 model VolunteerRole {
-  id                  String           @id @default(auto()) 
+  id                  String           @id @default(cuid())
   role                String
   department          String?
   startDate           DateTime         @default(now())
   endDate             DateTime?
   isActive            Boolean          @default(true)
-  volunteerDetailsId  String           @id
-  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
+  volunteerDetailsId  String
+  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
   @@map("volunteer_role")
 }
 
 model BackgroundCheck {
-  id                  String           @id @default(auto()) 
+  id                  String           @id @default(cuid())
   completed           Boolean          @default(false)
   completedDate       DateTime?
   expiryDate          DateTime?
   clearanceLevel      ClearanceLevel?
-  volunteerDetailsId  String           @unique @id
-  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
+  volunteerDetailsId  String           @unique
+  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
   @@map("background_check")
 }
 
 model AdminDetails {
-  id               String       @id @default(auto()) 
+  id               String           @id @default(cuid())
   adminId          String
   accessLevel      AdminAccessLevel @default(NATIONAL)
-  assignedBranches String[]     @id
-  userId           String       @unique @id
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  assignedBranches String[]
+  userId           String           @unique
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("admin_details")
 }
 
 model VisitorDetails {
-  id                      String         @id @default(auto()) 
+  id                      String         @id @default(cuid())
   visitorId               String
   visitDate               DateTime       @default(now())
-  invitedBy               String?        @id
   howDidYouHear           HowDidYouHear  @default(OTHER)
   followUpStatus          FollowUpStatus @default(PENDING)
   followUpDate            DateTime?
   followUpNotes           String?
   interestedInMembership  Boolean        @default(false)
   servicesAttended        String[]
-  userId                  String         @unique @id
-  user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
+  invitedBy               String?
+  userId                  String         @unique
+  user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("visitor_details")
 }
 
-// Branch and lower models - Church relation points to Organization
+// ============================================
+// BRANCH AND ORGANIZATIONAL STRUCTURE
+// ============================================
+
 model Branch {
-  id              String      @id @default(auto()) 
-  churchId        String      @id
-  church          Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchName      String      @unique
+  id              String       @id @default(cuid())
+  branchName      String       @unique
   email           String?
   phoneNumber     String?
   capacity        Int
-  members         Int         @default(0)
+  members         Int          @default(0)
   establishedDate DateTime
   description     String?
-  isActive        Boolean     @default(true)
-  isDeleted       Boolean     @default(false)
+  isActive        Boolean      @default(true)
+  isDeleted       Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  churchId        String
+  church          Organization @relation(fields: [churchId], references: [id])
+  pastorId        String?
+  pastor          User?        @relation("BranchPastor", fields: [pastorId], references: [id])
   // Relations
-  pastorId        String?     @id
-  pastor          User?       @relation("BranchPastor", fields: [pastorId], references: [id])
-  users           Member[]    @relation("BranchMembers") // CRITICAL: Use Member model for branch members
-  serviceSchedules ServiceSchedule[]
-  prayerRequests  PrayerRequest[]
-  activities      Activity[]
-  assets          Asset[]
-  addresses       Address[]
-  announcements   Announcement[]
-  attendances     Attendance[]
-  events          Event[]
-  reports         Report[]
-  milestones      Milestone[]
-  offerings       Offering[]
-  disciples       Disciple[]
-  pledges         Pledge[]
-  discipleProgress DiscipleProgress[]
-  content         Content[]
-  messageRecipients MessageRecipient[]
-  messages        Message[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  users               Member[]            @relation("BranchMembers")
+  serviceSchedules    ServiceSchedule[]
+  prayerRequests      PrayerRequest[]
+  activities          Activity[]
+  assets              Asset[]
+  addresses           Address[]
+  announcements       Announcement[]
+  attendances         Attendance[]
+  events              Event[]
+  reports             Report[]
+  milestones          Milestone[]
+  offerings           Offering[]
+  disciples           Disciple[]
+  pledges             Pledge[]
+  discipleProgress    DiscipleProgress[]
+  content             Content[]
+  messageRecipients   MessageRecipient[]
+  messages            Message[]
   @@index([churchId, isActive])
   @@index([churchId, isDeleted])
   @@index([pastorId])
@@ -1072,10 +1090,7 @@ model Branch {
 }
 
 model Department {
-  id              String               @id @default(auto()) 
-  churchId        String               @id
-  church          Organization         @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId        String?              @id // Department can belong to a branch (or directly to church)
+  id              String               @id @default(cuid())
   departmentName  String
   description     String
   location        String?
@@ -1086,51 +1101,51 @@ model Department {
   isActive        Boolean              @default(true)
   isDeleted       Boolean              @default(false)
   totalBudget     Float                @default(0)
-  // Leadership
-  leaderId        String?              @id
-  leader          User?                @relation("DepartmentLeader", fields: [leaderId], references: [id])
-  // Relations
-  members      DepartmentMember[]
-  budgetCategories BudgetCategory[]
-  expenses     Expense[]
-  activities   DepartmentActivity[]
-  goals        DepartmentGoal[]
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
+  churchId        String
+  church          Organization         @relation(fields: [churchId], references: [id])
+  branchId        String?
+  leaderId        String?
+  leader          User?                @relation("DepartmentLeader", fields: [leaderId], references: [id])
+  // Relations
+  members         DepartmentMember[]
+  budgetCategories BudgetCategory[]
+  expenses        Expense[]
+  activities      DepartmentActivity[]
+  goals           DepartmentGoal[]
   @@index([churchId])
   @@index([leaderId])
   @@map("department")
 }
 
 model DepartmentMember {
-  id           String       @id @default(auto()) 
-  departmentId String       @id
-  department   Department   @relation(fields: [departmentId], references: [id])
-  userId       String       @id
-  user         User         @relation(fields: [userId], references: [id])
+  id           String     @id @default(cuid())
   role         MemberRole
   skills       String[]
-  joinedDate   DateTime     @default(now())
-  isActive     Boolean      @default(true)
+  joinedDate   DateTime   @default(now())
+  isActive     Boolean    @default(true)
   notes        String?
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
   @@map("department_member")
 }
 
 model BudgetCategory {
-  id              String         @id @default(auto()) 
-  departmentId    String         @id
-  department      Department     @relation(fields: [departmentId], references: [id])
+  id              String          @id @default(cuid())
   category        ExpenseCategory
   allocatedAmount Float
-  spentAmount     Float          @default(0)
+  spentAmount     Float           @default(0)
   description     String?
+  departmentId    String
+  department      Department      @relation(fields: [departmentId], references: [id])
   @@map("budget_category")
 }
 
 model Expense {
-  id           String          @id @default(auto()) 
-  departmentId String          @id
-  department   Department      @relation(fields: [departmentId], references: [id])
+  id           String          @id @default(cuid())
   category     ExpenseCategory
   amount       Float
   description  String
@@ -1138,16 +1153,16 @@ model Expense {
   reference    String?
   vendor       String?
   receiptUrl   String?
-  approvedBy   String?         @id
-  approver     User?           @relation(fields: [approvedBy], references: [id])
   createdAt    DateTime        @default(now())
+  departmentId String
+  department   Department      @relation(fields: [departmentId], references: [id])
+  approvedBy   String?
+  approver     User?           @relation(fields: [approvedBy], references: [id])
   @@map("expense")
 }
 
 model DepartmentActivity {
-  id           String       @id @default(auto()) 
-  departmentId String       @id
-  department   Department   @relation(fields: [departmentId], references: [id])
+  id           String       @id @default(cuid())
   title        String
   description  String
   type         ActivityType
@@ -1155,19 +1170,19 @@ model DepartmentActivity {
   startTime    String?
   endTime      String?
   location     String?
-  participants String[]     @id
+  participants String[]
   notes        String?
   isCompleted  Boolean      @default(false)
-  organizedBy  String       @id
-  organizer    User         @relation(fields: [organizedBy], references: [id])
   createdAt    DateTime     @default(now())
+  departmentId String
+  department   Department   @relation(fields: [departmentId], references: [id])
+  organizedBy  String
+  organizer    User         @relation(fields: [organizedBy], references: [id])
   @@map("department_activity")
 }
 
 model DepartmentGoal {
-  id           String     @id @default(auto()) 
-  departmentId String     @id
-  department   Department @relation(fields: [departmentId], references: [id])
+  id           String     @id @default(cuid())
   title        String
   description  String
   targetDate   DateTime
@@ -1175,42 +1190,43 @@ model DepartmentGoal {
   priority     String
   category     String
   success      String
-  assignee     String?    @id
-  createdBy    String     @id
-  creator      User       @relation(fields: [createdBy], references: [id])
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  assignee     String?
+  createdBy    String
+  creator      User       @relation(fields: [createdBy], references: [id])
   @@map("department_goal")
 }
 
 model Group {
-  id              String              @id @default(auto()) 
-  churchId        String              @id
-  church          Organization        @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  groupName       String
-  description     String?
-  category        GroupCategory
-  meetingDay      String[]
-  meetingTime     String[]
-  location        String?
-  establishedDate DateTime
-  capacity        Int
-  isActive        Boolean             @default(true)
-  // Statistics
-  totalMembers    Int                 @default(0)
-  activeMembers   Int                 @default(0)
-  averageAttendance Float             @default(0)
-  totalActivities Int                 @default(0)
-  completedGoals  Int                 @default(0)
+  id                String              @id @default(cuid())
+  groupName         String
+  description       String?
+  category          GroupCategory
+  meetingDay        String[]
+  meetingTime       String[]
+  location          String?
+  establishedDate   DateTime
+  capacity          Int
+  isActive          Boolean             @default(true)
+  totalMembers      Int                 @default(0)
+  activeMembers     Int                 @default(0)
+  averageAttendance Float               @default(0)
+  totalActivities   Int                 @default(0)
+  completedGoals    Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  churchId          String
+  church            Organization        @relation(fields: [churchId], references: [id])
+  leaderId          String?
+  leader            User?               @relation("GroupLeader", fields: [leaderId], references: [id])
   // Relations
-  leaderId        String?             @id
-  leader          User?               @relation("GroupLeader", fields: [leaderId], references: [id])
-  members         GroupMember[]
-  activities      GroupActivity[]
-  goals           GroupGoal[]
+  members           GroupMember[]
+  activities        GroupActivity[]
+  goals             GroupGoal[]
   attendanceSummaries AttendanceSummary[]
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
   @@index([churchId])
   @@index([leaderId])
   @@index([category])
@@ -1218,24 +1234,22 @@ model Group {
 }
 
 model GroupMember {
-  id          String     @id @default(auto()) 
-  groupId     String     @id
-  group       Group      @relation(fields: [groupId], references: [id])
-  userId      String     @id
-  user        User       @relation(fields: [userId], references: [id])
+  id          String     @id @default(cuid())
   role        MemberRole
   joinedDate  DateTime   @default(now())
   isActive    Boolean    @default(true)
   notes       String?
   phone       String?
   email       String?
+  groupId     String
+  group       Group      @relation(fields: [groupId], references: [id])
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
   @@map("group_member")
 }
 
 model GroupActivity {
-  id           String             @id @default(auto()) 
-  groupId      String             @id
-  group        Group              @relation(fields: [groupId], references: [id])
+  id           String             @id @default(cuid())
   title        String
   description  String
   type         GroupActivityType
@@ -1243,72 +1257,73 @@ model GroupActivity {
   startTime    String?
   endTime      String?
   location     String?
-  participants String[]           @id
+  participants String[]
   notes        String?
   isCompleted  Boolean            @default(false)
-  organizedBy  String             @id
+  createdAt    DateTime           @default(now())
+  groupId      String
+  group        Group              @relation(fields: [groupId], references: [id])
+  organizedBy  String
   organizer    User               @relation(fields: [organizedBy], references: [id])
   attendance   AttendanceRecord[]
-  createdAt    DateTime           @default(now())
   @@map("group_activity")
 }
 
 model GroupGoal {
-  id         String     @id @default(auto()) 
-  groupId    String     @id
-  group      Group      @relation(fields: [groupId], references: [id])
-  title      String
+  id          String          @id @default(cuid())
+  title       String
   description String
-  targetDate DateTime
-  status     GroupGoalStatus @default(PLANNED)
-  priority   String
-  category   String
-  success    String
-  assignee   String?    @id
-  createdBy  String     @id
-  creator    User       @relation(fields: [createdBy], references: [id])
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  targetDate  DateTime
+  status      GroupGoalStatus @default(PLANNED)
+  priority    String
+  category    String
+  success     String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  groupId     String
+  group       Group           @relation(fields: [groupId], references: [id])
+  assignee    String?
+  createdBy   String
+  creator     User            @relation(fields: [createdBy], references: [id])
   @@map("group_goal")
 }
 
 model AttendanceSummary {
-  id            String             @id @default(auto()) 
-  groupId       String             @id
-  group         Group              @relation(fields: [groupId], references: [id])
-  date          DateTime
-  totalExpected Int
-  totalPresent  Int
-  totalAbsent   Int
-  totalLate     Int                @default(0)
+  id             String             @id @default(cuid())
+  date           DateTime
+  totalExpected  Int
+  totalPresent   Int
+  totalAbsent    Int
+  totalLate      Int                @default(0)
   attendanceRate Float
-  records       AttendanceRecord[]
+  groupId        String
+  group          Group              @relation(fields: [groupId], references: [id])
+  records        AttendanceRecord[]
   @@map("attendance_summary")
 }
 
 model AttendanceRecord {
-  id                 String             @id @default(auto()) 
-  userId             String             @id
-  user               User               @relation(fields: [userId], references: [id])
-  status             AttendanceStatus
-  arrivalTime        DateTime?
-  notes              String?
-  // Relations (one of these will be set)
-  groupActivityId    String?            @id
-  groupActivity      GroupActivity?     @relation(fields: [groupActivityId], references: [id])
-  attendanceSummaryId String?           @id
-  attendanceSummary  AttendanceSummary? @relation(fields: [attendanceSummaryId], references: [id])
-  attendanceId       String?            @id
-  attendance         Attendance?        @relation(fields: [attendanceId], references: [id])
+  id                  String             @id @default(cuid())
+  status              AttendanceStatus
+  arrivalTime         DateTime?
+  notes               String?
+  userId              String
+  user                User               @relation(fields: [userId], references: [id])
+  groupActivityId     String?
+  groupActivity       GroupActivity?     @relation(fields: [groupActivityId], references: [id])
+  attendanceSummaryId String?
+  attendanceSummary   AttendanceSummary? @relation(fields: [attendanceSummaryId], references: [id])
+  attendanceId        String?
+  attendance          Attendance?        @relation(fields: [attendanceId], references: [id])
   @@map("attendance_record")
 }
 
+// ============================================
+// EVENTS AND ACTIVITIES
+// ============================================
+
 model Event {
-  id                   String   @id @default(auto()) 
-  churchId             String   @id
-  church               Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId             String  @id
-  branch               Branch  @relation(fields: [branchId], references: [id])
+  id                   String      @id @default(cuid())
   title                String
   description          String
   type                 String
@@ -1320,29 +1335,56 @@ model Event {
   expectedAttendees    Int
   organizer            String
   maxAttendees         Int?
-  requiresRegistration Boolean  @default(false)
-  isRecurring          Boolean  @default(false)
+  requiresRegistration Boolean     @default(false)
+  isRecurring          Boolean     @default(false)
   recurringPattern     String?
   registrationDeadline DateTime?
   notes                String?
-  isPublic             Boolean  @default(true)
+  isPublic             Boolean     @default(true)
   status               EventStatus @default(ACTIVE)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  churchId             String
+  church               Organization @relation(fields: [churchId], references: [id])
+  branchId             String
+  branch               Branch       @relation(fields: [branchId], references: [id])
   @@index([churchId, startDate])
   @@index([status])
   @@index([branchId])
   @@map("event")
 }
 
+model Activity {
+  id           String           @id @default(cuid())
+  date         DateTime
+  activity     String
+  participants Int
+  type         ActivityTypeEnum @default(EVENT)
+  status       ActivityStatus   @default(PLANNED)
+  startTime    String?
+  endTime      String?
+  location     String?
+  facilitator  String?
+  budget       Float?
+  description  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  churchId     String
+  church       Organization     @relation(fields: [churchId], references: [id])
+  branchId     String
+  branch       Branch           @relation(fields: [branchId], references: [id])
+  @@index([churchId, branchId])
+  @@index([churchId, date])
+  @@index([date, status])
+  @@map("activity")
+}
+
+// ============================================
+// FINANCIAL MODELS
+// ============================================
+
 model Offering {
-  id        String        @id @default(auto()) 
-  churchId  String        @id
-  church    Organization  @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId  String  @id
-  branch    Branch  @relation(fields: [branchId], references: [id])
-  memberId  String        @id
-  member    User          @relation(fields: [memberId], references: [id])
+  id        String        @id @default(cuid())
   type      OfferingType
   amount    Float
   method    PaymentMethod
@@ -1351,19 +1393,19 @@ model Offering {
   notes     String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  churchId  String
+  church    Organization  @relation(fields: [churchId], references: [id])
+  branchId  String
+  branch    Branch        @relation(fields: [branchId], references: [id])
+  memberId  String
+  member    User          @relation(fields: [memberId], references: [id])
   @@index([churchId, date])
   @@index([memberId, date])
   @@map("offering")
 }
 
 model Pledge {
-  id              String          @id @default(auto()) 
-  churchId        String          @id
-  church          Organization    @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId        String  @id
-  branch          Branch  @relation(fields: [branchId], references: [id])
-  memberId        String          @id
-  member          User            @relation(fields: [memberId], references: [id])
+  id              String          @id @default(cuid())
   amount          Float
   paid            Float           @default(0)
   remaining       Float
@@ -1374,150 +1416,167 @@ model Pledge {
   status          PledgeStatus    @default(ACTIVE)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  churchId        String
+  church          Organization    @relation(fields: [churchId], references: [id])
+  branchId        String
+  branch          Branch          @relation(fields: [branchId], references: [id])
+  memberId        String
+  member          User            @relation(fields: [memberId], references: [id])
   @@index([churchId, status])
   @@index([memberId, status])
   @@index([dueDate, status])
   @@map("pledge")
 }
 
+// ============================================
+// PRAYER AND SPIRITUAL
+// ============================================
+
 model PrayerRequest {
-  id                String              @id @default(auto()) 
-  churchId          String              @id
-  church            Organization        @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId          String             @id
-  branch            Branch             @relation(fields: [branchId], references: [id])
-  memberId          String?             @id
+  id                String         @id @default(cuid())
   title             String
   description       String
   category          PrayerCategory
-  priority          Priority            @default(MEDIUM)
-  status            PrayerStatus        @default(ACTIVE)
-  isAnonymous       Boolean             @default(false)
-  isPublic          Boolean             @default(true)
-  submittedBy       String              @id
-  submitter         User                @relation("PrayerRequestSubmitter", fields: [submittedBy], references: [id])
+  priority          Priority       @default(MEDIUM)
+  status            PrayerStatus   @default(ACTIVE)
+  isAnonymous       Boolean        @default(false)
+  isPublic          Boolean        @default(true)
   answeredDate      DateTime?
   answerDescription String?
-  prayerCount       Int                 @default(0)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  prayerCount       Int            @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  churchId          String
+  church            Organization   @relation(fields: [churchId], references: [id])
+  branchId          String
+  branch            Branch         @relation(fields: [branchId], references: [id])
+  memberId          String?
+  submittedBy       String
+  submitter         User           @relation("PrayerRequestSubmitter", fields: [submittedBy], references: [id])
   @@index([churchId, branchId])
   @@index([churchId, category])
   @@index([churchId, status])
   @@map("prayer_request")
 }
 
+// ============================================
+// SCHEDULES AND ATTENDANCE
+// ============================================
+
 model ServiceSchedule {
-  id           String        @id @default(auto()) 
-  churchId     String        @id
-  church       Organization  @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId     String        @id
-  branch       Branch        @relation(fields: [branchId], references: [id])
-  day          DayOfWeek
-  time         String
-  service      String
-  attendance   Int?
-  type         ServiceType   @default(WORSHIP)
-  duration     Int?          @default(90)
-  facilitator  String?
-  location     String?
-  recurring    Boolean       @default(true)
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String       @id @default(cuid())
+  day         DayOfWeek
+  time        String
+  service     String
+  attendance  Int?
+  type        ServiceType  @default(WORSHIP)
+  duration    Int?         @default(90)
+  facilitator String?
+  location    String?
+  recurring   Boolean      @default(true)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  churchId    String
+  church      Organization @relation(fields: [churchId], references: [id])
+  branchId    String
+  branch      Branch       @relation(fields: [branchId], references: [id])
   @@index([churchId, branchId])
   @@map("service_schedule")
 }
 
-model Activity {
-  id           String         @id @default(auto()) 
-  churchId     String        @id
-  church       Organization  @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId     String         @id
-  branch       Branch         @relation(fields: [branchId], references: [id])
-  date         DateTime
-  activity     String
-  participants Int
-  type         ActivityTypeEnum @default(EVENT)
-  status       ActivityStatus @default(PLANNED)
-  startTime    String?
-  endTime      String?
-  location     String?
-  facilitator  String?
-  budget       Float?
-  description  String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  @@index([churchId, branchId])
-  @@index([churchId, date])
-  @@index([date, status])
-  @@map("activity")
+model Attendance {
+  id             String             @id @default(cuid())
+  serviceDate    DateTime
+  serviceType    ServiceType
+  totalAttendees Int
+  offeringAmount Float?
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  churchId       String
+  church         Organization       @relation(fields: [churchId], references: [id])
+  branchId       String
+  branch         Branch             @relation(fields: [branchId], references: [id])
+  takenBy        String
+  taker          User               @relation(fields: [takenBy], references: [id])
+  records        AttendanceRecord[]
+  @@index([churchId, serviceDate])
+  @@map("attendance")
 }
 
+// ============================================
+// ASSETS
+// ============================================
+
 model Asset {
-  id           String       @id @default(auto()) 
-  churchId     String       @id
-  church       Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId     String      @id
-  branch       Branch      @relation(fields: [branchId], references: [id])
-  name         String
-  type         AssetType
-  description  String?
-  category     String
-  purchaseDate DateTime?
-  purchasePrice Float?
+  id                  String              @id @default(cuid())
+  name                String
+  type                AssetType
+  description         String?
+  category            String
+  purchaseDate        DateTime?
+  purchasePrice       Float?
   value               Float
   condition           AssetCondition
-  status              AssetStatus     @default(ACTIVE)
+  status              AssetStatus         @default(ACTIVE)
   serialNumber        String?
   warranty            String?
   supplier            String?
   maintenanceSchedule MaintenanceSchedule?
-  currentValue Float?
-  location     String
-  maintenanceRecords MaintenanceRecord[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  currentValue        Float?
+  location            String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  churchId            String
+  church              Organization        @relation(fields: [churchId], references: [id])
+  branchId            String
+  branch              Branch              @relation(fields: [branchId], references: [id])
+  maintenanceRecords  MaintenanceRecord[]
   @@index([churchId, status])
   @@index([branchId])
   @@map("asset")
 }
 
 model MaintenanceRecord {
-  id          String   @id @default(auto()) 
-  assetId     String   @id
-  asset       Asset    @relation(fields: [assetId], references: [id])
+  id          String   @id @default(cuid())
   date        DateTime
   description String
   cost        Float?
   performedBy String?
   notes       String?
   createdAt   DateTime @default(now())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id])
   @@map("maintenance_record")
 }
 
+// ============================================
+// ANNOUNCEMENTS
+// ============================================
+
 model Announcement {
-  id               String             @id @default(auto()) 
-  churchId         String             @id
-  church           Organization       @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId         String?            @id
-  branch           Branch?            @relation(fields: [branchId], references: [id])
+  id               String               @id @default(cuid())
   title            String
   content          String
   category         AnnouncementCategory
-  priority         Priority           @default(MEDIUM)
+  priority         Priority             @default(MEDIUM)
   publishDate      DateTime
   expiryDate       DateTime?
-  status           AnnouncementStatus @default(DRAFT)
-  authorId         String             @id
-  author           User               @relation(fields: [authorId], references: [id])
-  viewCount        Int                @default(0)
+  status           AnnouncementStatus   @default(DRAFT)
+  viewCount        Int                  @default(0)
   targetAudience   String[]
   attachments      String[]
-  isSticky         Boolean            @default(false)
-  notificationSent Boolean            @default(false)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  isSticky         Boolean              @default(false)
+  notificationSent Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  churchId         String
+  church           Organization         @relation(fields: [churchId], references: [id])
+  branchId         String?
+  branch           Branch?              @relation(fields: [branchId], references: [id])
+  authorId         String
+  author           User                 @relation(fields: [authorId], references: [id])
   @@index([churchId, branchId])
   @@index([churchId, category])
   @@index([churchId, status])
@@ -1525,53 +1584,37 @@ model Announcement {
   @@map("announcement")
 }
 
-model Attendance {
-  id             String             @id @default(auto()) 
-  churchId       String             @id
-  church         Organization       @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId       String            @id
-  branch         Branch            @relation(fields: [branchId], references: [id])
-  serviceDate    DateTime
-  serviceType    ServiceType
-  totalAttendees Int
-  offeringAmount Float?
-  notes          String?
-  takenBy        String             @id
-  taker          User               @relation(fields: [takenBy], references: [id])
-  records        AttendanceRecord[]
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  @@index([churchId, serviceDate])
-  @@map("attendance")
-}
+// ============================================
+// SUBSCRIPTIONS
+// ============================================
 
 model ChurchSubscription {
-  id               String   @id @default(auto()) 
-  churchId         String   @unique @id
-  church           Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  plan             ChurchPlan
-  status           SubscriptionStatus @default(TRIAL)
-  isPaid           Boolean  @default(false)
-  invoiceAmount    Float    @default(0)
-  paidAmount       Float    @default(0)
-  balAmount        Float    @default(0)
-  maxUsers         Int?
-  maxBranches      Int?     @default(1)
-  maxSmallGroups   Int?
-  currentUsers     Int      @default(0)
-  currentBranches  Int      @default(0)
-  currentSmallGroups Int    @default(0)
-  features         String[]
-  startDate        DateTime
-  endDate          DateTime
-  isAutoRenew      Boolean  @default(true)
-  paymentMethod    PaymentMethodType? @default(M_PESA)
-  lastPaymentDate  DateTime?
-  nextBillingDate  DateTime?
-  canceledAt       DateTime?
-  cancelReason     String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                 String             @id @default(cuid())
+  plan               ChurchPlan
+  status             SubscriptionStatus @default(TRIAL)
+  isPaid             Boolean            @default(false)
+  invoiceAmount      Float              @default(0)
+  paidAmount         Float              @default(0)
+  balAmount          Float              @default(0)
+  maxUsers           Int?
+  maxBranches        Int?               @default(1)
+  maxSmallGroups     Int?
+  currentUsers       Int                @default(0)
+  currentBranches    Int                @default(0)
+  currentSmallGroups Int                @default(0)
+  features           String[]
+  startDate          DateTime
+  endDate            DateTime
+  isAutoRenew        Boolean            @default(true)
+  paymentMethod      PaymentMethodType? @default(M_PESA)
+  lastPaymentDate    DateTime?
+  nextBillingDate    DateTime?
+  canceledAt         DateTime?
+  cancelReason       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  churchId           String             @unique
+  church             Organization       @relation(fields: [churchId], references: [id])
   @@index([churchId, status])
   @@index([status, endDate])
   @@index([plan, status])
@@ -1579,55 +1622,59 @@ model ChurchSubscription {
 }
 
 model UserSubscription {
-  id                    String             @id @default(auto()) 
-  userId                String             @id
-  user                  User               @relation(fields: [userId], references: [id])
-  plan                  UserPlan
-  status                SubscriptionStatus @default(TRIAL)
-  isPaid                Boolean            @default(false)
-  invoiceAmount         Float              @default(0)
-  paidAmount            Float              @default(0)
-  balAmount             Float              @default(0)
-  features              String[]
-  churchId              String?            @id
-  maxSmallGroupsLead    Int?               @default(0)
-  currentSmallGroupsLead Int?              @default(0)
-  maxEventsManage       Int?               @default(0)
-  currentEventsManage   Int?               @default(0)
-  startDate             DateTime
-  endDate               DateTime
-  isAutoRenew           Boolean            @default(true)
-  paymentMethod         PaymentMethodType? @default(M_PESA)
-  lastPaymentDate       DateTime?
-  nextBillingDate       DateTime?
-  canceledAt            DateTime?
-  cancelReason          String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id                     String             @id @default(cuid())
+  plan                   UserPlan
+  status                 SubscriptionStatus @default(TRIAL)
+  isPaid                 Boolean            @default(false)
+  invoiceAmount          Float              @default(0)
+  paidAmount             Float              @default(0)
+  balAmount              Float              @default(0)
+  features               String[]
+  churchId               String?
+  maxSmallGroupsLead     Int?               @default(0)
+  currentSmallGroupsLead Int?               @default(0)
+  maxEventsManage        Int?               @default(0)
+  currentEventsManage    Int?               @default(0)
+  startDate              DateTime
+  endDate                DateTime
+  isAutoRenew            Boolean            @default(true)
+  paymentMethod          PaymentMethodType? @default(M_PESA)
+  lastPaymentDate        DateTime?
+  nextBillingDate        DateTime?
+  canceledAt             DateTime?
+  cancelReason           String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  userId                 String
+  user                   User               @relation(fields: [userId], references: [id])
   @@index([userId, status])
   @@index([status, endDate])
   @@index([plan, status])
   @@map("user_subscription")
 }
 
+// ============================================
+// LOGGING AND PAYMENTS
+// ============================================
+
 model Log {
-  id          String      @id @default(auto()) 
-  level       LogLevel
-  message     String
-  errorName   String?
+  id           String      @id @default(cuid())
+  level        LogLevel
+  message      String
+  errorName    String?
   errorMessage String?
-  errorStack  String?
-  errorCode   String?
-  metadata    Json?
-  timestamp   DateTime    @default(now())
-  source      LogSource
-  environment Environment
-  userId      String?     @id
-  user        User?       @relation(fields: [userId], references: [id])
-  churchId    String   @id
-  church      Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  errorStack   String?
+  errorCode    String?
+  metadata     Json?
+  timestamp    DateTime    @default(now())
+  source       LogSource
+  environment  Environment
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
+  churchId     String
+  church       Organization @relation(fields: [churchId], references: [id])
   @@index([level, timestamp])
   @@index([source, level, timestamp])
   @@index([environment, timestamp])
@@ -1635,52 +1682,55 @@ model Log {
 }
 
 model Payment {
-  id             String        @id @default(auto()) 
-  churchId       String        @id
-  church         Organization  @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  amount         Float
-  date           DateTime
-  method         PaymentMethod
-  reference      String
-  status         PaymentStatus @default(PENDING)
-  description    String?
+  id                String        @id @default(cuid())
+  amount            Float
+  date              DateTime
+  method            PaymentMethod
+  reference         String
+  status            PaymentStatus @default(PENDING)
+  description       String?
   relatedEntityType String
-  relatedEntityId String       @id
-  payerId        String?       @id
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  relatedEntityId   String
+  payerId           String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  churchId          String
+  church            Organization  @relation(fields: [churchId], references: [id])
   @@index([churchId, status])
   @@map("payment")
 }
 
+// ============================================
+// REPORTS
+// ============================================
+
 model Report {
-  id              String     @id @default(auto()) 
-  churchId        String   @id
-  church          Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId        String?    @id
-  branch          Branch?    @relation(fields: [branchId], references: [id])
+  id              String        @id @default(cuid())
   name            String
   type            ReportType
   description     String
-  dateRange       DateRange  @default(LAST_30_DAYS)
+  dateRange       DateRange     @default(LAST_30_DAYS)
   customStartDate DateTime?
   customEndDate   DateTime?
-  format          ReportFormat @default(PDF)
-  includeCharts   Boolean    @default(true)
-  includeComparisons Boolean @default(false)
+  format          ReportFormat  @default(PDF)
+  includeCharts   Boolean       @default(true)
+  includeComparisons Boolean    @default(false)
   departments     String[]
-  status          ReportStatus @default(GENERATING)
+  status          ReportStatus  @default(GENERATING)
   fileUrl         String?
   fileName        String?
   fileSize        Int?
   generatedAt     DateTime?
-  downloadCount   Int        @default(0)
-  // Normalized report data
+  downloadCount   Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  churchId        String
+  church          Organization  @relation(fields: [churchId], references: [id])
+  branchId        String?
+  branch          Branch?       @relation(fields: [branchId], references: [id])
   reportData      ReportData?
-  createdBy       String     @id
-  creator         User       @relation(fields: [createdBy], references: [id])
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdBy       String
+  creator         User          @relation(fields: [createdBy], references: [id])
   @@index([churchId, branchId])
   @@index([churchId, status])
   @@index([churchId, type])
@@ -1690,38 +1740,36 @@ model Report {
   @@map("report")
 }
 
-// Normalized Report Data
 model ReportData {
-  id                String   @id @default(auto()) 
-  totalRecords      Int      @default(0)
-  departmentCounts  DepartmentCount[]
-  startDate         DateTime
-  endDate           DateTime
-  generationTime    Int      // in milliseconds
-  reportId          String   @unique @id
-  report            Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String            @id @default(cuid())
+  totalRecords     Int               @default(0)
+  startDate        DateTime
+  endDate          DateTime
+  generationTime   Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  reportId         String            @unique
+  report           Report            @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  departmentCounts DepartmentCount[]
   @@map("report_data")
 }
 
-// Department Count for Reports
 model DepartmentCount {
-  id             String     @id @default(auto()) 
+  id             String     @id @default(cuid())
   departmentId   String
   departmentName String
   count          Int
-  reportDataId   String     @id
+  reportDataId   String
   reportData     ReportData @relation(fields: [reportDataId], references: [id], onDelete: Cascade)
   @@map("department_count")
 }
 
+// ============================================
+// MILESTONES
+// ============================================
+
 model Milestone {
-  id                     String       @id @default(auto()) 
-  churchId               String   @id
-  church                 Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId               String?      @id
-  branch                 Branch?      @relation(fields: [branchId], references: [id])
+  id                     String              @id @default(cuid())
   name                   String
   description            String
   category               MilestoneCategory
@@ -1729,15 +1777,19 @@ model Milestone {
   targetDate             DateTime
   completionDate         DateTime?
   requirements           String?
-  isActive               Boolean      @default(true)
-  order                  Int          @default(0)
+  isActive               Boolean             @default(true)
+  order                  Int                 @default(0)
   level                  DiscipleLevel
-  prerequisiteMilestones String[]     @id
-  completionCount        Int          @default(0)
+  prerequisiteMilestones String[]
+  completionCount        Int                 @default(0)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  churchId               String
+  church                 Organization        @relation(fields: [churchId], references: [id])
+  branchId               String?
+  branch                 Branch?             @relation(fields: [branchId], references: [id])
   discipleProgress       DiscipleProgress[]
   milestoneProgress      MilestoneProgress[]
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
   @@index([churchId, branchId])
   @@index([churchId, category])
   @@index([churchId, level])
@@ -1747,23 +1799,27 @@ model Milestone {
   @@map("milestone")
 }
 
+// ============================================
+// MESSAGING
+// ============================================
+
 model MessageTemplate {
-  id          String              @id @default(auto()) 
-  churchId    String   @id
-  church      Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
+  id          String           @id @default(cuid())
   name        String
   type        MessageType
   category    TemplateCategory
   title       String
   content     String
   variables   String[]
-  isActive    Boolean             @default(true)
-  usageCount  Int                 @default(0)
-  createdBy   String              @id
-  creator     User                @relation(fields: [createdBy], references: [id])
+  isActive    Boolean          @default(true)
+  usageCount  Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  churchId    String
+  church      Organization     @relation(fields: [churchId], references: [id])
+  createdBy   String
+  creator     User             @relation(fields: [createdBy], references: [id])
   messages    Message[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
   @@unique([churchId, name])
   @@index([churchId, isActive])
   @@index([churchId, type, isActive])
@@ -1773,28 +1829,27 @@ model MessageTemplate {
 }
 
 model Message {
-  id             String         @id @default(auto()) 
-  churchId       String        @id
-  church         Organization  @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId       String?        @id
-  branch         Branch?        @relation(fields: [branchId], references: [id])
-  type           MessageType
-  title          String
-  content        String
-  recipients     String[]
-  scheduleType   ScheduleType   @default(NOW)
-  scheduleDate   DateTime?
-  scheduleTime   String?
-  templateId     String?        @id
-  template       MessageTemplate? @relation(fields: [templateId], references: [id])
-  status         MessageStatus  @default(DRAFT)
-  sentAt         DateTime?
-  // Normalized delivery stats
-  deliveryStats  MessageDeliveryStats?
-  createdBy      String         @id
-  creator        User           @relation(fields: [createdBy], references: [id])
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id            String                    @id @default(cuid())
+  type          MessageType
+  title         String
+  content       String
+  recipients    String[]
+  scheduleType  ScheduleType              @default(NOW)
+  scheduleDate  DateTime?
+  scheduleTime  String?
+  status        MessageStatus             @default(DRAFT)
+  sentAt        DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  churchId      String
+  church        Organization              @relation(fields: [churchId], references: [id])
+  branchId      String?
+  branch        Branch?                   @relation(fields: [branchId], references: [id])
+  templateId    String?
+  template      MessageTemplate?          @relation(fields: [templateId], references: [id])
+  deliveryStats MessageDeliveryStats?
+  createdBy     String
+  creator       User                      @relation(fields: [createdBy], references: [id])
   @@index([churchId, branchId])
   @@index([churchId, status])
   @@index([churchId, type])
@@ -1803,42 +1858,40 @@ model Message {
   @@map("message")
 }
 
-// Normalized Message Delivery Statistics
 model MessageDeliveryStats {
-  id         String  @id @default(auto()) 
-  total      Int     @default(0)
-  sent       Int     @default(0)
-  delivered  Int     @default(0)
-  failed     Int     @default(0)
-  messageId  String  @unique @id
-  message    Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  total     Int      @default(0)
+  sent      Int      @default(0)
+  delivered Int      @default(0)
+  failed    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messageId String   @unique
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   @@map("message_delivery_stats")
 }
 
 model MessageRecipient {
-  id           String     @id @default(auto()) 
-  churchId     String   @id
-  church       Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId     String?    @id
-  branch       Branch?    @relation(fields: [branchId], references: [id])
-  recipientId  String     @unique
+  id           String            @id @default(cuid())
+  recipientId  String            @unique
   name         String
   description  String?
-  type         RecipientType @default(CUSTOM)
+  type         RecipientType     @default(CUSTOM)
   targetModel  TargetModel
-  targetId     String?    @id
-  memberCount  Int        @default(0)
-  isActive     Boolean    @default(true)
-  autoUpdate   Boolean    @default(true)
-  lastUpdated  DateTime   @default(now())
-  // Normalized criteria
+  targetId     String?
+  memberCount  Int               @default(0)
+  isActive     Boolean           @default(true)
+  autoUpdate   Boolean           @default(true)
+  lastUpdated  DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  churchId     String
+  church       Organization      @relation(fields: [churchId], references: [id])
+  branchId     String?
+  branch       Branch?           @relation(fields: [branchId], references: [id])
   criteria     RecipientCriteria?
-  createdBy    String     @id
-  creator      User       @relation(fields: [createdBy], references: [id])
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdBy    String
+  creator      User              @relation(fields: [createdBy], references: [id])
   @@unique([churchId, recipientId])
   @@index([churchId, isActive])
   @@index([churchId, type, isActive])
@@ -1848,32 +1901,28 @@ model MessageRecipient {
 }
 
 model RecipientCriteria {
-  id               String            @id @default(auto()) 
-  userStatus       String[]
-  roles            String[]
-  minAge           Int?
-  maxAge           Int?
-  gender           Gender?
-  departmentIds    String[]          @id
-  groupIds         String[]          @id
-  customQuery      String?           // JSON string if needed for complex queries
-  recipientId      String            @unique @id
-  recipient        MessageRecipient  @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id            String           @id @default(cuid())
+  userStatus    String[]
+  roles         String[]
+  minAge        Int?
+  maxAge        Int?
+  gender        Gender?
+  departmentIds String[]
+  groupIds      String[]
+  customQuery   String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  recipientId   String           @unique
+  recipient     MessageRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   @@map("recipient_criteria")
 }
 
+// ============================================
+// DISCIPLESHIP
+// ============================================
+
 model Disciple {
-  id                  String             @id @default(auto()) 
-  churchId            String   @id
-  church              Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId            String?            @id
-  branch              Branch?            @relation(fields: [branchId], references: [id])
-  memberId            String             @id
-  member              User               @relation("DiscipleMember", fields: [memberId], references: [id])
-  mentorId            String             @id
-  mentor              User               @relation("DiscipleMentor", fields: [mentorId], references: [id])
+  id                  String             @id @default(cuid())
   startDate           DateTime
   endDate             DateTime?
   currentLevel        DiscipleLevel
@@ -1881,10 +1930,18 @@ model Disciple {
   goals               String
   notes               String?
   progress            Int                @default(0)
-  milestonesCompleted String[]           @id
-  discipleProgress    DiscipleProgress[]
+  milestonesCompleted String[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
+  churchId            String
+  church              Organization       @relation(fields: [churchId], references: [id])
+  branchId            String?
+  branch              Branch?            @relation(fields: [branchId], references: [id])
+  memberId            String
+  member              User               @relation("DiscipleMember", fields: [memberId], references: [id])
+  mentorId            String
+  mentor              User               @relation("DiscipleMentor", fields: [mentorId], references: [id])
+  discipleProgress    DiscipleProgress[]
   @@index([churchId, branchId])
   @@index([churchId, memberId])
   @@index([churchId, mentorId])
@@ -1895,55 +1952,59 @@ model Disciple {
 }
 
 model DiscipleProgress {
-  id             String   @id @default(auto()) 
-  discipleId     String   @id
-  disciple       Disciple @relation(fields: [discipleId], references: [id])
-  branchId       String?  @id
-  branch         Branch?  @relation(fields: [branchId], references: [id])
-  date           DateTime
-  topic          String
-  status         String
-  notes          String?
-  milestones     Milestone[]
+  id                 String              @id @default(cuid())
+  date               DateTime
+  topic              String
+  status             String
+  notes              String?
+  isCompleted        Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  discipleId         String
+  disciple           Disciple            @relation(fields: [discipleId], references: [id])
+  branchId           String?
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  milestones         Milestone[]
   milestoneProgress  MilestoneProgress[]
-  isCompleted    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
   @@map("disciple_progress")
 }
 
 model MilestoneProgress {
-  id                 String            @id @default(auto()) @id
-  milestoneId        String            @id
-  milestone          Milestone         @relation(fields: [milestoneId], references: [id])
-
-  discipleProgressId String            @id
-  discipleProgress   DiscipleProgress  @relation(fields: [discipleProgressId], references: [id])
+  id                 String           @id @default(cuid())
+  milestoneId        String
+  milestone          Milestone        @relation(fields: [milestoneId], references: [id])
+  discipleProgressId String
+  discipleProgress   DiscipleProgress @relation(fields: [discipleProgressId], references: [id])
+  @@map("milestone_progress")
 }
 
+// ============================================
+// CONTENT MANAGEMENT
+// ============================================
+
 model Content {
-  id            String   @id @default(auto()) 
-  churchId      String   @id
-  church        Organization @relation(fields: [churchId], references: [id]) // CRITICAL: Organization
-  branchId      String?  @id
-  branch        Branch?  @relation(fields: [branchId], references: [id])
-  title         String
-  description   String
-  type          ContentType
-  category      ContentCategory
-  tags          String[]
-  status        ContentStatus  @default(DRAFT)
-  fileUrl       String?
-  fileName      String?
-  fileSize      Int?
-  fileMimeType  String?
-  author        String?
-  publishedAt   DateTime?
-  viewCount     Int            @default(0)
+  id           String          @id @default(cuid())
+  title        String
+  description  String
+  type         ContentType
+  category     ContentCategory
+  tags         String[]
+  status       ContentStatus   @default(DRAFT)
+  fileUrl      String?
+  fileName     String?
+  fileSize     Int?
+  fileMimeType String?
+  author       String?
+  publishedAt  DateTime?
+  viewCount    Int             @default(0)
   downloadCount Int            @default(0)
-  isPublic      Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  isPublic     Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  churchId     String
+  church       Organization    @relation(fields: [churchId], references: [id])
+  branchId     String?
+  branch       Branch?         @relation(fields: [branchId], references: [id])
   @@index([churchId, type])
   @@map("content")
 }
