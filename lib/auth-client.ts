@@ -1,18 +1,24 @@
-import { organizationClient } from 'better-auth/client/plugins';
+import {
+  inferAdditionalFields,
+  organizationClient,
+} from 'better-auth/client/plugins';
+import { nextCookies } from 'better-auth/next-js';
 import { createAuthClient } from 'better-auth/react';
+import type { auth } from './auth';
 import {
   ac,
-  owner,
   admin,
+  bishop,
   member,
+  owner,
   pastor,
   visitor,
-  bishop,
 } from './auth/permissions';
 
 export const authClient = createAuthClient({
   baseURL: 'http://localhost:3000',
   plugins: [
+    inferAdditionalFields<typeof auth>(),
     organizationClient({
       ac,
       roles: {
@@ -24,18 +30,6 @@ export const authClient = createAuthClient({
         bishop,
       },
     }),
+    nextCookies(),
   ],
 });
-
-// Export commonly used methods
-export const {
-  signIn,
-  signUp,
-  signOut,
-  useSession,
-  organization,
-  useActiveOrganization,
-} = authClient;
-
-// Type inference helper
-export type Session = typeof authClient.$Infer.Session;
