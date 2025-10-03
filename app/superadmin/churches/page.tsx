@@ -1,5 +1,8 @@
 'use client';
 
+import { EditChurchDialog } from '@/components/dialogs/edit-church-dialog';
+import { ManageChurchUsersDialog } from '@/components/dialogs/manage-church-users-dialog';
+import { ViewChurchDetailsDialog } from '@/components/dialogs/view-church-details-dialog';
 import { AddChurchForm } from '@/components/forms/add-church-form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -66,8 +69,12 @@ export default function ChurchesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
+  const [selectedChurch, setSelectedChurch] = useState<any>(null);
 
-  const churches = [
+  const [churches, setChurches] = useState([
     {
       id: 1,
       name: 'Grace Community Church',
@@ -158,7 +165,7 @@ export default function ChurchesPage() {
       lastActivity: '1 day ago',
       address: '654 Spirit Way, Springfield, IL 62705',
     },
-  ];
+  ]);
 
   const filteredChurches = churches.filter((church) => {
     const matchesSearch =
@@ -195,6 +202,29 @@ export default function ChurchesPage() {
       default:
         return <Badge variant="secondary">{plan}</Badge>;
     }
+  };
+
+  const handleViewDetails = (church: any) => {
+    setSelectedChurch(church);
+    setViewDialogOpen(true);
+  };
+
+  const handleEditChurch = (church: any) => {
+    setSelectedChurch(church);
+    setEditDialogOpen(true);
+  };
+
+  const handleManageUsers = (church: any) => {
+    setSelectedChurch(church);
+    setManageUsersDialogOpen(true);
+  };
+
+  const handleSaveChurch = (updatedChurch: any) => {
+    setChurches(
+      churches.map((church) =>
+        church.id === updatedChurch.id ? updatedChurch : church
+      )
+    );
   };
 
   return (
@@ -436,15 +466,21 @@ export default function ChurchesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleViewDetails(church)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleEditChurch(church)}
+                          >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Church
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleManageUsers(church)}
+                          >
                             <Users className="mr-2 h-4 w-4" />
                             Manage Users
                           </DropdownMenuItem>
@@ -463,6 +499,23 @@ export default function ChurchesPage() {
           </div>
         </CardContent>
       </Card>
+      {/* Dialogs */}
+      <ViewChurchDetailsDialog
+        church={selectedChurch}
+        onOpenChange={setViewDialogOpen}
+        open={viewDialogOpen}
+      />
+      <EditChurchDialog
+        church={selectedChurch}
+        onOpenChange={setEditDialogOpen}
+        onSave={handleSaveChurch}
+        open={editDialogOpen}
+      />
+      <ManageChurchUsersDialog
+        church={selectedChurch}
+        onOpenChange={setManageUsersDialogOpen}
+        open={manageUsersDialogOpen}
+      />
     </div>
   );
 }

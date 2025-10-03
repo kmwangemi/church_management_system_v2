@@ -118,16 +118,8 @@ export const adminDataSchema = z
     path: ['confirmPassword'],
   });
 
-export const churchRegistrationSchema = z.object({
-  churchData: churchDataSchema,
-  adminData: adminDataSchema,
-});
-
 export type ChurchPayload = z.infer<typeof churchDataSchema>;
 export type AdminPayload = z.infer<typeof adminDataSchema>;
-export type ChurchRegistrationPayload = z.infer<
-  typeof churchRegistrationSchema
->;
 
 export const forgotPasswordSchema = z.object({
   email: z.email('Please enter a valid email address'),

@@ -194,6 +194,14 @@ export const MEMBER_ROLE_OPTIONS = [
   { value: 'bishop', label: 'Bishop' },
 ];
 
+export const ADMIN_MEMBER_ROLE_OPTIONS = [
+  { value: 'visitor', label: 'Visitor' },
+  { value: 'member', label: 'Member' },
+  { value: 'pastor', label: 'Pastor' },
+  { value: 'bishop', label: 'Bishop' },
+  { value: 'admin', label: 'Admin' },
+];
+
 export const PRAYER_CATEGORY_OPTIONS = [
   { value: 'health', label: 'Health & Healing' },
   { value: 'family', label: 'Family & Relationships' },
