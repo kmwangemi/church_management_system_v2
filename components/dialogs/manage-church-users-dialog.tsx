@@ -512,12 +512,14 @@ export function ManageChurchUsersDialog({
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem
+                            className="cursor-pointer"
                             onClick={() => handleEditUser(user)}
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit User
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            className="cursor-pointer"
                             onClick={() => handleManagePermissions(user)}
                           >
                             <Shield className="mr-2 h-4 w-4" />
@@ -525,6 +527,7 @@ export function ManageChurchUsersDialog({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
+                            className="cursor-pointer"
                             onClick={() => handleToggleStatus(user.id)}
                           >
                             {user.status === 'active' ? (
@@ -540,7 +543,7 @@ export function ManageChurchUsersDialog({
                             )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-red-600"
+                            className="cursor-pointer text-red-600"
                             onClick={() => handleDeleteUser(user.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -571,11 +574,6 @@ export function ManageChurchUsersDialog({
       {/* Edit User Dialog */}
       <EditUserDialog
         onOpenChange={setEditUserDialogOpen}
-        onSaveUser={(updatedUser) => {
-          setUsers(
-            users.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-          );
-        }}
         open={editUserDialogOpen}
         user={selectedUser}
       />
@@ -625,7 +623,6 @@ function AddUserDialog({ open, onOpenChange, church }: AddUserDialogProps) {
   //   error,
   // } = useRegisterChurch();
   // const { reset, watch, setValue } = form;
-
   const onSubmit = async (payload: AdminPayload) => {
     setIsLoading(true);
     try {
@@ -638,7 +635,6 @@ function AddUserDialog({ open, onOpenChange, church }: AddUserDialogProps) {
       setIsLoading(false);
     }
   };
-
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
@@ -926,67 +922,41 @@ interface EditUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
-  onSaveUser: (user: User) => void;
 }
 
-function EditUserDialog({
-  open,
-  onOpenChange,
-  user,
-  onSaveUser,
-}: EditUserDialogProps) {
+function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
-    status: '',
+  const form = useForm<AdminPayload>({
+    resolver: zodResolver(adminDataSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      phoneNumber: '',
+      gender: 'male',
+      isMember: true,
+      role: 'admin',
+      status: '',
+    },
   });
-
   // Update form when user changes
-  useState(() => {
-    if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        status: user.status,
-      });
-    }
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
+  // useState(() => {
+  //   if (user) {
+  //     console.log('user---->');
+  //   }
+  // });
+  const onSubmit = async (payload: AdminPayload) => {
     setIsLoading(true);
-
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const updatedUser: User = {
-        ...user,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        role: formData.role,
-        status: formData.status,
-      };
-
-      onSaveUser(updatedUser);
-      alert('User updated successfully!');
+      alert('User added successfully!');
       onOpenChange(false);
     } catch (error) {
-      alert('Error updating user. Please try again.');
+      alert('Error adding user. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-
   if (!user) return null;
-
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-2xl">
@@ -996,112 +966,232 @@ function EditUserDialog({
             Update user information and settings
           </DialogDescription>
         </DialogHeader>
-
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Full Name *</Label>
-              <Input
-                id="edit-name"
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Enter full name"
-                required
-                value={formData.name}
+        <Form {...form}>
+          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      First Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Last Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Smith" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email Address *</Label>
-              <Input
-                id="edit-email"
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                placeholder="user@example.com"
-                required
-                type="email"
-                value={formData.email}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Email <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="user@church.com"
+                        type="email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Phone Number <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <PhoneInput
+                        defaultCountry="KE"
+                        onChange={field.onChange}
+                        placeholder="Enter phone number"
+                        value={field.value}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-phone">Phone Number *</Label>
-              <Input
-                id="edit-phone"
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                placeholder="+1 (555) 000-0000"
-                required
-                type="tel"
-                value={formData.phone}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Gender <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="cursor-pointer">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                        {GENDER_OPTIONS.map((option) => (
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isMember"
+                render={({ field }) => (
+                  <FormItem className="mt-4 flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Church Member</FormLabel>
+                      <p className="text-gray-500 text-sm">
+                        This person is also a church member
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-role">Role *</Label>
-                <Select
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, role: value })
-                  }
-                  value={formData.role}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="pastor">Pastor</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="volunteer">Volunteer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">Status *</Label>
-                <Select
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, status: value })
-                  }
-                  value={formData.status}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 border-t pt-4">
-            <Button
-              onClick={() => onOpenChange(false)}
-              type="button"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button disabled={isLoading} type="submit">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving Changes...
-                </>
-              ) : (
-                'Save Changes'
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Role <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="cursor-pointer">
+                        <SelectValue placeholder="Select user role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[400px] overflow-y-auto">
+                      {ADMIN_MEMBER_ROLE_OPTIONS.map((option) => (
+                        <SelectItem
+                          className="cursor-pointer"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )}
-            </Button>
-          </div>
-        </form>
+            />
+            {/* <div className="space-y-2">
+              <Label htmlFor="edit-status">Status *</Label>
+              <Select
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value })
+                }
+                value={formData.status}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div> */}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Status <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="cursor-pointer">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[400px] overflow-y-auto">
+                      {GENDER_OPTIONS.map((option) => (
+                        <SelectItem
+                          className="cursor-pointer"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <Button
+                onClick={() => onOpenChange(false)}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button disabled={isLoading} type="submit">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Changes...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
@@ -1123,14 +1213,12 @@ function ManagePermissionsDialog({
 }: ManagePermissionsDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-
   // Update permissions when user changes
   useState(() => {
     if (user) {
       setSelectedPermissions(user.permissions);
     }
   });
-
   const handleTogglePermission = (permissionId: string) => {
     setSelectedPermissions((prev) =>
       prev.includes(permissionId)
@@ -1138,7 +1226,6 @@ function ManagePermissionsDialog({
         : [...prev, permissionId]
     );
   };
-
   const handleSelectAll = (category: string) => {
     const categoryPermissions = allPermissions
       .filter((p) => p.category === category)
@@ -1146,7 +1233,6 @@ function ManagePermissionsDialog({
     const allSelected = categoryPermissions.every((p) =>
       selectedPermissions.includes(p)
     );
-
     if (allSelected) {
       setSelectedPermissions((prev) =>
         prev.filter((p) => !categoryPermissions.includes(p))
@@ -1157,16 +1243,12 @@ function ManagePermissionsDialog({
       ]);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
     setIsLoading(true);
-
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
       onSavePermissions(user.id, selectedPermissions);
       alert('Permissions updated successfully!');
       onOpenChange(false);
@@ -1176,11 +1258,8 @@ function ManagePermissionsDialog({
       setIsLoading(false);
     }
   };
-
   if (!user) return null;
-
   const categories = [...new Set(allPermissions.map((p) => p.category))];
-
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
@@ -1190,7 +1269,6 @@ function ManagePermissionsDialog({
             Select the permissions this user should have access to
           </DialogDescription>
         </DialogHeader>
-
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <div className="flex items-center justify-between rounded-lg bg-muted p-3">
@@ -1203,7 +1281,6 @@ function ManagePermissionsDialog({
               </div>
             </div>
           </div>
-
           <div className="space-y-6">
             {categories.map((category) => {
               const categoryPermissions = allPermissions.filter(
@@ -1216,7 +1293,6 @@ function ManagePermissionsDialog({
                 categoryPermissions.some((p) =>
                   selectedPermissions.includes(p.id)
                 ) && !allSelected;
-
               return (
                 <Card key={category}>
                   <CardHeader className="pb-3">
@@ -1267,7 +1343,6 @@ function ManagePermissionsDialog({
               );
             })}
           </div>
-
           <div className="flex justify-end gap-2 border-t pt-4">
             <Button
               onClick={() => onOpenChange(false)}
