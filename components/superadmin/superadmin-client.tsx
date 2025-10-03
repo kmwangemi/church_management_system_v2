@@ -1,10 +1,5 @@
 'use client';
 
-import { Bell, Globe, LogOut, Menu, Settings, User } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import type React from 'react';
-import { useState } from 'react';
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,25 +18,41 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { getFirstLetter } from '@/lib/utils';
+import type { IUser } from '@/lib/auth';
+import { authClient } from '@/lib/auth-client';
+import { Bell, Globe, LogOut, Menu, Settings, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import type React from 'react';
+import { useState } from 'react';
 import { SuperAdminSidebar } from './superadmin-sidebar';
 
 export function SuperAdminClient({
   user,
   children,
 }: {
-  user;
+  user: IUser;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
-
-  const handleLogout = () => {
+  const router = useRouter();
+  const handleLogout = async () => {
     setIsLoggingOut(true);
-    setIsLoggingOut(false);
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push('/auth/superadmin'); // redirect to login page
+          },
+        },
+      });
+    } catch (_error) {
+      setIsLoggingOut(false);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
-
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -49,7 +60,6 @@ export function SuperAdminClient({
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
@@ -125,14 +135,15 @@ export function SuperAdminClient({
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarImage
-                        alt={user?.firstName || 'Admin'}
-                        src={user?.profilePictureUrl || ''}
+                        alt={user?.name || 'Admin'}
+                        src={user?.image || ''}
                       />
-                      <AvatarFallback>{`${getFirstLetter(
-                        user?.firstName || ''
-                      )}${getFirstLetter(
-                        user?.lastName || ''
-                      )}`}</AvatarFallback>
+                      <AvatarFallback>
+                        {user.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -148,16 +159,17 @@ export function SuperAdminClient({
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
+                    className="cursor-pointer"
                     disabled={isLoggingOut}
                     onClick={handleLogout}
                   >

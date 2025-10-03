@@ -14,5 +14,8 @@ export default async function DashboardLayout({
   if (!user) {
     redirect('/auth/login');
   }
+  if (user.role !== 'ADMIN') {
+    redirect('/auth/login');
+  }
   return <ChurchClient user={user}>{children}</ChurchClient>;
 }

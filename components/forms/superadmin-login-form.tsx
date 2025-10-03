@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-export default function AdminLoginForm() {
+export default function SuperAdminLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const form = useForm<LoginPayload>({
@@ -39,7 +39,7 @@ export default function AdminLoginForm() {
       const { error } = await authClient.signIn.email({
         email: payload.email,
         password: payload.password,
-        callbackURL: '/church', // Default redirect
+        callbackURL: '/superadmin', // Default redirect
       });
       if (error) {
         // Check for errors in the response

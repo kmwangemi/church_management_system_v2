@@ -37,7 +37,6 @@ export function SuperAdminSidebar({
       })}
     </>
   );
-
   if (mobile) {
     return (
       <div className="flex h-full flex-col">
@@ -56,7 +55,6 @@ export function SuperAdminSidebar({
       </div>
     );
   }
-
   return (
     <>
       <div className="flex h-16 shrink-0 items-center gap-2">

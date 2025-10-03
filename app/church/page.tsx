@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useAuthContext } from '@/contexts/auth-context';
+import { authClient } from '@/lib/auth-client';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
@@ -31,8 +31,12 @@ import {
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { user } = useAuthContext();
-
+  const {
+    data: session,
+    // isPending, //loading state
+    // error, //error object
+    // refetch, //refetch the session
+  } = authClient.useSession(); 
   const stats = [
     {
       title: 'Total Members',
@@ -186,7 +190,7 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="mb-2 font-bold text-3xl">
-              Welcome back, {capitalizeFirstLetter(user?.firstName || 'user')}!
+              Welcome back, {capitalizeFirstLetter(session?.user.name || 'user')}!
               👋
             </h1>
             <p className="text-blue-100 text-lg">

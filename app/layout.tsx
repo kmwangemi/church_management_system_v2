@@ -1,9 +1,6 @@
-/** biome-ignore-all assist/source/organizeImports: ignore sorting imports */
-import { AppInitializer } from '@/components/app-initializer';
 import ErrorBoundary from '@/components/error-boundary';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/contexts/auth-context';
 import { QueryProvider } from '@/providers/query-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -34,11 +31,7 @@ export default function RootLayout({
           enableSystem
         >
           <QueryProvider>
-            <ErrorBoundary>
-              <AuthProvider>
-                <AppInitializer>{children}</AppInitializer>
-              </AuthProvider>
-            </ErrorBoundary>
+            <ErrorBoundary>{children}</ErrorBoundary>
           </QueryProvider>
           <Toaster
             position="bottom-right"

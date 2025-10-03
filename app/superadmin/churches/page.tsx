@@ -43,8 +43,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/auth-context';
-import { useRole } from '@/lib/use-role';
 import {
   Building2,
   DollarSign,
@@ -198,16 +196,6 @@ export default function ChurchesPage() {
         return <Badge variant="secondary">{plan}</Badge>;
     }
   };
-
-  const { isSuperAdmin, isAdmin, hasRole } = useRole();
-
-  const { user, isLoading, isAuthenticated } = useAuthContext();
-
-  // biome-ignore lint/suspicious/noConsole: ignore console
-  console.log({ isSuperAdmin, isAdmin, hasRole });
-
-  // biome-ignore lint/suspicious/noConsole: ignore console
-  console.log({ user, isLoading, isAuthenticated });
 
   return (
     <div className="space-y-6">

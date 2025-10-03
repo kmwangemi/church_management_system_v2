@@ -19,16 +19,14 @@ import {
 } from '@/components/ui/sheet';
 import type { IUser } from '@/lib/auth';
 import { authClient } from '@/lib/auth-client';
-import { capitalizeFirstLetter } from '@/lib/utils';
-import { Bell, BookOpen, LogOut, Menu, Settings, Shield } from 'lucide-react';
-import Link from 'next/link';
+import { Bell, BookOpen, LogOut, Menu, Settings, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import type React from 'react';
 import { useState } from 'react';
-import { ChurchNavigation } from './church-navigation';
-import { ChurchSidebar } from './church-sidebar';
+import { MemberNavigation } from './member-navigation';
+import { MemberSidebar } from './member-sidebar';
 
-export function ChurchClient({
+export function MemberClient({
   user,
   children,
 }: {
@@ -67,25 +65,25 @@ export function ChurchClient({
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex w-64 flex-col border-gray-200 border-r">
-          <ChurchSidebar
+          <MemberSidebar
+            member={user}
             pathname={pathname}
             setSidebarOpen={setSidebarOpen}
-            user={user}
           />
         </div>
       </div>
       {/* Mobile Sidebar */}
       <Sheet onOpenChange={setSidebarOpen} open={sidebarOpen}>
         <SheetContent className="w-64 p-0" side="left">
-          <SheetTitle className="sr-only">Dashboard Navigation Menu</SheetTitle>
+          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
           <SheetDescription className="sr-only">
-            Main navigation menu for the dashboard
+            Main navigation menu for the member portal
           </SheetDescription>
-          <ChurchSidebar
+          <MemberSidebar
+            member={user}
             mobile
             pathname={pathname}
             setSidebarOpen={setSidebarOpen}
-            user={user}
           />
         </SheetContent>
       </Sheet>
@@ -101,41 +99,35 @@ export function ChurchClient({
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-64 p-0" side="left">
-                <SheetTitle className="sr-only">
-                  Dashboard Navigation Menu
-                </SheetTitle>
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">
-                  Main navigation menu for the dashboard
+                  Main navigation menu for the member portal
                 </SheetDescription>
-                <ChurchSidebar
+                <MemberSidebar
+                  member={user}
                   mobile
                   pathname={pathname}
                   setSidebarOpen={setSidebarOpen}
-                  user={user}
                 />
               </SheetContent>
             </Sheet>
             <div>
               <h1 className="font-semibold text-gray-900 text-xl">
-                {ChurchNavigation.find((item) => item.href === pathname)
+                {MemberNavigation.find((item) => item.href === pathname)
                   ?.name || 'Dashboard'}
               </h1>
               <p className="hidden text-gray-500 text-sm sm:block">
-                {'churchName' in user && (user as any).churchName
-                  ? (user as any).churchName
-                  : 'Church Management System'}
+                {user?.churchName}
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <Link href="/dashboard/notifications">
-              <Button className="relative" size="sm" variant="ghost">
-                <Bell className="h-4 w-4" />
-                <span className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs">
-                  3
-                </span>
-              </Button>
-            </Link>
+            <Button className="relative" size="sm" variant="ghost">
+              <Bell className="h-5 w-5" />
+              <span className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs">
+                5
+              </span>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -144,10 +136,10 @@ export function ChurchClient({
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      alt={user?.name || 'Admin'}
-                      src={user?.image || ''}
+                      alt={user.name}
+                      src="/placeholder.svg?height=32&width=32"
                     />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-blue-100 text-blue-600">
                       {user.name
                         .split(' ')
                         .map((n) => n[0])
@@ -160,7 +152,7 @@ export function ChurchClient({
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="font-medium text-sm leading-none">
-                      {capitalizeFirstLetter(user?.role || 'Admin')}
+                      {user.name}
                     </p>
                     <p className="text-muted-foreground text-xs leading-none">
                       {user.email}
@@ -169,8 +161,8 @@ export function ChurchClient({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer">
-                  <Shield className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>My Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />

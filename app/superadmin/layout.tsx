@@ -14,5 +14,8 @@ export default async function SuperAdminLayout({
   if (!user) {
     redirect('/auth/login');
   }
+  if (user.role !== 'SUPER_ADMIN') {
+    redirect('/auth/login');
+  }
   return <SuperAdminClient user={user}>{children}</SuperAdminClient>;
 }

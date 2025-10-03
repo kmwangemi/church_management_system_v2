@@ -4,38 +4,37 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { IUser } from '@/lib/auth';
-import { capitalizeFirstLetter, cn } from '@/lib/utils';
-import { BookOpen, Church } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Church, Gift } from 'lucide-react';
 import Link from 'next/link';
-import { ChurchNavigation } from './church-navigation';
+import { MemberNavigation } from './member-navigation';
 
-interface SidebarProps {
-  user: IUser;
+interface MemberSidebarProps {
+  member: IUser;
   pathname: string;
   mobile?: boolean;
   setSidebarOpen?: (open: boolean) => void;
 }
 
-const getRoleColor = (role: string) => {
-  switch (role.toLowerCase()) {
-    case 'pastor':
-    case 'bishop':
-      return 'bg-purple-100 text-purple-800';
-    case 'admin':
-      return 'bg-blue-100 text-blue-800';
-    case 'finance':
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'active':
       return 'bg-green-100 text-green-800';
+    case 'new':
+      return 'bg-blue-100 text-blue-800';
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
 };
 
-export function ChurchSidebar({
-  user,
+export function MemberSidebar({
+  member,
   pathname,
   mobile = false,
   setSidebarOpen,
-}: SidebarProps) {
+}: MemberSidebarProps) {
   return (
     <div
       className={cn(
@@ -48,20 +47,20 @@ export function ChurchSidebar({
           <div className="rounded-lg bg-blue-600 p-1.5">
             <Church className="h-6 w-6 text-white" />
           </div>
-          <span className="font-bold text-gray-900 text-xl">ChurchHub</span>
+          <span className="font-bold text-gray-900 text-xl">Member Portal</span>
         </div>
       </div>
-      {/* User Info */}
-      {user && (
+      {/* Member Info */}
+      {member && (
         <div className="border-b bg-gray-50 p-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-12 w-12">
               <AvatarImage
-                alt={user?.name || 'Admin'}
-                src={user?.image || ''}
+                alt={member.name}
+                src="/placeholder.svg?height=48&width=48"
               />
-              <AvatarFallback>
-                {user.name
+              <AvatarFallback className="bg-blue-100 text-blue-600">
+                {member.name
                   .split(' ')
                   .map((n) => n[0])
                   .join('')}
@@ -69,27 +68,31 @@ export function ChurchSidebar({
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-gray-900 text-sm">
-                {user.name}
+                {member.name}
               </p>
-              <div className="flex items-center space-x-2">
+              <div className="mt-1 flex items-center space-x-2">
                 <Badge
-                  className={cn('text-xs', getRoleColor(user?.role || 'Admin'))}
+                  className={cn(
+                    'text-xs',
+                    getStatusColor(member.membershipStatus)
+                  )}
                   variant="secondary"
                 >
-                  {capitalizeFirstLetter(user?.role || 'Admin')}
+                  {member.membershipStatus}
                 </Badge>
               </div>
+              <p className="mt-1 text-gray-500 text-xs">
+                Member since {new Date(member.membershipDate).getFullYear()}
+              </p>
             </div>
           </div>
-          {'churchName' in user && (user as any).churchName && (
-            <p className="mt-2 truncate text-gray-500 text-xs">
-              {(user as any).churchName}
-            </p>
-          )}
+          <p className="mt-2 truncate text-gray-600 text-xs">
+            {member.churchName}
+          </p>
         </div>
       )}
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-        {ChurchNavigation.map((item) => {
+        {MemberNavigation.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -114,8 +117,8 @@ export function ChurchSidebar({
               </div>
               {item.badge && (
                 <Badge
-                  className="h-5 px-1.5 text-xs"
-                  variant={item.badge === 'New' ? 'default' : 'secondary'}
+                  className="h-5 bg-red-100 px-1.5 text-red-800 text-xs"
+                  variant="secondary"
                 >
                   {item.badge}
                 </Badge>
@@ -127,20 +130,20 @@ export function ChurchSidebar({
       <div className="border-t p-4">
         <div className="rounded-lg bg-blue-50 p-3">
           <div className="mb-2 flex items-center space-x-2">
-            <BookOpen className="h-4 w-4 text-blue-600" />
+            <Gift className="h-4 w-4 text-blue-600" />
             <span className="font-medium text-blue-900 text-sm">
-              Need Help?
+              Quick Give
             </span>
           </div>
           <p className="mb-2 text-blue-700 text-xs">
-            Check our documentation and tutorials
+            Make a quick contribution
           </p>
           <Button
             className="h-7 w-full bg-transparent text-xs"
             size="sm"
             variant="outline"
           >
-            View Docs
+            Give Now
           </Button>
         </div>
       </div>

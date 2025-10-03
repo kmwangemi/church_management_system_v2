@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/useAwait: <explanation> */
+/** biome-ignore-all lint/suspicious/useAwait: ignore */
 import prisma from '@/lib/prisma';
 import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
@@ -90,7 +90,7 @@ export const auth = betterAuth({
       },
       role: {
         type: 'string',
-        // required: false,
+        required: false,
         defaultValue: 'VISITOR',
         input: false, // Don't allow users to set their own role
       },
@@ -246,5 +246,5 @@ export const auth = betterAuth({
   ],
 });
 
-export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.Session.user;
+export type ISession = typeof auth.$Infer.Session;
+export type IUser = typeof auth.$Infer.Session.user;
