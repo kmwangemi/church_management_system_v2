@@ -1,20 +1,20 @@
 /** biome-ignore-all lint/suspicious/useAwait: ignore */
 import prisma from '@/lib/prisma';
+import type { IOrganizationMetadata } from '@/lib/types/index';
 import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { createAuthMiddleware, organization } from 'better-auth/plugins';
 import {
   ac,
-  owner,
   admin,
+  bishop,
   member,
+  owner,
   pastor,
   visitor,
-  bishop,
 } from './auth/permissions';
 import { passwordSchema } from './validations/auth';
-import type { IOrganizationMetadata } from './types';
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -22,26 +22,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    // requireEmailVerification: true, // Only if you want to block login completely
-    // async sendResetPassword({ user, url }) {
-    //   await sendEmail({
-    //     to: user.email,
-    //     subject: 'Reset your password',
-    //     text: `Click the link to reset your password: ${url}`,
-    //   });
-    // },
   },
-  // emailVerification: {
-  //   sendOnSignUp: true,
-  //   autoSignInAfterVerification: true,
-  //   async sendVerificationEmail({ user, url }) {
-  //     await sendEmail({
-  //       to: user.email,
-  //       subject: 'Verify your email',
-  //       text: `Click the link to verify your email: ${url}`,
-  //     });
-  //   },
-  // },
   socialProviders: {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID as string,
@@ -49,16 +30,6 @@ export const auth = betterAuth({
     },
   },
   user: {
-    // changeEmail: {
-    //   enabled: true,
-    //   async sendChangeEmailVerification({ user, newEmail, url }) {
-    //     await sendEmail({
-    //       to: user.email,
-    //       subject: 'Approve email change',
-    //       text: `Your email has been changed to ${newEmail}. Click the link to approve the change: ${url}`,
-    //     });
-    //   },
-    // },
     additionalFields: {
       phoneNumber: {
         type: 'string',
@@ -93,7 +64,7 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         defaultValue: 'VISITOR',
-        input: false, // Don't allow users to set their own role
+        input: false,
       },
       status: {
         type: 'string',
@@ -177,13 +148,18 @@ export const auth = betterAuth({
         VISITOR: visitor,
         BISHOP: bishop,
       },
-      // Organization creation settings
       allowUserToCreateOrganization: async (user) => {
-        // Only SUPER_ADMIN can create churches
         return user.role === 'SUPER_ADMIN';
       },
-      creatorRole: 'OWNER', // Church creator gets owner role
-      membershipLimit: 10_000, // Max members per church
+      creatorRole: 'OWNER',
+      membershipLimit: 10_000,
+      invitationExpiresIn: 60 * 60 * 48,
+      cancelPendingInvitationsOnReInvite: true,
+      invitationLimit: 100,
+      organizationDeletion: {
+        disabled: false,
+      },
+
       // Invitation settings
       // sendInvitationEmail: async (data) => {
       //   const { email, organization, inviter, invitationId } = data;
@@ -200,57 +176,58 @@ export const auth = betterAuth({
       //     `,
       //   });
       // },
-      invitationExpiresIn: 60 * 60 * 48, // 48 hours
-      cancelPendingInvitationsOnReInvite: true,
-      invitationLimit: 100,
-      // Organization deletion
-      organizationDeletion: {
-        disabled: false,
-        requirePassword: true, // Require password for deletion
-      },
-      // Hooks
-      beforeCreateOrganization: async ({ organization, user }) => {
-        // Add validation or modifications before church creation
-        return {
-          data: {
-            ...organization,
-            // You can add computed fields here
-          },
-        };
-      },
-      afterCreateOrganization: async ({ organization, member, user }) => {
-        const metadata = organization.metadata as IOrganizationMetadata;
-        const plan = metadata?.subscriptionPlan || 'BASIC';
 
-        const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 30); // 30-day trial
-
-        await prisma.churchSubscription.create({
-          data: {
-            organizationId: organization.id,
-            plan: plan.toUpperCase(),
-            status: 'TRIAL',
-            startDate: new Date(),
-            trialEndsAt: trialEnd,
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: trialEnd,
-            isActive: true,
-            // Add other fields from your model here
-          },
-        });
-
-        // Post-creation actions (e.g., send welcome email, create default branch)
-        console.log(`Church ${organization.name} created by ${user.name}`);
-        // Create default main branch
-        await prisma.branch.create({
-          data: {
-            branchName: 'Main Branch',
-            churchId: organization.id,
-            establishedDate: new Date(),
-            capacity: 500,
-            isActive: true,
-          },
-        });
+      // ✅ FIXED: Correct hook names
+      organizationCreation: {
+        beforeCreate: async ({ organization, user }, request) => {
+          return {
+            data: {
+              ...organization,
+            },
+          };
+        },
+        afterCreate: async ({ organization, member, user }, request) => {
+          try {
+            // Extract metadata
+            const metadata = organization.metadata as IOrganizationMetadata;
+            const plan = metadata?.subscriptionPlan || 'BASIC';
+            // Calculate trial end date
+            const trialEnd = new Date();
+            trialEnd.setDate(trialEnd.getDate() + 30);
+            // Create subscription
+            await prisma.churchSubscription.create({
+              data: {
+                churchId: organization.id,
+                plan: plan.toUpperCase(),
+                status: 'TRIAL',
+                startDate: new Date(),
+                endDate: trialEnd,
+                isActive: true,
+                nextBillingDate: trialEnd,
+              },
+            });
+            await prisma.branch.create({
+              data: {
+                branchName: 'Main Branch',
+                churchId: organization.id,
+                establishedDate: new Date(),
+                capacity: 500,
+                isActive: true,
+                // address: {
+                //   street: '',
+                //   city: '',
+                //   state: '',
+                //   zipCode: '',
+                //   country: 'Kenya',
+                // },
+              },
+            });
+          } catch (error) {
+            console.error('❌ Error in afterCreate hook:', error);
+            // Log the error but don't throw - organization was already created
+            // You could also choose to throw here to rollback the organization creation
+          }
+        },
       },
     }),
     nextCookies(),

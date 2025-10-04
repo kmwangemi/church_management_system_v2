@@ -4,6 +4,7 @@ import { EditChurchDialog } from '@/components/dialogs/edit-church-dialog';
 import { ManageChurchUsersDialog } from '@/components/dialogs/manage-church-users-dialog';
 import { ViewChurchDetailsDialog } from '@/components/dialogs/view-church-details-dialog';
 import { AddChurchForm } from '@/components/forms/add-church-form';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -46,7 +48,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { authClient } from '@/lib/auth-client';
 import {
+  AlertCircle,
   Building2,
   DollarSign,
   Edit,
@@ -57,12 +61,45 @@ import {
   MoreHorizontal,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
-  TrendingUp,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
+interface OrganizationMetadata {
+  denomination?: string;
+  email?: string;
+  phoneNumber?: string;
+  website?: string;
+  establishedDate?: string;
+  churchSize?: string;
+  numberOfBranches?: number;
+  description?: string;
+  isSuspended?: boolean;
+  isDeleted?: boolean;
+  subscriptionPlan?: string;
+  pastor?: string;
+  members?: number;
+  branches?: number;
+  revenue?: number;
+  growth?: number;
+  status?: string;
+  plan?: string;
+  established?: string;
+  [key: string]: any;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string;
+  createdAt: string;
+  metadata?: OrganizationMetadata;
+}
 
 export default function ChurchesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,113 +109,92 @@ export default function ChurchesPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
-  const [selectedChurch, setSelectedChurch] = useState<any>(null);
+  const [selectedChurch, setSelectedChurch] = useState<Organization | null>(
+    null
+  );
 
-  const [churches, setChurches] = useState([
-    {
-      id: 1,
-      name: 'Grace Community Church',
-      pastor: 'Rev. John Smith',
-      email: 'admin@gracecommunity.org',
-      phone: '+1 (555) 123-4567',
-      website: 'www.gracecommunity.org',
-      denomination: 'Non-denominational',
-      members: 2450,
-      branches: 3,
-      revenue: 45_000,
-      growth: 15.2,
-      status: 'active',
-      plan: 'premium',
-      established: '1985',
-      lastActivity: '2 hours ago',
-      address: '123 Faith Street, Springfield, IL 62701',
-    },
-    {
-      id: 2,
-      name: 'Faith Baptist Church',
-      pastor: 'Rev. Sarah Johnson',
-      email: 'contact@faithbaptist.org',
-      phone: '+1 (555) 234-5678',
-      website: 'www.faithbaptist.org',
-      denomination: 'Baptist',
-      members: 1890,
-      branches: 2,
-      revenue: 38_500,
-      growth: 12.8,
-      status: 'active',
-      plan: 'standard',
-      established: '1978',
-      lastActivity: '1 hour ago',
-      address: '456 Hope Avenue, Springfield, IL 62702',
-    },
-    {
-      id: 3,
-      name: 'Hope Methodist Church',
-      pastor: 'Rev. Michael Brown',
-      email: 'info@hopemethodist.org',
-      phone: '+1 (555) 345-6789',
-      website: 'www.hopemethodist.org',
-      denomination: 'Methodist',
-      members: 1650,
-      branches: 1,
-      revenue: 32_000,
-      growth: 10.5,
-      status: 'active',
-      plan: 'standard',
-      established: '1992',
-      lastActivity: '3 hours ago',
-      address: '789 Grace Boulevard, Springfield, IL 62703',
-    },
-    {
-      id: 4,
-      name: 'Trinity Presbyterian',
-      pastor: 'Rev. David Wilson',
-      email: 'admin@trinitypresby.org',
-      phone: '+1 (555) 456-7890',
-      website: 'www.trinitypresby.org',
-      denomination: 'Presbyterian',
-      members: 1420,
-      branches: 2,
-      revenue: 28_750,
-      growth: 8.9,
-      status: 'active',
-      plan: 'premium',
-      established: '1965',
-      lastActivity: '5 hours ago',
-      address: '321 Peace Lane, Springfield, IL 62704',
-    },
-    {
-      id: 5,
-      name: 'New Life Assembly',
-      pastor: 'Rev. Lisa Davis',
-      email: 'contact@newlifeassembly.org',
-      phone: '+1 (555) 567-8901',
-      website: 'www.newlifeassembly.org',
-      denomination: 'Pentecostal',
-      members: 1380,
-      branches: 1,
-      revenue: 27_200,
-      growth: 7.6,
-      status: 'pending',
-      plan: 'basic',
-      established: '2001',
-      lastActivity: '1 day ago',
-      address: '654 Spirit Way, Springfield, IL 62705',
-    },
-  ]);
+  const {
+    data: churches,
+    isPending,
+    error,
+    refetch,
+  } = authClient.useListOrganizations();
 
-  const filteredChurches = churches.filter((church) => {
-    const matchesSearch =
-      church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      church.pastor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      church.denomination.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' || church.status === statusFilter;
-    const matchesPlan = planFilter === 'all' || church.plan === planFilter;
-    return matchesSearch && matchesStatus && matchesPlan;
-  });
+  // Parse metadata safely
+  const parseMetadata = (org: Organization): OrganizationMetadata => {
+    if (!org.metadata) return {};
 
-  const getStatusBadge = (status: string) => {
+    try {
+      return typeof org.metadata === 'string'
+        ? JSON.parse(org.metadata)
+        : org.metadata;
+    } catch {
+      return {};
+    }
+  };
+
+  // Filter churches with error handling
+  const filteredChurches = useMemo(() => {
+    if (!churches) return [];
+
+    return churches.filter((church) => {
+      try {
+        const metadata = parseMetadata(church);
+        const searchLower = searchTerm.toLowerCase();
+
+        const matchesSearch =
+          church.name.toLowerCase().includes(searchLower) ||
+          metadata.denomination?.toLowerCase().includes(searchLower) ||
+          metadata.email?.toLowerCase().includes(searchLower);
+
+        const matchesStatus =
+          statusFilter === 'all' || metadata.status === statusFilter;
+
+        const matchesPlan =
+          planFilter === 'all' ||
+          metadata.settings?.subscriptionPlan === planFilter ||
+          metadata.plan === planFilter;
+
+        return matchesSearch && matchesStatus && matchesPlan;
+      } catch (error) {
+        console.error('Error filtering church:', error);
+        return false;
+      }
+    });
+  }, [churches, searchTerm, statusFilter, planFilter]);
+
+  // Calculate stats with error handling
+  const stats = useMemo(() => {
+    if (!churches) {
+      return {
+        totalChurches: 0,
+        totalMembers: 0,
+        totalBranches: 0,
+        totalRevenue: 0,
+      };
+    }
+
+    return churches.reduce(
+      (acc, church) => {
+        try {
+          const metadata = parseMetadata(church);
+          return {
+            totalChurches: acc.totalChurches + 1,
+            totalMembers: acc.totalMembers + (metadata.members || 0),
+            totalBranches:
+              acc.totalBranches +
+              (metadata.branches || metadata.numberOfBranches || 0),
+            totalRevenue: acc.totalRevenue + (metadata.revenue || 0),
+          };
+        } catch {
+          return acc;
+        }
+      },
+      { totalChurches: 0, totalMembers: 0, totalBranches: 0, totalRevenue: 0 }
+    );
+  }, [churches]);
+
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'active':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
@@ -187,12 +203,13 @@ export default function ChurchesPage() {
       case 'suspended':
         return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary">{status || 'Unknown'}</Badge>;
     }
   };
 
-  const getPlanBadge = (plan: string) => {
-    switch (plan) {
+  const getPlanBadge = (plan?: string) => {
+    const planName = plan?.toLowerCase();
+    switch (planName) {
       case 'premium':
         return <Badge className="bg-purple-100 text-purple-800">Premium</Badge>;
       case 'standard':
@@ -200,33 +217,203 @@ export default function ChurchesPage() {
       case 'basic':
         return <Badge className="bg-gray-100 text-gray-800">Basic</Badge>;
       default:
-        return <Badge variant="secondary">{plan}</Badge>;
+        return <Badge variant="secondary">{plan || 'None'}</Badge>;
     }
   };
 
-  const handleViewDetails = (church: any) => {
+  const handleViewDetails = (church: Organization) => {
     setSelectedChurch(church);
     setViewDialogOpen(true);
   };
 
-  const handleEditChurch = (church: any) => {
+  const handleEditChurch = (church: Organization) => {
     setSelectedChurch(church);
     setEditDialogOpen(true);
   };
 
-  const handleManageUsers = (church: any) => {
+  const handleManageUsers = (church: Organization) => {
     setSelectedChurch(church);
     setManageUsersDialogOpen(true);
   };
 
-  const handleSaveChurch = (updatedChurch: any) => {
-    setChurches(
-      churches.map((church) =>
-        church.id === updatedChurch.id ? updatedChurch : church
-      )
-    );
+  const handleSaveChurch = async (updatedChurch: Organization) => {
+    try {
+      const { data, error } = await authClient.organization.update({
+        data: {
+          name: updatedChurch.name,
+          slug: updatedChurch.slug,
+          logo: updatedChurch.logo,
+          metadata: updatedChurch.metadata,
+        },
+        organizationId: updatedChurch.id,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to update church');
+      }
+      toast.success('Church updated successfully');
+      refetch();
+    } catch (error: any) {
+      console.error('Error updating church:', error);
+      toast.error(error.message || 'Failed to update church');
+    }
   };
 
+  const handleSuspendChurch = async (church: Organization) => {
+    try {
+      const metadata = parseMetadata(church);
+      const { data, error } = await authClient.organization.update({
+        data: {
+          metadata: {
+            ...metadata,
+            isSuspended: true,
+            status: 'suspended',
+          },
+        },
+        organizationId: church.id,
+      });
+      if (error) {
+        throw new Error(error.message || 'Failed to suspend church');
+      }
+      toast.success('Church suspended successfully');
+      refetch();
+    } catch (error: any) {
+      console.error('Error suspending church:', error);
+      toast.error(error.message || 'Failed to suspend church');
+    }
+  };
+
+  // Loading State
+  if (isPending) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[...new Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="mb-2 h-8 w-16" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-96" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-[180px]" />
+                <Skeleton className="h-10 w-[180px]" />
+              </div>
+              <div className="space-y-2">
+                {[...new Array(5)].map((_, i) => (
+                  <Skeleton className="h-16 w-full" key={i} />
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-bold text-3xl tracking-tight">
+              Churches Management
+            </h1>
+            <p className="text-muted-foreground">
+              Manage all registered churches and their information
+            </p>
+          </div>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Churches</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              {error instanceof Error
+                ? error.message
+                : 'Failed to load churches. Please try again.'}
+            </span>
+            <Button onClick={() => refetch()} size="sm" variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Empty State
+  if (!churches || churches.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-bold text-3xl tracking-tight">
+              Churches Management
+            </h1>
+            <p className="text-muted-foreground">
+              Manage all registered churches and their information
+            </p>
+          </div>
+          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Church
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Church</DialogTitle>
+                <DialogDescription>
+                  Add a new church to the church database
+                </DialogDescription>
+              </DialogHeader>
+              <AddChurchForm onCloseDialog={() => setIsDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Building2 className="mb-4 h-16 w-16 text-muted-foreground" />
+            <h3 className="mb-2 font-semibold text-lg">No Churches Yet</h3>
+            <p className="mb-4 text-center text-muted-foreground text-sm">
+              Get started by adding your first church to the system.
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Church
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main Content
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -267,9 +454,9 @@ export default function ChurchesPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">{churches.length}</div>
+            <div className="font-bold text-2xl">{stats.totalChurches}</div>
             <p className="text-muted-foreground text-xs">
-              <span className="text-green-600">+2</span> new this month
+              Active organizations
             </p>
           </CardContent>
         </Card>
@@ -280,13 +467,9 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              {churches
-                .reduce((sum, church) => sum + church.members, 0)
-                .toLocaleString()}
+              {stats.totalMembers.toLocaleString()}
             </div>
-            <p className="text-muted-foreground text-xs">
-              <span className="text-green-600">+8.2%</span> from last month
-            </p>
+            <p className="text-muted-foreground text-xs">Across all churches</p>
           </CardContent>
         </Card>
         <Card>
@@ -297,12 +480,8 @@ export default function ChurchesPage() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">
-              {churches.reduce((sum, church) => sum + church.branches, 0)}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              <span className="text-green-600">+3</span> new branches
-            </p>
+            <div className="font-bold text-2xl">{stats.totalBranches}</div>
+            <p className="text-muted-foreground text-xs">Branch locations</p>
           </CardContent>
         </Card>
         <Card>
@@ -314,14 +493,9 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              $
-              {churches
-                .reduce((sum, church) => sum + church.revenue, 0)
-                .toLocaleString()}
+              ${stats.totalRevenue.toLocaleString()}
             </div>
-            <p className="text-muted-foreground text-xs">
-              <span className="text-green-600">+15%</span> from last month
-            </p>
+            <p className="text-muted-foreground text-xs">Total revenue</p>
           </CardContent>
         </Card>
       </div>
@@ -340,7 +514,7 @@ export default function ChurchesPage() {
               <Input
                 className="pl-8"
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search churches, pastors, or denominations..."
+                placeholder="Search churches, denominations, or email..."
                 value={searchTerm}
               />
             </div>
@@ -367,136 +541,141 @@ export default function ChurchesPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Church</TableHead>
-                  <TableHead>Pastor</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Branches</TableHead>
-                  <TableHead>Revenue</TableHead>
-                  <TableHead>Growth</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredChurches.map((church) => (
-                  <TableRow key={church.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage
-                            src={'/placeholder.svg?height=40&width=40'}
-                          />
-                          <AvatarFallback>
-                            {church.name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')
-                              .slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{church.name}</div>
-                          <div className="text-muted-foreground text-sm">
-                            {church.denomination} • Est. {church.established}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{church.pastor}</div>
-                        <div className="text-muted-foreground text-sm">
-                          Lead Pastor
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Mail className="mr-1 h-3 w-3" />
-                          {church.email}
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <Phone className="mr-1 h-3 w-3" />
-                          {church.phone}
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <Globe className="mr-1 h-3 w-3" />
-                          {church.website}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Users className="mr-1 h-4 w-4 text-muted-foreground" />
-                        {church.members.toLocaleString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
-                        {church.branches}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <DollarSign className="mr-1 h-4 w-4 text-muted-foreground" />
-                        ${church.revenue.toLocaleString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-green-600">
-                        <TrendingUp className="mr-1 h-4 w-4" />+{church.growth}%
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(church.status)}</TableCell>
-                    <TableCell>{getPlanBadge(church.plan)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button className="h-8 w-8 p-0" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => handleViewDetails(church)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleEditChurch(church)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Church
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleManageUsers(church)}
-                          >
-                            <Users className="mr-2 h-4 w-4" />
-                            Manage Users
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Suspend Church
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {filteredChurches.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Search className="mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="mb-2 font-semibold text-lg">No Results Found</h3>
+              <p className="text-center text-muted-foreground text-sm">
+                Try adjusting your search or filters to find what you're looking
+                for.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Church</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Members</TableHead>
+                    <TableHead>Branches</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredChurches.map((church) => {
+                    const metadata = parseMetadata(church);
+                    const plan = metadata?.subscriptionPlan || metadata.plan;
+                    return (
+                      <TableRow key={church.id}>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={church.logo} />
+                              <AvatarFallback>
+                                {church.name
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .join('')
+                                  .slice(0, 2)
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{church.name}</div>
+                              <div className="text-muted-foreground text-sm">
+                                {metadata.denomination || 'N/A'}
+                                {metadata.establishedDate &&
+                                  ` • Est. ${new Date(metadata.establishedDate).getFullYear()}`}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {metadata.email && (
+                              <div className="flex items-center text-sm">
+                                <Mail className="mr-1 h-3 w-3" />
+                                {metadata.email}
+                              </div>
+                            )}
+                            {metadata.phoneNumber && (
+                              <div className="flex items-center text-sm">
+                                <Phone className="mr-1 h-3 w-3" />
+                                {metadata.phoneNumber}
+                              </div>
+                            )}
+                            {metadata.website && (
+                              <div className="flex items-center text-sm">
+                                <Globe className="mr-1 h-3 w-3" />
+                                {metadata.website}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Users className="mr-1 h-4 w-4 text-muted-foreground" />
+                            {(metadata.members || 0).toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
+                            {metadata.branches ||
+                              metadata.numberOfBranches ||
+                              0}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(metadata.status)}</TableCell>
+                        <TableCell>{getPlanBadge(plan)}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button className="h-8 w-8 p-0" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => handleViewDetails(church)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditChurch(church)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Church
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleManageUsers(church)}
+                              >
+                                <Users className="mr-2 h-4 w-4" />
+                                Manage Users
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleSuspendChurch(church)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Suspend Church
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
       {/* Dialogs */}

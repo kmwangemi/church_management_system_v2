@@ -130,9 +130,8 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       const uploadResponse = await upload(logoFile);
       setValue('churchLogoUrl', uploadResponse || '');
       toast.success('Logo uploaded successfully');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to upload logo');
-      console.error('Logo upload error:', error);
     }
   };
   // Handle logo removal
@@ -229,7 +228,6 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       }
       const validation = churchDataSchema.safeParse(payload);
       if (!validation.success) {
-        console.log('Validation errors:', validation.error.issues);
         toast.error('Please fix all validation errors');
         return;
       }
@@ -280,7 +278,6 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
         onCloseDialog();
       }
     } catch (err: any) {
-      console.error('Church registration error:', err);
       setError(err.message || 'Failed to register church');
       toast.error(err.message || 'Failed to register church');
     } finally {

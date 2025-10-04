@@ -22,12 +22,12 @@ export const authClient = createAuthClient({
     organizationClient({
       ac,
       roles: {
-        owner,
-        admin,
-        member,
-        pastor,
-        visitor,
-        bishop,
+        OWNER: owner,
+        ADMIN: admin,
+        MEMBER: member,
+        PASTOR: pastor,
+        VISITOR: visitor,
+        BISHOP: bishop,
       },
     }),
     nextCookies(),

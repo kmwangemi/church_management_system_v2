@@ -743,7 +743,7 @@ model Verification {
 model Organization {
   id          String       @id @default(cuid())
   name        String
-  slug        String?      @unique
+  slug        String      @unique
   logo        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -1054,7 +1054,7 @@ model Branch {
   prayerRequests      PrayerRequest[]
   activities          Activity[]
   assets              Asset[]
-  addresses           Address[]
+  address             Address[]
   announcements       Announcement[]
   attendances         Attendance[]
   events              Event[]
@@ -1577,6 +1577,7 @@ model ChurchSubscription {
   plan               ChurchPlan
   status             SubscriptionStatus @default(TRIAL)
   isPaid             Boolean            @default(false)
+  isActive           Boolean            @default(false)
   invoiceAmount      Float              @default(0)
   paidAmount         Float              @default(0)
   balAmount          Float              @default(0)
