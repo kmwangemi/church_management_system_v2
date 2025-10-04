@@ -14,6 +14,7 @@ import {
   bishop,
 } from './auth/permissions';
 import { passwordSchema } from './validations/auth';
+import type { IOrganizationMetadata } from './types';
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -169,54 +170,46 @@ export const auth = betterAuth({
     organization({
       ac,
       roles: {
-        owner,
-        admin,
-        member,
-        pastor,
-        visitor,
-        bishop,
+        OWNER: owner,
+        ADMIN: admin,
+        MEMBER: member,
+        PASTOR: pastor,
+        VISITOR: visitor,
+        BISHOP: bishop,
       },
       // Organization creation settings
       allowUserToCreateOrganization: async (user) => {
         // Only SUPER_ADMIN can create churches
         return user.role === 'SUPER_ADMIN';
       },
-
-      creatorRole: 'owner', // Church creator gets owner role
-
+      creatorRole: 'OWNER', // Church creator gets owner role
       membershipLimit: 10_000, // Max members per church
-
       // Invitation settings
-      sendInvitationEmail: async (data) => {
-        const { email, organization, inviter, invitationId } = data;
-
-        const invitationUrl = `${process.env.APP_URL}/invite/${invitationId}`;
-
-        await sendEmail({
-          to: email,
-          subject: `You're invited to join ${organization.name}`,
-          html: `
-            <h2>Church Invitation</h2>
-            <p>${inviter.name} has invited you to join ${organization.name}.</p>
-            <p>Click the link below to accept the invitation:</p>
-            <a href="${invitationUrl}">Accept Invitation</a>
-            <p>This invitation will expire in 48 hours.</p>
-          `,
-        });
-      },
-
+      // sendInvitationEmail: async (data) => {
+      //   const { email, organization, inviter, invitationId } = data;
+      //   const invitationUrl = `${process.env.APP_URL}/invite/${invitationId}`;
+      //   await sendEmail({
+      //     to: email,
+      //     subject: `You're invited to join ${organization.name}`,
+      //     html: `
+      //       <h2>Church Invitation</h2>
+      //       <p>${inviter.name} has invited you to join ${organization.name}.</p>
+      //       <p>Click the link below to accept the invitation:</p>
+      //       <a href="${invitationUrl}">Accept Invitation</a>
+      //       <p>This invitation will expire in 48 hours.</p>
+      //     `,
+      //   });
+      // },
       invitationExpiresIn: 60 * 60 * 48, // 48 hours
       cancelPendingInvitationsOnReInvite: true,
       invitationLimit: 100,
-
       // Organization deletion
       organizationDeletion: {
-        enabled: true,
+        disabled: false,
         requirePassword: true, // Require password for deletion
       },
-
       // Hooks
-      beforeCreate: async ({ organization, user }) => {
+      beforeCreateOrganization: async ({ organization, user }) => {
         // Add validation or modifications before church creation
         return {
           data: {
@@ -225,11 +218,29 @@ export const auth = betterAuth({
           },
         };
       },
+      afterCreateOrganization: async ({ organization, member, user }) => {
+        const metadata = organization.metadata as IOrganizationMetadata;
+        const plan = metadata?.subscriptionPlan || 'BASIC';
 
-      afterCreate: async ({ organization, member, user }) => {
+        const trialEnd = new Date();
+        trialEnd.setDate(trialEnd.getDate() + 30); // 30-day trial
+
+        await prisma.churchSubscription.create({
+          data: {
+            organizationId: organization.id,
+            plan: plan.toUpperCase(),
+            status: 'TRIAL',
+            startDate: new Date(),
+            trialEndsAt: trialEnd,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: trialEnd,
+            isActive: true,
+            // Add other fields from your model here
+          },
+        });
+
         // Post-creation actions (e.g., send welcome email, create default branch)
         console.log(`Church ${organization.name} created by ${user.name}`);
-
         // Create default main branch
         await prisma.branch.create({
           data: {

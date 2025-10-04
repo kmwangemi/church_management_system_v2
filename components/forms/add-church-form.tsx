@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useRegisterChurch } from '@/lib/hooks/auth/use-register-queries';
+import { authClient } from '@/lib/auth-client'; // Your Better Auth client
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
@@ -57,12 +57,14 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tabValidationState, setTabValidationState] = useState({
     basic: false,
     contact: false,
     subscription: false,
   });
+  const [error, setError] = useState<string | null>(null);
   const {
     upload,
     isUploading,
@@ -96,25 +98,18 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       numberOfBranches: '',
     },
   });
-  const {
-    mutateAsync: registerChurchMutation,
-    isPending,
-    isError,
-    error,
-  } = useRegisterChurch();
   const { reset, watch, setValue } = form;
   // Handle logo file selection
   const handleLogoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    // Clear any previous errors
     clearError();
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file');
+      toast.error('Please select a valid image file', {
+        style: errorToastStyle,
+      });
       return;
     }
-    // Validate file size (2MB limit)
     if (file.size > 2 * 1024 * 1024) {
       toast.error('File size must be less than 2MB', {
         style: errorToastStyle,
@@ -122,24 +117,21 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       return;
     }
     setLogoFile(file);
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setLogoPreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
-  // Handle logo upload using the hook
+  // Handle logo upload
   const handleLogoUpload = async () => {
     if (!logoFile) return;
     try {
-      // Use the upload function from the hook
       const uploadResponse = await upload(logoFile);
       setValue('churchLogoUrl', uploadResponse || '');
       toast.success('Logo uploaded successfully');
     } catch (error) {
       toast.error('Failed to upload logo');
-      // biome-ignore lint/suspicious/noConsole: ignore console
       console.error('Logo upload error:', error);
     }
   };
@@ -148,7 +140,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
     setLogoFile(null);
     setLogoPreview(null);
     setValue('churchLogoUrl', '');
-    clearError(); // Clear any upload errors
+    clearError();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -181,8 +173,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
         ]);
         break;
       default:
-        // biome-ignore lint/suspicious/noConsole: ignore here
-        console.log('defaulted here');
+        isValid = false;
     }
     setTabValidationState((prev) => ({
       ...prev,
@@ -192,7 +183,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
   };
   // Handle next tab navigation
   const handleNextTab = async () => {
-    const tabs = ['basic', 'contact', 'admin', 'subscription'];
+    const tabs = ['basic', 'contact', 'subscription'];
     const currentIndex = tabs.indexOf(currentTab);
     const isCurrentTabValid = await validateCurrentTabFields(currentTab);
     if (!isCurrentTabValid) {
@@ -205,44 +196,100 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
   };
   // Handle previous tab navigation
   const handlePreviousTab = () => {
-    const tabs = ['basic', 'contact', 'admin', 'subscription'];
+    const tabs = ['basic', 'contact', 'subscription'];
     const currentIndex = tabs.indexOf(currentTab);
     if (currentIndex > 0) {
       setCurrentTab(tabs[currentIndex - 1]);
     }
   };
-  // Handle form submission
+  // Generate slug from church name
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+  // Handle form submission using Better Auth organization.create
   const onSubmit = async (payload: ChurchPayload) => {
-    // Upload logo if selected but not uploaded yet
-    if (logoFile && !payload.churchLogoUrl) {
-      try {
-        setLogoUploading(true);
-        const churchLogoUrl = await upload(logoFile);
-        payload.churchLogoUrl = churchLogoUrl || '';
-      } catch (_error) {
-        toast.error('Failed to upload logo');
-        return;
-      } finally {
-        setLogoUploading(false);
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      // Upload logo if selected but not uploaded yet
+      if (logoFile && !payload.churchLogoUrl) {
+        try {
+          setLogoUploading(true);
+          const churchLogoUrl = await upload(logoFile);
+          payload.churchLogoUrl = churchLogoUrl || '';
+        } catch (_err) {
+          toast.error('Failed to upload logo');
+          return;
+        } finally {
+          setLogoUploading(false);
+        }
       }
+      const validation = churchDataSchema.safeParse(payload);
+      if (!validation.success) {
+        console.log('Validation errors:', validation.error.issues);
+        toast.error('Please fix all validation errors');
+        return;
+      }
+      // Generate slug from church name
+      const slug = generateSlug(payload.churchName);
+      // Check if slug is available --> Bug with slug name, always producing {status: true}
+      // const { data: isSlugTaken } = await authClient.organization.checkSlug({
+      //   slug,
+      // });
+      // if (isSlugTaken) {
+      //   toast.error(
+      //     'This church name is already taken. Please choose another name.'
+      //   );
+      //   return;
+      // }
+      // Create organization using Better Auth
+      const { data: organization, error: createError } =
+        await authClient.organization.create({
+          name: payload.churchName,
+          slug,
+          logo: payload.churchLogoUrl,
+          metadata: {
+            denomination: payload.denomination,
+            description: payload.description,
+            establishedDate: payload.establishedDate,
+            email: payload.email,
+            phoneNumber: payload.phoneNumber,
+            website: payload.website,
+            address: payload.address,
+            subscriptionPlan: payload.subscriptionPlan,
+            churchSize: payload.churchSize,
+            numberOfBranches: payload.numberOfBranches,
+          },
+        });
+      if (createError) {
+        throw new Error(createError.message || 'Failed to create church');
+      }
+      if (organization) {
+        // Set as active organization
+        await authClient.organization.setActive({
+          organizationId: organization.id,
+        });
+        toast.success('Church registered successfully!');
+        reset();
+        setLogoFile(null);
+        setLogoPreview(null);
+        setCurrentTab('basic');
+        onCloseDialog();
+      }
+    } catch (err: any) {
+      console.error('Church registration error:', err);
+      setError(err.message || 'Failed to register church');
+      toast.error(err.message || 'Failed to register church');
+    } finally {
+      setIsSubmitting(false);
     }
-    const validation = churchDataSchema.safeParse(payload);
-    if (!validation.success) {
-      // biome-ignore lint/suspicious/noConsole: ignore console
-      console.log('Validation errors:', validation.error.issues);
-      toast.error('Please fix all validation errors');
-      return;
-    }
-    await registerChurchMutation(payload);
-    reset();
-    setLogoFile(null);
-    setLogoPreview(null);
-    setCurrentTab('basic');
-    onCloseDialog();
   };
   return (
     <Form {...form}>
-      {isError && <RenderApiError error={error} />}
+      {error && <RenderApiError error={{ message: error }} />}
       <form className="mt-6 space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <Tabs onValueChange={setCurrentTab} value={currentTab}>
           <TabsList className="grid w-full grid-cols-3">
@@ -303,6 +350,9 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
                             {...field}
                           />
                         </FormControl>
+                        <FormDescription>
+                          This will be used to generate a unique slug
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -449,7 +499,6 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
                             </Button>
                           )}
                         </div>
-                        {/* Show upload progress */}
                         {isUploading && (
                           <div className="mt-2">
                             <div className="h-2 w-full rounded-full bg-gray-200">
@@ -463,7 +512,6 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
                             </p>
                           </div>
                         )}
-                        {/* Show error if any */}
                         {uploadError && (
                           <p className="mt-1 text-red-500 text-xs">
                             {uploadError}
@@ -481,7 +529,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
               </CardContent>
             </Card>
           </TabsContent>
-          {/* Contact Tab - Same as original */}
+          {/* Contact Tab */}
           <TabsContent className="space-y-6" value="contact">
             <Card>
               <CardHeader>
@@ -636,7 +684,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
               </CardContent>
             </Card>
           </TabsContent>
-          {/* Subscription Tab - Same as original */}
+          {/* Subscription Tab */}
           <TabsContent className="space-y-6" value="subscription">
             <Card>
               <CardHeader>
@@ -760,10 +808,14 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
                     What happens next?
                   </h4>
                   <ul className="space-y-1 text-green-700 text-sm">
-                    <li>• Church account will be created and activated</li>
-                    <li>• Admin will receive login credentials via email</li>
-                    <li>• 30-day free trial will begin automatically</li>
-                    <li>• Our support team will help with initial setup</li>
+                    <li>
+                      • Church organization will be created with Better Auth
+                    </li>
+                    <li>• You'll be set as the organization owner</li>
+                    <li>• Organization will be set as active automatically</li>
+                    <li>
+                      • You can then invite other members and manage roles
+                    </li>
                   </ul>
                 </div>
               </CardContent>
@@ -784,8 +836,10 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
               Next
             </Button>
           ) : (
-            <Button disabled={isPending || isUploading} type="submit">
-              {isPending || isUploading ? 'Registering...' : 'Register Church'}
+            <Button disabled={isSubmitting || isUploading} type="submit">
+              {isSubmitting || isUploading
+                ? 'Registering...'
+                : 'Register Church'}
             </Button>
           )}
         </div>

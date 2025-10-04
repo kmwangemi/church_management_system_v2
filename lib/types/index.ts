@@ -134,3 +134,23 @@ export interface RoleViewProps {
   currentRole: string | undefined;
   user: UserResponse | undefined;
 }
+
+export interface IOrganizationMetadata {
+  denomination: string;
+  description?: string;
+  establishedDate: string | Date; // can be string (ISO) or Date depending on how you handle it
+  email: string;
+  phoneNumber: string;
+  website?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country: string;
+    zipCode?: string;
+  };
+  subscriptionPlan: 'basic' | 'ministry' | 'cathedral' | string;
+  churchSize?: string;
+  numberOfBranches?: number;
+}
+

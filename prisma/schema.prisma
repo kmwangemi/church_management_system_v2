@@ -40,6 +40,7 @@ enum UserRole {
 }
 
 enum ORGANIZATIONUserRole {
+  OWNER
   MEMBER
   PASTOR
   BISHOP
@@ -449,6 +450,7 @@ enum ChurchPlan {
   BASIC
   MINISTRY
   CATHEDRAL
+  CUSTOM
 }
 
 enum MaintenanceSchedule {
@@ -660,8 +662,6 @@ model User {
   updatedBy              String?
   updatedByUser          User?                @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usersUpdated           User[]               @relation("UserUpdatedBy")
-  // Church/Organization relations
-  churchesCreated        Organization[]       @relation("ChurchCreator")
   branchesPastored       Branch[]             @relation("BranchPastor")
   departmentsLed         Department[]         @relation("DepartmentLeader")
   groupsLed              Group[]              @relation("GroupLeader")
@@ -747,23 +747,10 @@ model Organization {
   logo        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  metadata    String?
+  metadata    Json // flexible extras
   // Better Auth requires these relations
   members     Member[]
   invitations Invitation[]
-  // Church-specific fields
-  denomination     String
-  email            String      @unique
-  phoneNumber      String      @unique
-  website          String?
-  establishedDate  DateTime
-  churchSize       String
-  numberOfBranches Int         @default(1)
-  description      String?
-  isSuspended      Boolean     @default(false)
-  isDeleted        Boolean     @default(false)
-  createdBy        String
-  creator          User        @relation("ChurchCreator", fields: [createdBy], references: [id])
   // Relations
   address          Address?
   branches         Branch[]
@@ -788,9 +775,6 @@ model Organization {
   messageRecipients MessageRecipient[]
   disciples        Disciple[]
   content          Content[]
-  @@index([denomination])
-  @@index([churchSize])
-  @@index([isSuspended, isDeleted])
   @@map("organization")
 }
 
