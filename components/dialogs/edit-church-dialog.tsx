@@ -1,119 +1,120 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Edit, Upload, MapPin, Building2 } from "lucide-react"
-
-interface Church {
-  id: number
-  name: string
-  pastor: string
-  email: string
-  phone: string
-  website: string
-  denomination: string
-  members: number
-  branches: number
-  revenue: number
-  growth: number
-  status: string
-  plan: string
-  established: string
-  lastActivity: string
-  address: string
-}
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import type { IOrganizationWithMetadata } from '@/lib/types/organization';
+import { Building2, Edit, MapPin, Upload } from 'lucide-react';
+import { useState } from 'react';
 
 interface EditChurchDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  church: Church | null
-  onSave: (church: Church) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  church: IOrganizationWithMetadata | null;
+  onSave: (church: IOrganizationWithMetadata) => void;
 }
 
-export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChurchDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentTab, setCurrentTab] = useState("basic")
+export function EditChurchDialog({
+  open,
+  onOpenChange,
+  church,
+  onSave,
+}: EditChurchDialogProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTab, setCurrentTab] = useState('basic');
 
   const [formData, setFormData] = useState({
-    name: church?.name || "",
-    denomination: church?.denomination || "",
-    pastor: church?.pastor || "",
-    email: church?.email || "",
-    phone: church?.phone || "",
-    website: church?.website || "",
-    address: church?.address || "",
-    status: church?.status || "active",
-    plan: church?.plan || "standard",
-    established: church?.established || "",
-  })
+    name: church?.name || '',
+    denomination: church?.denomination || '',
+    pastor: church?.pastor || '',
+    email: church?.email || '',
+    phone: church?.phone || '',
+    website: church?.website || '',
+    address: church?.address || '',
+    status: church?.status || 'active',
+    plan: church?.plan || 'standard',
+    established: church?.established || '',
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       if (church) {
         onSave({
           ...church,
           ...formData,
-        })
+        });
       }
 
-      alert("Church updated successfully!")
-      onOpenChange(false)
+      alert('Church updated successfully!');
+      onOpenChange(false);
     } catch (error) {
-      console.error("Error updating church:", error)
-      alert("Failed to update church. Please try again.")
+      console.error('Error updating church:', error);
+      alert('Failed to update church. Please try again.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  if (!church) return null
+  if (!church) return null;
 
   const denominations = [
-    "Baptist",
-    "Methodist",
-    "Presbyterian",
-    "Pentecostal",
-    "Lutheran",
-    "Episcopal",
-    "Catholic",
-    "Non-denominational",
-    "Assembly of God",
-    "Church of Christ",
-    "Other",
-  ]
+    'Baptist',
+    'Methodist',
+    'Presbyterian',
+    'Pentecostal',
+    'Lutheran',
+    'Episcopal',
+    'Catholic',
+    'Non-denominational',
+    'Assembly of God',
+    'Church of Christ',
+    'Other',
+  ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Edit className="h-5 w-5" />
             Edit Church
           </DialogTitle>
-          <DialogDescription>Update church information and settings</DialogDescription>
+          <DialogDescription>
+            Update church information and settings
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <Tabs value={currentTab} onValueChange={setCurrentTab}>
+          <Tabs onValueChange={setCurrentTab} value={currentTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="contact">Contact</TabsTrigger>
@@ -121,7 +122,7 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
               <TabsTrigger value="subscription">Subscription</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="basic" className="space-y-6">
+            <TabsContent className="space-y-6" value="basic">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -130,48 +131,59 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-4 mb-4">
+                  <div className="mb-4 flex items-center space-x-4">
                     <Avatar className="h-20 w-20">
                       <AvatarImage src="/placeholder.svg?height=80&width=80" />
-                      <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl">
+                      <AvatarFallback className="bg-blue-100 text-2xl text-blue-600">
                         {formData.name
-                          .split(" ")
+                          .split(' ')
                           .map((n) => n[0])
-                          .join("")
+                          .join('')
                           .slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Button type="button" variant="outline" size="sm">
+                      <Button size="sm" type="button" variant="outline">
                         <Upload className="mr-2 h-4 w-4" />
                         Change Logo
                       </Button>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
+                      <p className="mt-1 text-gray-500 text-xs">
+                        PNG, JPG up to 2MB
+                      </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium">Church Name *</label>
+                      <label className="font-medium text-sm">
+                        Church Name *
+                      </label>
                       <Input
-                        value={formData.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
+                        onChange={(e) => handleChange('name', e.target.value)}
                         placeholder="Grace Community Church"
                         required
+                        value={formData.name}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Denomination *</label>
+                      <label className="font-medium text-sm">
+                        Denomination *
+                      </label>
                       <Select
+                        onValueChange={(value) =>
+                          handleChange('denomination', value)
+                        }
                         value={formData.denomination}
-                        onValueChange={(value) => handleChange("denomination", value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select denomination" />
                         </SelectTrigger>
                         <SelectContent>
                           {denominations.map((denomination) => (
-                            <SelectItem key={denomination} value={denomination.toLowerCase()}>
+                            <SelectItem
+                              key={denomination}
+                              value={denomination.toLowerCase()}
+                            >
                               {denomination}
                             </SelectItem>
                           ))}
@@ -180,23 +192,29 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium">Lead Pastor *</label>
+                      <label className="font-medium text-sm">
+                        Lead Pastor *
+                      </label>
                       <Input
-                        value={formData.pastor}
-                        onChange={(e) => handleChange("pastor", e.target.value)}
+                        onChange={(e) => handleChange('pastor', e.target.value)}
                         placeholder="Rev. John Smith"
                         required
+                        value={formData.pastor}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Established Date *</label>
+                      <label className="font-medium text-sm">
+                        Established Date *
+                      </label>
                       <Input
+                        onChange={(e) =>
+                          handleChange('established', e.target.value)
+                        }
+                        required
                         type="date"
                         value={formData.established}
-                        onChange={(e) => handleChange("established", e.target.value)}
-                        required
                       />
                     </div>
                   </div>
@@ -204,7 +222,7 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
               </Card>
             </TabsContent>
 
-            <TabsContent value="contact" className="space-y-6">
+            <TabsContent className="space-y-6" value="contact">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -213,52 +231,58 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium">Church Email *</label>
+                      <label className="font-medium text-sm">
+                        Church Email *
+                      </label>
                       <Input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
+                        onChange={(e) => handleChange('email', e.target.value)}
                         placeholder="info@church.com"
                         required
+                        type="email"
+                        value={formData.email}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Phone Number *</label>
+                      <label className="font-medium text-sm">
+                        Phone Number *
+                      </label>
                       <Input
-                        value={formData.phone}
-                        onChange={(e) => handleChange("phone", e.target.value)}
+                        onChange={(e) => handleChange('phone', e.target.value)}
                         placeholder="+1 (555) 123-4567"
                         required
+                        value={formData.phone}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Website</label>
+                    <label className="font-medium text-sm">Website</label>
                     <Input
-                      value={formData.website}
-                      onChange={(e) => handleChange("website", e.target.value)}
+                      onChange={(e) => handleChange('website', e.target.value)}
                       placeholder="www.church.com"
+                      value={formData.website}
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Full Address *</label>
+                    <label className="font-medium text-sm">
+                      Full Address *
+                    </label>
                     <Textarea
-                      value={formData.address}
-                      onChange={(e) => handleChange("address", e.target.value)}
-                      placeholder="123 Faith Street, Springfield, IL 62701"
                       className="min-h-[80px]"
+                      onChange={(e) => handleChange('address', e.target.value)}
+                      placeholder="123 Faith Street, Springfield, IL 62701"
                       required
+                      value={formData.address}
                     />
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-6">
+            <TabsContent className="space-y-6" value="settings">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -267,10 +291,13 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium">Status</label>
-                      <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
+                      <label className="font-medium text-sm">Status</label>
+                      <Select
+                        onValueChange={(value) => handleChange('status', value)}
+                        value={formData.status}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -282,65 +309,105 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
                       </Select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Total Branches</label>
-                      <Input type="number" value={church.branches} disabled className="bg-gray-50" />
+                      <label className="font-medium text-sm">
+                        Total Branches
+                      </label>
+                      <Input
+                        className="bg-gray-50"
+                        disabled
+                        type="number"
+                        value={church.branches}
+                      />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Total Members</label>
-                    <Input type="number" value={church.members} disabled className="bg-gray-50" />
-                    <p className="text-xs text-gray-500 mt-1">This value is automatically calculated</p>
+                    <label className="font-medium text-sm">Total Members</label>
+                    <Input
+                      className="bg-gray-50"
+                      disabled
+                      type="number"
+                      value={church.members}
+                    />
+                    <p className="mt-1 text-gray-500 text-xs">
+                      This value is automatically calculated
+                    </p>
                   </div>
 
-                  <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                    <h4 className="font-medium text-amber-900 mb-2">Important Settings</h4>
-                    <p className="text-sm text-amber-700">
-                      Changing the church status may affect access to the system for all users associated with this
-                      church. Please proceed with caution.
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <h4 className="mb-2 font-medium text-amber-900">
+                      Important Settings
+                    </h4>
+                    <p className="text-amber-700 text-sm">
+                      Changing the church status may affect access to the system
+                      for all users associated with this church. Please proceed
+                      with caution.
                     </p>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="subscription" className="space-y-6">
+            <TabsContent className="space-y-6" value="subscription">
               <Card>
                 <CardHeader>
                   <CardTitle>Subscription Management</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Current Plan</label>
-                    <Select value={formData.plan} onValueChange={(value) => handleChange("plan", value)}>
+                    <label className="font-medium text-sm">Current Plan</label>
+                    <Select
+                      onValueChange={(value) => handleChange('plan', value)}
+                      value={formData.plan}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select plan" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="basic">Basic - $29/month</SelectItem>
-                        <SelectItem value="standard">Standard - $79/month</SelectItem>
-                        <SelectItem value="premium">Premium - $149/month</SelectItem>
-                        <SelectItem value="enterprise">Enterprise - Custom</SelectItem>
+                        <SelectItem value="standard">
+                          Standard - $79/month
+                        </SelectItem>
+                        <SelectItem value="premium">
+                          Premium - $149/month
+                        </SelectItem>
+                        <SelectItem value="enterprise">
+                          Enterprise - Custom
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium">Monthly Revenue</label>
-                      <Input type="number" value={church.revenue} disabled className="bg-gray-50" />
+                      <label className="font-medium text-sm">
+                        Monthly Revenue
+                      </label>
+                      <Input
+                        className="bg-gray-50"
+                        disabled
+                        type="number"
+                        value={church.revenue}
+                      />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Growth Rate</label>
-                      <Input value={`${church.growth}%`} disabled className="bg-gray-50" />
+                      <label className="font-medium text-sm">Growth Rate</label>
+                      <Input
+                        className="bg-gray-50"
+                        disabled
+                        value={`${church.growth}%`}
+                      />
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-medium text-blue-900 mb-2">Plan Change Notice</h4>
-                    <p className="text-sm text-blue-700">
-                      Changing the subscription plan will take effect immediately. The church will be charged the
-                      prorated amount for the remainder of the billing cycle.
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <h4 className="mb-2 font-medium text-blue-900">
+                      Plan Change Notice
+                    </h4>
+                    <p className="text-blue-700 text-sm">
+                      Changing the subscription plan will take effect
+                      immediately. The church will be charged the prorated
+                      amount for the remainder of the billing cycle.
                     </p>
                   </div>
                 </CardContent>
@@ -348,42 +415,51 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-between pt-6 border-t mt-6">
+          <div className="mt-6 flex justify-between border-t pt-6">
             <Button
-              type="button"
-              variant="outline"
+              disabled={currentTab === 'basic'}
               onClick={() => {
-                const tabs = ["basic", "contact", "settings", "subscription"]
-                const currentIndex = tabs.indexOf(currentTab)
+                const tabs = ['basic', 'contact', 'settings', 'subscription'];
+                const currentIndex = tabs.indexOf(currentTab);
                 if (currentIndex > 0) {
-                  setCurrentTab(tabs[currentIndex - 1])
+                  setCurrentTab(tabs[currentIndex - 1]);
                 }
               }}
-              disabled={currentTab === "basic"}
+              type="button"
+              variant="outline"
             >
               Previous
             </Button>
 
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                onClick={() => onOpenChange(false)}
+                type="button"
+                variant="outline"
+              >
                 Cancel
               </Button>
-              {currentTab !== "subscription" ? (
+              {currentTab !== 'subscription' ? (
                 <Button
-                  type="button"
                   onClick={() => {
-                    const tabs = ["basic", "contact", "settings", "subscription"]
-                    const currentIndex = tabs.indexOf(currentTab)
+                    const tabs = [
+                      'basic',
+                      'contact',
+                      'settings',
+                      'subscription',
+                    ];
+                    const currentIndex = tabs.indexOf(currentTab);
                     if (currentIndex < tabs.length - 1) {
-                      setCurrentTab(tabs[currentIndex + 1])
+                      setCurrentTab(tabs[currentIndex + 1]);
                     }
                   }}
+                  type="button"
                 >
                   Next
                 </Button>
               ) : (
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
+                <Button disabled={isLoading} type="submit">
+                  {isLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
               )}
             </div>
@@ -391,5 +467,5 @@ export function EditChurchDialog({ open, onOpenChange, church, onSave }: EditChu
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

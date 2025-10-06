@@ -48,6 +48,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { IMember } from '@/lib/auth';
+import type { IOrganizationWithMetadata } from '@/lib/types/organization';
 import { ADMIN_MEMBER_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
 import { adminDataSchema, type AdminPayload } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -70,27 +72,10 @@ import { useForm } from 'react-hook-form';
 import { PasswordInput } from '../password-input';
 import { PhoneInput } from '../phone-number-input';
 
-interface Church {
-  id: number;
-  name: string;
-}
-
 interface ManageChurchUsersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  church: Church | null;
-}
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  status: string;
-  lastLogin: string;
-  avatar: string;
-  permissions: string[];
+  church: IOrganizationWithMetadata | null;
 }
 
 interface Permission {
@@ -216,9 +201,9 @@ export function ManageChurchUsersDialog({
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<IMember | null>(null);
 
-  const [users, setUsers] = useState<User[]>([
+  const [users, setUsers] = useState<IMember[]>([
     {
       id: 1,
       name: 'Rev. John Smith',
@@ -342,12 +327,12 @@ export function ManageChurchUsersDialog({
     alert('User status updated successfully!');
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = (user: IMember) => {
     setSelectedUser(user);
     setEditUserDialogOpen(true);
   };
 
-  const handleManagePermissions = (user: User) => {
+  const handleManagePermissions = (user: IMember) => {
     setSelectedUser(user);
     setPermissionsDialogOpen(true);
   };
@@ -596,7 +581,7 @@ export function ManageChurchUsersDialog({
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  church: Church;
+  church: IOrganizationWithMetadata;
 }
 
 function AddUserDialog({ open, onOpenChange, church }: AddUserDialogProps) {
@@ -921,7 +906,7 @@ function AddUserDialog({ open, onOpenChange, church }: AddUserDialogProps) {
 interface EditUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User | null;
+  user: IMember | null;
 }
 
 function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
@@ -1201,7 +1186,7 @@ function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
 interface ManagePermissionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User | null;
+  user: IMember | null;
   onSavePermissions: (userId: number, permissions: string[]) => void;
 }
 

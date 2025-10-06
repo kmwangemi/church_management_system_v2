@@ -49,6 +49,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { authClient } from '@/lib/auth-client';
+import type {
+  IOrganization,
+  IOrganizationMetadata,
+  IOrganizationWithMetadata,
+} from '@/lib/types/organization';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   AlertCircle,
   Building2,
@@ -69,38 +75,6 @@ import {
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-interface OrganizationMetadata {
-  denomination?: string;
-  email?: string;
-  phoneNumber?: string;
-  website?: string;
-  establishedDate?: string;
-  churchSize?: string;
-  numberOfBranches?: number;
-  description?: string;
-  isSuspended?: boolean;
-  isDeleted?: boolean;
-  subscriptionPlan?: string;
-  pastor?: string;
-  members?: number;
-  branches?: number;
-  revenue?: number;
-  growth?: number;
-  status?: string;
-  plan?: string;
-  established?: string;
-  [key: string]: any;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  logo?: string;
-  createdAt: string;
-  metadata?: OrganizationMetadata;
-}
-
 export default function ChurchesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,52 +83,43 @@ export default function ChurchesPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
-  const [selectedChurch, setSelectedChurch] = useState<Organization | null>(
-    null
-  );
-
+  const [selectedChurch, setSelectedChurch] =
+    useState<IOrganizationWithMetadata | null>(null);
   const {
     data: churches,
     isPending,
     error,
     refetch,
   } = authClient.useListOrganizations();
-
   // Parse metadata safely
-  const parseMetadata = (org: Organization): OrganizationMetadata => {
-    if (!org.metadata) return {};
-
+  const parseMetadata = (org: IOrganization | null): IOrganizationMetadata => {
+    if (!org?.metadata) return {};
     try {
       return typeof org.metadata === 'string'
         ? JSON.parse(org.metadata)
-        : org.metadata;
+        : (org.metadata as IOrganizationMetadata);
     } catch {
       return {};
     }
   };
-
   // Filter churches with error handling
-  const filteredChurches = useMemo(() => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
+    const filteredChurches = useMemo(() => {
     if (!churches) return [];
-
     return churches.filter((church) => {
       try {
         const metadata = parseMetadata(church);
         const searchLower = searchTerm.toLowerCase();
-
         const matchesSearch =
           church.name.toLowerCase().includes(searchLower) ||
           metadata.denomination?.toLowerCase().includes(searchLower) ||
           metadata.email?.toLowerCase().includes(searchLower);
-
         const matchesStatus =
           statusFilter === 'all' || metadata.status === statusFilter;
-
         const matchesPlan =
           planFilter === 'all' ||
-          metadata.settings?.subscriptionPlan === planFilter ||
-          metadata.plan === planFilter;
-
+          metadata?.subscriptionPlan === planFilter ||
+          metadata?.subscriptionPlan === planFilter;
         return matchesSearch && matchesStatus && matchesPlan;
       } catch (error) {
         console.error('Error filtering church:', error);
@@ -162,9 +127,10 @@ export default function ChurchesPage() {
       }
     });
   }, [churches, searchTerm, statusFilter, planFilter]);
-
+  console.log('filteredChurches--->', JSON.stringify(filteredChurches));
   // Calculate stats with error handling
-  const stats = useMemo(() => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
+    const stats = useMemo(() => {
     if (!churches) {
       return {
         totalChurches: 0,
@@ -173,7 +139,6 @@ export default function ChurchesPage() {
         totalRevenue: 0,
       };
     }
-
     return churches.reduce(
       (acc, church) => {
         try {
@@ -183,7 +148,7 @@ export default function ChurchesPage() {
             totalMembers: acc.totalMembers + (metadata.members || 0),
             totalBranches:
               acc.totalBranches +
-              (metadata.branches || metadata.numberOfBranches || 0),
+              (metadata.numberOfBranches || 0),
             totalRevenue: acc.totalRevenue + (metadata.revenue || 0),
           };
         } catch {
@@ -193,7 +158,6 @@ export default function ChurchesPage() {
       { totalChurches: 0, totalMembers: 0, totalBranches: 0, totalRevenue: 0 }
     );
   }, [churches]);
-
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'active':
@@ -206,7 +170,6 @@ export default function ChurchesPage() {
         return <Badge variant="secondary">{status || 'Unknown'}</Badge>;
     }
   };
-
   const getPlanBadge = (plan?: string) => {
     const planName = plan?.toLowerCase();
     switch (planName) {
@@ -220,34 +183,29 @@ export default function ChurchesPage() {
         return <Badge variant="secondary">{plan || 'None'}</Badge>;
     }
   };
-
-  const handleViewDetails = (church: Organization) => {
+  const handleViewDetails = (church: IOrganizationWithMetadata) => {
     setSelectedChurch(church);
     setViewDialogOpen(true);
   };
-
-  const handleEditChurch = (church: Organization) => {
+  const handleEditChurch = (church: IOrganizationWithMetadata) => {
     setSelectedChurch(church);
     setEditDialogOpen(true);
   };
-
-  const handleManageUsers = (church: Organization) => {
+  const handleManageUsers = (church: IOrganizationWithMetadata) => {
     setSelectedChurch(church);
     setManageUsersDialogOpen(true);
   };
-
-  const handleSaveChurch = async (updatedChurch: Organization) => {
+  const handleSaveChurch = async (updatedChurch: IOrganizationWithMetadata) => {
     try {
       const { data, error } = await authClient.organization.update({
         data: {
-          name: updatedChurch.name,
-          slug: updatedChurch.slug,
-          logo: updatedChurch.logo,
-          metadata: updatedChurch.metadata,
+          name: updatedChurch.name || '',
+          slug: updatedChurch.slug || '',
+          logo: updatedChurch.logo || undefined,
+          metadata: updatedChurch.metadata || {},
         },
         organizationId: updatedChurch.id,
       });
-
       if (error) {
         throw new Error(error.message || 'Failed to update church');
       }
@@ -258,8 +216,7 @@ export default function ChurchesPage() {
       toast.error(error.message || 'Failed to update church');
     }
   };
-
-  const handleSuspendChurch = async (church: Organization) => {
+  const handleSuspendChurch = async (church: IOrganizationWithMetadata) => {
     try {
       const metadata = parseMetadata(church);
       const { data, error } = await authClient.organization.update({
@@ -282,7 +239,6 @@ export default function ChurchesPage() {
       toast.error(error.message || 'Failed to suspend church');
     }
   };
-
   // Loading State
   if (isPending) {
     return (
@@ -331,7 +287,6 @@ export default function ChurchesPage() {
       </div>
     );
   }
-
   // Error State
   if (error) {
     return (
@@ -364,7 +319,6 @@ export default function ChurchesPage() {
       </div>
     );
   }
-
   // Empty State
   if (!churches || churches.length === 0) {
     return (
@@ -412,7 +366,6 @@ export default function ChurchesPage() {
       </div>
     );
   }
-
   // Main Content
   return (
     <div className="space-y-6">
@@ -566,14 +519,14 @@ export default function ChurchesPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredChurches.map((church) => {
-                    const metadata = parseMetadata(church);
-                    const plan = metadata?.subscriptionPlan || metadata.plan;
+                    const metadata = parseMetadata(church ?? null);
+                    const plan = metadata?.subscriptionPlan;
                     return (
                       <TableRow key={church.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-10 w-10">
-                              <AvatarImage src={church.logo} />
+                              <AvatarImage src={church?.logo || undefined} />
                               <AvatarFallback>
                                 {church.name
                                   .split(' ')
@@ -584,9 +537,15 @@ export default function ChurchesPage() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{church.name}</div>
+                              <div className="font-medium">
+                                {capitalizeFirstLetterOfEachWord(
+                                  church.name || 'Not Provided'
+                                )}
+                              </div>
                               <div className="text-muted-foreground text-sm">
-                                {metadata.denomination || 'N/A'}
+                                {capitalizeFirstLetterOfEachWord(
+                                  metadata.denomination || 'Not Provided'
+                                )}
                                 {metadata.establishedDate &&
                                   ` • Est. ${new Date(metadata.establishedDate).getFullYear()}`}
                               </div>
@@ -624,12 +583,11 @@ export default function ChurchesPage() {
                         <TableCell>
                           <div className="flex items-center">
                             <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
-                            {metadata.branches ||
-                              metadata.numberOfBranches ||
+                            {metadata.numberOfBranches ||
                               0}
                           </div>
                         </TableCell>
-                        <TableCell>{getStatusBadge(metadata.status)}</TableCell>
+                        <TableCell>{getStatusBadge(metadata?.status)}</TableCell>
                         <TableCell>{getPlanBadge(plan)}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>

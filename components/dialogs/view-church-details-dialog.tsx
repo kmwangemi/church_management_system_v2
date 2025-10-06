@@ -1,99 +1,88 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { IOrganizationWithMetadata } from '@/lib/types/organization';
+import {
+  Activity,
+  Building2,
+  Calendar,
+  DollarSign,
   Eye,
+  Globe,
+  Mail,
   MapPin,
   Phone,
-  Mail,
-  Globe,
-  Users,
-  Calendar,
   TrendingUp,
-  Building2,
-  DollarSign,
-  Activity,
-} from "lucide-react"
-
-interface Church {
-  id: number
-  name: string
-  pastor: string
-  email: string
-  phone: string
-  website: string
-  denomination: string
-  members: number
-  branches: number
-  revenue: number
-  growth: number
-  status: string
-  plan: string
-  established: string
-  lastActivity: string
-  address: string
-}
+  Users,
+} from 'lucide-react';
 
 interface ViewChurchDetailsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  church: Church | null
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  church: IOrganizationWithMetadata | null;
 }
 
-export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChurchDetailsDialogProps) {
-  if (!church) return null
-
+export function ViewChurchDetailsDialog({
+  open,
+  onOpenChange,
+  church,
+}: ViewChurchDetailsDialogProps) {
+  if (!church) return null;
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
-      case "suspended":
-        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>
+      case 'active':
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      case 'suspended':
+        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
-
+  };
   const getPlanBadge = (plan: string) => {
     switch (plan) {
-      case "premium":
-        return <Badge className="bg-purple-100 text-purple-800">Premium</Badge>
-      case "standard":
-        return <Badge className="bg-blue-100 text-blue-800">Standard</Badge>
-      case "basic":
-        return <Badge className="bg-gray-100 text-gray-800">Basic</Badge>
+      case 'premium':
+        return <Badge className="bg-purple-100 text-purple-800">Premium</Badge>;
+      case 'standard':
+        return <Badge className="bg-blue-100 text-blue-800">Standard</Badge>;
+      case 'basic':
+        return <Badge className="bg-gray-100 text-gray-800">Basic</Badge>;
       default:
-        return <Badge variant="secondary">{plan}</Badge>
+        return <Badge variant="secondary">{plan}</Badge>;
     }
-  }
-
+  };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
             Church Details
           </DialogTitle>
-          <DialogDescription>Complete information about {church.name}</DialogDescription>
+          <DialogDescription>
+            Complete information about {church.name}
+          </DialogDescription>
         </DialogHeader>
-
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs className="w-full" defaultValue="overview">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="overview" className="space-y-4">
+          <TabsContent className="space-y-4" value="overview">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -105,61 +94,70 @@ export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChur
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src="/placeholder.svg?height=80&width=80" />
-                    <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl">
+                    <AvatarFallback className="bg-blue-100 text-2xl text-blue-600">
                       {church.name
-                        .split(" ")
+                        .split(' ')
                         .map((n) => n[0])
-                        .join("")
+                        .join('')
                         .slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1">
-                    <h3 className="text-2xl font-bold">{church.name}</h3>
-                    <p className="text-muted-foreground">{church.denomination}</p>
+                    <h3 className="font-bold text-2xl">{church.name}</h3>
+                    <p className="text-muted-foreground">
+                      {church?.metadata?.denomination}
+                    </p>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(church.status)}
-                      {getPlanBadge(church.plan)}
+                      {getStatusBadge(church?.metadata?.status)}
+                      {getPlanBadge(church?.metadata?.subscriptionPlan)}
                     </div>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Lead Pastor</label>
-                    <p className="text-sm font-semibold">{church.pastor}</p>
+                    <label className="font-medium text-gray-500 text-sm">
+                      Lead Pastor
+                    </label>
+                    <p className="font-semibold text-sm">{church.pastor}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Established</label>
+                    <label className="font-medium text-gray-500 text-sm">
+                      Established
+                    </label>
                     <p className="text-sm">{church.established}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Last Activity</label>
+                    <label className="font-medium text-gray-500 text-sm">
+                      Last Activity
+                    </label>
                     <div className="flex items-center gap-2">
                       <Activity className="h-4 w-4 text-green-500" />
                       <p className="text-sm">{church.lastActivity}</p>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Total Branches</label>
-                    <p className="text-sm flex items-center gap-1">
+                    <label className="font-medium text-gray-500 text-sm">
+                      Total Branches
+                    </label>
+                    <p className="flex items-center gap-1 text-sm">
                       <MapPin className="h-4 w-4" />
                       {church.branches}
                     </p>
                   </div>
                 </div>
-
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Address</label>
-                  <div className="flex items-start gap-2 mt-1">
-                    <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+                  <label className="font-medium text-gray-500 text-sm">
+                    Address
+                  </label>
+                  <div className="mt-1 flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 text-gray-400" />
                     <p className="text-sm">{church.address}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="contact" className="space-y-4">
+          <TabsContent className="space-y-4" value="contact">
             <Card>
               <CardHeader>
                 <CardTitle>Contact Information</CardTitle>
@@ -167,54 +165,63 @@ export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChur
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Email Address</label>
-                    <div className="flex items-center gap-2 mt-1">
+                    <label className="font-medium text-gray-500 text-sm">
+                      Email Address
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
                       <Mail className="h-4 w-4 text-gray-400" />
-                      <a href={`mailto:${church.email}`} className="text-sm text-blue-600 hover:underline">
+                      <a
+                        className="text-blue-600 text-sm hover:underline"
+                        href={`mailto:${church.email}`}
+                      >
                         {church.email}
                       </a>
                     </div>
                   </div>
-
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                    <div className="flex items-center gap-2 mt-1">
+                    <label className="font-medium text-gray-500 text-sm">
+                      Phone Number
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
                       <Phone className="h-4 w-4 text-gray-400" />
-                      <a href={`tel:${church.phone}`} className="text-sm text-blue-600 hover:underline">
+                      <a
+                        className="text-blue-600 text-sm hover:underline"
+                        href={`tel:${church.phone}`}
+                      >
                         {church.phone}
                       </a>
                     </div>
                   </div>
-
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Website</label>
-                    <div className="flex items-center gap-2 mt-1">
+                    <label className="font-medium text-gray-500 text-sm">
+                      Website
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
                       <Globe className="h-4 w-4 text-gray-400" />
                       <a
+                        className="text-blue-600 text-sm hover:underline"
                         href={`https://${church.website}`}
-                        target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        target="_blank"
                       >
                         {church.website}
                       </a>
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t">
-                  <h4 className="font-medium mb-3">Quick Actions</h4>
+                <div className="border-t pt-4">
+                  <h4 className="mb-3 font-medium">Quick Actions</h4>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Mail className="h-4 w-4 mr-2" />
+                    <Button size="sm" variant="outline">
+                      <Mail className="mr-2 h-4 w-4" />
                       Send Email
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <Phone className="h-4 w-4 mr-2" />
+                    <Button size="sm" variant="outline">
+                      <Phone className="mr-2 h-4 w-4" />
                       Call
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <Globe className="h-4 w-4 mr-2" />
+                    <Button size="sm" variant="outline">
+                      <Globe className="mr-2 h-4 w-4" />
                       Visit Website
                     </Button>
                   </div>
@@ -222,93 +229,120 @@ export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChur
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="statistics" className="space-y-4">
+          <TabsContent className="space-y-4" value="statistics">
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+                  <CardTitle className="font-medium text-sm">
+                    Total Members
+                  </CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{church.members.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">Active congregation members</p>
+                  <div className="font-bold text-2xl">
+                    {church.members.toLocaleString()}
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Active congregation members
+                  </p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
+                  <CardTitle className="font-medium text-sm">
+                    Growth Rate
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">+{church.growth}%</div>
-                  <p className="text-xs text-muted-foreground">Year over year growth</p>
+                  <div className="font-bold text-2xl text-green-600">
+                    +{church.growth}%
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Year over year growth
+                  </p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+                  <CardTitle className="font-medium text-sm">
+                    Monthly Revenue
+                  </CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${church.revenue.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">Subscription revenue</p>
+                  <div className="font-bold text-2xl">
+                    ${church.revenue.toLocaleString()}
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Subscription revenue
+                  </p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Branches</CardTitle>
+                  <CardTitle className="font-medium text-sm">
+                    Total Branches
+                  </CardTitle>
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{church.branches}</div>
-                  <p className="text-xs text-muted-foreground">Active church locations</p>
+                  <div className="font-bold text-2xl">{church.branches}</div>
+                  <p className="text-muted-foreground text-xs">
+                    Active church locations
+                  </p>
                 </CardContent>
               </Card>
             </div>
-
             <Card>
               <CardHeader>
                 <CardTitle>Engagement Metrics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Average Attendance</span>
-                    <span className="text-sm text-muted-foreground">85%</span>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-medium text-sm">
+                      Average Attendance
+                    </span>
+                    <span className="text-muted-foreground text-sm">85%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: "85%" }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Active Users</span>
-                    <span className="text-sm text-muted-foreground">92%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: "92%" }} />
+                  <div className="h-2 w-full rounded-full bg-gray-200">
+                    <div
+                      className="h-2 rounded-full bg-blue-500"
+                      style={{ width: '85%' }}
+                    />
                   </div>
                 </div>
-
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Online Engagement</span>
-                    <span className="text-sm text-muted-foreground">78%</span>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-medium text-sm">Active Users</span>
+                    <span className="text-muted-foreground text-sm">92%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: "78%" }} />
+                  <div className="h-2 w-full rounded-full bg-gray-200">
+                    <div
+                      className="h-2 rounded-full bg-green-500"
+                      style={{ width: '92%' }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-medium text-sm">
+                      Online Engagement
+                    </span>
+                    <span className="text-muted-foreground text-sm">78%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-gray-200">
+                    <div
+                      className="h-2 rounded-full bg-purple-500"
+                      style={{ width: '78%' }}
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="subscription" className="space-y-4">
+          <TabsContent className="space-y-4" value="subscription">
             <Card>
               <CardHeader>
                 <CardTitle>Subscription Details</CardTitle>
@@ -316,38 +350,49 @@ export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChur
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Current Plan</label>
+                    <label className="font-medium text-gray-500 text-sm">
+                      Current Plan
+                    </label>
                     <div className="mt-1">{getPlanBadge(church.plan)}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Monthly Cost</label>
-                    <p className="text-lg font-bold text-green-600">${church.revenue.toLocaleString()}</p>
+                    <label className="font-medium text-gray-500 text-sm">
+                      Monthly Cost
+                    </label>
+                    <p className="font-bold text-green-600 text-lg">
+                      ${church.revenue.toLocaleString()}
+                    </p>
                   </div>
                 </div>
-
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Billing Cycle</label>
+                  <label className="font-medium text-gray-500 text-sm">
+                    Billing Cycle
+                  </label>
                   <p className="text-sm">Monthly - Auto-renewal enabled</p>
                 </div>
-
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Next Billing Date</label>
-                  <div className="flex items-center gap-2 mt-1">
+                  <label className="font-medium text-gray-500 text-sm">
+                    Next Billing Date
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
-                    <p className="text-sm">{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+                    <p className="text-sm">
+                      {new Date(
+                        Date.now() + 30 * 24 * 60 * 60 * 1000
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t">
-                  <h4 className="font-medium mb-3">Plan Features</h4>
+                <div className="border-t pt-4">
+                  <h4 className="mb-3 font-medium">Plan Features</h4>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2 text-sm">
                       <div className="h-2 w-2 rounded-full bg-green-500" />
-                      {church.plan === "premium"
-                        ? "Unlimited members"
-                        : church.plan === "standard"
-                          ? "Up to 500 members"
-                          : "Up to 100 members"}
+                      {church.plan === 'premium'
+                        ? 'Unlimited members'
+                        : church.plan === 'standard'
+                          ? 'Up to 500 members'
+                          : 'Up to 100 members'}
                     </li>
                     <li className="flex items-center gap-2 text-sm">
                       <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -363,12 +408,19 @@ export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChur
                     </li>
                   </ul>
                 </div>
-
                 <div className="flex gap-2 pt-4">
-                  <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                  <Button
+                    className="flex-1 bg-transparent"
+                    size="sm"
+                    variant="outline"
+                  >
                     Change Plan
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                  <Button
+                    className="flex-1 bg-transparent"
+                    size="sm"
+                    variant="outline"
+                  >
                     View Billing History
                   </Button>
                 </div>
@@ -376,14 +428,13 @@ export function ViewChurchDetailsDialog({ open, onOpenChange, church }: ViewChur
             </Card>
           </TabsContent>
         </Tabs>
-
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-2 border-t pt-4">
+          <Button onClick={() => onOpenChange(false)} variant="outline">
             Close
           </Button>
           <Button>Edit Church</Button>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
