@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import type { IOrganizationWithMetadata } from '@/lib/types/organization';
+import type { IOrganizationWithMetadata } from '@/lib/auth';
 import { Building2, Edit, MapPin, Upload } from 'lucide-react';
 import { useState } from 'react';
 
@@ -41,35 +42,30 @@ export function EditChurchDialog({
 }: EditChurchDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTab, setCurrentTab] = useState('basic');
-
   const [formData, setFormData] = useState({
     name: church?.name || '',
-    denomination: church?.denomination || '',
-    pastor: church?.pastor || '',
-    email: church?.email || '',
-    phone: church?.phone || '',
-    website: church?.website || '',
-    address: church?.address || '',
-    status: church?.status || 'active',
-    plan: church?.plan || 'standard',
-    established: church?.established || '',
+    denomination: church?.metadata?.denomination || '',
+    pastor: church?.metadata?.pastor || '',
+    email: church?.metadata?.email || '',
+    phone: church?.metadata?.phoneNumber || '',
+    website: church?.metadata?.website || '',
+    address: church?.metadata?.address || '',
+    status: church?.metadata?.status || 'active',
+    plan: church?.metadata?.subscriptionPlan || 'standard',
+    established: church?.metadata?.establishedDate || '',
   });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
       if (church) {
         onSave({
           ...church,
           ...formData,
         });
       }
-
       alert('Church updated successfully!');
       onOpenChange(false);
     } catch (error) {
@@ -79,13 +75,10 @@ export function EditChurchDialog({
       setIsLoading(false);
     }
   };
-
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
   if (!church) return null;
-
   const denominations = [
     'Baptist',
     'Methodist',
@@ -99,7 +92,6 @@ export function EditChurchDialog({
     'Church of Christ',
     'Other',
   ];
-
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
@@ -112,7 +104,6 @@ export function EditChurchDialog({
             Update church information and settings
           </DialogDescription>
         </DialogHeader>
-
         <form onSubmit={handleSubmit}>
           <Tabs onValueChange={setCurrentTab} value={currentTab}>
             <TabsList className="grid w-full grid-cols-4">
@@ -121,7 +112,6 @@ export function EditChurchDialog({
               <TabsTrigger value="settings">Settings</TabsTrigger>
               <TabsTrigger value="subscription">Subscription</TabsTrigger>
             </TabsList>
-
             <TabsContent className="space-y-6" value="basic">
               <Card>
                 <CardHeader>
@@ -133,13 +123,14 @@ export function EditChurchDialog({
                 <CardContent className="space-y-4">
                   <div className="mb-4 flex items-center space-x-4">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src="/placeholder.svg?height=80&width=80" />
+                      <AvatarImage src={church?.logo || undefined} />
                       <AvatarFallback className="bg-blue-100 text-2xl text-blue-600">
                         {formData.name
                           .split(' ')
                           .map((n) => n[0])
                           .join('')
-                          .slice(0, 2)}
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -152,12 +143,11 @@ export function EditChurchDialog({
                       </p>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label className="font-medium text-sm" htmlFor="name">
                         Church Name *
-                      </label>
+                      </Label>
                       <Input
                         onChange={(e) => handleChange('name', e.target.value)}
                         placeholder="Grace Community Church"
@@ -166,9 +156,12 @@ export function EditChurchDialog({
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label
+                        className="font-medium text-sm"
+                        htmlFor="denomination"
+                      >
                         Denomination *
-                      </label>
+                      </Label>
                       <Select
                         onValueChange={(value) =>
                           handleChange('denomination', value)
@@ -191,12 +184,11 @@ export function EditChurchDialog({
                       </Select>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label className="font-medium text-sm" htmlFor="pastor">
                         Lead Pastor *
-                      </label>
+                      </Label>
                       <Input
                         onChange={(e) => handleChange('pastor', e.target.value)}
                         placeholder="Rev. John Smith"
@@ -205,9 +197,12 @@ export function EditChurchDialog({
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label
+                        className="font-medium text-sm"
+                        htmlFor="establishedDate"
+                      >
                         Established Date *
-                      </label>
+                      </Label>
                       <Input
                         onChange={(e) =>
                           handleChange('established', e.target.value)
@@ -221,7 +216,6 @@ export function EditChurchDialog({
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent className="space-y-6" value="contact">
               <Card>
                 <CardHeader>
@@ -233,9 +227,9 @@ export function EditChurchDialog({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label className="font-medium text-sm" htmlFor="email">
                         Church Email *
-                      </label>
+                      </Label>
                       <Input
                         onChange={(e) => handleChange('email', e.target.value)}
                         placeholder="info@church.com"
@@ -245,9 +239,12 @@ export function EditChurchDialog({
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label
+                        className="font-medium text-sm"
+                        htmlFor="phoneNumber"
+                      >
                         Phone Number *
-                      </label>
+                      </Label>
                       <Input
                         onChange={(e) => handleChange('phone', e.target.value)}
                         placeholder="+1 (555) 123-4567"
@@ -256,32 +253,31 @@ export function EditChurchDialog({
                       />
                     </div>
                   </div>
-
                   <div>
-                    <label className="font-medium text-sm">Website</label>
+                    <Label className="font-medium text-sm" htmlFor="website">
+                      Website
+                    </Label>
                     <Input
                       onChange={(e) => handleChange('website', e.target.value)}
                       placeholder="www.church.com"
                       value={formData.website}
                     />
                   </div>
-
                   <div>
-                    <label className="font-medium text-sm">
+                    <Label className="font-medium text-sm" htmlFor="address">
                       Full Address *
-                    </label>
+                    </Label>
                     <Textarea
                       className="min-h-[80px]"
                       onChange={(e) => handleChange('address', e.target.value)}
                       placeholder="123 Faith Street, Springfield, IL 62701"
                       required
-                      value={formData.address}
+                      value={formData?.address}
                     />
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent className="space-y-6" value="settings">
               <Card>
                 <CardHeader>
@@ -293,7 +289,9 @@ export function EditChurchDialog({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="font-medium text-sm">Status</label>
+                      <Label className="font-medium text-sm" htmlFor="status">
+                        Status
+                      </Label>
                       <Select
                         onValueChange={(value) => handleChange('status', value)}
                         value={formData.status}
@@ -309,31 +307,31 @@ export function EditChurchDialog({
                       </Select>
                     </div>
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label className="font-medium text-sm" htmlFor="branches">
                         Total Branches
-                      </label>
+                      </Label>
                       <Input
                         className="bg-gray-50"
                         disabled
                         type="number"
-                        value={church.branches}
+                        value={church?.metadata?.numberOfBranches}
                       />
                     </div>
                   </div>
-
                   <div>
-                    <label className="font-medium text-sm">Total Members</label>
+                    <Label className="font-medium text-sm" htmlFor="members">
+                      Total Members
+                    </Label>
                     <Input
                       className="bg-gray-50"
                       disabled
                       type="number"
-                      value={church.members}
+                      value={church?.metadata.members || 0}
                     />
                     <p className="mt-1 text-gray-500 text-xs">
                       This value is automatically calculated
                     </p>
                   </div>
-
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                     <h4 className="mb-2 font-medium text-amber-900">
                       Important Settings
@@ -347,7 +345,6 @@ export function EditChurchDialog({
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent className="space-y-6" value="subscription">
               <Card>
                 <CardHeader>
@@ -355,7 +352,9 @@ export function EditChurchDialog({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="font-medium text-sm">Current Plan</label>
+                    <Label className="font-medium text-sm" htmlFor="plan">
+                      Current Plan
+                    </Label>
                     <Select
                       onValueChange={(value) => handleChange('plan', value)}
                       value={formData.plan}
@@ -377,29 +376,29 @@ export function EditChurchDialog({
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="font-medium text-sm">
+                      <Label className="font-medium text-sm" htmlFor="income">
                         Monthly Revenue
-                      </label>
+                      </Label>
                       <Input
                         className="bg-gray-50"
                         disabled
                         type="number"
-                        value={church.revenue}
+                        value={church?.metadata.revenue || 0}
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-sm">Growth Rate</label>
+                      <Label className="font-medium text-sm" htmlFor="growth">
+                        Growth Rate
+                      </Label>
                       <Input
                         className="bg-gray-50"
                         disabled
-                        value={`${church.growth}%`}
+                        value={`${church?.metadata.growth || 0}%`}
                       />
                     </div>
                   </div>
-
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                     <h4 className="mb-2 font-medium text-blue-900">
                       Plan Change Notice
@@ -414,7 +413,6 @@ export function EditChurchDialog({
               </Card>
             </TabsContent>
           </Tabs>
-
           <div className="mt-6 flex justify-between border-t pt-6">
             <Button
               disabled={currentTab === 'basic'}
@@ -430,7 +428,6 @@ export function EditChurchDialog({
             >
               Previous
             </Button>
-
             <div className="flex gap-2">
               <Button
                 onClick={() => onOpenChange(false)}

@@ -53,7 +53,7 @@ import type {
   IOrganization,
   IOrganizationMetadata,
   IOrganizationWithMetadata,
-} from '@/lib/types/organization';
+} from '@/lib/auth';
 import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   AlertCircle,
@@ -127,7 +127,6 @@ export default function ChurchesPage() {
       }
     });
   }, [churches, searchTerm, statusFilter, planFilter]);
-  console.log('filteredChurches--->', JSON.stringify(filteredChurches));
   // Calculate stats with error handling
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
     const stats = useMemo(() => {

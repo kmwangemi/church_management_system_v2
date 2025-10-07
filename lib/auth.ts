@@ -1,10 +1,4 @@
 /** biome-ignore-all lint/suspicious/useAwait: ignore */
-import prisma from '@/lib/prisma';
-import type { IOrganizationMetadata } from '@/lib/types/index';
-import { APIError, betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { nextCookies } from 'better-auth/next-js';
-import { createAuthMiddleware, organization } from 'better-auth/plugins';
 import {
   ac,
   admin,
@@ -13,8 +7,13 @@ import {
   owner,
   pastor,
   visitor,
-} from './auth/permissions';
-import { passwordSchema } from './validations/auth';
+} from '@/lib/auth/permissions';
+import prisma from '@/lib/prisma';
+import { passwordSchema } from '@/lib/validations/auth';
+import { APIError, betterAuth } from 'better-auth';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { nextCookies } from 'better-auth/next-js';
+import { createAuthMiddleware, organization } from 'better-auth/plugins';
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -236,6 +235,56 @@ export const auth = betterAuth({
 
 export type ISession = typeof auth.$Infer.Session;
 export type IUser = typeof auth.$Infer.Session.user;
-// export type IOrganization = typeof auth.$Infer.Organization;
+export type IOrganization = typeof auth.$Infer.Organization;
 export type IMember = typeof auth.$Infer.Member;
-// export type IInvitation = typeof auth.$Infer.Invitation;
+export type IInvitation = typeof auth.$Infer.Invitation;
+
+// ============================================
+// EXTENDED ORGANIZATION TYPES WITH METADATA
+// ============================================
+
+export interface IOrganizationMetadata {
+  // Church-specific fields
+  denomination?: string;
+  email?: string;
+  phoneNumber?: string;
+  website?: string;
+  establishedDate?: string; // ISO date string
+  churchSize?: string;
+  numberOfBranches?: number;
+  description?: string;
+  isSuspended?: boolean;
+  isDeleted?: boolean;
+  status?: 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'SUSPENDED';
+  // Subscription
+  subscriptionPlan?: 'BASIC' | 'MINISTRY' | 'CATHEDRAL' | 'CUSTOM';
+  // Address (if storing in metadata instead of separate table)
+  address?: {
+    street: string;
+    city: string;
+    state?: string;
+    zipCode?: string;
+    country: string;
+  };
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Create a typed version with your metadata
+export interface IOrganizationWithMetadata
+  extends Omit<IOrganization, 'metadata'> {
+  metadata?: IOrganizationMetadata;
+}
+
+// ============================================
+// MEMBER TYPES WITH USER DETAILS
+// ============================================
+
+export interface IMemberWithUser extends Omit<IMember, 'user'> {
+  user: IUser;
+  branch?: {
+    id: string;
+    branchName: string;
+  };
+}

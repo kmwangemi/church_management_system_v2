@@ -1,5 +1,7 @@
 'use client';
 
+import { PasswordInput } from '@/components/password-input';
+import { PhoneInput } from '@/components/phone-number-input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +49,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { IMemberWithUser, IOrganization } from '@/lib/auth';
+import type {
+  IMember,
+  IMemberWithUser,
+  IOrganization,
+  IOrganizationWithMetadata,
+} from '@/lib/auth';
 import { useDebounce } from '@/lib/hooks/shared/usedebounce/use-debounce';
 import { useOrganizationMembers } from '@/lib/hooks/superadmin/use-organization-members';
 import { ADMIN_MEMBER_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
@@ -73,13 +80,11 @@ import {
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { PasswordInput } from '../password-input';
-import { PhoneInput } from '../phone-number-input';
 
 interface ManageChurchUsersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  church: IOrganization | null;
+  church: IOrganizationWithMetadata | null;
 }
 
 export function ManageChurchUsersDialog({
@@ -102,12 +107,17 @@ export function ManageChurchUsersDialog({
     'createdAt'
   );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  console.log('church--->', JSON.stringify(church));
+
   // Debounce search
   const debouncedSearch = useDebounce(search, 500);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, role, status, branchId, sortBy, sortOrder]);
+
   // Fetch members
   const { data, isLoading, error, refetch } = useOrganizationMembers({
     organizationId: church?.id,
@@ -120,47 +130,49 @@ export function ManageChurchUsersDialog({
     sortBy,
     sortOrder,
   });
+
   const handlePreviousPage = () => {
     setPage((prev) => Math.max(1, prev - 1));
   };
+
   const handleNextPage = () => {
     if (data?.pagination.hasMore) {
       setPage((prev) => prev + 1);
     }
   };
+
   const { members = [], pagination } = data || {};
+
+  console.log('members--->', JSON.stringify(members));
+
   const getRoleBadge = (role: string) => {
-    const roleColors: Record<string, string> = {
-      OWNER: 'bg-purple-100 text-purple-800',
-      ADMIN: 'bg-red-100 text-red-800',
-      PASTOR: 'bg-green-100 text-green-800',
-      BISHOP: 'bg-orange-100 text-orange-800',
-      MEMBER: 'bg-blue-100 text-blue-800',
-      VISITOR: 'bg-yellow-100 text-yellow-800',
-    };
-    return (
-      <Badge className={roleColors[role] || 'bg-gray-100 text-gray-800'}>
-        {role}
-      </Badge>
-    );
+    switch (role) {
+      case 'admin':
+        return <Badge className="bg-red-100 text-red-800">Admin</Badge>;
+      case 'pastor':
+        return <Badge className="bg-purple-100 text-purple-800">Pastor</Badge>;
+      case 'staff':
+        return <Badge className="bg-blue-100 text-blue-800">Staff</Badge>;
+      case 'volunteer':
+        return <Badge className="bg-green-100 text-green-800">Volunteer</Badge>;
+      default:
+        return <Badge variant="secondary">{role}</Badge>;
+    }
   };
+
   const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      active: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      SUSPENDED: 'bg-red-100 text-red-800',
-      suspended: 'bg-red-100 text-red-800',
-      INACTIVE: 'bg-gray-100 text-gray-800',
-      inactive: 'bg-gray-100 text-gray-800',
-    };
-    return (
-      <Badge className={statusColors[status] || 'bg-gray-100 text-gray-800'}>
-        {status}
-      </Badge>
-    );
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      case 'suspended':
+        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
   };
+
   const handleDeleteUser = (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
@@ -171,6 +183,7 @@ export function ManageChurchUsersDialog({
       toast.error('Failed to delete user');
     }
   };
+
   const handleToggleStatus = (member: IMemberWithUser) => {
     try {
       const newStatus =
@@ -184,11 +197,14 @@ export function ManageChurchUsersDialog({
       toast.error('Failed to update user status');
     }
   };
+
   const handleEditUser = (member: IMemberWithUser) => {
     setSelectedUser(member);
     setEditUserDialogOpen(true);
   };
+
   if (!church) return null;
+
   // Loading state
   if (isLoading && !data) {
     return (
@@ -209,6 +225,7 @@ export function ManageChurchUsersDialog({
       </Dialog>
     );
   }
+
   // Error state
   if (error) {
     return (
@@ -229,6 +246,7 @@ export function ManageChurchUsersDialog({
       </Dialog>
     );
   }
+
   return (
     <>
       <Dialog onOpenChange={onOpenChange} open={open}>
@@ -416,7 +434,7 @@ export function ManageChurchUsersDialog({
                       </TableCell>
                       <TableCell>{getRoleBadge(member.role)}</TableCell>
                       <TableCell>
-                        {getStatusBadge(member.user.status)}
+                        {getStatusBadge(member.user.status || null)}
                       </TableCell>
                       <TableCell className="text-sm">
                         {new Date(member.createdAt).toLocaleDateString()}
@@ -541,12 +559,7 @@ interface AddUserDialogProps {
   onSuccess: () => void;
 }
 
-function AddUserDialog({
-  open,
-  onOpenChange,
-  church,
-  onSuccess,
-}: AddUserDialogProps) {
+function AddUserDialog({ open, onOpenChange, church }: AddUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<AdminPayload>({
     resolver: zodResolver(adminDataSchema),
@@ -559,20 +572,25 @@ function AddUserDialog({
       isMember: true,
       password: '',
       confirmPassword: '',
-      role: 'MEMBER',
-      sendWelcomeEmail: true,
+      role: 'admin',
+      // sendWelcomeEmail: true,
     },
   });
+  // const {
+  //   mutateAsync: registerChurchMutation,
+  //   isPending,
+  //   isError,
+  //   error,
+  // } = useRegisterChurch();
+  // const { reset, watch, setValue } = form;
   const onSubmit = async (payload: AdminPayload) => {
     setIsLoading(true);
     try {
-      // TODO: Implement actual API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success('User added successfully!');
-      form.reset();
-      onSuccess();
+      alert('User added successfully!');
+      onOpenChange(false);
     } catch (error) {
-      toast.error('Error adding user. Please try again.');
+      alert('Error adding user. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -681,13 +699,14 @@ function AddUserDialog({
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="cursor-pointer">
                               <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
                             {GENDER_OPTIONS.map((option) => (
                               <SelectItem
+                                className="cursor-pointer"
                                 key={option.value}
                                 value={option.value}
                               >
@@ -704,7 +723,7 @@ function AddUserDialog({
                     control={form.control}
                     name="isMember"
                     render={({ field }) => (
-                      <FormItem className="mt-8 flex flex-row items-start space-x-3 space-y-0">
+                      <FormItem className="mt-4 flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
                           <Checkbox
                             checked={field.value}
@@ -734,13 +753,17 @@ function AddUserDialog({
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="cursor-pointer">
                             <SelectValue placeholder="Select user role" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
                           {ADMIN_MEMBER_ROLE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
                               {option.label}
                             </SelectItem>
                           ))}
@@ -799,7 +822,7 @@ function AddUserDialog({
                   control={form.control}
                   name="sendWelcomeEmail"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem className="mt-4 flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -820,11 +843,12 @@ function AddUserDialog({
             </Tabs>
             <div className="rounded-lg bg-blue-50 p-4">
               <h4 className="mb-2 font-medium text-blue-900">
-                User Account Creation
+                Administrator Account
               </h4>
               <p className="text-blue-700 text-sm">
-                The user will be added to {church.name} with the selected role
-                and permissions.
+                The admin will be set up as the primary administrator with full
+                access to the church management system. They can add additional
+                users and assign roles as needed.
               </p>
             </div>
             <div className="flex justify-end gap-2 border-t pt-4">
@@ -857,68 +881,49 @@ function AddUserDialog({
 interface EditUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  member: IMemberWithUser | null;
-  onSuccess: () => void;
+  user: IMember | null;
 }
 
-function EditUserDialog({
-  open,
-  onOpenChange,
-  member,
-  onSuccess,
-}: EditUserDialogProps) {
+function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const form = useForm<Partial<AdminPayload>>({
-    resolver: zodResolver(adminDataSchema.partial()),
+  const form = useForm<AdminPayload>({
+    resolver: zodResolver(adminDataSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
-      email: '',
       phoneNumber: '',
       gender: 'male',
       isMember: true,
-      role: 'MEMBER',
-      status: 'ACTIVE',
+      role: 'admin',
+      status: '',
     },
   });
-  // Update form when member changes
-  useEffect(() => {
-    if (member) {
-      const [firstName = '', lastName = ''] =
-        member.user.name?.split(' ') || [];
-      form.reset({
-        firstName,
-        lastName,
-        email: member.user.email,
-        phoneNumber: member.user.phoneNumber || '',
-        gender: member.user.gender || 'male',
-        isMember: member.user.isMember,
-        role: member.role,
-        status: member.user.status,
-      });
-    }
-  }, [member, form]);
-  const onSubmit = async (payload: Partial<AdminPayload>) => {
+  // Update form when user changes
+  // useState(() => {
+  //   if (user) {
+  //     console.log('user---->');
+  //   }
+  // });
+  const onSubmit = async (payload: AdminPayload) => {
     setIsLoading(true);
     try {
-      // TODO: Implement actual API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success('User updated successfully!');
-      onSuccess();
+      alert('User added successfully!');
+      onOpenChange(false);
     } catch (error) {
-      toast.error('Error updating user. Please try again.');
+      alert('Error adding user. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-  if (!member) return null;
+  if (!user) return null;
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Update user information and settings for {member.user.name}
+            Update user information and settings
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -988,7 +993,7 @@ function EditUserDialog({
                         defaultCountry="KE"
                         onChange={field.onChange}
                         placeholder="Enter phone number"
-                        value={field.value || ''}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -1007,13 +1012,17 @@ function EditUserDialog({
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="cursor-pointer">
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="max-h-[400px] overflow-y-auto">
                         {GENDER_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
+                          <SelectItem
+                            className="cursor-pointer"
+                            key={option.value}
+                            value={option.value}
+                          >
                             {option.label}
                           </SelectItem>
                         ))}
@@ -1027,7 +1036,7 @@ function EditUserDialog({
                 control={form.control}
                 name="isMember"
                 render={({ field }) => (
-                  <FormItem className="mt-8 flex flex-row items-start space-x-3 space-y-0">
+                  <FormItem className="mt-4 flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -1044,59 +1053,84 @@ function EditUserDialog({
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Role <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select user role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ADMIN_MEMBER_ROLE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Status <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">Active</SelectItem>
-                        <SelectItem value="PENDING">Pending</SelectItem>
-                        <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                        <SelectItem value="INACTIVE">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Role <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="cursor-pointer">
+                        <SelectValue placeholder="Select user role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[400px] overflow-y-auto">
+                      {ADMIN_MEMBER_ROLE_OPTIONS.map((option) => (
+                        <SelectItem
+                          className="cursor-pointer"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {/* <div className="space-y-2">
+              <Label htmlFor="edit-status">Status *</Label>
+              <Select
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value })
+                }
+                value={formData.status}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div> */}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Status <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="cursor-pointer">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[400px] overflow-y-auto">
+                      {GENDER_OPTIONS.map((option) => (
+                        <SelectItem
+                          className="cursor-pointer"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="flex justify-end gap-2 border-t pt-4">
               <Button
                 onClick={() => onOpenChange(false)}

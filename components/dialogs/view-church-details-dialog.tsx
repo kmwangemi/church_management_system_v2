@@ -11,8 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { IOrganizationWithMetadata } from '@/lib/types/organization';
+import type { IOrganizationWithMetadata } from '@/lib/auth';
 import {
   Activity,
   Building2,
@@ -93,13 +94,14 @@ export function ViewChurchDetailsDialog({
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src="/placeholder.svg?height=80&width=80" />
-                    <AvatarFallback className="bg-blue-100 text-2xl text-blue-600">
+                    <AvatarImage src={church?.logo || undefined} />
+                    <AvatarFallback>
                       {church.name
                         .split(' ')
                         .map((n) => n[0])
                         .join('')
-                        .slice(0, 2)}
+                        .slice(0, 2)
+                        .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1">
@@ -108,50 +110,75 @@ export function ViewChurchDetailsDialog({
                       {church?.metadata?.denomination}
                     </p>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(church?.metadata?.status)}
-                      {getPlanBadge(church?.metadata?.subscriptionPlan)}
+                      {getStatusBadge(church?.metadata?.status || 'Pending')}
+                      {getPlanBadge(
+                        church?.metadata?.subscriptionPlan || 'Basic'
+                      )}
                     </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="pastor"
+                    >
                       Lead Pastor
-                    </label>
-                    <p className="font-semibold text-sm">{church.pastor}</p>
+                    </Label>
+                    <p className="font-semibold text-sm">
+                      {church?.metadata?.pastor}
+                    </p>
                   </div>
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="established"
+                    >
                       Established
-                    </label>
-                    <p className="text-sm">{church.established}</p>
+                    </Label>
+                    <p className="text-sm">
+                      {church?.metadata?.establishedDate}
+                    </p>
                   </div>
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="activity"
+                    >
                       Last Activity
-                    </label>
+                    </Label>
                     <div className="flex items-center gap-2">
                       <Activity className="h-4 w-4 text-green-500" />
-                      <p className="text-sm">{church.lastActivity}</p>
+                      <p className="text-sm">
+                        {church?.metadata?.lastActivity}
+                      </p>
                     </div>
                   </div>
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="branches"
+                    >
                       Total Branches
-                    </label>
+                    </Label>
                     <p className="flex items-center gap-1 text-sm">
                       <MapPin className="h-4 w-4" />
-                      {church.branches}
+                      {church?.metadata?.numberOfBranches}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <label className="font-medium text-gray-500 text-sm">
+                  <Label
+                    className="font-medium text-gray-500 text-sm"
+                    htmlFor="address"
+                  >
                     Address
-                  </label>
+                  </Label>
                   <div className="mt-1 flex items-start gap-2">
                     <MapPin className="mt-0.5 h-4 w-4 text-gray-400" />
-                    <p className="text-sm">{church.address}</p>
+                    <p className="text-sm">
+                      {church?.metadata?.address?.street}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -165,46 +192,55 @@ export function ViewChurchDetailsDialog({
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="email"
+                    >
                       Email Address
-                    </label>
+                    </Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Mail className="h-4 w-4 text-gray-400" />
                       <a
                         className="text-blue-600 text-sm hover:underline"
-                        href={`mailto:${church.email}`}
+                        href={`mailto:${church?.metadata?.email}`}
                       >
-                        {church.email}
+                        {church?.metadata?.email}
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="phoneNumber"
+                    >
                       Phone Number
-                    </label>
+                    </Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Phone className="h-4 w-4 text-gray-400" />
                       <a
                         className="text-blue-600 text-sm hover:underline"
-                        href={`tel:${church.phone}`}
+                        href={`tel:${church?.metadata?.phoneNumber}`}
                       >
-                        {church.phone}
+                        {church?.metadata?.phoneNumber}
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
-                      Website
-                    </label>
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="website"
+                    >
+                      website
+                    </Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Globe className="h-4 w-4 text-gray-400" />
                       <a
                         className="text-blue-600 text-sm hover:underline"
-                        href={`https://${church.website}`}
+                        href={church?.metadata?.website}
                         rel="noopener noreferrer"
                         target="_blank"
                       >
-                        {church.website}
+                        {church?.metadata?.website}
                       </a>
                     </div>
                   </div>
@@ -240,7 +276,7 @@ export function ViewChurchDetailsDialog({
                 </CardHeader>
                 <CardContent>
                   <div className="font-bold text-2xl">
-                    {church.members.toLocaleString()}
+                    {(church?.metadata?.members || 0).toLocaleString()}
                   </div>
                   <p className="text-muted-foreground text-xs">
                     Active congregation members
@@ -256,7 +292,7 @@ export function ViewChurchDetailsDialog({
                 </CardHeader>
                 <CardContent>
                   <div className="font-bold text-2xl text-green-600">
-                    +{church.growth}%
+                    +{church?.metadata?.growth || 0}%
                   </div>
                   <p className="text-muted-foreground text-xs">
                     Year over year growth
@@ -272,7 +308,7 @@ export function ViewChurchDetailsDialog({
                 </CardHeader>
                 <CardContent>
                   <div className="font-bold text-2xl">
-                    ${church.revenue.toLocaleString()}
+                    ${(church?.metadata?.revenue || 0).toLocaleString()}
                   </div>
                   <p className="text-muted-foreground text-xs">
                     Subscription revenue
@@ -287,7 +323,9 @@ export function ViewChurchDetailsDialog({
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-bold text-2xl">{church.branches}</div>
+                  <div className="font-bold text-2xl">
+                    {church?.metadata?.numberOfBranches}
+                  </div>
                   <p className="text-muted-foreground text-xs">
                     Active church locations
                   </p>
@@ -350,30 +388,46 @@ export function ViewChurchDetailsDialog({
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="plan"
+                    >
                       Current Plan
-                    </label>
-                    <div className="mt-1">{getPlanBadge(church.plan)}</div>
+                    </Label>
+                    <div className="mt-1">
+                      {getPlanBadge(
+                        church?.metadata?.subscriptionPlan || 'Basic'
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <label className="font-medium text-gray-500 text-sm">
+                    <Label
+                      className="font-medium text-gray-500 text-sm"
+                      htmlFor="cost"
+                    >
                       Monthly Cost
-                    </label>
+                    </Label>
                     <p className="font-bold text-green-600 text-lg">
-                      ${church.revenue.toLocaleString()}
+                      ${(church?.metadata?.revenue || 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <label className="font-medium text-gray-500 text-sm">
+                  <Label
+                    className="font-medium text-gray-500 text-sm"
+                    htmlFor="billing"
+                  >
                     Billing Cycle
-                  </label>
+                  </Label>
                   <p className="text-sm">Monthly - Auto-renewal enabled</p>
                 </div>
                 <div>
-                  <label className="font-medium text-gray-500 text-sm">
+                  <Label
+                    className="font-medium text-gray-500 text-sm"
+                    htmlFor="next-billing"
+                  >
                     Next Billing Date
-                  </label>
+                  </Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <p className="text-sm">
@@ -388,9 +442,9 @@ export function ViewChurchDetailsDialog({
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2 text-sm">
                       <div className="h-2 w-2 rounded-full bg-green-500" />
-                      {church.plan === 'premium'
+                      {church?.metadata?.subscriptionPlan === 'CATHEDRAL'
                         ? 'Unlimited members'
-                        : church.plan === 'standard'
+                        : church?.metadata?.subscriptionPlan === 'MINISTRY'
                           ? 'Up to 500 members'
                           : 'Up to 100 members'}
                     </li>
