@@ -1,5 +1,7 @@
 'use client';
 
+import { PasswordInput } from '@/components/password-input';
+import { PhoneInput } from '@/components/phone-number-input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +51,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { IMemberWithUser, IOrganization } from '@/lib/auth';
 import { useDebounce } from '@/lib/hooks/shared/usedebounce/use-debounce';
-import { useOrganizationMembers } from '@/lib/hooks/superadmin/use-organization-members';
+import {
+  useAddMember,
+  useOrganizationMembers,
+  useRemoveMember,
+  useToggleMemberStatus,
+  useUpdateMember,
+} from '@/lib/hooks/superadmin/use-organization-members';
 import { ADMIN_MEMBER_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
 import { adminDataSchema, type AdminPayload } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,8 +81,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { PasswordInput } from '../password-input';
-import { PhoneInput } from '../phone-number-input';
 
 interface ManageChurchUsersDialogProps {
   open: boolean;
@@ -108,6 +114,13 @@ export function ManageChurchUsersDialog({
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, role, status, branchId, sortBy, sortOrder]);
+
+  // Add mutation hooks
+  const { mutate: removeMember, isPending: isRemoving } = useRemoveMember(
+    church?.id || ''
+  );
+  const { mutate: toggleStatus, isPending: isTogglingStatus } =
+    useToggleMemberStatus(church?.id || '');
   // Fetch members
   const { data, isLoading, error, refetch } = useOrganizationMembers({
     organizationId: church?.id,
@@ -161,28 +174,23 @@ export function ManageChurchUsersDialog({
       </Badge>
     );
   };
-  const handleDeleteUser = (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    try {
-      // TODO: Implement actual delete API call
-      toast.success('User deleted successfully!');
-      refetch();
-    } catch (error) {
-      toast.error('Failed to delete user');
-    }
+  // Updated delete handler
+  const handleDeleteUser = (memberId: string, deleteUser = false) => {
+    if (
+      !confirm(
+        deleteUser
+          ? 'Are you sure you want to permanently delete this user? This action cannot be undone.'
+          : 'Are you sure you want to remove this member from the organization?'
+      )
+    )
+      return;
+    removeMember({ memberId, deleteUser });
   };
+  // Updated toggle status handler
   const handleToggleStatus = (member: IMemberWithUser) => {
-    try {
-      const newStatus =
-        member.user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-      // TODO: Implement actual status update API call
-      toast.success(
-        `User ${newStatus === 'ACTIVE' ? 'activated' : 'suspended'} successfully!`
-      );
-      refetch();
-    } catch (error) {
-      toast.error('Failed to update user status');
-    }
+    const action = member.user.status === 'ACTIVE' ? 'suspend' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} this member?`)) return;
+    toggleStatus({ memberId: member.id });
   };
   const handleEditUser = (member: IMemberWithUser) => {
     setSelectedUser(member);
@@ -547,7 +555,7 @@ function AddUserDialog({
   church,
   onSuccess,
 }: AddUserDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: addMember, isPending: isLoading } = useAddMember(church.id);
   const form = useForm<AdminPayload>({
     resolver: zodResolver(adminDataSchema),
     defaultValues: {
@@ -555,27 +563,36 @@ function AddUserDialog({
       lastName: '',
       email: '',
       phoneNumber: '',
-      gender: 'male',
+      gender: 'MALE',
       isMember: true,
       password: '',
       confirmPassword: '',
       role: 'MEMBER',
-      sendWelcomeEmail: true,
     },
   });
   const onSubmit = async (payload: AdminPayload) => {
-    setIsLoading(true);
-    try {
-      // TODO: Implement actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success('User added successfully!');
-      form.reset();
-      onSuccess();
-    } catch (error) {
-      toast.error('Error adding user. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    await addMember(
+      {
+        organizationId: church.id,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        phoneNumber: payload.phoneNumber,
+        password: payload.password,
+        gender: payload.gender,
+        role: payload.role,
+        isMember: payload.isMember,
+        // sendWelcomeEmail: payload.sendWelcomeEmail,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.success) {
+            form.reset();
+            onSuccess();
+          }
+        },
+      }
+    );
   };
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -867,7 +884,9 @@ function EditUserDialog({
   member,
   onSuccess,
 }: EditUserDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: updateMember, isPending: isLoading } = useUpdateMember(
+    member?.organizationId || ''
+  );
   const form = useForm<Partial<AdminPayload>>({
     resolver: zodResolver(adminDataSchema.partial()),
     defaultValues: {
@@ -898,18 +917,29 @@ function EditUserDialog({
       });
     }
   }, [member, form]);
-  const onSubmit = async (payload: Partial<AdminPayload>) => {
-    setIsLoading(true);
-    try {
-      // TODO: Implement actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success('User updated successfully!');
-      onSuccess();
-    } catch (error) {
-      toast.error('Error updating user. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = (payload: Partial<AdminPayload>) => {
+    if (!member) return;
+    updateMember(
+      {
+        memberId: member.id,
+        organizationId: member.organizationId,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        phoneNumber: payload.phoneNumber,
+        gender: payload.gender,
+        role: payload.role,
+        status: payload.status,
+        isMember: payload.isMember,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.success) {
+            onSuccess();
+          }
+        },
+      }
+    );
   };
   if (!member) return null;
   return (

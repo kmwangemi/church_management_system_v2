@@ -111,7 +111,7 @@ export const adminDataSchema = z
     isMember: z.boolean(),
     password: passwordSchema,
     confirmPassword: z.string(),
-    role: z.enum(['admin']),
+    role: z.enum(['OWNER', 'MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR']),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
