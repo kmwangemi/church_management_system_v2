@@ -145,6 +145,31 @@ export const auth = betterAuth({
       }
     }),
   },
+  // Add database hooks to set active organization on session creation
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          // Find user's first organization
+          const membership = await prisma.member.findFirst({
+            where: { userId: session.userId },
+            orderBy: { createdAt: 'asc' },
+            select: { organizationId: true },
+          });
+          // Set active organization if found
+          if (membership?.organizationId) {
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: membership.organizationId,
+              },
+            };
+          }
+          return { data: session };
+        },
+      },
+    },
+  },
   plugins: [
     organization({
       ac,

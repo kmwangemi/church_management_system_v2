@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { IUser } from '@/lib/auth';
-import { capitalizeFirstLetter, cn } from '@/lib/utils';
+import { capitalizeFirstLetter, capitalizeFirstLetterOfEachWord, cn } from '@/lib/utils';
 import { BookOpen, Church } from 'lucide-react';
 import Link from 'next/link';
 import { ChurchNavigation } from './church-navigation';
@@ -63,13 +63,13 @@ export function ChurchSidebar({
               <AvatarFallback>
                 {user.name
                   .split(' ')
-                  .map((n) => n[0])
+                  .map((n) => n[0].toUpperCase())
                   .join('')}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-gray-900 text-sm">
-                {user.name}
+                {capitalizeFirstLetterOfEachWord(user.name || '')}
               </p>
               <div className="flex items-center space-x-2">
                 <Badge

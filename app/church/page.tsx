@@ -36,7 +36,10 @@ export default function DashboardPage() {
     // isPending, //loading state
     // error, //error object
     // refetch, //refetch the session
-  } = authClient.useSession(); 
+  } = authClient.useSession();
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+  console.log('session--->', session);
+  console.log('activeOrganization--->', activeOrganization);
   const stats = [
     {
       title: 'Total Members',
@@ -190,13 +193,16 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="mb-2 font-bold text-3xl">
-              Welcome back, {capitalizeFirstLetter(session?.user.name || 'user')}!
+              Welcome back,{' '}
+              {capitalizeFirstLetterOfEachWord(session?.user.name || 'user')}!
               👋
             </h1>
             <p className="text-blue-100 text-lg">
               Here's what's happening at{' '}
-              {/* {capitalizeFirstLetterOfEachWord(user?.churchId || 'your church')} today. */}
-              {capitalizeFirstLetterOfEachWord('acem church')} today.
+              {capitalizeFirstLetterOfEachWord(
+                activeOrganization?.name || 'your church'
+              )}{' '}
+              today.
             </p>
           </div>
           <div className="mt-4 md:mt-0">
