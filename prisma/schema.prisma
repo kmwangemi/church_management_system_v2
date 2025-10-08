@@ -36,6 +36,10 @@ enum AccountStatus {
 
 enum UserRole {
   SUPER_ADMIN
+  MEMBER
+  PASTOR
+  BISHOP
+  ADMIN
   VISITOR
 }
 

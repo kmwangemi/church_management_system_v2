@@ -44,7 +44,7 @@ export interface AddMemberParams {
   phoneNumber: string;
   password: string;
   gender: 'MALE' | 'FEMALE';
-  role: 'VISITOR' | 'OWNER' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
+  role: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
   isMember: boolean;
   branchId?: string;
   sendWelcomeEmail?: boolean;
@@ -227,6 +227,7 @@ export async function addMemberToOrganization(
           error: 'This user is already a member of this organization',
         };
       }
+      console.log('adding new member----> here');
       // Add existing user to organization
       const member = await prisma.member.create({
         data: {
@@ -252,6 +253,7 @@ export async function addMemberToOrganization(
     }
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user
@@ -263,7 +265,7 @@ export async function addMemberToOrganization(
           phoneNumber,
           gender,
           isMember,
-          role: 'MEMBER', // User role (not organization role)
+          role, // User role (not organization role)
           status: 'ACTIVE',
           createdBy: session.user.id,
         },

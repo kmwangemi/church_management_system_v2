@@ -10,6 +10,7 @@ import {
 } from '@/lib/auth/permissions';
 import prisma from '@/lib/prisma';
 import { passwordSchema } from '@/lib/validations/auth';
+import bcrypt from 'bcryptjs';
 import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
@@ -21,6 +22,14 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    password: {
+      hash: async (password) => {
+        return await bcrypt.hash(password, 10);
+      },
+      verify: async ({ hash, password }) => {
+        return await bcrypt.compare(password, hash);
+      },
+    },
   },
   socialProviders: {
     github: {

@@ -195,11 +195,11 @@ export const MEMBER_ROLE_OPTIONS = [
 ];
 
 export const ADMIN_MEMBER_ROLE_OPTIONS = [
-  { value: 'visitor', label: 'Visitor' },
-  { value: 'member', label: 'Member' },
-  { value: 'pastor', label: 'Pastor' },
-  { value: 'bishop', label: 'Bishop' },
-  { value: 'admin', label: 'Admin' },
+  { value: 'VISITOR', label: 'Visitor' },
+  { value: 'MEMBER', label: 'Member' },
+  { value: 'PASTOR', label: 'Pastor' },
+  { value: 'BISHOP', label: 'Bishop' },
+  { value: 'ADMIN', label: 'Admin' },
 ];
 
 export const PRAYER_CATEGORY_OPTIONS = [
@@ -233,8 +233,8 @@ export const DISCIPLE_LEVEL_OPTIONS = [
 ];
 
 export const GENDER_OPTIONS = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
+  { value: 'MALE', label: 'Male' },
+  { value: 'FEMALE', label: 'Female' },
 ];
 
 export const MARITAL_STATUS_OPTIONS = [

@@ -105,13 +105,13 @@ export const adminDataSchema = z
     lastName: z.string().min(1, 'Last name is required'),
     email: z.email('Please enter a valid email address'),
     phoneNumber: z.string().min(1, 'Phone number is required'),
-    gender: z.enum(['male', 'female'], {
+    gender: z.enum(['MALE', 'FEMALE'], {
       error: 'Gender is required',
     }),
     isMember: z.boolean(),
     password: passwordSchema,
     confirmPassword: z.string(),
-    role: z.enum(['OWNER', 'MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR']),
+    role: z.enum(['MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR']),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

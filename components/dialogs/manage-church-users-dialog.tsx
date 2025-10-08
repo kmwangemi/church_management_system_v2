@@ -1,5 +1,6 @@
 'use client';
 
+import RenderApiError from '@/components/api-error';
 import { PasswordInput } from '@/components/password-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -555,7 +556,12 @@ function AddUserDialog({
   church,
   onSuccess,
 }: AddUserDialogProps) {
-  const { mutate: addMember, isPending: isLoading } = useAddMember(church.id);
+  const {
+    mutate: addMember,
+    isPending: isLoading,
+    isError,
+    error,
+  } = useAddMember(church.id);
   const form = useForm<AdminPayload>({
     resolver: zodResolver(adminDataSchema),
     defaultValues: {
@@ -570,8 +576,8 @@ function AddUserDialog({
       role: 'MEMBER',
     },
   });
-  const onSubmit = async (payload: AdminPayload) => {
-    await addMember(
+  const onSubmit = (payload: AdminPayload) => {
+    addMember(
       {
         organizationId: church.id,
         firstName: payload.firstName,
@@ -603,6 +609,7 @@ function AddUserDialog({
             Create a new user account with specific role and permissions
           </DialogDescription>
         </DialogHeader>
+        {isError && <RenderApiError error={error} />}
         <Form {...form}>
           <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             <Tabs className="w-full" defaultValue="basic">
