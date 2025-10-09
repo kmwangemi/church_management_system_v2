@@ -1,7 +1,6 @@
 'use client';
 
 import { authClient } from '@/lib/auth-client';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -110,70 +109,6 @@ export function SessionLoader({
 }
 
 // ============================================
-// CUSTOM LOADING COMPONENT (BRANDED)
-// ============================================
-
-interface BrandedLoaderProps {
-  logo?: string;
-  brandName?: string;
-  message?: string;
-}
-
-export function BrandedLoader({
-  logo,
-  brandName = 'Church Management',
-  message = 'Loading your session...',
-}: BrandedLoaderProps) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="flex flex-col items-center space-y-6 p-8">
-        {/* Logo */}
-        {logo ? (
-          <Image
-            alt="Logo"
-            className="h-16 w-16 object-contain"
-            height={64}
-            priority
-            src={logo}
-            width={64}
-          />
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600">
-            <span className="font-bold text-2xl text-white">
-              {brandName.charAt(0)}
-            </span>
-          </div>
-        )}
-        {/* Brand Name */}
-        <h1 className="font-bold text-2xl text-gray-800 dark:text-white">
-          {brandName}
-        </h1>
-        {/* Animated Spinner */}
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-4 border-gray-200 dark:border-gray-700" />
-          <div className="absolute top-0 left-0 h-12 w-12 animate-spin rounded-full border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent" />
-        </div>
-        {/* Message */}
-        <div className="space-y-1 text-center">
-          <p className="font-medium text-base text-gray-700 dark:text-gray-200">
-            {message}
-          </p>
-          <p className="text-gray-500 text-sm dark:text-gray-400">
-            This will only take a moment
-          </p>
-        </div>
-        {/* Progress dots */}
-        <div className="flex space-x-2">
-          <div className="h-2 w-2 animate-bounce rounded-full bg-blue-600" />
-          <div className="animation-delay-200 h-2 w-2 animate-bounce rounded-full bg-blue-600" />
-          <div className="animation-delay-400 h-2 w-2 animate-bounce rounded-full bg-blue-600" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
 // SKELETON LOADER (Alternative)
 // ============================================
 
@@ -225,3 +160,83 @@ export function withSessionLoader<P extends object>(
     );
   };
 }
+
+// ============================================
+// 3. USAGE IN ROOT LAYOUT (app/layout.tsx)
+// ============================================
+
+// import { SessionLoader } from '@/components/session-loader';
+// import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// export default function RootLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="en">
+//       <body>
+//         <QueryClientProvider client={queryClient}>
+//           <SessionLoader requireAuth={false}>
+//             {children}
+//           </SessionLoader>
+//         </QueryClientProvider>
+//       </body>
+//     </html>
+//   );
+// }
+
+// ============================================
+// 4. USAGE IN PROTECTED PAGES
+// ============================================
+
+// Option A: Using SessionLoader Component
+// 'use client';
+
+// import { SessionLoader } from '@/components/session-loader';
+
+// export default function DashboardPage() {
+//   return (
+//     <SessionLoader requireAuth={true} allowedRoles={['ADMIN', 'OWNER']}>
+//       <div>
+//         <h1>Dashboard</h1>
+//         {/* Your protected content */}
+//       </div>
+//     </SessionLoader>
+//   );
+// }
+
+// Option B: Using withSessionLoader HOC
+// 'use client';
+
+// import { withSessionLoader } from '@/components/session-loader';
+
+// function DashboardPage() {
+//   return (
+//     <div>
+//       <h1>Dashboard</h1>
+//       {/* Your protected content */}
+//     </div>
+//   );
+// }
+
+// export default withSessionLoader(DashboardPage, {
+//   requireAuth: true,
+//   allowedRoles: ['ADMIN', 'OWNER'],
+// });
+
+// Option C: Simple Loading State Only
+// 'use client';
+
+// import { SimpleSessionLoader } from '@/components/session-loader';
+
+// export default function ProfilePage() {
+//   return (
+//     <SimpleSessionLoader>
+//       <div>
+//         <h1>Profile</h1>
+//         {/* Your content */}
+//       </div>
+//     </SimpleSessionLoader>
+//   );
+// }

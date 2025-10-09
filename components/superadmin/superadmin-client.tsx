@@ -21,7 +21,7 @@ import {
 import type { IUser } from '@/lib/auth';
 import { authClient } from '@/lib/auth-client';
 import { Bell, Globe, LogOut, Menu, Settings, User } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import type React from 'react';
 import { useState } from 'react';
 import { SuperAdminSidebar } from './superadmin-sidebar';
@@ -36,17 +36,11 @@ export function SuperAdminClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            router.push('/auth/superadmin'); // redirect to login page
-          },
-        },
-      });
+      await authClient.signOut({});
+      window.location.href = '/auth/login';
     } catch (_error) {
       setIsLoggingOut(false);
     } finally {

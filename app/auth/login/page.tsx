@@ -15,12 +15,6 @@ import { Suspense, useState } from 'react';
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState('member');
-  // const {
-  //       data: session,
-  //       // isPending, //loading state
-  //       // error, //error object
-  //       // refetch, //refetch the session
-  //     } = authClient.useSession();
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="w-full max-w-md">

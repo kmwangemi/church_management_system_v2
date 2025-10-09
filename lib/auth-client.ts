@@ -16,6 +16,7 @@ import {
 } from './auth/permissions';
 
 export const authClient = createAuthClient({
+  appName: 'Church Management System',
   baseURL: 'http://localhost:3000',
   plugins: [
     inferAdditionalFields<typeof auth>(),

@@ -1,3 +1,4 @@
+import { BrandedLoader } from '@/components/branded-loader';
 import { ChurchClient } from '@/components/church/church-client';
 import { SessionLoader } from '@/components/session-loader';
 import { getServerSession } from '@/lib/get-session';
@@ -20,14 +21,15 @@ export default async function DashboardLayout({
   }
   return (
     <SessionLoader
+      fallback={
+        <BrandedLoader
+          brandName="Church Hub"
+          logo="/placeholder.svg"
+          message="Preparing your workspace..."
+          showProgress={true}
+        />
+      }
       requireAuth={true}
-      // fallback={
-      //   <BrandedLoader
-      //     logo="/logo.png"
-      //     brandName="My Church App"
-      //     message="Preparing your workspace..."
-      //   />
-      // }
     >
       <ChurchClient user={user}>{children}</ChurchClient>
     </SessionLoader>

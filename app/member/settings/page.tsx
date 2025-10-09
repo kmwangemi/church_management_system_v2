@@ -1,24 +1,6 @@
 'use client';
 
 import {
-  Bell,
-  Camera,
-  Download,
-  Eye,
-  EyeOff,
-  Globe,
-  Key,
-  LogOut,
-  Mail,
-  Palette,
-  Phone,
-  Shield,
-  Smartphone,
-  Trash2,
-  User,
-} from 'lucide-react';
-import { useState } from 'react';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -60,6 +42,24 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Bell,
+  Camera,
+  Download,
+  Eye,
+  EyeOff,
+  Globe,
+  Key,
+  LogOut,
+  Mail,
+  Palette,
+  Phone,
+  Shield,
+  Smartphone,
+  Trash2,
+  User,
+} from 'lucide-react';
+import { useState } from 'react';
 
 export default function MemberSettingsPage() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);

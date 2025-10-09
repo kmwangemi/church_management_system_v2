@@ -1,4 +1,6 @@
+import { BrandedLoader } from '@/components/branded-loader';
 import ErrorBoundary from '@/components/error-boundary';
+import { SessionLoader } from '@/components/session-loader';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { QueryProvider } from '@/providers/query-provider';
@@ -31,7 +33,21 @@ export default function RootLayout({
           enableSystem
         >
           <QueryProvider>
-            <ErrorBoundary>{children}</ErrorBoundary>
+            <ErrorBoundary>
+              <SessionLoader
+                fallback={
+                  <BrandedLoader
+                    brandName="Church Hub"
+                    logo="/placeholder.svg"
+                    message="Preparing your workspace..."
+                    showProgress={true}
+                  />
+                }
+                requireAuth={false}
+              >
+                {children}
+              </SessionLoader>
+            </ErrorBoundary>
           </QueryProvider>
           <Toaster
             position="bottom-right"

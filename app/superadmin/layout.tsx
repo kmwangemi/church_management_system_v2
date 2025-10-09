@@ -1,3 +1,4 @@
+import { BrandedLoader } from '@/components/branded-loader';
 import { SessionLoader } from '@/components/session-loader';
 import { SuperAdminClient } from '@/components/superadmin/superadmin-client';
 import { getServerSession } from '@/lib/get-session';
@@ -20,14 +21,14 @@ export default async function SuperAdminLayout({
   }
   return (
     <SessionLoader
+      fallback={
+        <BrandedLoader
+          brandName="Church Hub"
+          logo="/placeholder.svg"
+          message="Preparing your workspace..."
+        />
+      }
       requireAuth={true}
-      // fallback={
-      //   <BrandedLoader
-      //     logo="/logo.png"
-      //     brandName="My Church App"
-      //     message="Preparing your workspace..."
-      //   />
-      // }
     >
       <SuperAdminClient user={user}>{children}</SuperAdminClient>
     </SessionLoader>

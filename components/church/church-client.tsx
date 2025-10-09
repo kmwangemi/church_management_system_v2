@@ -22,7 +22,7 @@ import { authClient } from '@/lib/auth-client';
 import { capitalizeFirstLetter } from '@/lib/utils';
 import { Bell, BookOpen, LogOut, Menu, Settings, Shield } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import type React from 'react';
 import { useState } from 'react';
 import { ChurchNavigation } from './church-navigation';
@@ -38,17 +38,11 @@ export function ChurchClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            router.push('/auth/login'); // redirect to login page
-          },
-        },
-      });
+      await authClient.signOut({});
+      window.location.href = '/auth/login';
     } catch (_error) {
       setIsLoggingOut(false);
     } finally {

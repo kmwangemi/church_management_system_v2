@@ -10,6 +10,13 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  /* Animation delays for bounce effect */
+  .animation-delay-200 {
+    animation-delay: 0.2s;
+  }
+  .animation-delay-400 {
+    animation-delay: 0.4s;
+  }
 }
 
 @layer base {

@@ -1,3 +1,4 @@
+import { BrandedLoader } from '@/components/branded-loader';
 import { MemberClient } from '@/components/member/member-client';
 import { SessionLoader } from '@/components/session-loader';
 import { getServerSession } from '@/lib/get-session';
@@ -20,14 +21,14 @@ export default async function MemberLayout({
   }
   return (
     <SessionLoader
+      fallback={
+        <BrandedLoader
+          brandName="Church Hub"
+          logo="/placeholder.svg"
+          message="Preparing your workspace..."
+        />
+      }
       requireAuth={true}
-      // fallback={
-      //   <BrandedLoader
-      //     logo="/logo.png"
-      //     brandName="My Church App"
-      //     message="Preparing your workspace..."
-      //   />
-      // }
     >
       <MemberClient user={user}>{children}</MemberClient>
     </SessionLoader>

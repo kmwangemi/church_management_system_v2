@@ -17,6 +17,7 @@ import { nextCookies } from 'better-auth/next-js';
 import { createAuthMiddleware, organization } from 'better-auth/plugins';
 
 export const auth = betterAuth({
+  appName: 'Church Management System',
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
@@ -192,7 +193,6 @@ export const auth = betterAuth({
       organizationDeletion: {
         disabled: false,
       },
-
       // Invitation settings
       // sendInvitationEmail: async (data) => {
       //   const { email, organization, inviter, invitationId } = data;
