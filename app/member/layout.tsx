@@ -1,4 +1,5 @@
 import { MemberClient } from '@/components/member/member-client';
+import { SessionLoader } from '@/components/session-loader';
 import { getServerSession } from '@/lib/get-session';
 import { redirect } from 'next/navigation';
 import type React from 'react';
@@ -17,5 +18,18 @@ export default async function MemberLayout({
   if (user.role !== 'MEMBER') {
     redirect('/auth/login');
   }
-  return <MemberClient user={user}>{children}</MemberClient>;
+  return (
+    <SessionLoader
+      requireAuth={true}
+      // fallback={
+      //   <BrandedLoader
+      //     logo="/logo.png"
+      //     brandName="My Church App"
+      //     message="Preparing your workspace..."
+      //   />
+      // }
+    >
+      <MemberClient user={user}>{children}</MemberClient>
+    </SessionLoader>
+  );
 }

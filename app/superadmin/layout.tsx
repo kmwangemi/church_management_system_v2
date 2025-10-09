@@ -1,3 +1,4 @@
+import { SessionLoader } from '@/components/session-loader';
 import { SuperAdminClient } from '@/components/superadmin/superadmin-client';
 import { getServerSession } from '@/lib/get-session';
 import { redirect } from 'next/navigation';
@@ -17,5 +18,18 @@ export default async function SuperAdminLayout({
   if (user.role !== 'SUPER_ADMIN') {
     redirect('/auth/login');
   }
-  return <SuperAdminClient user={user}>{children}</SuperAdminClient>;
+  return (
+    <SessionLoader
+      requireAuth={true}
+      // fallback={
+      //   <BrandedLoader
+      //     logo="/logo.png"
+      //     brandName="My Church App"
+      //     message="Preparing your workspace..."
+      //   />
+      // }
+    >
+      <SuperAdminClient user={user}>{children}</SuperAdminClient>
+    </SessionLoader>
+  );
 }

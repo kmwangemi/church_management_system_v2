@@ -42,16 +42,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 import {
-  useDeleteUserById,
-  useFetchUsers,
-} from '@/lib/hooks/church/user/use-user-queries';
+  useAdminOrganizationMembers,
+  useAdminRemoveOrganizationMember,
+} from '@/lib/hooks/admin/use-organization-member-mutations';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
   formatToNewDate,
-  getFirstLetter,
 } from '@/lib/utils';
 import {
   Crown,
@@ -81,6 +81,7 @@ export default function UsersPage() {
   const searchParams = useSearchParams();
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
+  const { organizationId } = useActiveOrganization();
   const { register, handleSubmit } = useForm({
     defaultValues: {
       query: searchQuery,
@@ -91,29 +92,41 @@ export default function UsersPage() {
     isLoading: isLoadingUsers,
     isError: isErrorUsers,
     error: errorUsers,
-  } = useFetchUsers(page, searchQuery);
+  } = useAdminOrganizationMembers({
+    organizationId,
+    page,
+    // pageSize: 20,
+    search: searchQuery,
+    // role: 'MEMBER',
+    // sortBy: 'name',
+    // sortOrder: 'asc',
+  });
   const {
     mutateAsync: deleteUserMutation,
     isPending: isPendingDeleteUser,
     isError: isErrorDeleteUser,
     error: errorDeleteUser,
-  } = useDeleteUserById();
+  } = useAdminRemoveOrganizationMember(organizationId);
   // Filter users based on selected tab and status
   const filteredUsers = useMemo(() => {
-    if (!users?.users) return [];
-    let filtered = users.users;
+    if (!users?.members) return [];
+    let filtered = users.members;
     // Filter by status
     if (selectedStatus !== 'all') {
-      filtered = filtered.filter((user) => user.status === selectedStatus);
+      filtered = filtered.filter(
+        (user) => user?.user.status === selectedStatus
+      );
     }
     // Filter by tab
     if (selectedTab !== 'all') {
       switch (selectedTab) {
         case 'active':
-          filtered = filtered.filter((user) => user.status === 'active');
+          filtered = filtered.filter((user) => user?.user.status === 'ACTIVE');
           break;
         case 'inactive':
-          filtered = filtered.filter((user) => user.status === 'inactive');
+          filtered = filtered.filter(
+            (user) => user?.user.status === 'INACTIVE'
+          );
           break;
         case 'staff':
           filtered = filtered.filter((user) =>
@@ -125,21 +138,21 @@ export default function UsersPage() {
       }
     }
     return filtered;
-  }, [users?.users, selectedStatus, selectedTab]);
+  }, [users?.members, selectedStatus, selectedTab]);
   // Calculate stats
   const stats = useMemo(() => {
-    const allUsers = users?.users || [];
+    const allUsers = users?.members || [];
     return {
       total: allUsers.length,
-      active: allUsers.filter((u) => u.status === 'active').length,
-      inactive: allUsers.filter((u) => u.status === 'inactive').length,
+      active: allUsers.filter((u) => u.user.status === 'ACTIVE').length,
+      inactive: allUsers.filter((u) => u.user.status === 'INACTIVE').length,
       staff: allUsers.filter((u) =>
         ['pastor', 'bishop', 'admin'].includes(u.role?.toLowerCase())
       ).length,
     };
   }, [users]);
-  const handleDeleteUser = async (userId: string) => {
-    await deleteUserMutation(userId);
+  const handleDeleteUser = async (memberId: string) => {
+    await deleteUserMutation({ memberId });
     setDeletingUser(null);
   };
   const openDeleteDialog = (user: UserResponse) => {
@@ -316,29 +329,36 @@ export default function UsersPage() {
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-10 w-10">
                                 <AvatarImage
-                                  alt={user?.firstName || 'User'}
-                                  src={user?.profilePictureUrl ?? ''}
+                                  alt={user?.user.name || 'User'}
+                                  src={user?.user.image ?? ''}
                                 />
                                 <AvatarFallback className="bg-blue-100 text-blue-600">
-                                  {`${getFirstLetter(user?.firstName || '')}${getFirstLetter(user?.lastName || '')}`}
+                                  {user?.user.name
+                                    .split(' ')
+                                    .map((n: string) => n[0].toUpperCase())
+                                    .join('')}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-medium text-gray-900">
-                                  {`${capitalizeFirstLetter(user?.firstName || 'N/A')} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                                  {capitalizeFirstLetterOfEachWord(
+                                    user?.user.name || 'Not Provided'
+                                  )}
                                 </div>
                                 <div className="text-gray-500 text-sm">
-                                  {user.email || 'N/A'}
+                                  {user?.user.email || 'Not Provided'}
                                 </div>
                                 <div className="text-gray-500 text-sm">
-                                  {user.phoneNumber || 'N/A'}
+                                  {user?.user.phoneNumber || 'Not Provided'}
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <span className="text-gray-900 text-sm">
-                              {capitalizeFirstLetter(user.gender || 'N/A')}
+                              {capitalizeFirstLetter(
+                                user?.user.gender || 'Not Provided'
+                              )}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -353,19 +373,19 @@ export default function UsersPage() {
                           <TableCell>
                             <span className="text-gray-900 text-sm">
                               {capitalizeFirstLetterOfEachWord(
-                                user.branchId?.branchName || 'N/A'
+                                user.branch?.branchName || 'Not Provided'
                               )}
                             </span>
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                user.status === 'active'
+                                user?.user.status === 'ACTIVE'
                                   ? 'default'
                                   : 'secondary'
                               }
                             >
-                              {user.status}
+                              {user?.user.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -402,9 +422,7 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link
-                                    href={`/church/users/edit/${user._id}`}
-                                  >
+                                  <Link href={`/church/users/edit/${user._id}`}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit User
                                   </Link>

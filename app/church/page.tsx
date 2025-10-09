@@ -10,11 +10,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { authClient } from '@/lib/auth-client';
-import {
-  capitalizeFirstLetter,
-  capitalizeFirstLetterOfEachWord,
-} from '@/lib/utils';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   Building,
   Calendar,
@@ -31,15 +29,14 @@ import {
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  const { organizationName } = useActiveOrganization();
   const {
     data: session,
     // isPending, //loading state
     // error, //error object
     // refetch, //refetch the session
   } = authClient.useSession();
-  const { data: activeOrganization } = authClient.useActiveOrganization();
-  console.log('session--->', session);
-  console.log('activeOrganization--->', activeOrganization);
+
   const stats = [
     {
       title: 'Total Members',
@@ -199,10 +196,7 @@ export default function DashboardPage() {
             </h1>
             <p className="text-blue-100 text-lg">
               Here's what's happening at{' '}
-              {capitalizeFirstLetterOfEachWord(
-                activeOrganization?.name || 'your church'
-              )}{' '}
-              today.
+              {capitalizeFirstLetterOfEachWord(organizationName)} today.
             </p>
           </div>
           <div className="mt-4 md:mt-0">

@@ -16,7 +16,7 @@ import {
   type AddMemberParams,
   type GetMembersParams,
   type UpdateMemberParams,
-} from '@/lib/actions/member';
+} from '@/lib/actions/superadmin/member';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
