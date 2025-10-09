@@ -11,10 +11,10 @@ import {
   adminGetOrganizationMembers,
   adminRemoveOrganizationMember,
   adminUpdateOrganizationMember,
-  type AdminAddOrganizationMemberParams,
   type AdminGetOrganizationMembersParams,
   type AdminUpdateOrganizationMemberParams,
 } from '@/lib/actions/admin/member';
+import type { AddUserPayload } from '@/lib/validations/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { toast } from 'sonner';
@@ -39,7 +39,9 @@ export const organizationMemberKeys = {
 // 1. ADMIN FETCH ORGANIZATION MEMBERS (Paginated List)
 // ============================================
 
-export function useAdminOrganizationMembers(params: AdminGetOrganizationMembersParams) {
+export function useAdminOrganizationMembers(
+  params: AdminGetOrganizationMembersParams
+) {
   return useQuery({
     queryKey: organizationMemberKeys.list(params),
     queryFn: () => adminGetOrganizationMembers(params),
@@ -61,7 +63,10 @@ export function useAdminOrganizationMember(
   return useQuery({
     queryKey: organizationMemberKeys.detail(memberId, organizationId),
     queryFn: async () => {
-      const result = await adminGetOrganizationMemberById(memberId, organizationId);
+      const result = await adminGetOrganizationMemberById(
+        memberId,
+        organizationId
+      );
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch member');
       }
@@ -107,8 +112,7 @@ export function useAdminOrganizationMemberByUserId(
 export function useAdminAddOrganizationMember(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: AdminAddOrganizationMemberParams) =>
-      adminAddOrganizationMember(params),
+    mutationFn: (params: AddUserPayload) => adminAddOrganizationMember(params),
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || 'Member added successfully');
@@ -116,7 +120,8 @@ export function useAdminAddOrganizationMember(organizationId: string) {
         queryClient.invalidateQueries({
           queryKey: organizationMemberKeys.lists(),
           predicate: (query) => {
-            const params = query.queryKey[2] as AdminGetOrganizationMembersParams;
+            const params = query
+              .queryKey[2] as AdminGetOrganizationMembersParams;
             return params?.organizationId === organizationId;
           },
         });
@@ -153,7 +158,8 @@ export function useAdminUpdateOrganizationMember(organizationId: string) {
         queryClient.invalidateQueries({
           queryKey: organizationMemberKeys.lists(),
           predicate: (query) => {
-            const params = query.queryKey[2] as AdminGetOrganizationMembersParams;
+            const params = query
+              .queryKey[2] as AdminGetOrganizationMembersParams;
             return params?.organizationId === organizationId;
           },
         });
@@ -202,7 +208,8 @@ export function useAdminRemoveOrganizationMember(organizationId: string) {
         queryClient.invalidateQueries({
           queryKey: organizationMemberKeys.lists(),
           predicate: (query) => {
-            const params = query.queryKey[2] as AdminGetOrganizationMembersParams;
+            const params = query
+              .queryKey[2] as AdminGetOrganizationMembersParams;
             return params?.organizationId === organizationId;
           },
         });
@@ -266,7 +273,8 @@ export function useAdminInvalidateOrganizationMembers() {
         return queryClient.invalidateQueries({
           queryKey: organizationMemberKeys.lists(),
           predicate: (query) => {
-            const params = query.queryKey[2] as AdminGetOrganizationMembersParams;
+            const params = query
+              .queryKey[2] as AdminGetOrganizationMembersParams;
             return params?.organizationId === organizationId;
           },
         });

@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useRegisterUser } from '@/lib/hooks/church/user/use-user-queries';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useAdminAddOrganizationMember } from '@/lib/hooks/admin/use-organization-member-mutations';
 import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,20 +43,21 @@ interface AddUserFormProps {
 }
 
 export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
+  const { organizationId } = useActiveOrganization();
   const {
     mutateAsync: registerUserMutation,
     isPending,
     isError,
     error,
-  } = useRegisterUser();
+  } = useAdminAddOrganizationMember(organizationId);
   const form = useForm<AddUserPayload>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
       phoneNumber: '',
-      gender: 'male',
-      role: '',
+      gender: 'MALE',
+      role: undefined,
       email: '',
       address: {
         street: '',
@@ -73,7 +75,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
   const watchRole = watch('role');
   // Handle role changes and update isMember accordingly
   useEffect(() => {
-    if (watchRole === 'member') {
+    if (watchRole === 'MEMBER') {
       setValue('isMember', true);
     } else {
       setValue('isMember', false);
@@ -91,7 +93,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
   };
   // Helper function to determine if isMember checkbox should be shown
   const shouldShowIsMemberCheckbox = () => {
-    return watchRole && watchRole !== 'member' && watchRole !== 'visitor';
+    return watchRole && watchRole !== 'MEMBER' && watchRole !== 'VISITOR';
   };
   // Helper function to determine if isStaff checkbox should be shown
   const shouldShowIsStaffCheckbox = () => {

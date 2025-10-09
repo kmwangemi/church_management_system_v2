@@ -3,7 +3,7 @@
 import { getServerSession } from '@/lib/get-session';
 import { logger } from '@/lib/logger';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import type { AddUserPayload } from '@/lib/validations/users';
 import { revalidatePath } from 'next/cache';
 
 // ============================================
@@ -25,28 +25,6 @@ function createActionLogger(actionName: string, organizationId?: string) {
 // TYPES & INTERFACES
 // ============================================
 
-export interface AdminAddOrganizationMemberParams {
-  organizationId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  password: string;
-  gender: 'MALE' | 'FEMALE';
-  role: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  isMember: boolean;
-  isStaff: boolean;
-  branchId?: string;
-  sendWelcomeEmail?: boolean;
-}
-
 export interface AdminServerActionResponse<T = any> {
   success: boolean;
   data?: T;
@@ -59,7 +37,7 @@ export interface AdminServerActionResponse<T = any> {
 // ============================================
 
 export async function adminAddOrganizationMember(
-  params: AdminAddOrganizationMemberParams
+  params: AddUserPayload
 ): Promise<AdminServerActionResponse> {
   const contextLogger = createActionLogger(
     'addOrganizationMember',
@@ -83,7 +61,6 @@ export async function adminAddOrganizationMember(
       lastName,
       email,
       phoneNumber,
-      password,
       gender,
       role,
       address,
@@ -93,12 +70,11 @@ export async function adminAddOrganizationMember(
       sendWelcomeEmail = false,
     } = params;
     // Validate required fields
-    if (!(firstName && lastName && email && password)) {
+    if (!(firstName && lastName && email)) {
       contextLogger.error('Missing required fields', {
         hasFirstName: !!firstName,
         hasLastName: !!lastName,
         hasEmail: !!email,
-        hasPassword: !!password,
       });
       return {
         success: false,
@@ -202,8 +178,6 @@ export async function adminAddOrganizationMember(
       };
     }
     contextLogger.info('Creating new user', { email });
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
     // Create new user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user
@@ -228,7 +202,6 @@ export async function adminAddOrganizationMember(
           userId: user.id,
           accountId: user.id,
           providerId: 'credential',
-          password: hashedPassword,
         },
       });
       contextLogger.info('Account created', { userId: user.id });

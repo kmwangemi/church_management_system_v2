@@ -188,10 +188,11 @@ export const formatNotificationCount = (count: number) => {
 export const ADMIN_ROLE_OPTIONS = [{ value: 'admin', label: 'Admin' }];
 
 export const MEMBER_ROLE_OPTIONS = [
-  { value: 'visitor', label: 'Visitor' },
-  { value: 'member', label: 'Member' },
-  { value: 'pastor', label: 'Pastor' },
-  { value: 'bishop', label: 'Bishop' },
+  { value: 'VISITOR', label: 'Visitor' },
+  { value: 'MEMBER', label: 'Member' },
+  { value: 'PASTOR', label: 'Pastor' },
+  { value: 'BISHOP', label: 'Bishop' },
+  { value: 'ADMIN', label: 'Admin' },
 ];
 
 export const ADMIN_MEMBER_ROLE_OPTIONS = [

@@ -119,11 +119,22 @@ export const userSchema = z.object({
   isMember: z.boolean(),
   isStaff: z.boolean(),
   address: addressSchema,
-  gender: z.enum(['male', 'female'], {
+  gender: z.enum(['MALE', 'FEMALE'], {
     error: 'Gender is required',
   }),
-  role: z.string().min(1, 'Please select a role'),
+  role: z.enum([
+    'MEMBER',
+    'PASTOR',
+    'BISHOP',
+    'ADMIN',
+    'VISITOR',
+  ], {
+    error: 'Role is required',
+  }),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   branchId: z.string().min(1, 'Please select a branch'),
+  organizationId: z.string().min(1, 'Organization ID is required'),
+  sendWelcomeEmail: z.boolean().optional(),
 });
 
 export type AddUserPayload = z.infer<typeof userSchema>;

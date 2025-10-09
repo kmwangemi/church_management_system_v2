@@ -129,9 +129,7 @@ export default function UsersPage() {
           );
           break;
         case 'staff':
-          filtered = filtered.filter((user) =>
-            ['pastor', 'bishop', 'admin'].includes(user.role?.toLowerCase())
-          );
+          filtered = filtered.filter((user) => user.user.isStaff === true);
           break;
         default:
           break;
@@ -146,9 +144,7 @@ export default function UsersPage() {
       total: allUsers.length,
       active: allUsers.filter((u) => u.user.status === 'ACTIVE').length,
       inactive: allUsers.filter((u) => u.user.status === 'INACTIVE').length,
-      staff: allUsers.filter((u) =>
-        ['pastor', 'bishop', 'admin'].includes(u.role?.toLowerCase())
-      ).length,
+      staff: allUsers.filter((u) => u.user.isStaff === true).length,
     };
   }, [users]);
   const handleDeleteUser = async (memberId: string) => {
