@@ -1,5 +1,6 @@
 // Complete Prisma Schema for Church Management System
 // Aligned with Better Auth Organization Plugin
+// Organization = Church, Team = Branch
 
 generator client {
   provider = "prisma-client-js"
@@ -89,7 +90,7 @@ enum ClearanceLevel {
 enum AdminAccessLevel {
   NATIONAL
   REGIONAL
-  BRANCH
+  TEAM
 }
 
 enum HowDidYouHear {
@@ -335,7 +336,7 @@ enum AssetStatus {
 
 enum AnnouncementTarget {
   ALL
-  BRANCH
+  TEAM
   DEPARTMENT
   GROUP
 }
@@ -626,7 +627,7 @@ model User {
   // Better Auth relations
   sessions      Session[]
   accounts      Account[]
-  // Organization membership
+  // Organization membership (church membership)
   members       Member[]
   invitations   Invitation[]
   // Extended profile fields
@@ -666,7 +667,9 @@ model User {
   updatedBy              String?
   updatedByUser          User?                @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usersUpdated           User[]               @relation("UserUpdatedBy")
-  branchesPastored       Branch[]             @relation("BranchPastor")
+  // Team leadership (for pastors/team leaders)
+  teamsPastored       Team[]               @relation("TeamPastor")
+  // Department and Group leadership
   departmentsLed         Department[]         @relation("DepartmentLeader")
   groupsLed              Group[]              @relation("GroupLeader")
   // Activity relations
@@ -707,7 +710,7 @@ model Session {
   userAgent            String?
   userId               String
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Better Auth uses this to track active organization
+  // Better Auth uses this to track active organization (church)
   activeOrganizationId String?
   @@map("session")
 }
@@ -747,17 +750,17 @@ model Verification {
 model Organization {
   id          String       @id @default(cuid())
   name        String
-  slug        String      @unique
+  slug        String       @unique
   logo        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  metadata    Json // flexible extras
+  metadata    Json?        // flexible extras - store church-specific info
   // Better Auth requires these relations
   members     Member[]
   invitations Invitation[]
+  teams       Team[]       // Branches are teams in Better Auth
   // Relations
   address          Address?
-  branches         Branch[]
   departments      Department[]
   groups           Group[]
   events           Event[]
@@ -783,7 +786,60 @@ model Organization {
 }
 
 // ============================================
-// MEMBER MODEL
+// TEAM MODEL (BRANCH IN BETTER AUTH)
+// ============================================
+
+model Team {
+  id             String       @id @default(cuid())
+  name           String       // Team name
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  // Extended team fields
+  email           String?
+  phoneNumber     String?
+  capacity        Int?
+  memberCount     Int          @default(0)
+  establishedDate DateTime?
+  description     String?
+  isActive        Boolean      @default(true)
+  isDeleted       Boolean      @default(false)
+  metadata        Json?        // Store additional team info
+  // Team leadership
+  pastorId        String?
+  pastor          User?        @relation("TeamPastor", fields: [pastorId], references: [id])
+  // Relations - Members assigned to this branch/team
+  members         Member[]     @relation("TeamMembers")
+  // Departments and Groups belong to teams/branches
+  departments     Department[] @relation("TeamDepartments")
+  groups          Group[]      @relation("TeamGroups")
+  // Other team-specific relations
+  serviceSchedules    ServiceSchedule[]
+  prayerRequests      PrayerRequest[]
+  activities          Activity[]
+  assets              Asset[]
+  address             Address[]
+  announcements       Announcement[]
+  attendances         Attendance[]
+  events              Event[]
+  reports             Report[]
+  milestones          Milestone[]
+  offerings           Offering[]
+  disciples           Disciple[]
+  pledges             Pledge[]
+  discipleProgress    DiscipleProgress[]
+  content             Content[]
+  messageRecipients   MessageRecipient[]
+  messages            Message[]
+  @@index([organizationId, isActive])
+  @@index([organizationId, isDeleted])
+  @@index([pastorId])
+  @@map("team")
+}
+
+// ============================================
+// MEMBER MODEL (CHURCH MEMBERSHIP)
 // ============================================
 
 model Member {
@@ -792,16 +848,16 @@ model Member {
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
   user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Role within the organization
+  // Role within the organization (church)
   role           ORGANIZATIONUserRole @default(MEMBER)
   createdAt      DateTime             @default(now())
-  // Branch assignment within church
-  branchId       String?
-  branch         Branch?              @relation("BranchMembers", fields: [branchId], references: [id])
+  // Team (Branch) assignment within church
+  teamId         String?
+  team           Team?                @relation("TeamMembers", fields: [teamId], references: [id])
   // Composite unique constraint required by Better Auth
   @@unique([organizationId, userId])
   @@index([userId])
-  @@index([branchId])
+  @@index([teamId])
   @@map("member")
 }
 
@@ -819,6 +875,9 @@ model Invitation {
   expiresAt      DateTime
   inviterId      String
   inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  // Optional team assignment for invitation
+  teamId         String?      // Invite to specific team/branch
   // Unique constraint for email per organization
   @@unique([organizationId, email])
   @@index([email])
@@ -842,8 +901,8 @@ model Address {
   user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   churchId  String?       @unique
   church    Organization? @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  branchId  String?       @unique
-  branch    Branch?       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  teamId  String?       @unique
+  team    Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
   @@map("address")
 }
 
@@ -908,7 +967,7 @@ model PastorAssignment {
   isActive         Boolean       @default(true)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
-  branchId         String?
+  teamId           String?       // Reference to branch/team
   pastorDetailsId  String
   pastorDetails    PastorDetails @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
   @@map("pastor_assignment")
@@ -924,7 +983,7 @@ model BishopDetails {
   biography        String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  branchIds        String[]
+  teamIds        String[] // Team IDs the bishop oversees
   pastorIds        String[]
   userId           String   @unique
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1007,7 +1066,7 @@ model AdminDetails {
   accessLevel      AdminAccessLevel @default(NATIONAL)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  assignedBranches String[]
+  assignedTeams String[]         // Team IDs assigned to this admin
   userId           String           @unique
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("admin_details")
@@ -1032,50 +1091,8 @@ model VisitorDetails {
 }
 
 // ============================================
-// BRANCH AND ORGANIZATIONAL STRUCTURE
+// DEPARTMENT MODEL (REFERENCES TEAM/BRANCH)
 // ============================================
-
-model Branch {
-  id              String       @id @default(cuid())
-  branchName      String       @unique
-  email           String?
-  phoneNumber     String?
-  capacity        Int
-  members         Int          @default(0)
-  establishedDate DateTime
-  description     String?
-  isActive        Boolean      @default(true)
-  isDeleted       Boolean      @default(false)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  churchId        String
-  church          Organization @relation(fields: [churchId], references: [id])
-  pastorId        String?
-  pastor          User?        @relation("BranchPastor", fields: [pastorId], references: [id])
-  // Relations
-  users               Member[]            @relation("BranchMembers")
-  serviceSchedules    ServiceSchedule[]
-  prayerRequests      PrayerRequest[]
-  activities          Activity[]
-  assets              Asset[]
-  address             Address[]
-  announcements       Announcement[]
-  attendances         Attendance[]
-  events              Event[]
-  reports             Report[]
-  milestones          Milestone[]
-  offerings           Offering[]
-  disciples           Disciple[]
-  pledges             Pledge[]
-  discipleProgress    DiscipleProgress[]
-  content             Content[]
-  messageRecipients   MessageRecipient[]
-  messages            Message[]
-  @@index([churchId, isActive])
-  @@index([churchId, isDeleted])
-  @@index([pastorId])
-  @@map("branch")
-}
 
 model Department {
   id              String               @id @default(cuid())
@@ -1091,9 +1108,13 @@ model Department {
   totalBudget     Float                @default(0)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
+  // Church/Organization reference
   churchId        String
   church          Organization         @relation(fields: [churchId], references: [id])
-  branchId        String?
+  // Branch/Team reference - departments belong to branches
+  teamId          String
+  team            Team                 @relation("TeamDepartments", fields: [teamId], references: [id])
+  // Department leader
   leaderId        String?
   leader          User?                @relation("DepartmentLeader", fields: [leaderId], references: [id])
   // Relations
@@ -1102,7 +1123,8 @@ model Department {
   expenses        Expense[]
   activities      DepartmentActivity[]
   goals           DepartmentGoal[]
-  @@index([churchId])
+  @@index([churchId, teamId])
+  @@index([teamId, isActive])
   @@index([leaderId])
   @@map("department")
 }
@@ -1188,6 +1210,10 @@ model DepartmentGoal {
   @@map("department_goal")
 }
 
+// ============================================
+// GROUP MODEL (SMALL GROUPS - REFERENCES TEAM/BRANCH)
+// ============================================
+
 model Group {
   id                String              @id @default(cuid())
   groupName         String
@@ -1206,8 +1232,13 @@ model Group {
   completedGoals    Int                 @default(0)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+  // Church/Organization reference
   churchId          String
   church            Organization        @relation(fields: [churchId], references: [id])
+  // Branch/Team reference - small groups belong to branches
+  teamId            String
+  team              Team                @relation("TeamGroups", fields: [teamId], references: [id])
+  // Group leader
   leaderId          String?
   leader            User?               @relation("GroupLeader", fields: [leaderId], references: [id])
   // Relations
@@ -1215,11 +1246,14 @@ model Group {
   activities        GroupActivity[]
   goals             GroupGoal[]
   attendanceSummaries AttendanceSummary[]
-  @@index([churchId])
+  @@index([churchId, teamId])
+  @@index([teamId, isActive])
   @@index([leaderId])
   @@index([category])
   @@map("group")
 }
+
+
 
 model GroupMember {
   id          String     @id @default(cuid())
@@ -1334,11 +1368,11 @@ model Event {
   updatedAt            DateTime    @updatedAt
   churchId             String
   church               Organization @relation(fields: [churchId], references: [id])
-  branchId             String
-  branch               Branch       @relation(fields: [branchId], references: [id])
+  teamId             String
+  team               Team       @relation(fields: [teamId], references: [id])
   @@index([churchId, startDate])
   @@index([status])
-  @@index([branchId])
+  @@index([teamId])
   @@map("event")
 }
 
@@ -1359,9 +1393,9 @@ model Activity {
   updatedAt    DateTime         @updatedAt
   churchId     String
   church       Organization     @relation(fields: [churchId], references: [id])
-  branchId     String
-  branch       Branch           @relation(fields: [branchId], references: [id])
-  @@index([churchId, branchId])
+  teamId     String
+  team       Team           @relation(fields: [teamId], references: [id])
+  @@index([churchId, teamId])
   @@index([churchId, date])
   @@index([date, status])
   @@map("activity")
@@ -1383,8 +1417,8 @@ model Offering {
   updatedAt DateTime      @updatedAt
   churchId  String
   church    Organization  @relation(fields: [churchId], references: [id])
-  branchId  String
-  branch    Branch        @relation(fields: [branchId], references: [id])
+  teamId  String
+  team    Team        @relation(fields: [teamId], references: [id])
   memberId  String
   member    User          @relation(fields: [memberId], references: [id])
   @@index([churchId, date])
@@ -1406,8 +1440,8 @@ model Pledge {
   updatedAt       DateTime        @updatedAt
   churchId        String
   church          Organization    @relation(fields: [churchId], references: [id])
-  branchId        String
-  branch          Branch          @relation(fields: [branchId], references: [id])
+  teamId        String
+  team          Team          @relation(fields: [teamId], references: [id])
   memberId        String
   member          User            @relation(fields: [memberId], references: [id])
   @@index([churchId, status])
@@ -1436,12 +1470,12 @@ model PrayerRequest {
   updatedAt         DateTime       @updatedAt
   churchId          String
   church            Organization   @relation(fields: [churchId], references: [id])
-  branchId          String
-  branch            Branch         @relation(fields: [branchId], references: [id])
+  teamId          String
+  team            Team         @relation(fields: [teamId], references: [id])
   memberId          String?
   submittedBy       String
   submitter         User           @relation("PrayerRequestSubmitter", fields: [submittedBy], references: [id])
-  @@index([churchId, branchId])
+  @@index([churchId, teamId])
   @@index([churchId, category])
   @@index([churchId, status])
   @@map("prayer_request")
@@ -1467,9 +1501,9 @@ model ServiceSchedule {
   updatedAt   DateTime     @updatedAt
   churchId    String
   church      Organization @relation(fields: [churchId], references: [id])
-  branchId    String
-  branch      Branch       @relation(fields: [branchId], references: [id])
-  @@index([churchId, branchId])
+  teamId    String
+  team      Team       @relation(fields: [teamId], references: [id])
+  @@index([churchId, teamId])
   @@map("service_schedule")
 }
 
@@ -1484,8 +1518,8 @@ model Attendance {
   updatedAt      DateTime           @updatedAt
   churchId       String
   church         Organization       @relation(fields: [churchId], references: [id])
-  branchId       String
-  branch         Branch             @relation(fields: [branchId], references: [id])
+  teamId       String
+  team         Team             @relation(fields: [teamId], references: [id])
   takenBy        String
   taker          User               @relation(fields: [takenBy], references: [id])
   records        AttendanceRecord[]
@@ -1518,11 +1552,11 @@ model Asset {
   updatedAt           DateTime            @updatedAt
   churchId            String
   church              Organization        @relation(fields: [churchId], references: [id])
-  branchId            String
-  branch              Branch              @relation(fields: [branchId], references: [id])
+  teamId            String
+  team              Team              @relation(fields: [teamId], references: [id])
   maintenanceRecords  MaintenanceRecord[]
   @@index([churchId, status])
-  @@index([branchId])
+  @@index([teamId])
   @@map("asset")
 }
 
@@ -1561,11 +1595,11 @@ model Announcement {
   updatedAt        DateTime             @updatedAt
   churchId         String
   church           Organization         @relation(fields: [churchId], references: [id])
-  branchId         String?
-  branch           Branch?              @relation(fields: [branchId], references: [id])
+  teamId         String?
+  team           Team?              @relation(fields: [teamId], references: [id])
   authorId         String
   author           User                 @relation(fields: [authorId], references: [id])
-  @@index([churchId, branchId])
+  @@index([churchId, teamId])
   @@index([churchId, category])
   @@index([churchId, status])
   @@index([publishDate])
@@ -1586,10 +1620,10 @@ model ChurchSubscription {
   paidAmount         Float              @default(0)
   balAmount          Float              @default(0)
   maxUsers           Int?
-  maxBranches        Int?               @default(1)
+  maxTeams        Int?               @default(1)
   maxSmallGroups     Int?
   currentUsers       Int                @default(0)
-  currentBranches    Int                @default(0)
+  currentTeams    Int                @default(0)
   currentSmallGroups Int                @default(0)
   features           String[]
   startDate          DateTime
@@ -1715,12 +1749,12 @@ model Report {
   updatedAt       DateTime      @updatedAt
   churchId        String
   church          Organization  @relation(fields: [churchId], references: [id])
-  branchId        String?
-  branch          Branch?       @relation(fields: [branchId], references: [id])
+  teamId        String?
+  team          Team?       @relation(fields: [teamId], references: [id])
   reportData      ReportData?
   createdBy       String
   creator         User          @relation(fields: [createdBy], references: [id])
-  @@index([churchId, branchId])
+  @@index([churchId, teamId])
   @@index([churchId, status])
   @@index([churchId, type])
   @@index([createdBy])
@@ -1775,11 +1809,11 @@ model Milestone {
   updatedAt              DateTime            @updatedAt
   churchId               String
   church                 Organization        @relation(fields: [churchId], references: [id])
-  branchId               String?
-  branch                 Branch?             @relation(fields: [branchId], references: [id])
+  teamId               String?
+  team                 Team?             @relation(fields: [teamId], references: [id])
   discipleProgress       DiscipleProgress[]
   milestoneProgress      MilestoneProgress[]
-  @@index([churchId, branchId])
+  @@index([churchId, teamId])
   @@index([churchId, category])
   @@index([churchId, level])
   @@index([churchId, isActive])
@@ -1832,14 +1866,14 @@ model Message {
   updatedAt     DateTime                  @updatedAt
   churchId      String
   church        Organization              @relation(fields: [churchId], references: [id])
-  branchId      String?
-  branch        Branch?                   @relation(fields: [branchId], references: [id])
+  teamId      String?
+  team        Team?                   @relation(fields: [teamId], references: [id])
   templateId    String?
   template      MessageTemplate?          @relation(fields: [templateId], references: [id])
   deliveryStats MessageDeliveryStats?
   createdBy     String
   creator       User                      @relation(fields: [createdBy], references: [id])
-  @@index([churchId, branchId])
+  @@index([churchId, teamId])
   @@index([churchId, status])
   @@index([churchId, type])
   @@index([scheduleDate, status])
@@ -1876,15 +1910,15 @@ model MessageRecipient {
   updatedAt    DateTime          @updatedAt
   churchId     String
   church       Organization      @relation(fields: [churchId], references: [id])
-  branchId     String?
-  branch       Branch?           @relation(fields: [branchId], references: [id])
+  teamId     String?
+  team       Team?           @relation(fields: [teamId], references: [id])
   criteria     RecipientCriteria?
   createdBy    String
   creator      User              @relation(fields: [createdBy], references: [id])
   @@unique([churchId, recipientId])
   @@index([churchId, isActive])
   @@index([churchId, type, isActive])
-  @@index([branchId])
+  @@index([teamId])
   @@index([targetModel, targetId])
   @@map("message_recipient")
 }
@@ -1924,14 +1958,14 @@ model Disciple {
   updatedAt           DateTime           @updatedAt
   churchId            String
   church              Organization       @relation(fields: [churchId], references: [id])
-  branchId            String?
-  branch              Branch?            @relation(fields: [branchId], references: [id])
+  teamId            String?
+  team              Team?            @relation(fields: [teamId], references: [id])
   memberId            String
   member              User               @relation("DiscipleMember", fields: [memberId], references: [id])
   mentorId            String
   mentor              User               @relation("DiscipleMentor", fields: [mentorId], references: [id])
   discipleProgress    DiscipleProgress[]
-  @@index([churchId, branchId])
+  @@index([churchId, teamId])
   @@index([churchId, memberId])
   @@index([churchId, mentorId])
   @@index([churchId, status])
@@ -1951,8 +1985,8 @@ model DiscipleProgress {
   updatedAt          DateTime            @updatedAt
   discipleId         String
   disciple           Disciple            @relation(fields: [discipleId], references: [id])
-  branchId           String?
-  branch             Branch?             @relation(fields: [branchId], references: [id])
+  teamId           String?
+  team             Team?             @relation(fields: [teamId], references: [id])
   milestones         Milestone[]
   milestoneProgress  MilestoneProgress[]
   @@map("disciple_progress")
@@ -1992,8 +2026,8 @@ model Content {
   updatedAt    DateTime        @updatedAt
   churchId     String
   church       Organization    @relation(fields: [churchId], references: [id])
-  branchId     String?
-  branch       Branch?         @relation(fields: [branchId], references: [id])
+  teamId     String?
+  team       Team?         @relation(fields: [teamId], references: [id])
   @@index([churchId, type])
   @@map("content")
 }

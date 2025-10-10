@@ -21,6 +21,9 @@ export const authClient = createAuthClient({
   plugins: [
     inferAdditionalFields<typeof auth>(),
     organizationClient({
+      teams: {
+        enabled: true,
+      },
       ac,
       roles: {
         OWNER: owner,

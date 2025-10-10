@@ -93,7 +93,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
         zipCode: '',
         country: 'Kenya',
       },
-      subscriptionPlan: 'basic',
+      subscriptionPlan: 'BASIC',
       churchSize: '',
       numberOfBranches: '',
     },

@@ -1,6 +1,6 @@
 'use client';
 
-import RenderApiError from '@/components/api-error';
+import RenderBetterAuthError from '@/components/better-auth-error';
 import { PasswordInput } from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,7 +46,6 @@ export default function AdminLoginForm() {
         setError(
           error.message || 'Login failed. Please check your credentials.'
         );
-        setIsLoading(false);
       } else {
         form.reset();
         toast.success('Signed in successfully!', {
@@ -60,7 +59,6 @@ export default function AdminLoginForm() {
           ? err.message
           : 'An unexpected error occurred. Please try again.';
       setError(errorMessage);
-      toast.error(errorMessage);
       setIsLoading(false);
     } finally {
       setIsLoading(false);
@@ -68,7 +66,7 @@ export default function AdminLoginForm() {
   };
   return (
     <>
-      {error && <RenderApiError error={error} />}
+      {error && <RenderBetterAuthError error={error} />}
       <Form {...form}>
         <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
           <FormField

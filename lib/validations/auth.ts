@@ -78,7 +78,7 @@ export const churchDataSchema = z.object({
     state: z.string().optional(),
     zipCode: z.string().optional(),
   }),
-  subscriptionPlan: z.enum(['basic', 'standard', 'premium', 'enterprise']),
+  subscriptionPlan: z.enum(['BASIC', 'MINISTRY', 'CATHEDRAL', 'CUSTOM']),
   // numberOfBranches: z.coerce.number().min(1, 'Please enter number of branches'),
   numberOfBranches: z
     .string()

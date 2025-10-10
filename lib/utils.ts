@@ -270,22 +270,22 @@ export const NUMBER_OF_CHURCH_MEMBERS_OPTIONS = [
 
 export const SUBSCRIPTION_PLANS = [
   {
-    value: 'basic',
+    value: 'BASIC',
     label: 'Basic - KES 2,999/Month',
     description: 'Up to 100 members, basic features',
   },
   {
-    value: 'ministry',
+    value: 'MINISTRY',
     label: 'Ministry - KES 4,999/Month',
     description: 'Up to 500 members, advanced features',
   },
   {
-    value: 'cathedral',
+    value: 'CATHEDRAL',
     label: 'Cathedral - KES 9,999/Month',
     description: 'Unlimited members, all features',
   },
   {
-    value: 'enterprise',
+    value: 'CUSTOM',
     label: 'Enterprise - Custom',
     description: 'Custom solution for large churches',
   },

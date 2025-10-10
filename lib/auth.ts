@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/suspicious/useAwait: ignore */
+import type { ChurchPlan } from '@/generated/prisma';
 import {
   ac,
   admin,
@@ -173,6 +174,11 @@ export const auth = betterAuth({
   },
   plugins: [
     organization({
+      teams: {
+        enabled: true,
+        maximumTeams: 1000, // Optional: limit teams per organization
+        allowRemovingAllTeams: false, // Optional: prevent removing the last team
+      },
       ac,
       roles: {
         OWNER: owner,
@@ -212,14 +218,14 @@ export const auth = betterAuth({
 
       // ✅ FIXED: Correct hook names
       organizationCreation: {
-        beforeCreate: async ({ organization, user }, request) => {
+        beforeCreate: async ({ organization, user }) => {
           return {
             data: {
               ...organization,
             },
           };
         },
-        afterCreate: async ({ organization, member, user }, request) => {
+        afterCreate: async ({ organization, member, user }) => {
           try {
             // Extract metadata
             const metadata = organization.metadata as IOrganizationMetadata;
@@ -231,7 +237,7 @@ export const auth = betterAuth({
             await prisma.churchSubscription.create({
               data: {
                 churchId: organization.id,
-                plan: plan.toUpperCase(),
+                plan: plan.toUpperCase() as ChurchPlan,
                 status: 'TRIAL',
                 startDate: new Date(),
                 endDate: trialEnd,
@@ -239,10 +245,10 @@ export const auth = betterAuth({
                 nextBillingDate: trialEnd,
               },
             });
-            await prisma.branch.create({
+            await prisma.team.create({
               data: {
-                branchName: 'Main Branch',
-                churchId: organization.id,
+                name: 'Main Branch',
+                organizationId: organization.id,
                 establishedDate: new Date(),
                 capacity: 500,
                 isActive: true,
@@ -255,8 +261,8 @@ export const auth = betterAuth({
                 // },
               },
             });
-          } catch (error) {
-            console.error('❌ Error in afterCreate hook:', error);
+          } catch (_error) {
+            throw new Error('Failed to create default subscription or team');
             // Log the error but don't throw - organization was already created
             // You could also choose to throw here to rollback the organization creation
           }
