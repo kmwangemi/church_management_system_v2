@@ -25,30 +25,47 @@ class Logger {
             errorCode: error.code,
           }
         : {};
-      // If no organizationId is provided, skip database logging
-      // This prevents errors during initial setup or when organization context is unavailable
+      // If no organizationId is provided, try to use a system default or skip for non-critical logs
       if (!organizationId) {
-        console.warn(
-          'No organizationId provided for log, skipping database entry:',
-          {
-            level,
-            message,
-            metadata,
-          }
-        );
+        // For ERROR level, still log to console but skip database
+        if (level === 'ERROR') {
+          console.error(
+            'ERROR log without organizationId - logging to console only:',
+            {
+              level,
+              message,
+              metadata,
+              error,
+            }
+          );
+        } else {
+          console.warn(
+            'No organizationId provided for log, skipping database entry:',
+            {
+              level,
+              message,
+              metadata,
+            }
+          );
+        }
         return;
       }
+      // Build data object conditionally to avoid undefined values
+      const logData: any = {
+        level,
+        message,
+        source,
+        environment,
+        metadata: metadata || {},
+        organizationId,
+        ...errorDetails,
+      };
+      // Only add userId if it's provided
+      if (userId) {
+        logData.userId = userId;
+      }
       await prisma.log.create({
-        data: {
-          level,
-          message,
-          source,
-          environment,
-          metadata: metadata || {},
-          userId,
-          organizationId,
-          ...errorDetails,
-        },
+        data: logData,
       });
     } catch (logError) {
       // Fallback to console if database logging fails

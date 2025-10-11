@@ -1,29 +1,80 @@
+// ============================================
+// SERVER ACTIONS - lib/actions/member.ts
+// ============================================
 'use server';
 
+import type { ORGANIZATIONUserRole, Prisma } from '@/generated/prisma';
 import { getServerSession } from '@/lib/get-session';
-import { logger } from '@/lib/logger';
 import prisma from '@/lib/prisma';
-import type { AddUserPayload } from '@/lib/validations/users';
+import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
-
-// ============================================
-// LOGGER UTILITY
-// ============================================
-
-function createActionLogger(actionName: string, organizationId?: string) {
-  return logger.createContextLogger(
-    {
-      action: actionName,
-      organizationId: organizationId || 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-    'server-action'
-  );
-}
 
 // ============================================
 // TYPES & INTERFACES
 // ============================================
+
+export interface AdminGetOrganizationMembersParams {
+  organizationId: string | undefined;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  teamId?: string;
+  sortBy?: 'name' | 'createdAt' | 'role';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface AdminGetMembersResponse {
+  members: any[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+// ============================================
+// UPDATED INTERFACE FOR adminAddMemberToOrganization
+// ============================================
+
+// Update the AdminAddMemberParams interface to match AddUserPayload
+export interface AdminAddMemberParams {
+  organizationId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  gender: 'MALE' | 'FEMALE';
+  role: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
+  organizationRole: ORGANIZATIONUserRole;
+  isMember: boolean;
+  teamId?: string;
+  sendWelcomeEmail?: boolean;
+}
+
+// ============================================
+// UPDATED INTERFACE FOR adminUpdateOrganizationMember
+// ============================================
+
+// Make sure this matches the type used in the hook
+export interface AdminUpdateOrganizationMemberParams {
+  memberId: string;
+  organizationId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: 'MALE' | 'FEMALE';
+  role?: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
+  organizationRole?: ORGANIZATIONUserRole;
+  status?: string;
+  isMember?: boolean;
+  teamId?: string;
+}
 
 export interface AdminServerActionResponse<T = any> {
   success: boolean;
@@ -33,56 +84,156 @@ export interface AdminServerActionResponse<T = any> {
 }
 
 // ============================================
-// ADMIN ADD ORGANIZATION MEMBER
+// 1. ADMIN GET ORGANIZATION MEMBERS
 // ============================================
 
-export async function adminAddOrganizationMember(
-  params: AddUserPayload
+export async function adminGetOrganizationMembers(
+  params: AdminGetOrganizationMembersParams
+): Promise<AdminGetMembersResponse> {
+  const session = await getServerSession();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+  const {
+    organizationId,
+    page = 1,
+    pageSize = 10,
+    search = '',
+    role,
+    status,
+    teamId,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+  } = params;
+  const where: Prisma.MemberWhereInput = {
+    organizationId,
+  };
+  // Filter by organization role
+  if (role && role !== 'all') {
+    where.role = role as ORGANIZATIONUserRole;
+  }
+  // Filter by team membership
+  if (teamId && teamId !== 'all') {
+    where.user = {
+      teammembers: {
+        some: {
+          teamId,
+        },
+      },
+    };
+  }
+  // Search by user details
+  if (search) {
+    where.user = {
+      ...where.user,
+    };
+    where.OR = [
+      {
+        user: {
+          name: { contains: search, mode: 'insensitive' },
+        },
+      },
+      {
+        user: {
+          email: { contains: search, mode: 'insensitive' },
+        },
+      },
+      {
+        user: {
+          phoneNumber: { contains: search, mode: 'insensitive' },
+        },
+      },
+    ];
+  }
+  // Filter by user status
+  if (status && status !== 'all') {
+    where.user = {
+      ...where.user,
+      status,
+    };
+  }
+  let orderBy: Prisma.MemberOrderByWithRelationInput = {};
+  switch (sortBy) {
+    case 'name':
+      orderBy = { user: { name: sortOrder } };
+      break;
+    case 'role':
+      orderBy = { role: sortOrder };
+      break;
+    default:
+      orderBy = { createdAt: sortOrder };
+      break;
+  }
+  const skip = (page - 1) * pageSize;
+  const [members, total] = await Promise.all([
+    prisma.member.findMany({
+      where,
+      include: {
+        user: {
+          include: {
+            address: true,
+            emergencyContact: true,
+            memberDetails: true,
+            pastorDetails: true,
+            bishopDetails: true,
+            staffDetails: true,
+            volunteerDetails: true,
+            adminDetails: true,
+            visitorDetails: true,
+            teammembers: {
+              include: {
+                team: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy,
+      skip,
+      take: pageSize,
+    }),
+    prisma.member.count({ where }),
+  ]);
+  const totalPages = Math.ceil(total / pageSize);
+  return {
+    members,
+    pagination: {
+      total,
+      page,
+      pageSize,
+      totalPages,
+      hasMore: page < totalPages,
+    },
+  };
+}
+
+// ============================================
+// 2. ADMIN ADD MEMBER TO ORGANIZATION
+// ============================================
+
+export async function adminAddMemberToOrganization(
+  params: AdminAddMemberParams
 ): Promise<AdminServerActionResponse> {
-  const contextLogger = createActionLogger(
-    'addOrganizationMember',
-    params.organizationId
-  );
   try {
-    contextLogger.info('Starting add organization member', {
-      organizationId: params.organizationId,
-      email: params.email,
-      role: params.role,
-    });
     const session = await getServerSession();
     if (!session?.user) {
-      contextLogger.warn('Unauthorized access attempt');
       return { success: false, error: 'Unauthorized' };
     }
-    contextLogger.info('Session validated', { userId: session.user.id });
     const {
       organizationId,
       firstName,
       lastName,
       email,
       phoneNumber,
+      password,
       gender,
       role,
-      address,
+      organizationRole,
       isMember,
-      isStaff,
-      branchId,
+      teamId,
       sendWelcomeEmail = false,
     } = params;
-    // Validate required fields
-    if (!(firstName && lastName && email)) {
-      contextLogger.error('Missing required fields', {
-        hasFirstName: !!firstName,
-        hasLastName: !!lastName,
-        hasEmail: !!email,
-      });
-      return {
-        success: false,
-        error:
-          'Missing required fields: firstName, lastName, email, or password',
-      };
-    }
-    // Check if user has permission to add members (must be OWNER or ADMIN)
+    // Check if user has permission to add members
     const hasPermission = await prisma.member.findFirst({
       where: {
         organizationId,
@@ -93,28 +244,16 @@ export async function adminAddOrganizationMember(
       },
     });
     if (!hasPermission) {
-      contextLogger.warn('Permission denied', {
-        userId: session.user.id,
-        organizationId,
-      });
       return {
         success: false,
         error: 'You do not have permission to add members to this organization',
       };
     }
-    contextLogger.info('Permission check passed', {
-      requesterId: session.user.id,
-      requesterRole: hasPermission.role,
-    });
     // Check if email already exists in the system
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
     if (existingUser) {
-      contextLogger.info('Existing user found', {
-        userId: existingUser.id,
-        email,
-      });
       // Check if user is already a member of this organization
       const existingMember = await prisma.member.findFirst({
         where: {
@@ -123,61 +262,48 @@ export async function adminAddOrganizationMember(
         },
       });
       if (existingMember) {
-        contextLogger.warn('User already a member', {
-          userId: existingUser.id,
-          memberId: existingMember.id,
-        });
         return {
           success: false,
           error: 'This user is already a member of this organization',
         };
       }
       // Add existing user to organization
-      const member = await prisma.member.create({
-        data: {
-          userId: existingUser.id,
-          organizationId,
-          role,
-          branchId: branchId || null,
-        },
-        include: {
-          user: {
-            include: {
-              address: true,
-            },
+      const result = await prisma.$transaction(async (tx) => {
+        // Create member record
+        const member = await tx.member.create({
+          data: {
+            userId: existingUser.id,
+            organizationId,
+            role: organizationRole,
           },
-        },
-      });
-      // Update user's additional fields if needed
-      await prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
-          phoneNumber: phoneNumber || existingUser.phoneNumber,
-          gender: gender || existingUser.gender,
-          isMember: isMember || existingUser.isMember,
-          isStaff: isStaff || existingUser.isStaff,
-          updatedBy: session.user.id,
-        },
-      });
-      contextLogger.info('Existing user added to organization', {
-        memberId: member.id,
-        userId: existingUser.id,
-        role,
-      });
-      if (sendWelcomeEmail) {
-        // TODO: Send welcome email
-        contextLogger.info('Welcome email requested for existing user', {
-          email,
+          include: {
+            user: true,
+          },
         });
+        // Add to team if teamId provided
+        if (teamId) {
+          await tx.teamMember.create({
+            data: {
+              userId: existingUser.id,
+              teamId,
+            },
+          });
+        }
+        return member;
+      });
+      // TODO: Send welcome email if requested
+      if (sendWelcomeEmail) {
+        // await sendWelcomeEmail(result.user.email, organizationId);
       }
-      revalidatePath('/dashboard/church/users');
+      revalidatePath('/church/users');
       return {
         success: true,
-        data: member,
-        message: 'Existing user added to organization successfully',
+        data: result,
+        message: 'Member added successfully',
       };
     }
-    contextLogger.info('Creating new user', { email });
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
     // Create new user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user
@@ -189,81 +315,54 @@ export async function adminAddOrganizationMember(
           phoneNumber,
           gender,
           isMember,
-          isStaff,
-          role: role as any,
+          role, // User role (not organization role)
           status: 'ACTIVE',
           createdBy: session.user.id,
         },
       });
-      contextLogger.info('User created', { userId: user.id });
-      // Create account with password (Better Auth format)
+      // Create account with password
       await tx.account.create({
         data: {
           userId: user.id,
           accountId: user.id,
           providerId: 'credential',
+          password: hashedPassword,
         },
       });
-      contextLogger.info('Account created', { userId: user.id });
-      // Create address if provided
-      if (address && (address.street || address.city)) {
-        await tx.address.create({
-          data: {
-            userId: user.id,
-            street: address.street || '',
-            city: address.city || '',
-            state: address.state || '',
-            zipCode: address.zipCode || '',
-            country: address.country || 'Kenya',
-          },
-        });
-        contextLogger.info('Address created', { userId: user.id });
-      }
-      // Create member record (organization membership)
+      // Create member record
       const member = await tx.member.create({
         data: {
           userId: user.id,
           organizationId,
-          role,
-          branchId: branchId || null,
+          role: organizationRole,
         },
         include: {
-          user: {
-            include: {
-              address: true,
-              emergencyContact: true,
-            },
-          },
-          branch: true,
+          user: true,
         },
       });
-      contextLogger.info('Member created', {
-        memberId: member.id,
-        userId: user.id,
-        role,
-      });
+      // Add to team if teamId provided
+      if (teamId) {
+        await tx.teamMember.create({
+          data: {
+            userId: user.id,
+            teamId,
+          },
+        });
+      }
       return { user, member };
     });
+    // TODO: Send welcome email if requested
     if (sendWelcomeEmail) {
-      contextLogger.info('Welcome email requested for new user', { email });
-      // TODO: Send welcome email with credentials
+      // await sendWelcomeEmailWithCredentials(result.user.email, password, organizationId);
     }
-    contextLogger.info('Member added successfully', {
-      memberId: result.member.id,
-      userId: result.user.id,
-    });
-    revalidatePath('/dashboard/church/users');
+    revalidatePath('/church/users');
     return {
       success: true,
       data: result.member,
       message: 'Member added successfully',
     };
   } catch (error: any) {
-    contextLogger.error('Error adding organization member', {
-      error: error.message,
-      stack: error.stack,
-      organizationId: params.organizationId,
-    });
+    console.error('Error adding member:', error);
     return {
       success: false,
       error: error.message || 'Failed to add member',
@@ -272,49 +371,15 @@ export async function adminAddOrganizationMember(
 }
 
 // ============================================
-// ADMIN UPDATE ORGANIZATION MEMBER
+// 3. ADMIN UPDATE MEMBER
 // ============================================
-
-export interface AdminUpdateOrganizationMemberParams {
-  memberId: string;
-  organizationId: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phoneNumber?: string;
-  gender?: 'MALE' | 'FEMALE';
-  role?: 'VISITOR' | 'OWNER' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-  isMember?: boolean;
-  isStaff?: boolean;
-  branchId?: string;
-  status?: string;
-}
 
 export async function adminUpdateOrganizationMember(
   params: AdminUpdateOrganizationMemberParams
 ): Promise<AdminServerActionResponse> {
-  const contextLogger = createActionLogger(
-    'updateOrganizationMember',
-    params.organizationId
-  );
   try {
-    contextLogger.info('Starting update organization member', {
-      memberId: params.memberId,
-      organizationId: params.organizationId,
-      updates: Object.keys(params).filter(
-        (k) => k !== 'memberId' && k !== 'organizationId'
-      ),
-    });
     const session = await getServerSession();
     if (!session?.user) {
-      contextLogger.warn('Unauthorized access attempt');
       return { success: false, error: 'Unauthorized' };
     }
     const {
@@ -326,11 +391,10 @@ export async function adminUpdateOrganizationMember(
       phoneNumber,
       gender,
       role,
-      address,
-      isMember,
-      isStaff,
-      branchId,
+      organizationRole,
       status,
+      isMember,
+      teamId,
     } = params;
     // Check if user has permission to update members
     const hasPermission = await prisma.member.findFirst({
@@ -343,46 +407,28 @@ export async function adminUpdateOrganizationMember(
       },
     });
     if (!hasPermission) {
-      contextLogger.warn('Permission denied', {
-        userId: session.user.id,
-        organizationId,
-      });
       return {
         success: false,
         error:
           'You do not have permission to update members in this organization',
       };
     }
-    contextLogger.info('Permission check passed', {
-      requesterId: session.user.id,
-      requesterRole: hasPermission.role,
-    });
-    // Get existing member with user details
+    // Get member with user details
     const existingMember = await prisma.member.findUnique({
       where: { id: memberId },
       include: {
         user: {
           include: {
-            address: true,
+            teammembers: true,
           },
         },
       },
     });
     if (!existingMember) {
-      contextLogger.warn('Member not found', { memberId });
       return { success: false, error: 'Member not found' };
     }
-    contextLogger.info('Existing member found', {
-      memberId,
-      userId: existingMember.userId,
-      currentRole: existingMember.role,
-    });
     // Prevent non-owners from updating owner role
     if (existingMember.role === 'OWNER' && hasPermission.role !== 'OWNER') {
-      contextLogger.warn('Attempt to update owner by non-owner', {
-        requesterId: session.user.id,
-        targetMemberId: memberId,
-      });
       return {
         success: false,
         error: 'Only owners can update owner members',
@@ -391,7 +437,7 @@ export async function adminUpdateOrganizationMember(
     // Update user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Prepare user update data
-      const userUpdateData: any = {
+      const userUpdateData: Prisma.UserUpdateInput = {
         updatedBy: session.user.id,
       };
       if (firstName || lastName) {
@@ -402,81 +448,22 @@ export async function adminUpdateOrganizationMember(
           .join(' ');
         userUpdateData.name =
           `${firstName || currentFirstName} ${lastName || currentLastName}`.trim();
-        contextLogger.info('Updating name', {
-          from: existingMember.user.name,
-          to: userUpdateData.name,
-        });
       }
-      if (email) {
-        contextLogger.info('Updating email', {
-          from: existingMember.user.email,
-          to: email,
-        });
-        userUpdateData.email = email;
-      }
+      if (email) userUpdateData.email = email;
       if (phoneNumber !== undefined) userUpdateData.phoneNumber = phoneNumber;
       if (gender) userUpdateData.gender = gender;
-      if (status) {
-        contextLogger.info('Updating status', {
-          from: existingMember.user.status,
-          to: status,
-        });
-        userUpdateData.status = status;
-      }
+      if (status) userUpdateData.status = status;
       if (isMember !== undefined) userUpdateData.isMember = isMember;
-      if (isStaff !== undefined) userUpdateData.isStaff = isStaff;
+      if (role) userUpdateData.role = role;
       // Update user
       const user = await tx.user.update({
         where: { id: existingMember.userId },
         data: userUpdateData,
       });
-      contextLogger.info('User updated', { userId: user.id });
-      // Update or create address
-      if (address) {
-        const addressData = {
-          street: address.street || existingMember.user.address?.street || '',
-          city: address.city || existingMember.user.address?.city || '',
-          state: address.state || existingMember.user.address?.state || '',
-          zipCode:
-            address.zipCode || existingMember.user.address?.zipCode || '',
-          country:
-            address.country || existingMember.user.address?.country || 'Kenya',
-        };
-        if (existingMember.user.address) {
-          await tx.address.update({
-            where: { userId: existingMember.userId },
-            data: addressData,
-          });
-          contextLogger.info('Address updated', {
-            userId: existingMember.userId,
-          });
-        } else {
-          await tx.address.create({
-            data: {
-              ...addressData,
-              userId: existingMember.userId,
-            },
-          });
-          contextLogger.info('Address created', {
-            userId: existingMember.userId,
-          });
-        }
-      }
-      // Prepare member update data
-      const memberUpdateData: any = {};
-      if (role) {
-        contextLogger.info('Updating role', {
-          from: existingMember.role,
-          to: role,
-        });
-        memberUpdateData.role = role;
-      }
-      if (branchId !== undefined) {
-        contextLogger.info('Updating branch', {
-          from: existingMember.branchId,
-          to: branchId,
-        });
-        memberUpdateData.branchId = branchId;
+      // Update organization role if provided
+      const memberUpdateData: Prisma.MemberUpdateInput = {};
+      if (organizationRole) {
+        memberUpdateData.role = organizationRole;
       }
       // Update member
       const member = await tx.member.update({
@@ -485,33 +472,49 @@ export async function adminUpdateOrganizationMember(
         include: {
           user: {
             include: {
-              address: true,
-              emergencyContact: true,
+              teammembers: {
+                include: {
+                  team: true,
+                },
+              },
             },
           },
-          branch: true,
         },
       });
-      contextLogger.info('Member updated', { memberId: member.id });
+      // Handle team assignment
+      if (teamId !== undefined) {
+        // Remove existing team memberships for this organization's teams
+        const organizationTeams = await tx.team.findMany({
+          where: { organizationId },
+          select: { id: true },
+        });
+        const organizationTeamIds = organizationTeams.map((t) => t.id);
+        await tx.teamMember.deleteMany({
+          where: {
+            userId: existingMember.userId,
+            teamId: { in: organizationTeamIds },
+          },
+        });
+        // Add new team membership if teamId provided
+        if (teamId) {
+          await tx.teamMember.create({
+            data: {
+              userId: existingMember.userId,
+              teamId,
+            },
+          });
+        }
+      }
       return { user, member };
     });
-    contextLogger.info('Member updated successfully', {
-      memberId,
-      userId: result.user.id,
-    });
-    revalidatePath(`/church/users/${memberId}`);
+    revalidatePath('/church/users');
     return {
       success: true,
       data: result.member,
       message: 'Member updated successfully',
     };
   } catch (error: any) {
-    contextLogger.error('Error updating organization member', {
-      error: error.message,
-      stack: error.stack,
-      memberId: params.memberId,
-      organizationId: params.organizationId,
-    });
+    console.error('Error updating member:', error);
     return {
       success: false,
       error: error.message || 'Failed to update member',
@@ -520,229 +523,518 @@ export async function adminUpdateOrganizationMember(
 }
 
 // ============================================
-// Admin GET ORGANIZATION MEMBERS
+// 4. ADMIN SUSPEND/ACTIVATE MEMBER
 // ============================================
 
-export interface AdminGetOrganizationMembersParams {
-  organizationId: string;
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  role?: string;
-  status?: string;
-  branchId?: string;
-  sortBy?: 'name' | 'createdAt' | 'role' | 'email';
-  sortOrder?: 'asc' | 'desc';
-}
-
-export interface AdminGetOrganizationMembersResponse {
-  members: any[];
-  pagination: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
-}
-
-export async function adminGetOrganizationMembers(
-  params: AdminGetOrganizationMembersParams
-): Promise<AdminGetOrganizationMembersResponse> {
-  const contextLogger = createActionLogger(
-    'getOrganizationMembers',
-    params.organizationId
-  );
+export async function adminToggleMemberStatus(
+  memberId: string,
+  organizationId: string
+): Promise<AdminServerActionResponse> {
   try {
-    contextLogger.info('Fetching organization members', {
-      organizationId: params.organizationId,
-      page: params.page,
-      pageSize: params.pageSize,
-      filters: {
-        search: params.search,
-        role: params.role,
-        status: params.status,
-        branchId: params.branchId,
-      },
-    });
     const session = await getServerSession();
     if (!session?.user) {
-      contextLogger.warn('Unauthorized access attempt');
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
-    const {
-      organizationId,
-      page = 1,
-      pageSize = 10,
-      search = '',
-      role,
-      status,
-      branchId,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = params;
-    // Check if user is a member of this organization
-    const isMember = await prisma.member.findFirst({
+    // Check if user has permission
+    const hasPermission = await prisma.member.findFirst({
       where: {
         organizationId,
         userId: session.user.id,
-      },
-    });
-    if (!isMember) {
-      contextLogger.warn('Access denied - user not a member', {
-        userId: session.user.id,
-        organizationId,
-      });
-      throw new Error('You do not have access to this organization');
-    }
-    contextLogger.info('Access granted', {
-      userId: session.user.id,
-      role: isMember.role,
-    });
-    // Build where clause
-    const where: any = {
-      organizationId,
-    };
-    if (role && role !== 'all') {
-      where.role = role;
-    }
-    if (branchId && branchId !== 'all') {
-      where.branchId = branchId;
-    }
-    if (search) {
-      where.user = {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { phoneNumber: { contains: search, mode: 'insensitive' } },
-        ],
-      };
-    }
-    if (status && status !== 'all') {
-      where.user = {
-        ...where.user,
-        status,
-      };
-    }
-    // Build order by clause
-    let orderBy: any = {};
-    switch (sortBy) {
-      case 'name':
-        orderBy = { user: { name: sortOrder } };
-        break;
-      case 'email':
-        orderBy = { user: { email: sortOrder } };
-        break;
-      case 'role':
-        orderBy = { role: sortOrder };
-        break;
-      default:
-        orderBy = { createdAt: sortOrder };
-        break;
-    }
-    const skip = (page - 1) * pageSize;
-    // Fetch members and total count
-    const [members, total] = await Promise.all([
-      prisma.member.findMany({
-        where,
-        include: {
-          user: {
-            include: {
-              address: true,
-              emergencyContact: true,
-              memberDetails: true,
-              pastorDetails: true,
-              bishopDetails: true,
-              staffDetails: true,
-              volunteerDetails: true,
-              adminDetails: true,
-              visitorDetails: true,
-            },
-          },
-          branch: {
-            select: {
-              id: true,
-              branchName: true,
-              email: true,
-              phoneNumber: true,
-            },
-          },
+        role: {
+          in: ['OWNER', 'ADMIN'],
         },
-        orderBy,
-        skip,
-        take: pageSize,
-      }),
-      prisma.member.count({ where }),
-    ]);
-    const totalPages = Math.ceil(total / pageSize);
-    contextLogger.info('Members fetched successfully', {
-      total,
-      page,
-      pageSize,
-      totalPages,
-      membersReturned: members.length,
-    });
-    return {
-      members,
-      pagination: {
-        total,
-        page,
-        pageSize,
-        totalPages,
-        hasMore: page < totalPages,
       },
+    });
+    if (!hasPermission) {
+      return {
+        success: false,
+        error: 'You do not have permission to suspend/activate members',
+      };
+    }
+    // Get member
+    const member = await prisma.member.findUnique({
+      where: { id: memberId },
+      include: { user: true },
+    });
+
+    if (!member) {
+      return { success: false, error: 'Member not found' };
+    }
+    // Prevent suspending owner
+    if (member.role === 'OWNER') {
+      return {
+        success: false,
+        error: 'Cannot suspend organization owner',
+      };
+    }
+    // Toggle status
+    const newStatus = member.user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    const updatedUser = await prisma.user.update({
+      where: { id: member.userId },
+      data: {
+        status: newStatus,
+        updatedBy: session.user.id,
+      },
+    });
+    revalidatePath('/church/users');
+    return {
+      success: true,
+      data: { status: newStatus },
+      message: `Member ${newStatus === 'ACTIVE' ? 'activated' : 'suspended'} successfully`,
     };
   } catch (error: any) {
-    contextLogger.error('Error fetching organization members', {
-      error: error.message,
-      stack: error.stack,
-      organizationId: params.organizationId,
-    });
-    throw new Error(error.message || 'Failed to fetch members');
+    console.error('Error toggling member status:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update member status',
+    };
   }
 }
 
 // ============================================
-// ADMIN GET ORGANIZATION MEMBER BY ID
+// 5. ADMIN DELETE/REMOVE MEMBER
+// ============================================
+
+export async function adminRemoveMemberFromOrganization(
+  memberId: string,
+  organizationId: string,
+  deleteUser = false
+): Promise<AdminServerActionResponse> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Check if user has permission
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        role: {
+          in: ['OWNER', 'ADMIN'],
+        },
+      },
+    });
+    if (!hasPermission) {
+      return {
+        success: false,
+        error: 'You do not have permission to remove members',
+      };
+    }
+    // Get member
+    const member = await prisma.member.findUnique({
+      where: { id: memberId },
+      include: { user: true },
+    });
+    if (!member) {
+      return { success: false, error: 'Member not found' };
+    }
+    // Prevent removing owner
+    if (member.role === 'OWNER') {
+      return {
+        success: false,
+        error: 'Cannot remove organization owner',
+      };
+    }
+    // Prevent removing yourself
+    if (member.userId === session.user.id) {
+      return {
+        success: false,
+        error: 'Cannot remove yourself. Use leave organization instead.',
+      };
+    }
+    await prisma.$transaction(async (tx) => {
+      // Get organization teams
+      const organizationTeams = await tx.team.findMany({
+        where: { organizationId },
+        select: { id: true },
+      });
+      const organizationTeamIds = organizationTeams.map((t) => t.id);
+      // Remove team memberships for this organization's teams
+      await tx.teamMember.deleteMany({
+        where: {
+          userId: member.userId,
+          teamId: { in: organizationTeamIds },
+        },
+      });
+      // Delete member record
+      await tx.member.delete({
+        where: { id: memberId },
+      });
+      // If deleteUser flag is set, soft delete the user
+      if (deleteUser) {
+        await tx.user.update({
+          where: { id: member.userId },
+          data: {
+            isDeleted: true,
+            updatedBy: session.user.id,
+          },
+        });
+      }
+    });
+    revalidatePath('/church/users');
+    return {
+      success: true,
+      message: deleteUser
+        ? 'Member removed and user account deleted'
+        : 'Member removed from organization',
+    };
+  } catch (error: any) {
+    console.error('Error removing member:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to remove member',
+    };
+  }
+}
+
+// ============================================
+// 6. ADMIN UPDATE MEMBER ROLE (Organization Role)
+// ============================================
+
+export async function adminUpdateMemberRole(
+  memberId: string,
+  organizationId: string,
+  newRole: ORGANIZATIONUserRole
+): Promise<AdminServerActionResponse> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Check if user has permission (must be owner or admin)
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        role: {
+          in: ['OWNER', 'ADMIN'],
+        },
+      },
+    });
+    if (!hasPermission) {
+      return {
+        success: false,
+        error: 'You do not have permission to change member roles',
+      };
+    }
+    // Get member
+    const member = await prisma.member.findUnique({
+      where: { id: memberId },
+    });
+    if (!member) {
+      return { success: false, error: 'Member not found' };
+    }
+    // Prevent changing owner role unless you're the owner
+    if (member.role === 'OWNER' && hasPermission.role !== 'OWNER') {
+      return {
+        success: false,
+        error: 'Only the owner can change owner roles',
+      };
+    }
+    // Update role
+    const updatedMember = await prisma.member.update({
+      where: { id: memberId },
+      data: { role: newRole },
+      include: {
+        user: {
+          include: {
+            teammembers: {
+              include: {
+                team: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    revalidatePath(`/church/users/${memberId}`);
+    return {
+      success: true,
+      data: updatedMember,
+      message: 'Member role updated successfully',
+    };
+  } catch (error: any) {
+    console.error('Error updating member role:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update member role',
+    };
+  }
+}
+
+// ============================================
+// 7. ADMIN BULK ACTIONS
+// ============================================
+
+export async function adminBulkUpdateMemberStatus(
+  memberIds: string[],
+  organizationId: string,
+  status: string
+): Promise<AdminServerActionResponse> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Check permission
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        role: {
+          in: ['OWNER', 'ADMIN'],
+        },
+      },
+    });
+    if (!hasPermission) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Get members to update
+    const members = await prisma.member.findMany({
+      where: {
+        id: { in: memberIds },
+        organizationId,
+        role: { not: 'OWNER' }, // Don't update owners
+      },
+      select: { userId: true },
+    });
+    const userIds = members.map((m) => m.userId);
+    // Update all users
+    await prisma.user.updateMany({
+      where: { id: { in: userIds } },
+      data: {
+        status,
+        updatedBy: session.user.id,
+      },
+    });
+    revalidatePath('/church/users');
+    return {
+      success: true,
+      message: `${members.length} members updated successfully`,
+    };
+  } catch (error: any) {
+    console.error('Error bulk updating members:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update members',
+    };
+  }
+}
+
+export async function adminBulkRemoveMembers(
+  memberIds: string[],
+  organizationId: string
+): Promise<AdminServerActionResponse> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        role: {
+          in: ['OWNER', 'ADMIN'],
+        },
+      },
+    });
+    if (!hasPermission) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    await prisma.$transaction(async (tx) => {
+      // Get members to remove
+      const membersToRemove = await tx.member.findMany({
+        where: {
+          id: { in: memberIds },
+          organizationId,
+          role: { not: 'OWNER' },
+          userId: { not: session.user.id },
+        },
+        select: { userId: true },
+      });
+      const userIds = membersToRemove.map((m) => m.userId);
+      // Get organization teams
+      const organizationTeams = await tx.team.findMany({
+        where: { organizationId },
+        select: { id: true },
+      });
+      const organizationTeamIds = organizationTeams.map((t) => t.id);
+      // Remove team memberships
+      await tx.teamMember.deleteMany({
+        where: {
+          userId: { in: userIds },
+          teamId: { in: organizationTeamIds },
+        },
+      });
+      // Delete members
+      await tx.member.deleteMany({
+        where: {
+          id: { in: memberIds },
+          organizationId,
+          role: { not: 'OWNER' },
+          userId: { not: session.user.id },
+        },
+      });
+    });
+    revalidatePath('/church/users');
+    return {
+      success: true,
+      message: 'Members removed successfully',
+    };
+  } catch (error: any) {
+    console.error('Error bulk removing members:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to remove members',
+    };
+  }
+}
+
+// ============================================
+// 8. ADMIN TEAM MANAGEMENT HELPERS
+// ============================================
+
+export async function adminAddMemberToTeam(
+  userId: string,
+  teamId: string,
+  organizationId: string
+): Promise<AdminServerActionResponse> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Check permission
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        role: { in: ['OWNER', 'ADMIN'] },
+      },
+    });
+    if (!hasPermission) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Verify team belongs to organization
+    const team = await prisma.team.findFirst({
+      where: {
+        id: teamId,
+        organizationId,
+      },
+    });
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+    // Check if already a team member
+    const existing = await prisma.teamMember.findFirst({
+      where: {
+        userId,
+        teamId,
+      },
+    });
+    if (existing) {
+      return { success: false, error: 'User is already a member of this team' };
+    }
+    const teamMember = await prisma.teamMember.create({
+      data: {
+        userId,
+        teamId,
+      },
+      include: {
+        user: true,
+        team: true,
+      },
+    });
+    revalidatePath(`/church/users/${organizationId}/teams/${teamId}`);
+    return {
+      success: true,
+      data: teamMember,
+      message: 'Member added to team successfully',
+    };
+  } catch (error: any) {
+    console.error('Error adding member to team:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to add member to team',
+    };
+  }
+}
+
+export async function adminRemoveMemberFromTeam(
+  userId: string,
+  teamId: string,
+  organizationId: string
+): Promise<AdminServerActionResponse> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    // Check permission
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        role: { in: ['OWNER', 'ADMIN'] },
+      },
+    });
+    if (!hasPermission) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    await prisma.teamMember.deleteMany({
+      where: {
+        userId,
+        teamId,
+      },
+    });
+    revalidatePath(`/church/users/${organizationId}/teams/${teamId}`);
+    return {
+      success: true,
+      message: 'Member removed from team successfully',
+    };
+  } catch (error: any) {
+    console.error('Error removing member from team:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to remove member from team',
+    };
+  }
+}
+
+// Add these functions to your lib/actions/member.ts file
+
+// ============================================
+// 9. ADMIN GET ORGANIZATION MEMBER BY ID
 // ============================================
 
 export async function adminGetOrganizationMemberById(
   memberId: string,
   organizationId: string
 ): Promise<AdminServerActionResponse> {
-  const contextLogger = createActionLogger(
-    'getOrganizationMemberById',
-    organizationId
-  );
   try {
-    contextLogger.info('Fetching member by ID', { memberId, organizationId });
     const session = await getServerSession();
     if (!session?.user) {
-      contextLogger.warn('Unauthorized access attempt');
       return { success: false, error: 'Unauthorized' };
     }
-    // Check if user is a member of this organization
-    const isMember = await prisma.member.findFirst({
+
+    // Check if user has access to this organization
+    const hasAccess = await prisma.member.findFirst({
       where: {
         organizationId,
         userId: session.user.id,
       },
     });
-    if (!isMember) {
-      contextLogger.warn('Access denied - user not a member', {
-        userId: session.user.id,
-        organizationId,
-      });
+
+    if (!hasAccess) {
       return {
         success: false,
         error: 'You do not have access to this organization',
       };
     }
-    contextLogger.info('Access granted', {
-      userId: session.user.id,
-      role: isMember.role,
-    });
-    // Fetch member details
+
+    // Get member with full details
     const member = await prisma.member.findUnique({
       where: { id: memberId },
       include: {
@@ -767,15 +1059,11 @@ export async function adminGetOrganizationMemberById(
             },
             adminDetails: true,
             visitorDetails: true,
-          },
-        },
-        branch: {
-          select: {
-            id: true,
-            branchName: true,
-            email: true,
-            phoneNumber: true,
-            address: true,
+            teammembers: {
+              include: {
+                team: true,
+              },
+            },
           },
         },
         organization: {
@@ -783,43 +1071,29 @@ export async function adminGetOrganizationMemberById(
             id: true,
             name: true,
             slug: true,
-            logo: true,
           },
         },
       },
     });
+
     if (!member) {
-      contextLogger.warn('Member not found', { memberId });
       return { success: false, error: 'Member not found' };
     }
+
     // Verify member belongs to the specified organization
     if (member.organizationId !== organizationId) {
-      contextLogger.warn('Member organization mismatch', {
-        memberId,
-        requestedOrg: organizationId,
-        actualOrg: member.organizationId,
-      });
       return {
         success: false,
         error: 'Member does not belong to this organization',
       };
     }
-    contextLogger.info('Member fetched successfully', {
-      memberId,
-      userId: member.userId,
-      role: member.role,
-    });
+
     return {
       success: true,
       data: member,
     };
   } catch (error: any) {
-    contextLogger.error('Error fetching organization member', {
-      error: error.message,
-      stack: error.stack,
-      memberId,
-      organizationId,
-    });
+    console.error('Error fetching member:', error);
     return {
       success: false,
       error: error.message || 'Failed to fetch member',
@@ -828,49 +1102,32 @@ export async function adminGetOrganizationMemberById(
 }
 
 // ============================================
-// ADMIN GET ORGANIZATION MEMBER BY USER ID
+// 10. ADMIN GET ORGANIZATION MEMBER BY USER ID
 // ============================================
 
 export async function adminGetOrganizationMemberByUserId(
   userId: string,
   organizationId: string
 ): Promise<AdminServerActionResponse> {
-  const contextLogger = createActionLogger(
-    'getOrganizationMemberByUserId',
-    organizationId
-  );
   try {
-    contextLogger.info('Fetching member by user ID', {
-      userId,
-      organizationId,
-    });
     const session = await getServerSession();
     if (!session?.user) {
-      contextLogger.warn('Unauthorized access attempt');
       return { success: false, error: 'Unauthorized' };
     }
-    // Check if requester is a member of this organization
-    const isMember = await prisma.member.findFirst({
+    // Check if user has access to this organization
+    const hasAccess = await prisma.member.findFirst({
       where: {
         organizationId,
         userId: session.user.id,
       },
     });
-    if (!isMember) {
-      contextLogger.warn('Access denied - user not a member', {
-        requesterId: session.user.id,
-        organizationId,
-      });
+    if (!hasAccess) {
       return {
         success: false,
         error: 'You do not have access to this organization',
       };
     }
-    contextLogger.info('Access granted', {
-      requesterId: session.user.id,
-      role: isMember.role,
-    });
-    // Fetch member by user ID
+    // Get member by userId
     const member = await prisma.member.findFirst({
       where: {
         userId,
@@ -898,183 +1155,37 @@ export async function adminGetOrganizationMemberByUserId(
             },
             adminDetails: true,
             visitorDetails: true,
+            teammembers: {
+              include: {
+                team: true,
+              },
+            },
           },
         },
-        branch: {
+        organization: {
           select: {
             id: true,
-            branchName: true,
-            email: true,
-            phoneNumber: true,
+            name: true,
+            slug: true,
           },
         },
       },
     });
     if (!member) {
-      contextLogger.warn('Member not found', { userId, organizationId });
-      return { success: false, error: 'Member not found' };
+      return {
+        success: false,
+        error: 'Member not found in this organization',
+      };
     }
-    contextLogger.info('Member fetched successfully', {
-      memberId: member.id,
-      userId,
-      role: member.role,
-    });
     return {
       success: true,
       data: member,
     };
   } catch (error: any) {
-    contextLogger.error('Error fetching organization member by user ID', {
-      error: error.message,
-      stack: error.stack,
-      userId,
-      organizationId,
-    });
+    console.error('Error fetching member by user ID:', error);
     return {
       success: false,
       error: error.message || 'Failed to fetch member',
-    };
-  }
-}
-
-// ============================================
-// ADMIN REMOVE ORGANIZATION MEMBER
-// ============================================
-
-export async function adminRemoveOrganizationMember(
-  memberId: string,
-  organizationId: string,
-  deleteUser = false
-): Promise<AdminServerActionResponse> {
-  const contextLogger = createActionLogger(
-    'removeOrganizationMember',
-    organizationId
-  );
-  try {
-    contextLogger.info('Starting remove organization member', {
-      memberId,
-      organizationId,
-      deleteUser,
-    });
-    const session = await getServerSession();
-    if (!session?.user) {
-      contextLogger.warn('Unauthorized access attempt');
-      return { success: false, error: 'Unauthorized' };
-    }
-    // Check if user has permission
-    const hasPermission = await prisma.member.findFirst({
-      where: {
-        organizationId,
-        userId: session.user.id,
-        role: {
-          in: ['OWNER', 'ADMIN'],
-        },
-      },
-    });
-    if (!hasPermission) {
-      contextLogger.warn('Permission denied', {
-        userId: session.user.id,
-        organizationId,
-      });
-      return {
-        success: false,
-        error: 'You do not have permission to remove members',
-      };
-    }
-    contextLogger.info('Permission check passed', {
-      requesterId: session.user.id,
-      requesterRole: hasPermission.role,
-    });
-    // Get member
-    const member = await prisma.member.findUnique({
-      where: { id: memberId },
-      include: { user: true },
-    });
-    if (!member) {
-      contextLogger.warn('Member not found', { memberId });
-      return { success: false, error: 'Member not found' };
-    }
-    contextLogger.info('Member found', {
-      memberId,
-      userId: member.userId,
-      role: member.role,
-    });
-    // Prevent removing owner
-    if (member.role === 'OWNER') {
-      contextLogger.warn('Attempt to remove owner', {
-        memberId,
-        requesterId: session.user.id,
-      });
-      return {
-        success: false,
-        error: 'Cannot remove organization owner',
-      };
-    }
-    // Prevent removing yourself
-    if (member.userId === session.user.id) {
-      contextLogger.warn('Attempt to remove self', {
-        memberId,
-        userId: session.user.id,
-      });
-      return {
-        success: false,
-        error: 'Cannot remove yourself. Use leave organization instead.',
-      };
-    }
-    if (deleteUser) {
-      contextLogger.info('Soft deleting user and removing member', {
-        memberId,
-        userId: member.userId,
-      });
-      // Soft delete user (mark as deleted)
-      await prisma.$transaction([
-        prisma.member.delete({
-          where: { id: memberId },
-        }),
-        prisma.user.update({
-          where: { id: member.userId },
-          data: {
-            isDeleted: true,
-            updatedBy: session.user.id,
-          },
-        }),
-      ]);
-      contextLogger.info('User soft deleted and member removed', {
-        memberId,
-        userId: member.userId,
-      });
-    } else {
-      contextLogger.info('Removing member from organization', { memberId });
-      // Just remove from organization
-      await prisma.member.delete({
-        where: { id: memberId },
-      });
-      contextLogger.info('Member removed from organization', { memberId });
-    }
-    revalidatePath('/church/users');
-    const message = deleteUser
-      ? 'Member removed and user account deleted'
-      : 'Member removed from organization';
-    contextLogger.info('Member removal successful', {
-      memberId,
-      deleteUser,
-      message,
-    });
-    return {
-      success: true,
-      message,
-    };
-  } catch (error: any) {
-    contextLogger.error('Error removing organization member', {
-      error: error.message,
-      stack: error.stack,
-      memberId,
-      organizationId,
-      deleteUser,
-    });
-    return {
-      success: false,
-      error: error.message || 'Failed to remove member',
     };
   }
 }

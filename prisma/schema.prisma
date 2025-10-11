@@ -1235,8 +1235,8 @@ model Log {
   updatedAt    DateTime    @updatedAt
   userId       String?
   user         User?       @relation(fields: [userId], references: [id])
-  organizationId     String
-  organization       Organization @relation(fields: [organizationId], references: [id])
+  organizationId     String? // Made nullable to allow logs without org context
+  organization       Organization? @relation(fields: [organizationId], references: [id])
   @@index([level, timestamp])
   @@index([source, level, timestamp])
   @@index([environment, timestamp])

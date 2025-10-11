@@ -5,11 +5,11 @@
 // ============================================
 
 import {
-  adminAddOrganizationMember,
+  adminAddMemberToOrganization,
   adminGetOrganizationMemberById,
   adminGetOrganizationMemberByUserId,
   adminGetOrganizationMembers,
-  adminRemoveOrganizationMember,
+  adminRemoveMemberFromOrganization,
   adminUpdateOrganizationMember,
   type AdminGetOrganizationMembersParams,
   type AdminUpdateOrganizationMemberParams,
@@ -109,10 +109,10 @@ export function useAdminOrganizationMemberByUserId(
 // 4. ADMIN ADD ORGANIZATION MEMBER
 // ============================================
 
-export function useAdminAddOrganizationMember(organizationId: string) {
+export function useAdminAddMemberToOrganization(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: AddUserPayload) => adminAddOrganizationMember(params),
+    mutationFn: (params: AddUserPayload) => adminAddMemberToOrganization(params),
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || 'Member added successfully');
@@ -191,7 +191,7 @@ export function useAdminUpdateOrganizationMember(organizationId: string) {
 // 6. ADMIN REMOVE ORGANIZATION MEMBER
 // ============================================
 
-export function useAdminRemoveOrganizationMember(organizationId: string) {
+export function useAdminRemoveMemberFromOrganization(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -200,7 +200,7 @@ export function useAdminRemoveOrganizationMember(organizationId: string) {
     }: {
       memberId: string;
       deleteUser?: boolean;
-    }) => adminRemoveOrganizationMember(memberId, organizationId, deleteUser),
+    }) => adminRemoveMemberFromOrganization(memberId, organizationId, deleteUser),
     onSuccess: (response, variables) => {
       if (response.success) {
         toast.success(response.message || 'Member removed successfully');

@@ -45,7 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 import {
   useAdminOrganizationMembers,
-  useAdminRemoveOrganizationMember,
+  useAdminRemoveMemberFromOrganization,
 } from '@/lib/hooks/admin/use-organization-member-mutations';
 import type { UserResponse } from '@/lib/types/user';
 import {
@@ -106,7 +106,7 @@ export default function UsersPage() {
     isPending: isPendingDeleteUser,
     isError: isErrorDeleteUser,
     error: errorDeleteUser,
-  } = useAdminRemoveOrganizationMember(organizationId);
+  } = useAdminRemoveMemberFromOrganization(organizationId);
   // Filter users based on selected tab and status
   const filteredUsers = useMemo(() => {
     if (!users?.members) return [];
