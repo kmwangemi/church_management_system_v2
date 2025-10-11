@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/suspicious/useAwait: ignore */
-import type { ChurchPlan } from '@/generated/prisma';
+import type { OrganizationPlan } from '@/generated/prisma';
 import {
   ac,
   admin,
@@ -9,6 +9,7 @@ import {
   pastor,
   visitor,
 } from '@/lib/auth/permissions';
+import { logger } from '@/lib/logger';
 import prisma from '@/lib/prisma';
 import { passwordSchema } from '@/lib/validations/auth';
 import bcrypt from 'bcryptjs';
@@ -19,6 +20,7 @@ import { createAuthMiddleware, organization } from 'better-auth/plugins';
 
 export const auth = betterAuth({
   appName: 'Church Management System',
+  // trustedOrigins: ['http://localhost:3000', 'https://example.com'],
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
@@ -130,6 +132,34 @@ export const auth = betterAuth({
       },
     },
   },
+  // Better Auth Logging Integration
+  logger: {
+    // Custom logger that integrates with your logging system
+    log: async (level, message, data) => {
+      const context = {
+        ...data,
+        context: 'authentication',
+      };
+      // Use custom logger for all levels and ensure at least one await
+      switch (level) {
+        case 'error':
+          await logger.error(`[Better Auth] ${message}`, context, 'SERVER');
+          break;
+        case 'warn':
+          await logger.warn(`[Better Auth] ${message}`, context, 'SERVER');
+          break;
+        case 'info':
+          await logger.info(`[Better Auth] ${message}`, context, 'SERVER');
+          break;
+        case 'debug':
+          await logger.debug(`[Better Auth] ${message}`, context, 'SERVER');
+          break;
+        default:
+          await logger.info(`[Better Auth] ${message}`, context, 'SERVER');
+          break;
+      }
+    },
+  },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (
@@ -146,6 +176,190 @@ export const auth = betterAuth({
         }
       }
     }),
+    after: createAuthMiddleware(async (ctx) => {
+      const path = ctx.path;
+      const request = ctx.request;
+      const ip = request?.headers?.get('x-forwarded-for') || 'unknown';
+      const userAgent = request?.headers?.get('user-agent') || 'unknown';
+      // Helper to get user's organizationId
+      const getUserOrganizationId = async (
+        userId: string
+      ): Promise<string | undefined> => {
+        try {
+          const member = await prisma.member.findFirst({
+            where: { userId },
+            select: { organizationId: true },
+          });
+          return member?.organizationId;
+        } catch (error) {
+          // biome-ignore lint/suspicious/noConsole: ignore console
+          console.error('Error fetching user organization:', error);
+          return;
+        }
+      };
+      // Log sign-in events
+      if (path.startsWith('/sign-in')) {
+        const newSession = ctx.context.newSession;
+        if (newSession) {
+          const organizationId = await getUserOrganizationId(
+            newSession.user.id
+          );
+          await logger.info(
+            'User signed in successfully',
+            {
+              userId: newSession.user.id,
+              email: newSession.user.email,
+              sessionId: newSession.session.id,
+              ip,
+              userAgent,
+            },
+            'SERVER',
+            newSession.user.id,
+            organizationId
+          );
+        }
+      }
+      // Log sign-up events
+      if (path.startsWith('/sign-up')) {
+        const newSession = ctx.context.newSession;
+        if (newSession) {
+          const organizationId = await getUserOrganizationId(
+            newSession.user.id
+          );
+          await logger.info(
+            'New user registered',
+            {
+              userId: newSession.user.id,
+              email: newSession.user.email,
+              name: newSession.user.name,
+              ip,
+              userAgent,
+            },
+            'SERVER',
+            newSession.user.id,
+            organizationId
+          );
+        }
+      }
+      // Log sign-out events
+      if (path.startsWith('/sign-out')) {
+        const session = ctx.context.session;
+        if (session) {
+          const organizationId = await getUserOrganizationId(session.user.id);
+          await logger.info(
+            'User signed out',
+            {
+              userId: session.user.id,
+              sessionId: session.session.id,
+            },
+            'SERVER',
+            session.user.id,
+            organizationId
+          );
+        }
+      }
+      // Log password reset events
+      if (path.startsWith('/reset-password')) {
+        const body = ctx.body as any;
+        if (body?.email) {
+          // For password reset, we might not have userId yet
+          await logger.info(
+            'Password reset requested',
+            {
+              email: body.email,
+              ip,
+              userAgent,
+            },
+            'SERVER'
+          );
+        }
+      }
+      // Log email verification events
+      if (path.startsWith('/verify-email')) {
+        const newSession = ctx.context.newSession;
+        if (newSession) {
+          const organizationId = await getUserOrganizationId(
+            newSession.user.id
+          );
+          await logger.info(
+            'Email verified',
+            {
+              userId: newSession.user.id,
+              email: newSession.user.email,
+            },
+            'SERVER',
+            newSession.user.id,
+            organizationId
+          );
+        }
+      }
+      // Log forgot password events
+      if (path.startsWith('/forget-password')) {
+        const body = ctx.body as any;
+        if (body?.email) {
+          await logger.info(
+            'Forgot password request',
+            {
+              email: body.email,
+              ip,
+              userAgent,
+            },
+            'SERVER'
+          );
+        }
+      }
+      // Log session refresh events
+      if (path.startsWith('/refresh-session')) {
+        const newSession = ctx.context.newSession;
+        if (newSession) {
+          const organizationId = await getUserOrganizationId(
+            newSession.user.id
+          );
+          await logger.debug(
+            'Session refreshed',
+            {
+              userId: newSession.user.id,
+              sessionId: newSession.session.id,
+            },
+            'SERVER',
+            newSession.user.id,
+            organizationId
+          );
+        }
+      }
+    }),
+    // Log failed authentication attempts
+    onError: async (ctx: {
+      error: unknown;
+      context?: {
+        path?: string;
+        request?: {
+          method?: string;
+          headers?: {
+            get: (name: string) => string | undefined;
+          };
+        };
+      };
+    }) => {
+      const context = ctx.context;
+      const path = context?.path;
+      const method = context?.request?.method;
+      const ip = context?.request?.headers?.get('x-forwarded-for') || 'unknown';
+      const userAgent =
+        context?.request?.headers?.get('user-agent') || 'unknown';
+      // Use custom logger for error reporting
+      await logger.error(
+        'Authentication error occurred',
+        {
+          error: ctx.error,
+          path,
+          method,
+          ip,
+          userAgent,
+        },
+        'SERVER'
+      );
+    },
   },
   // Add database hooks to set active organization on session creation
   databaseHooks: {
@@ -234,31 +448,15 @@ export const auth = betterAuth({
             const trialEnd = new Date();
             trialEnd.setDate(trialEnd.getDate() + 30);
             // Create subscription
-            await prisma.churchSubscription.create({
+            await prisma.organizationSubscription.create({
               data: {
-                churchId: organization.id,
-                plan: plan.toUpperCase() as ChurchPlan,
+                organizationId: organization.id,
+                plan: plan.toUpperCase() as OrganizationPlan,
                 status: 'TRIAL',
                 startDate: new Date(),
                 endDate: trialEnd,
                 isActive: true,
                 nextBillingDate: trialEnd,
-              },
-            });
-            await prisma.team.create({
-              data: {
-                name: 'Main Branch',
-                organizationId: organization.id,
-                establishedDate: new Date(),
-                capacity: 500,
-                isActive: true,
-                // address: {
-                //   street: '',
-                //   city: '',
-                //   state: '',
-                //   zipCode: '',
-                //   country: 'Kenya',
-                // },
               },
             });
           } catch (_error) {

@@ -35,7 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { authClient } from '@/lib/auth-client'; // Your Better Auth client
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
-import { errorToastStyle } from '@/lib/toast-styles';
+import { errorToastStyle, successToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
@@ -270,7 +270,9 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
         await authClient.organization.setActive({
           organizationId: organization.id,
         });
-        toast.success('Church registered successfully!');
+        toast.success('Church registered successfully!', {
+          style: successToastStyle,
+        });
         reset();
         setLogoFile(null);
         setLogoPreview(null);

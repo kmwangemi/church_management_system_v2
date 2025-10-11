@@ -451,7 +451,7 @@ enum ScheduleType {
   DRAFT
 }
 
-enum ChurchPlan {
+enum OrganizationPlan {
   BASIC
   MINISTRY
   CATHEDRAL
@@ -617,83 +617,85 @@ enum MilestoneCategory {
 // ============================================
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String            @id @default(cuid())
+  name              String
+  email             String            @unique
+  emailVerified     Boolean           @default(false)
+  image             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   // Better Auth relations
-  sessions      Session[]
-  accounts      Account[]
+  sessions          Session[]
+  accounts          Account[]
   // Organization membership (church membership)
-  members       Member[]
-  invitations   Invitation[]
+  members           Member[]
+  invitations       Invitation[]
   // Extended profile fields
-  phoneNumber            String?
-  dateOfBirth            DateTime?
-  gender                 Gender?
-  occupation             String?
-  maritalStatus          MaritalStatus?
-  skills                 String[]
-  notes                  String?
+  phoneNumber       String?
+  dateOfBirth       DateTime?
+  gender            Gender?
+  occupation        String?
+  maritalStatus     MaritalStatus?
+  skills            String[]
+  notes             String?
   // Global role (SUPER_ADMIN or VISITOR)
-  role                   UserRole             @default(VISITOR)
-  status                 AccountStatus        @default(ACTIVE)
-  lastLogin              DateTime?
+  role              UserRole          @default(VISITOR)
+  status            AccountStatus     @default(ACTIVE)
+  lastLogin         DateTime?
   // Flags
-  isMember               Boolean              @default(false)
-  isStaff                Boolean              @default(false)
-  isVolunteer            Boolean              @default(false)
-  isPasswordUpdated      Boolean              @default(false)
-  agreeToTerms           Boolean              @default(true)
-  isDeleted              Boolean              @default(false)
+  isMember          Boolean           @default(false)
+  isStaff           Boolean           @default(false)
+  isVolunteer       Boolean           @default(false)
+  isPasswordUpdated Boolean           @default(false)
+  agreeToTerms      Boolean           @default(true)
+  isDeleted         Boolean           @default(false)
   // Normalized relations
-  address                Address?
-  emergencyContact       EmergencyContact?
+  address           Address?
+  emergencyContact  EmergencyContact?
   // Role-specific details
-  memberDetails          MemberDetails?
-  pastorDetails          PastorDetails?
-  bishopDetails          BishopDetails?
-  staffDetails           StaffDetails?
-  volunteerDetails       VolunteerDetails?
-  adminDetails           AdminDetails?
-  visitorDetails         VisitorDetails?
+  memberDetails     MemberDetails?
+  pastorDetails     PastorDetails?
+  bishopDetails     BishopDetails?
+  staffDetails      StaffDetails?
+  volunteerDetails  VolunteerDetails?
+  adminDetails      AdminDetails?
+  visitorDetails    VisitorDetails?
   // Self-referential relations
-  createdBy              String?
-  createdByUser          User?                @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usersCreated           User[]               @relation("UserCreatedBy")
-  updatedBy              String?
-  updatedByUser          User?                @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usersUpdated           User[]               @relation("UserUpdatedBy")
+  createdBy         String?
+  createdByUser     User?             @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersCreated      User[]            @relation("UserCreatedBy")
+  updatedBy         String?
+  updatedByUser     User?             @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersUpdated      User[]            @relation("UserUpdatedBy")
   // Team leadership (for pastors/team leaders)
-  teamsPastored       Team[]               @relation("TeamPastor")
+  // teamsPastored       Team[]               @relation("TeamPastor")
   // Department and Group leadership
-  departmentsLed         Department[]         @relation("DepartmentLeader")
-  groupsLed              Group[]              @relation("GroupLeader")
+  // departmentsLed         Department[]         @relation("DepartmentLeader")
+  // groupsLed              Group[]              @relation("GroupLeader")
   // Activity relations
-  offerings              Offering[]
-  pledges                Pledge[]
-  reports                Report[]
-  messageTemplates       MessageTemplate[]
-  messages               Message[]
-  messageRecipients      MessageRecipient[]
-  disciplesAsMember      Disciple[]           @relation("DiscipleMember")
-  disciplesAsMentor      Disciple[]           @relation("DiscipleMentor")
-  prayerRequestsSubmitted PrayerRequest[]     @relation("PrayerRequestSubmitter")
+  // offerings              Offering[]
+  // pledges                Pledge[]
+  // reports                Report[]
+  // messageTemplates       MessageTemplate[]
+  // messages               Message[]
+  // messageRecipients      MessageRecipient[]
+  // disciplesAsMember      Disciple[]           @relation("DiscipleMember")
+  // disciplesAsMentor      Disciple[]           @relation("DiscipleMentor")
+  // prayerRequestsSubmitted PrayerRequest[]     @relation("PrayerRequestSubmitter")
   userSubscriptions      UserSubscription[]
-  departmentMemberships  DepartmentMember[]
-  groupMemberships       GroupMember[]
-  attendanceRecords      AttendanceRecord[]
-  activitiesOrganized    GroupActivity[]
-  goalsCreated           GroupGoal[]
-  departmentGoalsCreated DepartmentGoal[]
-  announcementsCreated   Announcement[]
+  // departmentMemberships  DepartmentMember[]
+  // groupMemberships       GroupMember[]
+  // attendanceRecords      AttendanceRecord[]
+  // activitiesOrganized    GroupActivity[]
+  // goalsCreated           GroupGoal[]
+  // departmentGoalsCreated DepartmentGoal[]
+  // announcementsCreated   Announcement[]
   logsGenerated          Log[]
-  attendancesTaken       Attendance[]
-  expensesApproved       Expense[]
-  departmentActivitiesOrganized DepartmentActivity[]
+  // attendancesTaken       Attendance[]
+  // expensesApproved       Expense[]
+  // departmentActivitiesOrganized DepartmentActivity[]
+  teammembers       TeamMember[]
+
   @@index([email])
   @@index([role, status])
   @@index([isDeleted])
@@ -712,6 +714,8 @@ model Session {
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Better Auth uses this to track active organization (church)
   activeOrganizationId String?
+  activeTeamId         String?
+
   @@map("session")
 }
 
@@ -730,6 +734,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+
   @@map("account")
 }
 
@@ -740,6 +745,7 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
   @@map("verification")
 }
 
@@ -754,89 +760,39 @@ model Organization {
   logo        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  metadata    Json?        // flexible extras - store church-specific info
+  metadata    Json? // flexible extras - store church-specific info
   // Better Auth requires these relations
   members     Member[]
   invitations Invitation[]
   teams       Team[]       // Branches are teams in Better Auth
   // Relations
-  address          Address?
-  departments      Department[]
-  groups           Group[]
-  events           Event[]
-  offerings        Offering[]
-  pledges          Pledge[]
-  prayerRequests   PrayerRequest[]
-  serviceSchedules ServiceSchedule[]
-  activities       Activity[]
-  assets           Asset[]
-  announcements    Announcement[]
-  attendances      Attendance[]
-  subscription     ChurchSubscription?
+  address     Address?
+  // departments      Department[]
+  // groups           Group[]
+  // events           Event[]
+  // offerings        Offering[]
+  // pledges          Pledge[]
+  // prayerRequests   PrayerRequest[]
+  // serviceSchedules ServiceSchedule[]
+  // activities       Activity[]
+  // assets           Asset[]
+  // announcements    Announcement[]
+  // attendances      Attendance[]
+  subscription     OrganizationSubscription?
   logs             Log[]
-  payments         Payment[]
-  reports          Report[]
-  milestones       Milestone[]
-  messageTemplates MessageTemplate[]
-  messages         Message[]
-  messageRecipients MessageRecipient[]
-  disciples        Disciple[]
-  content          Content[]
+  // payments         Payment[]
+  // reports          Report[]
+  // milestones       Milestone[]
+  // messageTemplates MessageTemplate[]
+  // messages         Message[]
+  // messageRecipients MessageRecipient[]
+  // disciples        Disciple[]
+  // content          Content[]
+
   @@map("organization")
 }
 
-// ============================================
-// TEAM MODEL (BRANCH IN BETTER AUTH)
-// ============================================
 
-model Team {
-  id             String       @id @default(cuid())
-  name           String       // Team name
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  // Extended team fields
-  email           String?
-  phoneNumber     String?
-  capacity        Int?
-  memberCount     Int          @default(0)
-  establishedDate DateTime?
-  description     String?
-  isActive        Boolean      @default(true)
-  isDeleted       Boolean      @default(false)
-  metadata        Json?        // Store additional team info
-  // Team leadership
-  pastorId        String?
-  pastor          User?        @relation("TeamPastor", fields: [pastorId], references: [id])
-  // Relations - Members assigned to this branch/team
-  members         Member[]     @relation("TeamMembers")
-  // Departments and Groups belong to teams/branches
-  departments     Department[] @relation("TeamDepartments")
-  groups          Group[]      @relation("TeamGroups")
-  // Other team-specific relations
-  serviceSchedules    ServiceSchedule[]
-  prayerRequests      PrayerRequest[]
-  activities          Activity[]
-  assets              Asset[]
-  address             Address[]
-  announcements       Announcement[]
-  attendances         Attendance[]
-  events              Event[]
-  reports             Report[]
-  milestones          Milestone[]
-  offerings           Offering[]
-  disciples           Disciple[]
-  pledges             Pledge[]
-  discipleProgress    DiscipleProgress[]
-  content             Content[]
-  messageRecipients   MessageRecipient[]
-  messages            Message[]
-  @@index([organizationId, isActive])
-  @@index([organizationId, isDeleted])
-  @@index([pastorId])
-  @@map("team")
-}
 
 // ============================================
 // MEMBER MODEL (CHURCH MEMBERSHIP)
@@ -852,12 +808,12 @@ model Member {
   role           ORGANIZATIONUserRole @default(MEMBER)
   createdAt      DateTime             @default(now())
   // Team (Branch) assignment within church
-  teamId         String?
-  team           Team?                @relation("TeamMembers", fields: [teamId], references: [id])
+  // teamId         String?
+  // team           Team?                @relation("TeamMembers", fields: [teamId], references: [id])
   // Composite unique constraint required by Better Auth
+  // @@index([teamId])
   @@unique([organizationId, userId])
   @@index([userId])
-  @@index([teamId])
   @@map("member")
 }
 
@@ -889,18 +845,18 @@ model Invitation {
 // ============================================
 
 model Address {
-  id        String        @id @default(cuid())
-  street    String?
-  city      String?
-  state     String?
-  zipCode   String?
-  country   String        @default("Kenya")
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  userId    String?       @unique
-  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  churchId  String?       @unique
-  church    Organization? @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  street         String?
+  city           String?
+  state          String?
+  zipCode        String?
+  country        String        @default("Kenya")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  userId         String?       @unique
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?       @unique
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   teamId  String?       @unique
   team    Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
   @@map("address")
@@ -918,6 +874,7 @@ model EmergencyContact {
   updatedAt    DateTime @updatedAt
   userId       String   @unique
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("emergency_contact")
 }
 
@@ -939,6 +896,7 @@ model MemberDetails {
   groupIds         String[]
   userId           String           @unique
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("member_details")
 }
 
@@ -956,37 +914,40 @@ model PastorDetails {
   assignments        PastorAssignment[]
   userId             String             @unique
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("pastor_details")
 }
 
 model PastorAssignment {
-  id               String        @id @default(cuid())
-  position         String
-  startDate        DateTime
-  endDate          DateTime?
-  isActive         Boolean       @default(true)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  teamId           String?       // Reference to branch/team
-  pastorDetailsId  String
-  pastorDetails    PastorDetails @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  position        String
+  startDate       DateTime
+  endDate         DateTime?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  teamId          String? // Reference to branch/team
+  pastorDetailsId String
+  pastorDetails   PastorDetails @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
+
   @@map("pastor_assignment")
 }
 
 model BishopDetails {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   bishopId         String
   appointmentDate  DateTime?
   jurisdictionArea String?
   qualifications   String[]
   achievements     String[]
   biography        String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  teamIds        String[] // Team IDs the bishop oversees
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  teamIds          String[] // Team IDs the bishop oversees
   pastorIds        String[]
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("bishop_details")
 }
 
@@ -1004,6 +965,7 @@ model StaffDetails {
   updatedAt      DateTime       @updatedAt
   userId         String         @unique
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("staff_details")
 }
 
@@ -1020,599 +982,176 @@ model VolunteerDetails {
   backgroundCheck      BackgroundCheck?
   userId               String                @unique
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("volunteer_details")
 }
 
 model AvailabilitySchedule {
-  id                  String           @id @default(cuid())
-  days                String[]
-  timeSlots           String[]
-  preferredTimes      String[]
-  volunteerDetailsId  String           @unique
-  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(cuid())
+  days               String[]
+  timeSlots          String[]
+  preferredTimes     String[]
+  volunteerDetailsId String           @unique
+  volunteerDetails   VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+
   @@map("availability_schedule")
 }
 
 model VolunteerRole {
-  id                  String           @id @default(cuid())
-  role                String
-  department          String?
-  startDate           DateTime         @default(now())
-  endDate             DateTime?
-  isActive            Boolean          @default(true)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  volunteerDetailsId  String
-  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(cuid())
+  role               String
+  department         String?
+  startDate          DateTime         @default(now())
+  endDate            DateTime?
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  volunteerDetailsId String
+  volunteerDetails   VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+
   @@map("volunteer_role")
 }
 
 model BackgroundCheck {
-  id                  String           @id @default(cuid())
-  completed           Boolean          @default(false)
-  completedDate       DateTime?
-  expiryDate          DateTime?
-  clearanceLevel      ClearanceLevel?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  volunteerDetailsId  String           @unique
-  volunteerDetails    VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(cuid())
+  completed          Boolean          @default(false)
+  completedDate      DateTime?
+  expiryDate         DateTime?
+  clearanceLevel     ClearanceLevel?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  volunteerDetailsId String           @unique
+  volunteerDetails   VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+
   @@map("background_check")
 }
 
 model AdminDetails {
-  id               String           @id @default(cuid())
-  adminId          String
-  accessLevel      AdminAccessLevel @default(NATIONAL)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  assignedTeams String[]         // Team IDs assigned to this admin
-  userId           String           @unique
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String           @id @default(cuid())
+  adminId       String
+  accessLevel   AdminAccessLevel @default(NATIONAL)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  assignedTeams String[] // Team IDs assigned to this admin
+  userId        String           @unique
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("admin_details")
 }
 
 model VisitorDetails {
-  id                      String         @id @default(cuid())
-  visitorId               String
-  visitDate               DateTime       @default(now())
-  howDidYouHear           HowDidYouHear  @default(OTHER)
-  followUpStatus          FollowUpStatus @default(PENDING)
-  followUpDate            DateTime?
-  followUpNotes           String?
-  interestedInMembership  Boolean        @default(false)
-  servicesAttended        String[]
-  createdAt               DateTime       @default(now())
-  updatedAt               DateTime       @updatedAt
-  invitedBy               String?
-  userId                  String         @unique
-  user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String         @id @default(cuid())
+  visitorId              String
+  visitDate              DateTime       @default(now())
+  howDidYouHear          HowDidYouHear  @default(OTHER)
+  followUpStatus         FollowUpStatus @default(PENDING)
+  followUpDate           DateTime?
+  followUpNotes          String?
+  interestedInMembership Boolean        @default(false)
+  servicesAttended       String[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  invitedBy              String?
+  userId                 String         @unique
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("visitor_details")
 }
 
-// ============================================
-// DEPARTMENT MODEL (REFERENCES TEAM/BRANCH)
-// ============================================
-
-model Department {
-  id              String               @id @default(cuid())
-  departmentName  String
-  description     String
-  location        String?
-  category        DepartmentCategory
-  establishedDate DateTime
-  meetingDay      String[]
-  meetingTime     String[]
-  isActive        Boolean              @default(true)
-  isDeleted       Boolean              @default(false)
-  totalBudget     Float                @default(0)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  // Church/Organization reference
-  churchId        String
-  church          Organization         @relation(fields: [churchId], references: [id])
-  // Branch/Team reference - departments belong to branches
-  teamId          String
-  team            Team                 @relation("TeamDepartments", fields: [teamId], references: [id])
-  // Department leader
-  leaderId        String?
-  leader          User?                @relation("DepartmentLeader", fields: [leaderId], references: [id])
-  // Relations
-  members         DepartmentMember[]
-  budgetCategories BudgetCategory[]
-  expenses        Expense[]
-  activities      DepartmentActivity[]
-  goals           DepartmentGoal[]
-  @@index([churchId, teamId])
-  @@index([teamId, isActive])
-  @@index([leaderId])
-  @@map("department")
-}
-
-model DepartmentMember {
-  id           String     @id @default(cuid())
-  role         MemberRole
-  skills       String[]
-  joinedDate   DateTime   @default(now())
-  isActive     Boolean    @default(true)
-  notes        String?
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-  userId       String
-  user         User       @relation(fields: [userId], references: [id])
-  @@map("department_member")
-}
-
-model BudgetCategory {
-  id              String          @id @default(cuid())
-  category        ExpenseCategory
-  allocatedAmount Float
-  spentAmount     Float           @default(0)
+model Team {
+  id             String       @id @default(cuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime?    @updatedAt
+  teammembers    TeamMember[]
+  address        Address[]
+  // Extended team fields
+  email           String?
+  phoneNumber     String?
+  capacity        Int?
+  memberCount     Int          @default(0)
+  establishedDate DateTime?
   description     String?
-  departmentId    String
-  department      Department      @relation(fields: [departmentId], references: [id])
-  @@map("budget_category")
+  isActive        Boolean      @default(true)
+  isDeleted       Boolean      @default(false)
+  metadata        Json?        // Store additional team info
+
+  @@map("team")
 }
 
-model Expense {
-  id           String          @id @default(cuid())
-  category     ExpenseCategory
-  amount       Float
-  description  String
-  date         DateTime
-  reference    String?
-  vendor       String?
-  receiptUrl   String?
-  createdAt    DateTime        @default(now())
-  departmentId String
-  department   Department      @relation(fields: [departmentId], references: [id])
-  approvedBy   String?
-  approver     User?           @relation(fields: [approvedBy], references: [id])
-  @@map("expense")
-}
-
-model DepartmentActivity {
-  id           String       @id @default(cuid())
-  title        String
-  description  String
-  type         ActivityType
-  date         DateTime
-  startTime    String?
-  endTime      String?
-  location     String?
-  participants String[]
-  notes        String?
-  isCompleted  Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  departmentId String
-  department   Department   @relation(fields: [departmentId], references: [id])
-  organizedBy  String
-  organizer    User         @relation(fields: [organizedBy], references: [id])
-  @@map("department_activity")
-}
-
-model DepartmentGoal {
-  id           String     @id @default(cuid())
-  title        String
-  description  String
-  targetDate   DateTime
-  status       GoalStatus @default(PLANNED)
-  priority     String
-  category     String
-  success      String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-  assignee     String?
-  createdBy    String
-  creator      User       @relation(fields: [createdBy], references: [id])
-  @@map("department_goal")
-}
-
-// ============================================
-// GROUP MODEL (SMALL GROUPS - REFERENCES TEAM/BRANCH)
-// ============================================
-
-model Group {
-  id                String              @id @default(cuid())
-  groupName         String
-  description       String?
-  category          GroupCategory
-  meetingDay        String[]
-  meetingTime       String[]
-  location          String?
-  establishedDate   DateTime
-  capacity          Int
-  isActive          Boolean             @default(true)
-  totalMembers      Int                 @default(0)
-  activeMembers     Int                 @default(0)
-  averageAttendance Float               @default(0)
-  totalActivities   Int                 @default(0)
-  completedGoals    Int                 @default(0)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  // Church/Organization reference
-  churchId          String
-  church            Organization        @relation(fields: [churchId], references: [id])
-  // Branch/Team reference - small groups belong to branches
-  teamId            String
-  team              Team                @relation("TeamGroups", fields: [teamId], references: [id])
-  // Group leader
-  leaderId          String?
-  leader            User?               @relation("GroupLeader", fields: [leaderId], references: [id])
-  // Relations
-  members           GroupMember[]
-  activities        GroupActivity[]
-  goals             GroupGoal[]
-  attendanceSummaries AttendanceSummary[]
-  @@index([churchId, teamId])
-  @@index([teamId, isActive])
-  @@index([leaderId])
-  @@index([category])
-  @@map("group")
-}
-
-
-
-model GroupMember {
-  id          String     @id @default(cuid())
-  role        MemberRole
-  joinedDate  DateTime   @default(now())
-  isActive    Boolean    @default(true)
-  notes       String?
-  phone       String?
-  email       String?
-  groupId     String
-  group       Group      @relation(fields: [groupId], references: [id])
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
-  @@map("group_member")
-}
-
-model GroupActivity {
-  id           String             @id @default(cuid())
-  title        String
-  description  String
-  type         GroupActivityType
-  date         DateTime
-  startTime    String?
-  endTime      String?
-  location     String?
-  participants String[]
-  notes        String?
-  isCompleted  Boolean            @default(false)
-  createdAt    DateTime           @default(now())
-  groupId      String
-  group        Group              @relation(fields: [groupId], references: [id])
-  organizedBy  String
-  organizer    User               @relation(fields: [organizedBy], references: [id])
-  attendance   AttendanceRecord[]
-  @@map("group_activity")
-}
-
-model GroupGoal {
-  id          String          @id @default(cuid())
-  title       String
-  description String
-  targetDate  DateTime
-  status      GroupGoalStatus @default(PLANNED)
-  priority    String
-  category    String
-  success     String
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  groupId     String
-  group       Group           @relation(fields: [groupId], references: [id])
-  assignee    String?
-  createdBy   String
-  creator     User            @relation(fields: [createdBy], references: [id])
-  @@map("group_goal")
-}
-
-model AttendanceSummary {
-  id             String             @id @default(cuid())
-  date           DateTime
-  totalExpected  Int
-  totalPresent   Int
-  totalAbsent    Int
-  totalLate      Int                @default(0)
-  attendanceRate Float
-  groupId        String
-  group          Group              @relation(fields: [groupId], references: [id])
-  records        AttendanceRecord[]
-  @@map("attendance_summary")
-}
-
-model AttendanceRecord {
-  id                  String             @id @default(cuid())
-  status              AttendanceStatus
-  arrivalTime         DateTime?
-  notes               String?
-  userId              String
-  user                User               @relation(fields: [userId], references: [id])
-  groupActivityId     String?
-  groupActivity       GroupActivity?     @relation(fields: [groupActivityId], references: [id])
-  attendanceSummaryId String?
-  attendanceSummary   AttendanceSummary? @relation(fields: [attendanceSummaryId], references: [id])
-  attendanceId        String?
-  attendance          Attendance?        @relation(fields: [attendanceId], references: [id])
-  @@map("attendance_record")
-}
-
-// ============================================
-// EVENTS AND ACTIVITIES
-// ============================================
-
-model Event {
-  id                   String      @id @default(cuid())
-  title                String
-  description          String
-  type                 String
-  startDate            DateTime
-  endDate              DateTime
-  startTime            String
-  endTime              String
-  location             String
-  expectedAttendees    Int
-  organizer            String
-  maxAttendees         Int?
-  requiresRegistration Boolean     @default(false)
-  isRecurring          Boolean     @default(false)
-  recurringPattern     String?
-  registrationDeadline DateTime?
-  notes                String?
-  isPublic             Boolean     @default(true)
-  status               EventStatus @default(ACTIVE)
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
-  churchId             String
-  church               Organization @relation(fields: [churchId], references: [id])
-  teamId             String
-  team               Team       @relation(fields: [teamId], references: [id])
-  @@index([churchId, startDate])
-  @@index([status])
-  @@index([teamId])
-  @@map("event")
-}
-
-model Activity {
-  id           String           @id @default(cuid())
-  date         DateTime
-  activity     String
-  participants Int
-  type         ActivityTypeEnum @default(EVENT)
-  status       ActivityStatus   @default(PLANNED)
-  startTime    String?
-  endTime      String?
-  location     String?
-  facilitator  String?
-  budget       Float?
-  description  String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  churchId     String
-  church       Organization     @relation(fields: [churchId], references: [id])
-  teamId     String
-  team       Team           @relation(fields: [teamId], references: [id])
-  @@index([churchId, teamId])
-  @@index([churchId, date])
-  @@index([date, status])
-  @@map("activity")
-}
-
-// ============================================
-// FINANCIAL MODELS
-// ============================================
-
-model Offering {
-  id        String        @id @default(cuid())
-  type      OfferingType
-  amount    Float
-  method    PaymentMethod
-  date      DateTime
-  reference String?
-  notes     String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  churchId  String
-  church    Organization  @relation(fields: [churchId], references: [id])
-  teamId  String
-  team    Team        @relation(fields: [teamId], references: [id])
-  memberId  String
-  member    User          @relation(fields: [memberId], references: [id])
-  @@index([churchId, date])
-  @@index([memberId, date])
-  @@map("offering")
-}
-
-model Pledge {
-  id              String          @id @default(cuid())
-  amount          Float
-  paid            Float           @default(0)
-  remaining       Float
-  dueDate         DateTime
-  purpose         PledgePurpose
-  paymentSchedule PaymentSchedule @default(ONE_TIME)
-  notes           String?
-  status          PledgeStatus    @default(ACTIVE)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  churchId        String
-  church          Organization    @relation(fields: [churchId], references: [id])
-  teamId        String
-  team          Team          @relation(fields: [teamId], references: [id])
-  memberId        String
-  member          User            @relation(fields: [memberId], references: [id])
-  @@index([churchId, status])
-  @@index([memberId, status])
-  @@index([dueDate, status])
-  @@map("pledge")
-}
-
-// ============================================
-// PRAYER AND SPIRITUAL
-// ============================================
-
-model PrayerRequest {
-  id                String         @id @default(cuid())
-  title             String
-  description       String
-  category          PrayerCategory
-  priority          Priority       @default(MEDIUM)
-  status            PrayerStatus   @default(ACTIVE)
-  isAnonymous       Boolean        @default(false)
-  isPublic          Boolean        @default(true)
-  answeredDate      DateTime?
-  answerDescription String?
-  prayerCount       Int            @default(0)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  churchId          String
-  church            Organization   @relation(fields: [churchId], references: [id])
-  teamId          String
-  team            Team         @relation(fields: [teamId], references: [id])
-  memberId          String?
-  submittedBy       String
-  submitter         User           @relation("PrayerRequestSubmitter", fields: [submittedBy], references: [id])
-  @@index([churchId, teamId])
-  @@index([churchId, category])
-  @@index([churchId, status])
-  @@map("prayer_request")
-}
-
-// ============================================
-// SCHEDULES AND ATTENDANCE
-// ============================================
-
-model ServiceSchedule {
-  id          String       @id @default(cuid())
-  day         DayOfWeek
-  time        String
-  service     String
-  attendance  Int?
-  type        ServiceType  @default(WORSHIP)
-  duration    Int?         @default(90)
-  facilitator String?
-  location    String?
-  recurring   Boolean      @default(true)
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  churchId    String
-  church      Organization @relation(fields: [churchId], references: [id])
+model TeamMember {
+  id        String    @id  @default(cuid())
   teamId    String
-  team      Team       @relation(fields: [teamId], references: [id])
-  @@index([churchId, teamId])
-  @@map("service_schedule")
-}
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime? @default(now())
 
-model Attendance {
-  id             String             @id @default(cuid())
-  serviceDate    DateTime
-  serviceType    ServiceType
-  totalAttendees Int
-  offeringAmount Float?
-  notes          String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  churchId       String
-  church         Organization       @relation(fields: [churchId], references: [id])
-  teamId       String
-  team         Team             @relation(fields: [teamId], references: [id])
-  takenBy        String
-  taker          User               @relation(fields: [takenBy], references: [id])
-  records        AttendanceRecord[]
-  @@index([churchId, serviceDate])
-  @@map("attendance")
+  @@map("teamMember")
 }
 
 // ============================================
-// ASSETS
+// TEAM MODEL (BRANCH IN BETTER AUTH)
 // ============================================
 
-model Asset {
-  id                  String              @id @default(cuid())
-  name                String
-  type                AssetType
-  description         String?
-  category            String
-  purchaseDate        DateTime?
-  purchasePrice       Float?
-  value               Float
-  condition           AssetCondition
-  status              AssetStatus         @default(ACTIVE)
-  serialNumber        String?
-  warranty            String?
-  supplier            String?
-  maintenanceSchedule MaintenanceSchedule?
-  currentValue        Float?
-  location            String
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  churchId            String
-  church              Organization        @relation(fields: [churchId], references: [id])
-  teamId            String
-  team              Team              @relation(fields: [teamId], references: [id])
-  maintenanceRecords  MaintenanceRecord[]
-  @@index([churchId, status])
-  @@index([teamId])
-  @@map("asset")
-}
-
-model MaintenanceRecord {
-  id          String   @id @default(cuid())
-  date        DateTime
-  description String
-  cost        Float?
-  performedBy String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  assetId     String
-  asset       Asset    @relation(fields: [assetId], references: [id])
-  @@map("maintenance_record")
-}
-
-// ============================================
-// ANNOUNCEMENTS
-// ============================================
-
-model Announcement {
-  id               String               @id @default(cuid())
-  title            String
-  content          String
-  category         AnnouncementCategory
-  priority         Priority             @default(MEDIUM)
-  publishDate      DateTime
-  expiryDate       DateTime?
-  status           AnnouncementStatus   @default(DRAFT)
-  viewCount        Int                  @default(0)
-  targetAudience   String[]
-  attachments      String[]
-  isSticky         Boolean              @default(false)
-  notificationSent Boolean              @default(false)
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  churchId         String
-  church           Organization         @relation(fields: [churchId], references: [id])
-  teamId         String?
-  team           Team?              @relation(fields: [teamId], references: [id])
-  authorId         String
-  author           User                 @relation(fields: [authorId], references: [id])
-  @@index([churchId, teamId])
-  @@index([churchId, category])
-  @@index([churchId, status])
-  @@index([publishDate])
-  @@map("announcement")
-}
+// model Team {
+//   id             String       @id @default(cuid())
+//   name           String       // Team name
+//   organizationId String
+//   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+//   createdAt      DateTime     @default(now())
+//   updatedAt      DateTime     @updatedAt
+//   // Extended team fields
+//   email           String?
+//   phoneNumber     String?
+//   capacity        Int?
+//   memberCount     Int          @default(0)
+//   establishedDate DateTime?
+//   description     String?
+//   isActive        Boolean      @default(true)
+//   isDeleted       Boolean      @default(false)
+//   metadata        Json?        // Store additional team info
+//   // Team leadership
+//   pastorId        String?
+//   pastor          User?        @relation("TeamPastor", fields: [pastorId], references: [id])
+//   // Relations - Members assigned to this branch/team
+//   members         Member[]     @relation("TeamMembers")
+//   // Departments and Groups belong to teams/branches
+//   departments     Department[] @relation("TeamDepartments")
+//   groups          Group[]      @relation("TeamGroups")
+//   // Other team-specific relations
+//   serviceSchedules    ServiceSchedule[]
+//   prayerRequests      PrayerRequest[]
+//   activities          Activity[]
+//   assets              Asset[]
+//   address             Address[]
+//   announcements       Announcement[]
+//   attendances         Attendance[]
+//   events              Event[]
+//   reports             Report[]
+//   milestones          Milestone[]
+//   offerings           Offering[]
+//   disciples           Disciple[]
+//   pledges             Pledge[]
+//   discipleProgress    DiscipleProgress[]
+//   content             Content[]
+//   messageRecipients   MessageRecipient[]
+//   messages            Message[]
+//   @@index([organizationId, isActive])
+//   @@index([organizationId, isDeleted])
+//   @@index([pastorId])
+//   @@map("team")
+// }
 
 // ============================================
 // SUBSCRIPTIONS
 // ============================================
 
-model ChurchSubscription {
+model OrganizationSubscription {
   id                 String             @id @default(cuid())
-  plan               ChurchPlan
+  plan               OrganizationPlan
   status             SubscriptionStatus @default(TRIAL)
   isPaid             Boolean            @default(false)
   isActive           Boolean            @default(false)
@@ -1636,12 +1175,12 @@ model ChurchSubscription {
   cancelReason       String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
-  churchId           String             @unique
-  church             Organization       @relation(fields: [churchId], references: [id])
-  @@index([churchId, status])
+  organizationId     String             @unique
+  organization       Organization       @relation(fields: [organizationId], references: [id])
+  @@index([organizationId, status])
   @@index([status, endDate])
   @@index([plan, status])
-  @@map("church_subscription")
+  @@map("organization_subscription")
 }
 
 model UserSubscription {
@@ -1677,7 +1216,7 @@ model UserSubscription {
 }
 
 // ============================================
-// LOGGING AND PAYMENTS
+// LOGGING
 // ============================================
 
 model Log {
@@ -1696,338 +1235,10 @@ model Log {
   updatedAt    DateTime    @updatedAt
   userId       String?
   user         User?       @relation(fields: [userId], references: [id])
-  churchId     String
-  church       Organization @relation(fields: [churchId], references: [id])
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
   @@index([level, timestamp])
   @@index([source, level, timestamp])
   @@index([environment, timestamp])
   @@map("log")
-}
-
-model Payment {
-  id                String        @id @default(cuid())
-  amount            Float
-  date              DateTime
-  method            PaymentMethod
-  reference         String
-  status            PaymentStatus @default(PENDING)
-  description       String?
-  relatedEntityType String
-  relatedEntityId   String
-  payerId           String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  churchId          String
-  church            Organization  @relation(fields: [churchId], references: [id])
-  @@index([churchId, status])
-  @@map("payment")
-}
-
-// ============================================
-// REPORTS
-// ============================================
-
-model Report {
-  id              String        @id @default(cuid())
-  name            String
-  type            ReportType
-  description     String
-  dateRange       DateRange     @default(LAST_30_DAYS)
-  customStartDate DateTime?
-  customEndDate   DateTime?
-  format          ReportFormat  @default(PDF)
-  includeCharts   Boolean       @default(true)
-  includeComparisons Boolean    @default(false)
-  departments     String[]
-  status          ReportStatus  @default(GENERATING)
-  fileUrl         String?
-  fileName        String?
-  fileSize        Int?
-  generatedAt     DateTime?
-  downloadCount   Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  churchId        String
-  church          Organization  @relation(fields: [churchId], references: [id])
-  teamId        String?
-  team          Team?       @relation(fields: [teamId], references: [id])
-  reportData      ReportData?
-  createdBy       String
-  creator         User          @relation(fields: [createdBy], references: [id])
-  @@index([churchId, teamId])
-  @@index([churchId, status])
-  @@index([churchId, type])
-  @@index([createdBy])
-  @@index([status, createdAt])
-  @@index([generatedAt])
-  @@map("report")
-}
-
-model ReportData {
-  id               String            @id @default(cuid())
-  totalRecords     Int               @default(0)
-  startDate        DateTime
-  endDate          DateTime
-  generationTime   Int
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  reportId         String            @unique
-  report           Report            @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  departmentCounts DepartmentCount[]
-  @@map("report_data")
-}
-
-model DepartmentCount {
-  id             String     @id @default(cuid())
-  departmentId   String
-  departmentName String
-  count          Int
-  reportDataId   String
-  reportData     ReportData @relation(fields: [reportDataId], references: [id], onDelete: Cascade)
-  @@map("department_count")
-}
-
-// ============================================
-// MILESTONES
-// ============================================
-
-model Milestone {
-  id                     String              @id @default(cuid())
-  name                   String
-  description            String
-  category               MilestoneCategory
-  points                 Int
-  targetDate             DateTime
-  completionDate         DateTime?
-  requirements           String?
-  isActive               Boolean             @default(true)
-  order                  Int                 @default(0)
-  level                  DiscipleLevel
-  prerequisiteMilestones String[]
-  completionCount        Int                 @default(0)
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
-  churchId               String
-  church                 Organization        @relation(fields: [churchId], references: [id])
-  teamId               String?
-  team                 Team?             @relation(fields: [teamId], references: [id])
-  discipleProgress       DiscipleProgress[]
-  milestoneProgress      MilestoneProgress[]
-  @@index([churchId, teamId])
-  @@index([churchId, category])
-  @@index([churchId, level])
-  @@index([churchId, isActive])
-  @@index([category, order])
-  @@index([level, order])
-  @@map("milestone")
-}
-
-// ============================================
-// MESSAGING
-// ============================================
-
-model MessageTemplate {
-  id          String           @id @default(cuid())
-  name        String
-  type        MessageType
-  category    TemplateCategory
-  title       String
-  content     String
-  variables   String[]
-  isActive    Boolean          @default(true)
-  usageCount  Int              @default(0)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  churchId    String
-  church      Organization     @relation(fields: [churchId], references: [id])
-  createdBy   String
-  creator     User             @relation(fields: [createdBy], references: [id])
-  messages    Message[]
-  @@unique([churchId, name])
-  @@index([churchId, isActive])
-  @@index([churchId, type, isActive])
-  @@index([churchId, category, isActive])
-  @@index([createdBy])
-  @@map("message_template")
-}
-
-model Message {
-  id            String                    @id @default(cuid())
-  type          MessageType
-  title         String
-  content       String
-  recipients    String[]
-  scheduleType  ScheduleType              @default(NOW)
-  scheduleDate  DateTime?
-  scheduleTime  String?
-  status        MessageStatus             @default(DRAFT)
-  sentAt        DateTime?
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
-  churchId      String
-  church        Organization              @relation(fields: [churchId], references: [id])
-  teamId      String?
-  team        Team?                   @relation(fields: [teamId], references: [id])
-  templateId    String?
-  template      MessageTemplate?          @relation(fields: [templateId], references: [id])
-  deliveryStats MessageDeliveryStats?
-  createdBy     String
-  creator       User                      @relation(fields: [createdBy], references: [id])
-  @@index([churchId, teamId])
-  @@index([churchId, status])
-  @@index([churchId, type])
-  @@index([scheduleDate, status])
-  @@index([createdBy])
-  @@map("message")
-}
-
-model MessageDeliveryStats {
-  id        String   @id @default(cuid())
-  total     Int      @default(0)
-  sent      Int      @default(0)
-  delivered Int      @default(0)
-  failed    Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  messageId String   @unique
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  @@map("message_delivery_stats")
-}
-
-model MessageRecipient {
-  id           String            @id @default(cuid())
-  recipientId  String            @unique
-  name         String
-  description  String?
-  type         RecipientType     @default(CUSTOM)
-  targetModel  TargetModel
-  targetId     String?
-  memberCount  Int               @default(0)
-  isActive     Boolean           @default(true)
-  autoUpdate   Boolean           @default(true)
-  lastUpdated  DateTime          @default(now())
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  churchId     String
-  church       Organization      @relation(fields: [churchId], references: [id])
-  teamId     String?
-  team       Team?           @relation(fields: [teamId], references: [id])
-  criteria     RecipientCriteria?
-  createdBy    String
-  creator      User              @relation(fields: [createdBy], references: [id])
-  @@unique([churchId, recipientId])
-  @@index([churchId, isActive])
-  @@index([churchId, type, isActive])
-  @@index([teamId])
-  @@index([targetModel, targetId])
-  @@map("message_recipient")
-}
-
-model RecipientCriteria {
-  id            String           @id @default(cuid())
-  userStatus    String[]
-  roles         String[]
-  minAge        Int?
-  maxAge        Int?
-  gender        Gender?
-  departmentIds String[]
-  groupIds      String[]
-  customQuery   String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  recipientId   String           @unique
-  recipient     MessageRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  @@map("recipient_criteria")
-}
-
-// ============================================
-// DISCIPLESHIP
-// ============================================
-
-model Disciple {
-  id                  String             @id @default(cuid())
-  startDate           DateTime
-  endDate             DateTime?
-  currentLevel        DiscipleLevel
-  status              DiscipleStatus     @default(ACTIVE)
-  goals               String
-  notes               String?
-  progress            Int                @default(0)
-  milestonesCompleted String[]
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  churchId            String
-  church              Organization       @relation(fields: [churchId], references: [id])
-  teamId            String?
-  team              Team?            @relation(fields: [teamId], references: [id])
-  memberId            String
-  member              User               @relation("DiscipleMember", fields: [memberId], references: [id])
-  mentorId            String
-  mentor              User               @relation("DiscipleMentor", fields: [mentorId], references: [id])
-  discipleProgress    DiscipleProgress[]
-  @@index([churchId, teamId])
-  @@index([churchId, memberId])
-  @@index([churchId, mentorId])
-  @@index([churchId, status])
-  @@index([churchId, currentLevel])
-  @@index([startDate])
-  @@map("disciple")
-}
-
-model DiscipleProgress {
-  id                 String              @id @default(cuid())
-  date               DateTime
-  topic              String
-  status             String
-  notes              String?
-  isCompleted        Boolean             @default(false)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  discipleId         String
-  disciple           Disciple            @relation(fields: [discipleId], references: [id])
-  teamId           String?
-  team             Team?             @relation(fields: [teamId], references: [id])
-  milestones         Milestone[]
-  milestoneProgress  MilestoneProgress[]
-  @@map("disciple_progress")
-}
-
-model MilestoneProgress {
-  id                 String           @id @default(cuid())
-  milestoneId        String
-  milestone          Milestone        @relation(fields: [milestoneId], references: [id])
-  discipleProgressId String
-  discipleProgress   DiscipleProgress @relation(fields: [discipleProgressId], references: [id])
-  @@map("milestone_progress")
-}
-
-// ============================================
-// CONTENT MANAGEMENT
-// ============================================
-
-model Content {
-  id           String          @id @default(cuid())
-  title        String
-  description  String
-  type         ContentType
-  category     ContentCategory
-  tags         String[]
-  status       ContentStatus   @default(DRAFT)
-  fileUrl      String?
-  fileName     String?
-  fileSize     Int?
-  fileMimeType String?
-  author       String?
-  publishedAt  DateTime?
-  viewCount    Int             @default(0)
-  downloadCount Int            @default(0)
-  isPublic     Boolean         @default(false)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  churchId     String
-  church       Organization    @relation(fields: [churchId], references: [id])
-  teamId     String?
-  team       Team?         @relation(fields: [teamId], references: [id])
-  @@index([churchId, type])
-  @@map("content")
 }

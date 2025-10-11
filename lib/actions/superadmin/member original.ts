@@ -45,7 +45,6 @@ export interface AddMemberParams {
   password: string;
   gender: 'MALE' | 'FEMALE';
   role: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
-  organizationRole: ORGANIZATIONUserRole;
   isMember: boolean;
   teamId?: string;
   sendWelcomeEmail?: boolean;
@@ -59,8 +58,7 @@ export interface UpdateMemberParams {
   email?: string;
   phoneNumber?: string;
   gender?: 'MALE' | 'FEMALE';
-  role?: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
-  organizationRole?: ORGANIZATIONUserRole;
+  role?: 'VISITOR' | 'OWNER' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
   status?: string;
   isMember?: boolean;
   teamId?: string;
@@ -98,44 +96,21 @@ export async function getOrganizationMembers(
   const where: Prisma.MemberWhereInput = {
     organizationId,
   };
-  // Filter by organization role
   if (role && role !== 'all') {
     where.role = role as ORGANIZATIONUserRole;
   }
-  // Filter by team membership
   if (teamId && teamId !== 'all') {
-    where.user = {
-      teammembers: {
-        some: {
-          teamId,
-        },
-      },
-    };
+    where.teamId = teamId;
   }
-  // Search by user details
   if (search) {
     where.user = {
-      ...where.user,
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phoneNumber: { contains: search, mode: 'insensitive' } },
+      ],
     };
-    where.OR = [
-      {
-        user: {
-          name: { contains: search, mode: 'insensitive' },
-        },
-      },
-      {
-        user: {
-          email: { contains: search, mode: 'insensitive' },
-        },
-      },
-      {
-        user: {
-          phoneNumber: { contains: search, mode: 'insensitive' },
-        },
-      },
-    ];
   }
-  // Filter by user status
   if (status && status !== 'all') {
     where.user = {
       ...where.user,
@@ -170,13 +145,9 @@ export async function getOrganizationMembers(
             volunteerDetails: true,
             adminDetails: true,
             visitorDetails: true,
-            teammembers: {
-              include: {
-                team: true,
-              },
-            },
           },
         },
+        team: true,
       },
       orderBy,
       skip,
@@ -218,7 +189,6 @@ export async function addMemberToOrganization(
       password,
       gender,
       role,
-      organizationRole,
       isMember,
       teamId,
       sendWelcomeEmail = false,
@@ -258,42 +228,31 @@ export async function addMemberToOrganization(
         };
       }
       // Add existing user to organization
-      const result = await prisma.$transaction(async (tx) => {
-        // Create member record
-        const member = await tx.member.create({
-          data: {
-            userId: existingUser.id,
-            organizationId,
-            role: organizationRole,
-          },
-          include: {
-            user: true,
-          },
-        });
-        // Add to team if teamId provided
-        if (teamId) {
-          await tx.teamMember.create({
-            data: {
-              userId: existingUser.id,
-              teamId,
-            },
-          });
-        }
-        return member;
+      const member = await prisma.member.create({
+        data: {
+          userId: existingUser.id,
+          organizationId,
+          role,
+          teamId: teamId || null,
+        },
+        include: {
+          user: true,
+        },
       });
       // TODO: Send welcome email if requested
       if (sendWelcomeEmail) {
-        // await sendWelcomeEmail(result.user.email, organizationId);
+        // await sendWelcomeEmail(member.user.email, organizationId);
       }
       revalidatePath(`/dashboard/organizations/${organizationId}/members`);
       return {
         success: true,
-        data: result,
+        data: member,
         message: 'Member added successfully',
       };
     }
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user
@@ -324,21 +283,13 @@ export async function addMemberToOrganization(
         data: {
           userId: user.id,
           organizationId,
-          role: organizationRole,
+          role,
+          teamId: teamId || null,
         },
         include: {
           user: true,
         },
       });
-      // Add to team if teamId provided
-      if (teamId) {
-        await tx.teamMember.create({
-          data: {
-            userId: user.id,
-            teamId,
-          },
-        });
-      }
       return { user, member };
     });
     // TODO: Send welcome email if requested
@@ -381,7 +332,6 @@ export async function updateMember(
       phoneNumber,
       gender,
       role,
-      organizationRole,
       status,
       isMember,
       teamId,
@@ -406,13 +356,7 @@ export async function updateMember(
     // Get member with user details
     const existingMember = await prisma.member.findUnique({
       where: { id: memberId },
-      include: {
-        user: {
-          include: {
-            teammembers: true,
-          },
-        },
-      },
+      include: { user: true },
     });
     if (!existingMember) {
       return { success: false, error: 'Member not found' };
@@ -424,7 +368,6 @@ export async function updateMember(
         error: 'Only owners can update owner members',
       };
     }
-
     // Update user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Prepare user update data
@@ -432,70 +375,32 @@ export async function updateMember(
         updatedBy: session.user.id,
       };
       if (firstName || lastName) {
-        const currentFirstName = existingMember.user.name.split(' ')[0];
-        const currentLastName = existingMember.user.name
-          .split(' ')
-          .slice(1)
-          .join(' ');
         userUpdateData.name =
-          `${firstName || currentFirstName} ${lastName || currentLastName}`.trim();
+          `${firstName || existingMember.user.name.split(' ')[0]} ${lastName || existingMember.user.name.split(' ')[1] || ''}`.trim();
       }
       if (email) userUpdateData.email = email;
       if (phoneNumber !== undefined) userUpdateData.phoneNumber = phoneNumber;
       if (gender) userUpdateData.gender = gender;
       if (status) userUpdateData.status = status;
       if (isMember !== undefined) userUpdateData.isMember = isMember;
-      if (role) userUpdateData.role = role;
       // Update user
       const user = await tx.user.update({
         where: { id: existingMember.userId },
         data: userUpdateData,
       });
-      // Update organization role if provided
+      // Prepare member update data
       const memberUpdateData: Prisma.MemberUpdateInput = {};
-      if (organizationRole) {
-        memberUpdateData.role = organizationRole;
-      }
+      if (role) memberUpdateData.role = role;
+      if (teamId !== undefined) memberUpdateData.teamId = teamId;
       // Update member
       const member = await tx.member.update({
         where: { id: memberId },
         data: memberUpdateData,
         include: {
-          user: {
-            include: {
-              teammembers: {
-                include: {
-                  team: true,
-                },
-              },
-            },
-          },
+          user: true,
+          branch: true,
         },
       });
-      // Handle team assignment
-      if (teamId !== undefined) {
-        // Remove existing team memberships for this organization's teams
-        const organizationTeams = await tx.team.findMany({
-          where: { organizationId },
-          select: { id: true },
-        });
-        const organizationTeamIds = organizationTeams.map((t) => t.id);
-        await tx.teamMember.deleteMany({
-          where: {
-            userId: existingMember.userId,
-            teamId: { in: organizationTeamIds },
-          },
-        });
-        // Add new team membership if teamId provided
-        if (teamId) {
-          await tx.teamMember.create({
-            data: {
-              userId: existingMember.userId,
-              teamId,
-            },
-          });
-        }
-      }
       return { user, member };
     });
     revalidatePath(`/dashboard/organizations/${organizationId}/members`);
@@ -547,7 +452,6 @@ export async function toggleMemberStatus(
       where: { id: memberId },
       include: { user: true },
     });
-
     if (!member) {
       return { success: false, error: 'Member not found' };
     }
@@ -634,35 +538,26 @@ export async function removeMemberFromOrganization(
         error: 'Cannot remove yourself. Use leave organization instead.',
       };
     }
-    await prisma.$transaction(async (tx) => {
-      // Get organization teams
-      const organizationTeams = await tx.team.findMany({
-        where: { organizationId },
-        select: { id: true },
-      });
-      const organizationTeamIds = organizationTeams.map((t) => t.id);
-      // Remove team memberships for this organization's teams
-      await tx.teamMember.deleteMany({
-        where: {
-          userId: member.userId,
-          teamId: { in: organizationTeamIds },
-        },
-      });
-      // Delete member record
-      await tx.member.delete({
-        where: { id: memberId },
-      });
-      // If deleteUser flag is set, soft delete the user
-      if (deleteUser) {
-        await tx.user.update({
+    if (deleteUser) {
+      // Soft delete user (mark as deleted)
+      await prisma.$transaction([
+        prisma.member.delete({
+          where: { id: memberId },
+        }),
+        prisma.user.update({
           where: { id: member.userId },
           data: {
             isDeleted: true,
             updatedBy: session.user.id,
           },
-        });
-      }
-    });
+        }),
+      ]);
+    } else {
+      // Just remove from organization
+      await prisma.member.delete({
+        where: { id: memberId },
+      });
+    }
     revalidatePath(`/dashboard/organizations/${organizationId}/members`);
     return {
       success: true,
@@ -680,13 +575,13 @@ export async function removeMemberFromOrganization(
 }
 
 // ============================================
-// 6. UPDATE MEMBER ROLE (Organization Role)
+// 6. UPDATE MEMBER ROLE (Using Better Auth)
 // ============================================
 
 export async function updateMemberRole(
   memberId: string,
   organizationId: string,
-  newRole: ORGANIZATIONUserRole
+  newRole: string
 ): Promise<ServerActionResponse> {
   try {
     const session = await getServerSession();
@@ -728,15 +623,7 @@ export async function updateMemberRole(
       where: { id: memberId },
       data: { role: newRole },
       include: {
-        user: {
-          include: {
-            teammembers: {
-              include: {
-                team: true,
-              },
-            },
-          },
-        },
+        user: true,
       },
     });
     revalidatePath(`/dashboard/organizations/${organizationId}/members`);
@@ -834,166 +721,25 @@ export async function bulkRemoveMembers(
     if (!hasPermission) {
       return { success: false, error: 'Unauthorized' };
     }
-    await prisma.$transaction(async (tx) => {
-      // Get members to remove
-      const membersToRemove = await tx.member.findMany({
-        where: {
-          id: { in: memberIds },
-          organizationId,
-          role: { not: 'OWNER' },
-          userId: { not: session.user.id },
-        },
-        select: { userId: true },
-      });
-      const userIds = membersToRemove.map((m) => m.userId);
-      // Get organization teams
-      const organizationTeams = await tx.team.findMany({
-        where: { organizationId },
-        select: { id: true },
-      });
-      const organizationTeamIds = organizationTeams.map((t) => t.id);
-      // Remove team memberships
-      await tx.teamMember.deleteMany({
-        where: {
-          userId: { in: userIds },
-          teamId: { in: organizationTeamIds },
-        },
-      });
-      // Delete members
-      await tx.member.deleteMany({
-        where: {
-          id: { in: memberIds },
-          organizationId,
-          role: { not: 'OWNER' },
-          userId: { not: session.user.id },
-        },
-      });
+    // Delete members (excluding owner and current user)
+    const result = await prisma.member.deleteMany({
+      where: {
+        id: { in: memberIds },
+        organizationId,
+        role: { not: 'OWNER' },
+        userId: { not: session.user.id },
+      },
     });
     revalidatePath(`/dashboard/organizations/${organizationId}/members`);
     return {
       success: true,
-      message: 'Members removed successfully',
+      message: `${result.count} members removed successfully`,
     };
   } catch (error: any) {
     console.error('Error bulk removing members:', error);
     return {
       success: false,
       error: error.message || 'Failed to remove members',
-    };
-  }
-}
-
-// ============================================
-// 8. TEAM MANAGEMENT HELPERS
-// ============================================
-
-export async function addMemberToTeam(
-  userId: string,
-  teamId: string,
-  organizationId: string
-): Promise<ServerActionResponse> {
-  try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return { success: false, error: 'Unauthorized' };
-    }
-    // Check permission
-    const hasPermission = await prisma.member.findFirst({
-      where: {
-        organizationId,
-        userId: session.user.id,
-        role: { in: ['OWNER', 'ADMIN'] },
-      },
-    });
-    if (!hasPermission) {
-      return { success: false, error: 'Unauthorized' };
-    }
-    // Verify team belongs to organization
-    const team = await prisma.team.findFirst({
-      where: {
-        id: teamId,
-        organizationId,
-      },
-    });
-    if (!team) {
-      return { success: false, error: 'Team not found' };
-    }
-    // Check if already a team member
-    const existing = await prisma.teamMember.findFirst({
-      where: {
-        userId,
-        teamId,
-      },
-    });
-    if (existing) {
-      return { success: false, error: 'User is already a member of this team' };
-    }
-    const teamMember = await prisma.teamMember.create({
-      data: {
-        userId,
-        teamId,
-      },
-      include: {
-        user: true,
-        team: true,
-      },
-    });
-    revalidatePath(
-      `/dashboard/organizations/${organizationId}/teams/${teamId}`
-    );
-    return {
-      success: true,
-      data: teamMember,
-      message: 'Member added to team successfully',
-    };
-  } catch (error: any) {
-    console.error('Error adding member to team:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to add member to team',
-    };
-  }
-}
-
-export async function removeMemberFromTeam(
-  userId: string,
-  teamId: string,
-  organizationId: string
-): Promise<ServerActionResponse> {
-  try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return { success: false, error: 'Unauthorized' };
-    }
-    // Check permission
-    const hasPermission = await prisma.member.findFirst({
-      where: {
-        organizationId,
-        userId: session.user.id,
-        role: { in: ['OWNER', 'ADMIN'] },
-      },
-    });
-    if (!hasPermission) {
-      return { success: false, error: 'Unauthorized' };
-    }
-    await prisma.teamMember.deleteMany({
-      where: {
-        userId,
-        teamId,
-      },
-    });
-    revalidatePath(
-      `/dashboard/organizations/${organizationId}/teams/${teamId}`
-    );
-    return {
-      success: true,
-      message: 'Member removed from team successfully',
-    };
-  } catch (error: any) {
-    console.error('Error removing member from team:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to remove member from team',
     };
   }
 }
