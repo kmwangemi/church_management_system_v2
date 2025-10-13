@@ -12,7 +12,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useFetchBranches } from '@/lib/hooks/church/branch/use-branch-queries';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useAdminTeams } from '@/lib/hooks/admin/use-organization-team-mutations';
 import type { Branch } from '@/lib/types/branch';
 import { capitalizeFirstLetter, cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, MapPin } from 'lucide-react';
@@ -35,22 +36,25 @@ export function BranchCombobox({
 }: BranchComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
+  const { organizationId } = useActiveOrganization();
   // Fetch branches with search term
-  const { data, isLoading } = useFetchBranches(1, searchTerm);
-  const branches = data?.branches || [];
-
+  const { data, isLoading } = useAdminTeams({
+    organizationId,
+    page: 1,
+    pageSize: 50,
+    search: searchTerm,
+  });
+  // console.log('Branches:', JSON.stringify(data));
+  const branches = data?.teams || [];
   // Find selected branch
   const selectedBranch = branches.find(
-    (branch: Branch) => branch._id === value
+    (branch: Branch) => branch.id === value
   );
-
   const handleSelect = (branchId: string) => {
     const newValue = branchId === value ? null : branchId;
     onChange?.(newValue);
     setOpen(false);
   };
-
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
@@ -67,7 +71,7 @@ export function BranchCombobox({
             {selectedBranch ? (
               <div className="flex min-w-0 flex-1 flex-col items-start">
                 <span className="truncate">
-                  {capitalizeFirstLetter(selectedBranch.branchName || '')}
+                  {capitalizeFirstLetter(selectedBranch.name || '')}
                 </span>
                 {selectedBranch.address?.street && (
                   <span className="truncate text-muted-foreground text-xs">
@@ -97,19 +101,19 @@ export function BranchCombobox({
               {branches.map((branch: Branch) => (
                 <CommandItem
                   className="flex items-center gap-2"
-                  key={branch._id}
+                  key={branch.id}
                   onSelect={handleSelect}
-                  value={branch._id}
+                  value={branch.id}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      value === branch._id ? 'opacity-100' : 'opacity-0'
+                      value === branch.id ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-medium">
-                      {capitalizeFirstLetter(branch.branchName || '')}
+                      {capitalizeFirstLetter(branch.name || '')}
                     </span>
                     <div className="flex items-center gap-2 text-muted-foreground text-xs">
                       {branch.address?.street && (

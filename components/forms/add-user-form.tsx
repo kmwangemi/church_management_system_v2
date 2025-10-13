@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useAdminAddOrganizationMember } from '@/lib/hooks/admin/use-organization-member-mutations';
+import { useAdminAddMemberToOrganization } from '@/lib/hooks/admin/use-organization-member-mutations';
 import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,7 +49,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
     isPending,
     isError,
     error,
-  } = useAdminAddOrganizationMember(organizationId);
+  } = useAdminAddMemberToOrganization(organizationId);
   const form = useForm<AddUserPayload>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -73,6 +73,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
   });
   const { reset, watch, setValue } = form;
   const watchRole = watch('role');
+  console.log('form errors', JSON.stringify(form.formState.errors));
   // Handle role changes and update isMember accordingly
   useEffect(() => {
     if (watchRole === 'MEMBER') {

@@ -41,7 +41,7 @@ import {
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
-import { churchDataSchema, type ChurchPayload } from '@/lib/validations/auth';
+import { churchDataSchema, type ChurchPayload } from '@/lib/validations/church';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, Church, Loader2, MapPin, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -249,18 +249,16 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
           name: payload.churchName,
           slug,
           logo: payload.churchLogoUrl,
-          metadata: {
-            denomination: payload.denomination,
-            description: payload.description,
-            establishedDate: payload.establishedDate,
-            email: payload.email,
-            phoneNumber: payload.phoneNumber,
-            website: payload.website,
-            address: payload.address,
-            subscriptionPlan: payload.subscriptionPlan,
-            churchSize: payload.churchSize,
-            numberOfBranches: payload.numberOfBranches,
-          },
+          denomination: payload.denomination,
+          description: payload.description,
+          establishedDate: payload.establishedDate,
+          email: payload.email,
+          phoneNumber: payload.phoneNumber,
+          website: payload.website,
+          address: payload.address,
+          subscriptionPlan: payload.subscriptionPlan,
+          churchSize: payload.churchSize,
+          numberOfBranches: payload.numberOfBranches,
         });
       if (createError) {
         throw new Error(createError.message || 'Failed to create church');

@@ -60,7 +60,7 @@ import {
   useUpdateMember,
 } from '@/lib/hooks/superadmin/use-organization-members';
 import { ADMIN_MEMBER_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
-import { adminDataSchema, type AdminPayload } from '@/lib/validations/auth';
+import { adminDataSchema, type AdminPayload } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   AlertCircle,
@@ -130,7 +130,7 @@ export function ManageChurchUsersDialog({
     search: debouncedSearch,
     role,
     status,
-    branchId,
+    teamId: branchId,
     sortBy,
     sortOrder,
   });

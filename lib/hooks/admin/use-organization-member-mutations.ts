@@ -11,6 +11,7 @@ import {
   adminGetOrganizationMembers,
   adminRemoveMemberFromOrganization,
   adminUpdateOrganizationMember,
+  type AdminAddMemberParams,
   type AdminGetOrganizationMembersParams,
   type AdminUpdateOrganizationMemberParams,
 } from '@/lib/actions/admin/member';
@@ -34,6 +35,32 @@ export const organizationMemberKeys = {
   byUser: (userId: string, organizationId: string) =>
     [...organizationMemberKeys.all, 'user', userId, organizationId] as const,
 };
+
+// Helper function to generate random password
+function generateRandomPassword(length = 12): string {
+  const charset =
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+}
+
+// Helper function to map user role to organization role
+function mapToOrganizationRole(
+  role: 'MEMBER' | 'PASTOR' | 'BISHOP' | 'ADMIN' | 'VISITOR'
+): 'OWNER' | 'MEMBER' | 'PASTOR' | 'BISHOP' | 'ADMIN' | 'VISITOR' {
+  // Map roles - you can adjust this logic based on your needs
+  const roleMap: Record<string, any> = {
+    MEMBER: 'MEMBER',
+    PASTOR: 'PASTOR',
+    BISHOP: 'BISHOP',
+    ADMIN: 'ADMIN',
+    VISITOR: 'VISITOR',
+  };
+  return roleMap[role] || 'MEMBER';
+}
 
 // ============================================
 // 1. ADMIN FETCH ORGANIZATION MEMBERS (Paginated List)
@@ -112,7 +139,26 @@ export function useAdminOrganizationMemberByUserId(
 export function useAdminAddMemberToOrganization(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: AddUserPayload) => adminAddMemberToOrganization(params),
+    mutationFn: (params: AddUserPayload) => {
+      // Transform AddUserPayload to AdminAddMemberParams
+      const adminParams: AdminAddMemberParams = {
+        organizationId,
+        firstName: params.firstName,
+        lastName: params.lastName,
+        email: params.email || undefined,
+        phoneNumber: params.phoneNumber,
+        password: generateRandomPassword(), // Auto-generate password
+        gender: params.gender,
+        role: params.role,
+        organizationRole: mapToOrganizationRole(params.role),
+        isMember: params.isMember,
+        isStaff: params.isStaff,
+        teamId: params.branchId || undefined, // Map branchId to teamId
+        address: params.address, // Pass address through
+        sendWelcomeEmail: params.sendWelcomeEmail,
+      };
+      return adminAddMemberToOrganization(adminParams);
+    },
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || 'Member added successfully');
@@ -125,7 +171,7 @@ export function useAdminAddMemberToOrganization(organizationId: string) {
             return params?.organizationId === organizationId;
           },
         });
-        // If we have member data, we can optimistically update the cache
+        // If we have member data, optimistically update the cache
         if (response.data) {
           queryClient.setQueryData(
             organizationMemberKeys.detail(response.data.id, organizationId),
@@ -141,6 +187,39 @@ export function useAdminAddMemberToOrganization(organizationId: string) {
     },
   });
 }
+
+// export function useAdminAddMemberToOrganization(organizationId: string) {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: (params: AddUserPayload) => adminAddMemberToOrganization(params),
+//     onSuccess: (response) => {
+//       if (response.success) {
+//         toast.success(response.message || 'Member added successfully');
+//         // Invalidate all member lists for this organization
+//         queryClient.invalidateQueries({
+//           queryKey: organizationMemberKeys.lists(),
+//           predicate: (query) => {
+//             const params = query
+//               .queryKey[2] as AdminGetOrganizationMembersParams;
+//             return params?.organizationId === organizationId;
+//           },
+//         });
+//         // If we have member data, we can optimistically update the cache
+//         if (response.data) {
+//           queryClient.setQueryData(
+//             organizationMemberKeys.detail(response.data.id, organizationId),
+//             response.data
+//           );
+//         }
+//       } else {
+//         toast.error(response.error || 'Failed to add member');
+//       }
+//     },
+//     onError: (error: Error) => {
+//       toast.error(error.message || 'Failed to add member');
+//     },
+//   });
+// }
 
 // ============================================
 // 5. ADMIN UPDATE ORGANIZATION MEMBER
@@ -200,7 +279,8 @@ export function useAdminRemoveMemberFromOrganization(organizationId: string) {
     }: {
       memberId: string;
       deleteUser?: boolean;
-    }) => adminRemoveMemberFromOrganization(memberId, organizationId, deleteUser),
+    }) =>
+      adminRemoveMemberFromOrganization(memberId, organizationId, deleteUser),
     onSuccess: (response, variables) => {
       if (response.success) {
         toast.success(response.message || 'Member removed successfully');

@@ -388,6 +388,82 @@ export const auth = betterAuth({
   },
   plugins: [
     organization({
+      schema: {
+        organization: {
+          additionalFields: {
+            denomination: {
+              type: 'string',
+              required: false,
+            },
+            email: {
+              type: 'string',
+              required: false,
+            },
+            phoneNumber: {
+              type: 'string',
+              required: false,
+            },
+            website: {
+              type: 'string',
+              required: false,
+            },
+            establishedDate: {
+              type: 'date',
+              required: false,
+            },
+            churchSize: {
+              type: 'string',
+              required: false,
+            },
+            numberOfBranches: {
+              type: 'number',
+              required: false,
+            },
+            description: {
+              type: 'string',
+              required: false,
+            },
+            address: {
+              type: 'json',
+              required: false,
+            },
+            status: {
+              type: 'string',
+              required: false,
+              defaultValue: 'ACTIVE',
+              input: false,
+            },
+            isSuspended: {
+              type: 'boolean',
+              required: false,
+              defaultValue: false,
+              input: false,
+            },
+            isDeleted: {
+              type: 'boolean',
+              required: false,
+              defaultValue: false,
+              input: false,
+            },
+            subscriptionPlan: {
+              type: 'string',
+              required: false,
+              defaultValue: 'BASIC',
+            },
+            createdAt: {
+              type: 'date',
+              required: false,
+              input: false,
+            },
+            updatedAt: {
+              type: 'date',
+              required: false,
+              input: false,
+            },
+          },
+        },
+      },
+      // Enable teams for departmental management within the church
       teams: {
         enabled: true,
         maximumTeams: 1000, // Optional: limit teams per organization
@@ -410,9 +486,204 @@ export const auth = betterAuth({
       invitationExpiresIn: 60 * 60 * 48,
       cancelPendingInvitationsOnReInvite: true,
       invitationLimit: 100,
-      organizationDeletion: {
-        disabled: false,
+      organizationHooks: {
+        // Organization creation hooks
+        // beforeCreateOrganization: async ({ organization, user }) => {
+        //   // Run custom logic before organization is created
+        //   // Optionally modify the organization data
+        //   return {
+        //     data: {
+        //       ...organization,
+        //       // metadata: {
+        //       //   customField: 'value',
+        //       // },
+        //     },
+        //   };
+        // },
+        afterCreateOrganization: async ({ organization, member, user }) => {
+          // Run custom logic after organization is created
+          // e.g., create default resources, send notifications
+          try {
+            // Extract metadata
+            // const metadata = organization.metadata as IOrganizationMetadata;
+            // const plan = metadata?.subscriptionPlan || 'BASIC';
+            // Calculate trial end date
+            const trialEnd = new Date();
+            trialEnd.setDate(trialEnd.getDate() + 30);
+            // Create address
+            await prisma.address.create({
+              data: {
+                organizationId: organization.id,
+                street: organization?.address?.street || '',
+                city: organization?.address?.city || '',
+                state: organization?.address?.state || '',
+                zipCode: organization?.address?.zipCode || '',
+                country: organization?.address?.country || '',
+              },
+            });
+            // Create subscription
+            await prisma.organizationSubscription.create({
+              data: {
+                organizationId: organization.id,
+                plan: organization?.subscriptionPlan.toUpperCase() as OrganizationPlan,
+                status: 'TRIAL',
+                startDate: new Date(),
+                endDate: trialEnd,
+                isActive: true,
+                nextBillingDate: trialEnd,
+              },
+            });
+          } catch (_error) {
+            throw new Error('Failed to create default subscription or team');
+            // Log the error but don't throw - organization was already created
+            // You could also choose to throw here to rollback the organization creation
+          }
+        },
+        // Organization update hooks
+        // beforeUpdateOrganization: async ({ organization, user, member }) => {
+        //   // Validate updates, apply business rules
+        //   return {
+        //     data: {
+        //       ...organization,
+        //       name: organization.name?.toLowerCase(),
+        //     },
+        //   };
+        // },
+        // afterUpdateOrganization: async ({ organization, user, member }) => {
+        //   // Sync changes to external systems
+        //   await syncOrganizationToExternalSystems(organization);
+        // },
+        // Before a member is added to an organization
+        // beforeAddMember: async ({ member, user, organization }) => {
+        //   // Custom validation or modification
+        //   console.log(`Adding ${user.email} to ${organization.name}`);
+        //   // Optionally modify member data
+        //   return {
+        //     data: {
+        //       ...member,
+        //       role: 'custom-role', // Override the role
+        //     },
+        //   };
+        // },
+        // After a member is added
+        // afterAddMember: async ({ member, user, organization }) => {
+        //   // Send welcome email, create default resources, etc.
+        //   await sendWelcomeEmail(user.email, organization.name);
+        // },
+        // Before a member is removed
+        // beforeRemoveMember: async ({ member, user, organization }) => {
+        //   // Cleanup user's resources, send notification, etc.
+        //   await cleanupUserResources(user.id, organization.id);
+        // },
+        // After a member is removed
+        // afterRemoveMember: async ({ member, user, organization }) => {
+        //   await logMemberRemoval(user.id, organization.id);
+        // },
+        // Before updating a member's role
+        // beforeUpdateMemberRole: async ({
+        //   member,
+        //   newRole,
+        //   user,
+        //   organization,
+        // }) => {
+        //   // Validate role change permissions
+        //   if (newRole === 'owner' && !hasOwnerUpgradePermission(user)) {
+        //     throw new Error('Cannot upgrade to owner role');
+        //   }
+        //   // Optionally modify the role
+        //   return {
+        //     data: {
+        //       role: newRole,
+        //     },
+        //   };
+        // },
+        // After updating a member's role
+        // afterUpdateMemberRole: async ({
+        //   member,
+        //   previousRole,
+        //   user,
+        //   organization,
+        // }) => {
+        //   await logRoleChange(user.id, previousRole, member.role);
+        // },
+        // Before creating a team
+        // beforeCreateTeam: async ({ team, user, organization }) => {
+        //   // Validate team name, apply naming conventions
+        //   return {
+        //     data: {
+        //       ...team,
+        //       name: team.name.toLowerCase().replace(/\s+/g, '-'),
+        //     },
+        //   };
+        // },
+        // After creating a team
+        // afterCreateTeam: async ({ team, user, organization }) => {
+        //   // Create default team resources, channels, etc.
+        //   await createDefaultTeamResources(team.id);
+        // },
+        // Before updating a team
+        // beforeUpdateTeam: async ({ team, updates, user, organization }) => {
+        //   // Validate updates, apply business rules
+        //   return {
+        //     data: {
+        //       ...updates,
+        //       name: updates.name?.toLowerCase(),
+        //     },
+        //   };
+        // },
+        // After updating a team
+        // afterUpdateTeam: async ({ team, user, organization }) => {
+        //   await syncTeamChangesToExternalSystems(team);
+        // },
+        // Before deleting a team
+        // beforeDeleteTeam: async ({ team, user, organization }) => {
+        //   // Backup team data, notify members
+        //   await backupTeamData(team.id);
+        // },
+        // After deleting a team
+        // afterDeleteTeam: async ({ team, user, organization }) => {
+        //   await cleanupTeamResources(team.id);
+        // },
+        // Team member operations
+        // beforeAddTeamMember: async ({
+        //   teamMember,
+        //   team,
+        //   user,
+        //   organization,
+        // }) => {
+        //   // Validate team membership limits, permissions
+        //   const memberCount = await getTeamMemberCount(team.id);
+        //   if (memberCount >= 10) {
+        //     throw new Error('Team is full');
+        //   }
+        // },
+        // afterAddTeamMember: async ({
+        //   teamMember,
+        //   team,
+        //   user,
+        //   organization,
+        // }) => {
+        //   await grantTeamAccess(user.id, team.id);
+        // },
+        // beforeRemoveTeamMember: async ({
+        //   teamMember,
+        //   team,
+        //   user,
+        //   organization,
+        // }) => {
+        //   // Backup user's team-specific data
+        //   await backupTeamMemberData(user.id, team.id);
+        // },
+        // afterRemoveTeamMember: async ({
+        //   teamMember,
+        //   team,
+        //   user,
+        //   organization,
+        // }) => {
+        //   await revokeTeamAccess(user.id, team.id);
+        // },
       },
+      disableOrganizationDeletion: false, // enable organization deletion
       // Invitation settings
       // sendInvitationEmail: async (data) => {
       //   const { email, organization, inviter, invitationId } = data;
@@ -431,41 +702,6 @@ export const auth = betterAuth({
       // },
 
       // ✅ FIXED: Correct hook names
-      organizationCreation: {
-        beforeCreate: async ({ organization, user }) => {
-          return {
-            data: {
-              ...organization,
-            },
-          };
-        },
-        afterCreate: async ({ organization, member, user }) => {
-          try {
-            // Extract metadata
-            const metadata = organization.metadata as IOrganizationMetadata;
-            const plan = metadata?.subscriptionPlan || 'BASIC';
-            // Calculate trial end date
-            const trialEnd = new Date();
-            trialEnd.setDate(trialEnd.getDate() + 30);
-            // Create subscription
-            await prisma.organizationSubscription.create({
-              data: {
-                organizationId: organization.id,
-                plan: plan.toUpperCase() as OrganizationPlan,
-                status: 'TRIAL',
-                startDate: new Date(),
-                endDate: trialEnd,
-                isActive: true,
-                nextBillingDate: trialEnd,
-              },
-            });
-          } catch (_error) {
-            throw new Error('Failed to create default subscription or team');
-            // Log the error but don't throw - organization was already created
-            // You could also choose to throw here to rollback the organization creation
-          }
-        },
-      },
     }),
     nextCookies(),
   ],

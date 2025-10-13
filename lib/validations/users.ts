@@ -1,16 +1,27 @@
+import { passwordSchema } from '@/lib/validations/auth';
 import * as z from 'zod';
 
 // 🔹 Helper function to handle empty strings as optional
 const optionalString = z.string().optional().or(z.literal(''));
-const optionalEmail = z.email().optional().or(z.literal(''));
+export const optionalEmail = z
+  .email()
+  .optional()
+  .or(z.literal(''))
+  .refine(
+    (val) => {
+      if (!val || val === '') return true;
+      return z.email().safeParse(val).success;
+    },
+    { message: 'Please enter a valid email address' }
+  );
 
 // 🔹 Common reusable schemas
-const addressSchema = z.object({
-  street: optionalString,
-  city: optionalString,
-  state: optionalString,
-  zipCode: optionalString,
-  country: optionalString,
+export const addressSchema = z.object({
+  street: z.string().min(1, 'Street is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.string().min(1, 'Country is required'),
 });
 
 // 🔹 Fixed emergency details schema
@@ -122,22 +133,37 @@ export const userSchema = z.object({
   gender: z.enum(['MALE', 'FEMALE'], {
     error: 'Gender is required',
   }),
-  role: z.enum([
-    'MEMBER',
-    'PASTOR',
-    'BISHOP',
-    'ADMIN',
-    'VISITOR',
-  ], {
+  role: z.enum(['MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR'], {
     error: 'Role is required',
   }),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
   branchId: z.string().min(1, 'Please select a branch'),
-  organizationId: z.string().min(1, 'Organization ID is required'),
   sendWelcomeEmail: z.boolean().optional(),
 });
 
 export type AddUserPayload = z.infer<typeof userSchema>;
+
+// Admin data schema
+export const adminDataSchema = z
+  .object({
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    email: z.email('Please enter a valid email address'),
+    phoneNumber: z.string().min(1, 'Phone number is required'),
+    gender: z.enum(['MALE', 'FEMALE'], {
+      error: 'Gender is required',
+    }),
+    isMember: z.boolean(),
+    password: passwordSchema,
+    confirmPassword: z.string(),
+    // organizationId: z.string().min(1, 'Organization ID is required'),
+    role: z.enum(['MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR']),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type AdminPayload = z.infer<typeof adminDataSchema>;
 
 // 🔹 Update Schema (full detailed) - Fixed version
 export const userUpdateSchema = z.object({

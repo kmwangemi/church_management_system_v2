@@ -760,13 +760,28 @@ model Organization {
   logo        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  // Extended organization fields
+  denomination String?
+  description  String?
+  establishedDate DateTime          @default(now())
+  email           String?
+  phoneNumber     String?
+  website         String?
+  address     Address?
+  churchSize      String?
+  numberOfBranches String?
+  status      String?      @default("Active")
+  mission     String?
+  vision      String?
+  values      String[]
+  isActive    Boolean      @default(true)
+  isDeleted   Boolean      @default(false)
   metadata    Json? // flexible extras - store church-specific info
   // Better Auth requires these relations
   members     Member[]
   invitations Invitation[]
   teams       Team[]       // Branches are teams in Better Auth
   // Relations
-  address     Address?
   // departments      Department[]
   // groups           Group[]
   // events           Event[]
@@ -791,8 +806,6 @@ model Organization {
 
   @@map("organization")
 }
-
-
 
 // ============================================
 // MEMBER MODEL (CHURCH MEMBERSHIP)
@@ -1066,7 +1079,7 @@ model Team {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime?    @updatedAt
   teammembers    TeamMember[]
-  address        Address[]
+  address        Address?
   // Extended team fields
   email           String?
   phoneNumber     String?
@@ -1151,7 +1164,7 @@ model TeamMember {
 
 model OrganizationSubscription {
   id                 String             @id @default(cuid())
-  plan               OrganizationPlan
+  plan               OrganizationPlan   @default(BASIC)
   status             SubscriptionStatus @default(TRIAL)
   isPaid             Boolean            @default(false)
   isActive           Boolean            @default(false)

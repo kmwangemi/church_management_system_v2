@@ -573,8 +573,7 @@ export default function BranchesPage() {
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {branch?._count?.teammembers ||
-                                  'Not Provided'}
+                                {branch?._count?.teammembers || 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -593,7 +592,9 @@ export default function BranchesPage() {
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {formatToNewDate(branch?.establishedDate)}
+                                {branch?.establishedDate ? formatToNewDate(
+                                  branch?.establishedDate
+                                ) : 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">

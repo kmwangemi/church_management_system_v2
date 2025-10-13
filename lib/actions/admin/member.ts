@@ -45,15 +45,30 @@ export interface AdminAddMemberParams {
   organizationId: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string; // Optional based on your schema
   phoneNumber: string;
-  password: string;
+  password: string; // Keep for account creation
   gender: 'MALE' | 'FEMALE';
   role: 'VISITOR' | 'ADMIN' | 'MEMBER' | 'PASTOR' | 'BISHOP';
-  organizationRole: ORGANIZATIONUserRole;
+  organizationRole:
+    | 'OWNER'
+    | 'MEMBER'
+    | 'PASTOR'
+    | 'BISHOP'
+    | 'ADMIN'
+    | 'VISITOR';
   isMember: boolean;
-  teamId?: string;
+  isStaff?: boolean; // Add this
+  teamId?: string; // This maps to branchId
   sendWelcomeEmail?: boolean;
+  // Add address
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country: string;
+  };
 }
 
 // ============================================
@@ -219,6 +234,7 @@ export async function adminAddMemberToOrganization(
     if (!session?.user) {
       return { success: false, error: 'Unauthorized' };
     }
+    console.log('session user:', session.user);
     const {
       organizationId,
       firstName,
@@ -230,9 +246,13 @@ export async function adminAddMemberToOrganization(
       role,
       organizationRole,
       isMember,
+      isStaff = false,
       teamId,
+      address,
       sendWelcomeEmail = false,
     } = params;
+    console.log('session user:', session.user);
+    console.log('organizationId:', organizationId);
     // Check if user has permission to add members
     const hasPermission = await prisma.member.findFirst({
       where: {
@@ -249,75 +269,98 @@ export async function adminAddMemberToOrganization(
         error: 'You do not have permission to add members to this organization',
       };
     }
-    // Check if email already exists in the system
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      // Check if user is already a member of this organization
-      const existingMember = await prisma.member.findFirst({
-        where: {
-          userId: existingUser.id,
-          organizationId,
-        },
+    // Check if email already exists in the system (only if email provided)
+    if (email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
       });
-      if (existingMember) {
-        return {
-          success: false,
-          error: 'This user is already a member of this organization',
-        };
-      }
-      // Add existing user to organization
-      const result = await prisma.$transaction(async (tx) => {
-        // Create member record
-        const member = await tx.member.create({
-          data: {
+      if (existingUser) {
+        // Check if user is already a member of this organization
+        const existingMember = await prisma.member.findFirst({
+          where: {
             userId: existingUser.id,
             organizationId,
-            role: organizationRole,
-          },
-          include: {
-            user: true,
           },
         });
-        // Add to team if teamId provided
-        if (teamId) {
-          await tx.teamMember.create({
+        if (existingMember) {
+          return {
+            success: false,
+            error: 'This user is already a member of this organization',
+          };
+        }
+        // Add existing user to organization
+        const result = await prisma.$transaction(async (tx) => {
+          // Update user details if needed
+          await tx.user.update({
+            where: { id: existingUser.id },
             data: {
-              userId: existingUser.id,
-              teamId,
+              role,
+              isMember,
+              isStaff,
             },
           });
+          // Create member record
+          const member = await tx.member.create({
+            data: {
+              userId: existingUser.id,
+              organizationId,
+              role: organizationRole,
+            },
+            include: {
+              user: true,
+            },
+          });
+          // Add to team if teamId provided
+          if (teamId) {
+            await tx.teamMember.create({
+              data: {
+                userId: existingUser.id,
+                teamId,
+              },
+            });
+          }
+          return member;
+        });
+        if (sendWelcomeEmail) {
+          // await sendWelcomeEmail(result.user.email, organizationId);
         }
-        return member;
-      });
-      // TODO: Send welcome email if requested
-      if (sendWelcomeEmail) {
-        // await sendWelcomeEmail(result.user.email, organizationId);
+        revalidatePath('/church/users');
+        return {
+          success: true,
+          data: result,
+          message: 'Member added successfully',
+        };
       }
-      revalidatePath('/church/users');
-      return {
-        success: true,
-        data: result,
-        message: 'Member added successfully',
-      };
     }
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     // Create new user and member in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create user
+      // Create user with address
       const user = await tx.user.create({
         data: {
           name: `${firstName} ${lastName}`,
-          email,
+          email: email || undefined,
           emailVerified: false,
           phoneNumber,
           gender,
           isMember,
-          role, // User role (not organization role)
+          isStaff,
+          role,
           status: 'ACTIVE',
           createdBy: session.user.id,
+          // Create address if provided
+          address: address
+            ? {
+                create: {
+                  street: address.street,
+                  city: address.city,
+                  state: address.state,
+                  zipCode: address.zipCode,
+                  country: address.country,
+                },
+              }
+            : undefined,
         },
       });
       // Create account with password
@@ -337,7 +380,11 @@ export async function adminAddMemberToOrganization(
           role: organizationRole,
         },
         include: {
-          user: true,
+          user: {
+            include: {
+              address: true,
+            },
+          },
         },
       });
       // Add to team if teamId provided
@@ -351,9 +398,8 @@ export async function adminAddMemberToOrganization(
       }
       return { user, member };
     });
-    // TODO: Send welcome email if requested
-    if (sendWelcomeEmail) {
-      // await sendWelcomeEmailWithCredentials(result.user.email, password, organizationId);
+    if (sendWelcomeEmail && email) {
+      // await sendWelcomeEmailWithCredentials(email, password, organizationId);
     }
     revalidatePath('/church/users');
     return {
@@ -369,6 +415,391 @@ export async function adminAddMemberToOrganization(
     };
   }
 }
+
+// export async function adminAddMemberToOrganization(
+//   params: AdminAddMemberParams
+// ): Promise<AdminServerActionResponse> {
+//   try {
+//     const session = await getServerSession();
+//     if (!session?.user) {
+//       return { success: false, error: 'Unauthorized' };
+//     }
+//     const {
+//       organizationId,
+//       firstName,
+//       lastName,
+//       email,
+//       phoneNumber,
+//       password,
+//       gender,
+//       role,
+//       organizationRole,
+//       isMember,
+//       isStaff = false,
+//       teamId,
+//       address,
+//       sendWelcomeEmail = false,
+//     } = params;
+//     // Check if user has permission to add members
+//     const hasPermission = await prisma.member.findFirst({
+//       where: {
+//         organizationId,
+//         userId: session.user.id,
+//         role: {
+//           in: ['OWNER', 'ADMIN'],
+//         },
+//       },
+//     });
+//     if (!hasPermission) {
+//       return {
+//         success: false,
+//         error: 'You do not have permission to add members to this organization',
+//       };
+//     }
+//     // Check if email already exists in the system (only if email provided)
+//     if (email) {
+//       const existingUser = await prisma.user.findUnique({
+//         where: { email },
+//       });
+//       if (existingUser) {
+//         // Check if user is already a member of this organization
+//         const existingMember = await prisma.member.findFirst({
+//           where: {
+//             userId: existingUser.id,
+//             organizationId,
+//           },
+//         });
+//         if (existingMember) {
+//           return {
+//             success: false,
+//             error: 'This user is already a member of this organization',
+//           };
+//         }
+//         // Add existing user to organization
+//         const result = await prisma.$transaction(async (tx) => {
+//           // Update user details if needed
+//           await tx.user.update({
+//             where: { id: existingUser.id },
+//             data: {
+//               role,
+//               isMember,
+//               isStaff,
+//             },
+//           });
+//           // Create member record
+//           const member = await tx.member.create({
+//             data: {
+//               userId: existingUser.id,
+//               organizationId,
+//               role: organizationRole,
+//             },
+//             include: {
+//               user: true,
+//             },
+//           });
+//           // Add to team if teamId provided
+//           if (teamId) {
+//             await tx.teamMember.create({
+//               data: {
+//                 userId: existingUser.id,
+//                 teamId,
+//               },
+//             });
+//           }
+//           return member;
+//         });
+//         if (sendWelcomeEmail) {
+//           // await sendWelcomeEmail(result.user.email, organizationId);
+//         }
+//         revalidatePath('/church/users');
+//         return {
+//           success: true,
+//           data: result,
+//           message: 'Member added successfully',
+//         };
+//       }
+//     }
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     // Create new user and member in a transaction
+//     const result = await prisma.$transaction(async (tx) => {
+//       // Create user with address
+//       const user = await tx.user.create({
+//         data: {
+//           name: `${firstName} ${lastName}`,
+//           email: email || undefined,
+//           emailVerified: false,
+//           phoneNumber,
+//           gender,
+//           isMember,
+//           isStaff,
+//           role,
+//           status: 'ACTIVE',
+//           createdBy: session.user.id,
+//           // Create address if provided
+//           address: address
+//             ? {
+//                 create: {
+//                   street: address.street,
+//                   city: address.city,
+//                   state: address.state,
+//                   zipCode: address.zipCode,
+//                   country: address.country,
+//                 },
+//               }
+//             : undefined,
+//         },
+//       });
+//       // Create account with password
+//       await tx.account.create({
+//         data: {
+//           userId: user.id,
+//           accountId: user.id,
+//           providerId: 'credential',
+//           password: hashedPassword,
+//         },
+//       });
+//       // Create member record
+//       const member = await tx.member.create({
+//         data: {
+//           userId: user.id,
+//           organizationId,
+//           role: organizationRole,
+//         },
+//         include: {
+//           user: {
+//             include: {
+//               address: true,
+//             },
+//           },
+//         },
+//       });
+//       // Add to team if teamId provided
+//       if (teamId) {
+//         await tx.teamMember.create({
+//           data: {
+//             userId: user.id,
+//             teamId,
+//           },
+//         });
+//       }
+//       return { user, member };
+//     });
+//     if (sendWelcomeEmail && email) {
+//       // await sendWelcomeEmailWithCredentials(email, password, organizationId);
+//     }
+//     revalidatePath('/church/users');
+//     return {
+//       success: true,
+//       data: result.member,
+//       message: 'Member added successfully',
+//     };
+//   } catch (error: any) {
+//     console.error('Error adding member:', error);
+//     return {
+//       success: false,
+//       error: error.message || 'Failed to add member',
+//     };
+//   }
+// }
+
+// export async function adminAddMemberToOrganization(
+//   params: AdminAddMemberParams
+// ): Promise<AdminServerActionResponse> {
+//   try {
+//     const session = await getServerSession();
+//     if (!session?.user) {
+//       return { success: false, error: 'Unauthorized' };
+//     }
+//     const {
+//       organizationId,
+//       firstName,
+//       lastName,
+//       email,
+//       phoneNumber,
+//       password,
+//       gender,
+//       role,
+//       organizationRole,
+//       isMember,
+//       isStaff = false,
+//       teamId,
+//       address,
+//       sendWelcomeEmail = false,
+//     } = params;
+//     // Check if user has permission to add members
+//     const hasPermission = await prisma.member.findFirst({
+//       where: {
+//         organizationId,
+//         userId: session.user.id,
+//         role: {
+//           in: ['OWNER', 'ADMIN'],
+//         },
+//       },
+//     });
+//     if (!hasPermission) {
+//       return {
+//         success: false,
+//         error: 'You do not have permission to add members to this organization',
+//       };
+//     }
+//     // Check if email already exists in the system (only if email provided)
+//     if (email) {
+//       const existingUser = await prisma.user.findUnique({
+//         where: { email },
+//       });
+//       if (existingUser) {
+//         // Check if user is already a member of this organization
+//         const existingMember = await prisma.member.findFirst({
+//           where: {
+//             userId: existingUser.id,
+//             organizationId,
+//           },
+//         });
+//         if (existingMember) {
+//           return {
+//             success: false,
+//             error: 'This user is already a member of this organization',
+//           };
+//         }
+//         // Add existing user to organization
+//         const result = await prisma.$transaction(async (tx) => {
+//           // Update user details if needed
+//           await tx.user.update({
+//             where: { id: existingUser.id },
+//             data: {
+//               role,
+//               isMember,
+//               isStaff,
+//             },
+//           });
+//           // Create member record
+//           const member = await tx.member.create({
+//             data: {
+//               userId: existingUser.id,
+//               organizationId,
+//               role: organizationRole,
+//             },
+//             include: {
+//               user: true,
+//             },
+//           });
+//           // Add to team if teamId provided
+//           if (teamId) {
+//             await tx.teamMember.create({
+//               data: {
+//                 userId: existingUser.id,
+//                 teamId,
+//               },
+//             });
+//           }
+//           return member;
+//         });
+//         if (sendWelcomeEmail) {
+//           // await sendWelcomeEmail(result.user.email, organizationId);
+//         }
+//         revalidatePath('/church/users');
+//         return {
+//           success: true,
+//           data: result,
+//           message: 'Member added successfully',
+//         };
+//       }
+//     }
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     // Create new user and member in a transaction
+//     const result = await prisma.$transaction(async (tx) => {
+//       // Create user with address
+//       const user = await tx.user.create({
+//         data: {
+//           name: `${firstName} ${lastName}`,
+//           email: email || undefined,
+//           emailVerified: false,
+//           phoneNumber,
+//           gender,
+//           isMember,
+//           isStaff,
+//           role,
+//           status: 'ACTIVE',
+//           createdBy: session.user.id,
+//           // Create address if provided
+//           address: address
+//             ? {
+//                 create: {
+//                   street: address.street,
+//                   city: address.city,
+//                   state: address.state,
+//                   zipCode: address.zipCode,
+//                   country: address.country,
+//                 },
+//               }
+//             : undefined,
+//         },
+//       });
+//       // Create account with password
+//       await tx.account.create({
+//         data: {
+//           userId: user.id,
+//           accountId: user.id,
+//           providerId: 'credential',
+//           password: hashedPassword,
+//         },
+//       });
+//       // Create member record
+//       const member = await tx.member.create({
+//         data: {
+//           userId: user.id,
+//           organizationId,
+//           role: organizationRole,
+//         },
+//         include: {
+//           user: {
+//             include: {
+//               address: true,
+//             },
+//           },
+//         },
+//       });
+//       // Add to team if teamId provided
+//       if (teamId) {
+//         await tx.teamMember.create({
+//           data: {
+//             userId: user.id,
+//             teamId,
+//           },
+//         });
+//       }
+//       return { user, member };
+//     });
+//     // Send welcome email with credentials if email provided
+//     if (email) {
+//       try {
+//         await sendWelcomeEmailWithCredentials({
+//           email,
+//           password, // Plain text password before hashing
+//           name: `${firstName} ${lastName}`,
+//           organizationId,
+//         });
+//       } catch (emailError) {
+//         console.error('Failed to send welcome email:', emailError);
+//         // Don't fail the entire operation if email fails
+//       }
+//     }
+//     revalidatePath('/church/users');
+//     return {
+//       success: true,
+//       data: result.member,
+//       message: 'Member added successfully',
+//     };
+//   } catch (error: any) {
+//     console.error('Error adding member:', error);
+//     return {
+//       success: false,
+//       error: error.message || 'Failed to add member',
+//     };
+//   }
+// }
 
 // ============================================
 // 3. ADMIN UPDATE MEMBER
