@@ -16,7 +16,13 @@ export default async function MemberLayout({
   if (!user) {
     redirect('/auth/login');
   }
-  if (user.role !== 'MEMBER') {
+  // organizationRoles may be string[] | null | undefined — ensure MEMBER is present
+  if (
+    !(
+      Array.isArray(user.organizationRoles) &&
+      user.organizationRoles.includes('MEMBER')
+    )
+  ) {
     redirect('/auth/login');
   }
   return (

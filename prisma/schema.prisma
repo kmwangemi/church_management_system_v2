@@ -767,12 +767,13 @@ model Organization {
   website          String?
   address          Address?
   churchSize       String?
-  numberOfBranches String?
+  numberOfBranches Int?
   status           String?                   @default("Active")
   mission          String?
   vision           String?
   values           String[]
   isActive         Boolean                   @default(true)
+  isSuspended      Boolean                   @default(false)
   isDeleted        Boolean                   @default(false)
   metadata         Json? // flexible extras - store church-specific info
   // Better Auth requires these relations
@@ -810,12 +811,13 @@ model Organization {
 // ============================================
 
 model Member {
-  id             String       @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime     @default(now())
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrganizationRole @default(MEMBER)
+  createdAt      DateTime         @default(now())
 
   // Team (Branch) assignment within church
   // teamId         String?

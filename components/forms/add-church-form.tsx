@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { authClient } from '@/lib/auth-client'; // Your Better Auth client
+import { createChurchOrganization } from '@/lib/actions/superadmin/create-church-organization';
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle, successToastStyle } from '@/lib/toast-styles';
 import {
@@ -81,7 +81,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       churchName: '',
       denomination: '',
       description: '',
-      establishedDate: '',
+      establishedDate: undefined,
       email: '',
       phoneNumber: '',
       website: '',
@@ -201,19 +201,12 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       setCurrentTab(tabs[currentIndex - 1]);
     }
   };
-  // Generate slug from church name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  };
-  // Handle form submission using Better Auth organization.create
+  // Handle form submission
   const onSubmit = async (payload: ChurchPayload) => {
     try {
       setIsSubmitting(true);
       setError(null);
-      // Upload logo if selected but not uploaded yet
+      // Step 1: Upload logo if selected but not uploaded yet
       if (logoFile && !payload.churchLogoUrl) {
         try {
           setLogoUploading(true);
@@ -226,60 +219,38 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
           setLogoUploading(false);
         }
       }
+      // Step 2: Validate payload
       const validation = churchDataSchema.safeParse(payload);
       if (!validation.success) {
         toast.error('Please fix all validation errors');
         return;
       }
-      // Generate slug from church name
-      const slug = generateSlug(payload.churchName);
-      // Check if slug is available --> Bug with slug name, always producing {status: true}
-      // const { data: isSlugTaken } = await authClient.organization.checkSlug({
-      //   slug,
-      // });
-      // if (isSlugTaken) {
-      //   toast.error(
-      //     'This church name is already taken. Please choose another name.'
-      //   );
-      //   return;
-      // }
-      // Create organization using Better Auth
-      const { data: organization, error: createError } =
-        await authClient.organization.create({
-          name: payload.churchName,
-          slug,
-          logo: payload.churchLogoUrl,
-          denomination: payload.denomination,
-          description: payload.description,
-          establishedDate: payload.establishedDate,
-          email: payload.email,
-          phoneNumber: payload.phoneNumber,
-          website: payload.website,
-          address: payload.address,
-          subscriptionPlan: payload.subscriptionPlan,
-          churchSize: payload.churchSize,
-          numberOfBranches: payload.numberOfBranches,
-        });
-      if (createError) {
-        throw new Error(createError.message || 'Failed to create church');
+      // Step 3: Call server action to create organization
+      const result = await createChurchOrganization(payload);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create church');
       }
-      if (organization) {
-        // Set as active organization
-        await authClient.organization.setActive({
-          organizationId: organization.id,
-        });
-        toast.success('Church registered successfully!', {
-          style: successToastStyle,
-        });
-        reset();
-        setLogoFile(null);
-        setLogoPreview(null);
-        setCurrentTab('basic');
-        onCloseDialog();
-      }
+      // Step 4: Success - reset form and close dialog
+      toast.success('Church registered successfully! 🎉', {
+        description: 'Your 30-day trial has started.',
+        style: successToastStyle,
+      });
+      // Reset form state
+      reset();
+      setLogoFile(null);
+      setLogoPreview(null);
+      setCurrentTab('basic');
+      onCloseDialog();
+      // Optional: Redirect to dashboard or organization page
+      // router.push(`/dashboard/${result.organizationId}`);
     } catch (err: any) {
-      setError(err.message || 'Failed to register church');
-      toast.error(err.message || 'Failed to register church');
+      const errorMessage =
+        err.message || 'Failed to register church. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        description: 'Please check your information and try again.',
+        style: errorToastStyle,
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -16,7 +16,7 @@ export default async function SuperAdminLayout({
   if (!user) {
     redirect('/auth/login');
   }
-  if (user.role !== 'SUPER_ADMIN') {
+  if (user.globalRole !== 'SUPER_ADMIN') {
     redirect('/auth/login');
   }
   return (

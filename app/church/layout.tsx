@@ -16,7 +16,13 @@ export default async function DashboardLayout({
   if (!user) {
     redirect('/auth/login');
   }
-  if (user.role !== 'ADMIN') {
+  // organizationRoles may be string[] | null | undefined — ensure ADMIN is present
+  if (
+    !(
+      Array.isArray(user.organizationRoles) &&
+      user.organizationRoles.includes('ADMIN')
+    )
+  ) {
     redirect('/auth/login');
   }
   return (

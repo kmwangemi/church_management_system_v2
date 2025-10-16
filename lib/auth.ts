@@ -16,7 +16,6 @@ import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { createAuthMiddleware, organization } from 'better-auth/plugins';
-import { createOrganizationResources } from './transactions/createOrganizationResources';
 
 export const auth = betterAuth({
   appName: 'Church Management System',
@@ -416,10 +415,6 @@ export const auth = betterAuth({
               type: 'string',
               required: false,
             },
-            address: {
-              type: 'json',
-              required: false,
-            },
             status: {
               type: 'string',
               required: false,
@@ -437,11 +432,6 @@ export const auth = betterAuth({
               required: false,
               defaultValue: false,
               input: false,
-            },
-            subscriptionPlan: {
-              type: 'string',
-              required: false,
-              defaultValue: 'BASIC',
             },
             createdAt: {
               type: 'date',
@@ -471,9 +461,9 @@ export const auth = betterAuth({
         VISITOR: visitor,
         STAFF: staff,
       },
-      allowUserToCreateOrganization: async (user) => {
-        return user.role === 'SUPER_ADMIN';
-      },
+      // allowUserToCreateOrganization: async (user) => {
+      //   return user.role === 'SUPER_ADMIN';
+      // },
       creatorRole: 'OWNER',
       membershipLimit: 10_000,
       invitationExpiresIn: 60 * 60 * 48,
@@ -493,18 +483,18 @@ export const auth = betterAuth({
         //     },
         //   };
         // },
-        afterCreateOrganization: async ({ organization }) => {
-          // Run custom logic after organization is created
-          // e.g., create default resources, send notifications
-          try {
-            // Create organization default resources
-            await createOrganizationResources({ organization });
-          } catch (_error) {
-            throw new Error('Failed to create organization resources');
-            // Log the error but don't throw - organization was already created
-            // You could also choose to throw here to rollback the organization creation
-          }
-        },
+        // afterCreateOrganization: async ({ organization }) => {
+        //   // Run custom logic after organization is created
+        //   // e.g., create default resources, send notifications
+        //   try {
+        //     // Create organization default resources
+        //     await createOrganizationResources({ organization });
+        //   } catch (_error) {
+        //     throw new Error('Failed to create organization resources');
+        //     // Log the error but don't throw - organization was already created
+        //     // You could also choose to throw here to rollback the organization creation
+        //   }
+        // },
         // Organization update hooks
         // beforeUpdateOrganization: async ({ organization, user, member }) => {
         //   // Validate updates, apply business rules
