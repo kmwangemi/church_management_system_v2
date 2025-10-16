@@ -35,20 +35,17 @@ enum AccountStatus {
   PENDING
 }
 
-enum UserRole {
+enum GlobalRole {
   SUPER_ADMIN
-  MEMBER
-  PASTOR
-  BISHOP
   ADMIN
-  VISITOR
+  USER
 }
 
-enum ORGANIZATIONUserRole {
+enum OrganizationRole {
   OWNER
   MEMBER
-  PASTOR
-  BISHOP
+  STAFF
+  VOLUNTEER
   ADMIN
   VISITOR
 }
@@ -617,13 +614,13 @@ enum MilestoneCategory {
 // ============================================
 
 model User {
-  id                String            @id @default(cuid())
+  id                String             @id @default(cuid())
   name              String
-  email             String            @unique
-  emailVerified     Boolean           @default(false)
+  email             String             @unique
+  emailVerified     Boolean            @default(false)
   image             String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   // Better Auth relations
   sessions          Session[]
   accounts          Account[]
@@ -637,18 +634,19 @@ model User {
   occupation        String?
   maritalStatus     MaritalStatus?
   skills            String[]
+  // position within church
+  position          String?
   notes             String?
-  // Global role (SUPER_ADMIN or VISITOR)
-  role              UserRole          @default(VISITOR)
-  status            AccountStatus     @default(ACTIVE)
+  // Global role (SUPER_ADMIN, ADMIN or USER)
+  globalRole        GlobalRole         @default(USER)
+  // Roles within the organization (church)
+  organizationRoles OrganizationRole[] @default([])
+  status            AccountStatus      @default(ACTIVE)
   lastLogin         DateTime?
   // Flags
-  isMember          Boolean           @default(false)
-  isStaff           Boolean           @default(false)
-  isVolunteer       Boolean           @default(false)
-  isPasswordUpdated Boolean           @default(false)
-  agreeToTerms      Boolean           @default(true)
-  isDeleted         Boolean           @default(false)
+  isPasswordUpdated Boolean            @default(false)
+  agreeToTerms      Boolean            @default(true)
+  isDeleted         Boolean            @default(false)
   // Normalized relations
   address           Address?
   emergencyContact  EmergencyContact?
@@ -662,11 +660,11 @@ model User {
   visitorDetails    VisitorDetails?
   // Self-referential relations
   createdBy         String?
-  createdByUser     User?             @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usersCreated      User[]            @relation("UserCreatedBy")
+  createdByUser     User?              @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersCreated      User[]             @relation("UserCreatedBy")
   updatedBy         String?
-  updatedByUser     User?             @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usersUpdated      User[]            @relation("UserUpdatedBy")
+  updatedByUser     User?              @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersUpdated      User[]             @relation("UserUpdatedBy")
   // Team leadership (for pastors/team leaders)
   // teamsPastored       Team[]               @relation("TeamPastor")
   // Department and Group leadership
@@ -682,7 +680,7 @@ model User {
   // disciplesAsMember      Disciple[]           @relation("DiscipleMember")
   // disciplesAsMentor      Disciple[]           @relation("DiscipleMentor")
   // prayerRequestsSubmitted PrayerRequest[]     @relation("PrayerRequestSubmitter")
-  userSubscriptions      UserSubscription[]
+  userSubscriptions UserSubscription[]
   // departmentMemberships  DepartmentMember[]
   // groupMemberships       GroupMember[]
   // attendanceRecords      AttendanceRecord[]
@@ -690,14 +688,14 @@ model User {
   // goalsCreated           GroupGoal[]
   // departmentGoalsCreated DepartmentGoal[]
   // announcementsCreated   Announcement[]
-  logsGenerated          Log[]
+  logsGenerated     Log[]
   // attendancesTaken       Attendance[]
   // expensesApproved       Expense[]
   // departmentActivitiesOrganized DepartmentActivity[]
   teammembers       TeamMember[]
 
   @@index([email])
-  @@index([role, status])
+  @@index([globalRole, organizationRoles, status])
   @@index([isDeleted])
   @@map("user")
 }
@@ -754,33 +752,33 @@ model Verification {
 // ============================================
 
 model Organization {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  logo        String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id               String                    @id @default(cuid())
+  name             String
+  slug             String                    @unique
+  logo             String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
   // Extended organization fields
-  denomination String?
-  description  String?
-  establishedDate DateTime          @default(now())
-  email           String?
-  phoneNumber     String?
-  website         String?
-  address     Address?
-  churchSize      String?
+  denomination     String?
+  description      String?
+  establishedDate  DateTime                  @default(now())
+  email            String?
+  phoneNumber      String?
+  website          String?
+  address          Address?
+  churchSize       String?
   numberOfBranches String?
-  status      String?      @default("Active")
-  mission     String?
-  vision      String?
-  values      String[]
-  isActive    Boolean      @default(true)
-  isDeleted   Boolean      @default(false)
-  metadata    Json? // flexible extras - store church-specific info
+  status           String?                   @default("Active")
+  mission          String?
+  vision           String?
+  values           String[]
+  isActive         Boolean                   @default(true)
+  isDeleted        Boolean                   @default(false)
+  metadata         Json? // flexible extras - store church-specific info
   // Better Auth requires these relations
-  members     Member[]
-  invitations Invitation[]
-  teams       Team[]       // Branches are teams in Better Auth
+  members          Member[]
+  invitations      Invitation[]
+  teams            Team[] // Branches are teams in Better Auth
   // Relations
   // departments      Department[]
   // groups           Group[]
@@ -812,14 +810,13 @@ model Organization {
 // ============================================
 
 model Member {
-  id             String               @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
-  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Role within the organization (church)
-  role           ORGANIZATIONUserRole @default(MEMBER)
-  createdAt      DateTime             @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
   // Team (Branch) assignment within church
   // teamId         String?
   // team           Team?                @relation("TeamMembers", fields: [teamId], references: [id])
@@ -846,7 +843,8 @@ model Invitation {
   inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())
   // Optional team assignment for invitation
-  teamId         String?      // Invite to specific team/branch
+  teamId         String? // Invite to specific team/branch
+
   // Unique constraint for email per organization
   @@unique([organizationId, email])
   @@index([email])
@@ -870,8 +868,9 @@ model Address {
   user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organizationId String?       @unique
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  teamId  String?       @unique
-  team    Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId         String?       @unique
+  team           Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
   @@map("address")
 }
 
@@ -1072,14 +1071,14 @@ model VisitorDetails {
 }
 
 model Team {
-  id             String       @id @default(cuid())
-  name           String
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime?    @updatedAt
-  teammembers    TeamMember[]
-  address        Address?
+  id              String       @id @default(cuid())
+  name            String
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime?    @updatedAt
+  teammembers     TeamMember[]
+  address         Address?
   // Extended team fields
   email           String?
   phoneNumber     String?
@@ -1089,13 +1088,13 @@ model Team {
   description     String?
   isActive        Boolean      @default(true)
   isDeleted       Boolean      @default(false)
-  metadata        Json?        // Store additional team info
+  metadata        Json? // Store additional team info
 
   @@map("team")
 }
 
 model TeamMember {
-  id        String    @id  @default(cuid())
+  id        String    @id @default(cuid())
   teamId    String
   team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   userId    String
@@ -1172,10 +1171,10 @@ model OrganizationSubscription {
   paidAmount         Float              @default(0)
   balAmount          Float              @default(0)
   maxUsers           Int?
-  maxTeams        Int?               @default(1)
+  maxTeams           Int?               @default(1)
   maxSmallGroups     Int?
   currentUsers       Int                @default(0)
-  currentTeams    Int                @default(0)
+  currentTeams       Int                @default(0)
   currentSmallGroups Int                @default(0)
   features           String[]
   startDate          DateTime
@@ -1190,6 +1189,7 @@ model OrganizationSubscription {
   updatedAt          DateTime           @updatedAt
   organizationId     String             @unique
   organization       Organization       @relation(fields: [organizationId], references: [id])
+
   @@index([organizationId, status])
   @@index([status, endDate])
   @@index([plan, status])
@@ -1222,6 +1222,7 @@ model UserSubscription {
   updatedAt              DateTime           @updatedAt
   userId                 String
   user                   User               @relation(fields: [userId], references: [id])
+
   @@index([userId, status])
   @@index([status, endDate])
   @@index([plan, status])
@@ -1233,23 +1234,24 @@ model UserSubscription {
 // ============================================
 
 model Log {
-  id           String      @id @default(cuid())
-  level        LogLevel
-  message      String
-  errorName    String?
-  errorMessage String?
-  errorStack   String?
-  errorCode    String?
-  metadata     Json?
-  timestamp    DateTime    @default(now())
-  source       LogSource
-  environment  Environment
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  userId       String?
-  user         User?       @relation(fields: [userId], references: [id])
-  organizationId     String? // Made nullable to allow logs without org context
-  organization       Organization? @relation(fields: [organizationId], references: [id])
+  id             String        @id @default(cuid())
+  level          LogLevel
+  message        String
+  errorName      String?
+  errorMessage   String?
+  errorStack     String?
+  errorCode      String?
+  metadata       Json?
+  timestamp      DateTime      @default(now())
+  source         LogSource
+  environment    Environment
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  organizationId String? // Made nullable to allow logs without org context
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
   @@index([level, timestamp])
   @@index([source, level, timestamp])
   @@index([environment, timestamp])

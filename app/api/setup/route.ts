@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   await prisma.user.update({
     where: { id: user.user.id },
     data: {
-      role: 'SUPER_ADMIN',
+      globalRole: 'SUPER_ADMIN',
       emailVerified: true,
       status: 'ACTIVE',
     },

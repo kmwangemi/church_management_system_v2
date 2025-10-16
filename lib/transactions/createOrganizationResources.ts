@@ -2,7 +2,16 @@ import type { OrganizationPlan } from '@/generated/prisma';
 import type { IOrganization } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-export async function createOrganizationDefaults({
+// Define the address structure
+interface OrganizationAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
+export async function createOrganizationResources({
   organization,
 }: {
   organization: IOrganization;
@@ -11,15 +20,17 @@ export async function createOrganizationDefaults({
     // --- 1. Calculate trial period ---
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 30);
+    // --- 2. Type the address properly ---
+    const address = (organization?.address as unknown as OrganizationAddress) || {};
     // --- 2. Create Address ---
     await tx.address.create({
       data: {
         organizationId: organization.id,
-        street: organization?.address?.street || '',
-        city: organization?.address?.city || '',
-        state: organization?.address?.state || '',
-        zipCode: organization?.address?.zipCode || '',
-        country: organization?.address?.country || '',
+        street: address?.street || '',
+        city: address?.city || '',
+        state: address?.state || '',
+        zipCode: address?.zipCode || '',
+        country: address?.country || '',
       },
     });
     // --- 3. Create Subscription ---

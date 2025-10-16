@@ -9,10 +9,10 @@ import type { auth } from '@/lib/auth';
 import {
   ac,
   admin,
-  bishop,
+  staff,
   member,
   owner,
-  pastor,
+  volunteer,
   visitor,
 } from './auth/permissions';
 
@@ -31,9 +31,9 @@ export const authClient = createAuthClient({
         OWNER: owner,
         ADMIN: admin,
         MEMBER: member,
-        PASTOR: pastor,
+        VOvolunteer: volunteer,
         VISITOR: visitor,
-        BISHOP: bishop,
+        STAFF: staff,
       },
     }),
     nextCookies(),

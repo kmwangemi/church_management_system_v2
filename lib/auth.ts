@@ -1,13 +1,12 @@
 /** biome-ignore-all lint/suspicious/useAwait: ignore */
-import type { OrganizationPlan } from '@/generated/prisma';
 import {
   ac,
   admin,
-  bishop,
   member,
   owner,
-  pastor,
+  staff,
   visitor,
+  volunteer,
 } from '@/lib/auth/permissions';
 import { logger } from '@/lib/logger';
 import prisma from '@/lib/prisma';
@@ -17,6 +16,7 @@ import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { createAuthMiddleware, organization } from 'better-auth/plugins';
+import { createOrganizationResources } from './transactions/createOrganizationResources';
 
 export const auth = betterAuth({
   appName: 'Church Management System',
@@ -35,12 +35,12 @@ export const auth = betterAuth({
       },
     },
   },
-  socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
-    },
-  },
+  // socialProviders: {
+  //   github: {
+  //     clientId: process.env.GITHUB_CLIENT_ID as string,
+  //     clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+  //   },
+  // },
   user: {
     additionalFields: {
       phoneNumber: {
@@ -64,18 +64,26 @@ export const auth = betterAuth({
         required: false,
       },
       skills: {
-        type: 'string',
+        type: 'string[]',
         required: false,
-        returned: true,
       },
       notes: {
         type: 'string',
         required: false,
       },
-      role: {
+      position: {
         type: 'string',
         required: false,
-        defaultValue: 'VISITOR',
+      },
+      globalRole: {
+        type: 'string',
+        required: false,
+        defaultValue: 'USER',
+        input: false,
+      },
+      organizationRoles: {
+        type: 'string[]',
+        required: false,
         input: false,
       },
       status: {
@@ -88,21 +96,6 @@ export const auth = betterAuth({
         type: 'date',
         required: false,
         input: false,
-      },
-      isMember: {
-        type: 'boolean',
-        required: false,
-        defaultValue: false,
-      },
-      isStaff: {
-        type: 'boolean',
-        required: false,
-        defaultValue: false,
-      },
-      isVolunteer: {
-        type: 'boolean',
-        required: false,
-        defaultValue: false,
       },
       isPasswordUpdated: {
         type: 'boolean',
@@ -474,9 +467,9 @@ export const auth = betterAuth({
         OWNER: owner,
         ADMIN: admin,
         MEMBER: member,
-        PASTOR: pastor,
+        VOLUNTEER: volunteer,
         VISITOR: visitor,
-        BISHOP: bishop,
+        STAFF: staff,
       },
       allowUserToCreateOrganization: async (user) => {
         return user.role === 'SUPER_ADMIN';
@@ -500,41 +493,14 @@ export const auth = betterAuth({
         //     },
         //   };
         // },
-        afterCreateOrganization: async ({ organization, member, user }) => {
+        afterCreateOrganization: async ({ organization }) => {
           // Run custom logic after organization is created
           // e.g., create default resources, send notifications
           try {
-            // Extract metadata
-            // const metadata = organization.metadata as IOrganizationMetadata;
-            // const plan = metadata?.subscriptionPlan || 'BASIC';
-            // Calculate trial end date
-            const trialEnd = new Date();
-            trialEnd.setDate(trialEnd.getDate() + 30);
-            // Create address
-            await prisma.address.create({
-              data: {
-                organizationId: organization.id,
-                street: organization?.address?.street || '',
-                city: organization?.address?.city || '',
-                state: organization?.address?.state || '',
-                zipCode: organization?.address?.zipCode || '',
-                country: organization?.address?.country || '',
-              },
-            });
-            // Create subscription
-            await prisma.organizationSubscription.create({
-              data: {
-                organizationId: organization.id,
-                plan: organization?.subscriptionPlan.toUpperCase() as OrganizationPlan,
-                status: 'TRIAL',
-                startDate: new Date(),
-                endDate: trialEnd,
-                isActive: true,
-                nextBillingDate: trialEnd,
-              },
-            });
+            // Create organization default resources
+            await createOrganizationResources({ organization });
           } catch (_error) {
-            throw new Error('Failed to create default subscription or team');
+            throw new Error('Failed to create organization resources');
             // Log the error but don't throw - organization was already created
             // You could also choose to throw here to rollback the organization creation
           }
