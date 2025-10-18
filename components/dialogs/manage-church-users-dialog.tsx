@@ -7,7 +7,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
@@ -49,32 +55,39 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { IMemberWithUser, IOrganization } from '@/lib/auth';
 import { useDebounce } from '@/lib/hooks/shared/usedebounce/use-debounce';
 import {
   useAddMember,
   useOrganizationMembers,
   useRemoveMember,
-  useToggleMemberStatus,
   useUpdateMember,
 } from '@/lib/hooks/superadmin/use-organization-members';
-import { ADMIN_MEMBER_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
+import type { ChurchListResponse } from '@/lib/types/church';
+import {
+  capitalizeFirstLetterOfEachWord,
+  CHURCH_POSITION_OPTIONS,
+  CHURCH_ROLE_OPTIONS,
+  GENDER_OPTIONS,
+} from '@/lib/utils';
 import { adminDataSchema, type AdminPayload } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Church,
   Edit,
   Loader2,
   Mail,
+  MapPin,
   MoreHorizontal,
   Phone,
   Plus,
   Search,
   Shield,
   Trash2,
+  User,
   UserCheck,
   Users,
   UserX,
@@ -82,11 +95,13 @@ import {
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { BranchCombobox } from '../branch-combobox';
+import { CountrySelect } from '../country-list-input';
 
 interface ManageChurchUsersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  church: IOrganization | null;
+  church: ChurchListResponse | null;
 }
 
 export function ManageChurchUsersDialog({
@@ -120,8 +135,8 @@ export function ManageChurchUsersDialog({
   const { mutate: removeMember, isPending: isRemoving } = useRemoveMember(
     church?.id || ''
   );
-  const { mutate: toggleStatus, isPending: isTogglingStatus } =
-    useToggleMemberStatus(church?.id || '');
+  // const { mutate: toggleStatus, isPending: isTogglingStatus } =
+  //   useToggleMemberStatus(church?.id || '');
   // Fetch members
   const { data, isLoading, error, refetch } = useOrganizationMembers({
     organizationId: church?.id,
@@ -134,6 +149,7 @@ export function ManageChurchUsersDialog({
     sortBy,
     sortOrder,
   });
+  console.log('organization members --->', JSON.stringify(data));
   const handlePreviousPage = () => {
     setPage((prev) => Math.max(1, prev - 1));
   };
@@ -191,7 +207,7 @@ export function ManageChurchUsersDialog({
   const handleToggleStatus = (member: IMemberWithUser) => {
     const action = member.user.status === 'ACTIVE' ? 'suspend' : 'activate';
     if (!confirm(`Are you sure you want to ${action} this member?`)) return;
-    toggleStatus({ memberId: member.id });
+    // toggleStatus({ memberId: member.id });
   };
   const handleEditUser = (member: IMemberWithUser) => {
     setSelectedUser(member);
@@ -497,7 +513,7 @@ export function ManageChurchUsersDialog({
                   Previous
                 </Button>
                 <Button
-                  disabled={!pagination.hasMore}
+                  disabled={!pagination?.hasMore}
                   onClick={handleNextPage}
                   size="sm"
                   variant="outline"
@@ -570,7 +586,15 @@ function AddUserDialog({
       email: '',
       phoneNumber: '',
       gender: 'MALE',
-      isMember: true,
+      position: '',
+      teamId: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'Kenya',
+      },
       password: '',
       confirmPassword: '',
       role: 'MEMBER',
@@ -586,9 +610,11 @@ function AddUserDialog({
         phoneNumber: payload.phoneNumber,
         password: payload.password,
         gender: payload.gender,
+        position: payload.position,
+        address: payload.address,
+        teamId: payload.teamId,
         role: payload.role,
-        isMember: payload.isMember,
-        // sendWelcomeEmail: payload.sendWelcomeEmail,
+        sendWelcomeEmail: payload.sendWelcomeEmail,
       },
       {
         onSuccess: (response) => {
@@ -604,20 +630,28 @@ function AddUserDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New User to {church.name}</DialogTitle>
+          <DialogTitle>
+            Add New User to {capitalizeFirstLetterOfEachWord(church.name)}
+          </DialogTitle>
           <DialogDescription>
             Create a new user account with specific role and permissions
           </DialogDescription>
         </DialogHeader>
         {isError && <RenderApiError error={error} />}
         <Form {...form}>
-          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-            <Tabs className="w-full" defaultValue="basic">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="basic">Basic Information</TabsTrigger>
-                <TabsTrigger value="security">Security</TabsTrigger>
-              </TabsList>
-              <TabsContent className="mt-4 space-y-4" value="basic">
+          <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
+            {/* Personal Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span>Personal Information</span>
+                </CardTitle>
+                <CardDescription>
+                  Basic user details and contact information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -628,7 +662,7 @@ function AddUserDialog({
                           First Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="John" {...field} />
+                          <Input placeholder="Enter first name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -643,7 +677,7 @@ function AddUserDialog({
                           Last Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="Smith" {...field} />
+                          <Input placeholder="Enter last name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -656,12 +690,10 @@ function AddUserDialog({
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          Email <span className="text-red-500">*</span>
-                        </FormLabel>
+                        <FormLabel>Email Address</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="user@church.com"
+                            placeholder="Enter email address"
                             type="email"
                             {...field}
                           />
@@ -691,14 +723,136 @@ function AddUserDialog({
                     )}
                   />
                 </div>
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Gender <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="cursor-pointer">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[400px] overflow-y-auto">
+                          {GENDER_OPTIONS.map((option) => (
+                            <SelectItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+            {/* Address Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <MapPin className="h-5 w-5" />
+                  <span>Address Information</span>
+                </CardTitle>
+                <CardDescription>User address information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="gender"
+                    name="address.country"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Gender <span className="text-red-500">*</span>
+                          Country <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <CountrySelect
+                            onChange={field.onChange}
+                            placeholder="Select your country"
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address.city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          City <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nairobi" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address.street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Street Address <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main Street" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address.zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Postal Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="00100" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            {/* Church Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Church className="h-5 w-5" />
+                  <span>Church Information</span>
+                </CardTitle>
+                <CardDescription>Role and branch assignments</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Church Position{' '}
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -706,11 +860,11 @@ function AddUserDialog({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
+                              <SelectValue placeholder="Select church position" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {GENDER_OPTIONS.map((option) => (
+                            {CHURCH_POSITION_OPTIONS.map((option) => (
                               <SelectItem
                                 key={option.value}
                                 value={option.value}
@@ -726,56 +880,58 @@ function AddUserDialog({
                   />
                   <FormField
                     control={form.control}
-                    name="isMember"
+                    name="role"
                     render={({ field }) => (
-                      <FormItem className="mt-8 flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Church Member</FormLabel>
-                          <p className="text-gray-500 text-sm">
-                            This person is also a church member
-                          </p>
-                        </div>
+                      <FormItem>
+                        <FormLabel>
+                          Role <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="cursor-pointer">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-[400px] overflow-y-auto">
+                            {CHURCH_ROLE_OPTIONS.map((option) => (
+                              <SelectItem
+                                className="cursor-pointer"
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
                 <FormField
                   control={form.control}
-                  name="role"
+                  name="teamId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Role <span className="text-red-500">*</span>
+                        Branch <span className="text-red-500">*</span>
                       </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select user role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {ADMIN_MEMBER_ROLE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <BranchCombobox
+                          className="w-full"
+                          onChange={field.onChange}
+                          placeholder="Search and select a branch"
+                          value={field.value}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </TabsContent>
-              <TabsContent className="mt-4 space-y-4" value="security">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -816,41 +972,8 @@ function AddUserDialog({
                     )}
                   />
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  User will be prompted to change this on first login
-                </p>
-                <FormField
-                  control={form.control}
-                  name="sendWelcomeEmail"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Send Welcome Email</FormLabel>
-                        <p className="text-gray-500 text-sm">
-                          Send login credentials and welcome information to the
-                          user
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
-            </Tabs>
-            <div className="rounded-lg bg-blue-50 p-4">
-              <h4 className="mb-2 font-medium text-blue-900">
-                User Account Creation
-              </h4>
-              <p className="text-blue-700 text-sm">
-                The user will be added to {church.name} with the selected role
-                and permissions.
-              </p>
-            </div>
+              </CardContent>
+            </Card>
             <div className="flex justify-end gap-2 border-t pt-4">
               <Button
                 onClick={() => onOpenChange(false)}
@@ -901,8 +1024,7 @@ function EditUserDialog({
       lastName: '',
       email: '',
       phoneNumber: '',
-      gender: 'male',
-      isMember: true,
+      gender: 'MALE',
       role: 'MEMBER',
       status: 'ACTIVE',
     },
@@ -1097,7 +1219,7 @@ function EditUserDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {ADMIN_MEMBER_ROLE_OPTIONS.map((option) => (
+                        {CHURCH_ROLE_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>

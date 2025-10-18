@@ -32,7 +32,7 @@ import {
 import { useFetchBranches } from '@/lib/hooks/church/branch/use-branch-queries';
 import {
   ADMIN_ACCESS_LEVEL_OPTIONS,
-  ADMIN_ROLE_OPTIONS,
+  CHURCH_ROLE_OPTIONS,
   capitalizeFirstLetter,
   GENDER_OPTIONS,
 } from '@/lib/utils';
@@ -333,7 +333,7 @@ export function AddAdminForm({ onCloseDialog }: AddAdminFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {ADMIN_ROLE_OPTIONS.map((option) => (
+                          {CHURCH_ROLE_OPTIONS.map((option) => (
                             <SelectItem
                               className="cursor-pointer"
                               key={option.value}

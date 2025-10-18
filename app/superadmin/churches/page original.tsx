@@ -48,19 +48,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  activateChurchOrganization,
-  deleteChurchOrganization,
-  getAllChurchesSummary,
-  suspendChurchOrganization,
-  updateChurchOrganization,
-} from '@/lib/actions/superadmin/church-management';
-import type { ChurchListResponse } from '@/lib/types/church';
+import { authClient } from '@/lib/auth-client';
+import type {
+  IOrganization,
+  IOrganizationMetadata,
+  IOrganizationWithMetadata,
+} from '@/lib/auth';
 import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   AlertCircle,
   Building2,
-  CheckCircle,
   DollarSign,
   Edit,
   Eye,
@@ -70,11 +67,12 @@ import {
   MoreHorizontal,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   Users,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function ChurchesPage() {
@@ -85,66 +83,43 @@ export default function ChurchesPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
-  const [churches, setChurches] = useState<ChurchListResponse[]>([]);
-  const [churchStats, setChurchStats] = useState<{
-    totalChurches: number;
-    totalMembers: number;
-    totalBranches: number;
-    activeSubscriptions: number;
-  }>({
-    totalChurches: 0,
-    totalMembers: 0,
-    totalBranches: 0,
-    activeSubscriptions: 0,
-  });
-  const [error, setError] = useState<Error | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedChurch, setSelectedChurch] =
-    useState<ChurchListResponse | null>(null);
-  const [isPending, startTransition] = useTransition();
-  useEffect(() => {
-    const loadChurches = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const result = await getAllChurchesSummary();
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to load churche');
-        }
-        setChurches(result?.data?.churches || []);
-        setChurchStats(
-          result?.data?.stats || {
-            totalChurches: 0,
-            totalMembers: 0,
-            totalBranches: 0,
-            activeSubscriptions: 0,
-          }
-        );
-      } catch (err: any) {
-        setError(err.message || 'Failed to load churches');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadChurches();
-  }, []);
-  // Filter churches
-  const filteredChurches = useMemo(() => {
+    useState<IOrganizationWithMetadata | null>(null);
+  const {
+    data: churches,
+    isPending,
+    error,
+    refetch,
+  } = authClient.useListOrganizations();
+  // Parse metadata safely
+  const parseMetadata = (org: IOrganization | null): IOrganizationMetadata => {
+    if (!org?.metadata) return {};
+    try {
+      return typeof org.metadata === 'string'
+        ? JSON.parse(org.metadata)
+        : (org.metadata as IOrganizationMetadata);
+    } catch {
+      return {};
+    }
+  };
+  // Filter churches with error handling
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
+    const filteredChurches = useMemo(() => {
     if (!churches) return [];
     return churches.filter((church) => {
       try {
+        const metadata = parseMetadata(church);
         const searchLower = searchTerm.toLowerCase();
         const matchesSearch =
           church.name.toLowerCase().includes(searchLower) ||
-          church.denomination?.toLowerCase().includes(searchLower) ||
-          church.email?.toLowerCase().includes(searchLower);
+          metadata.denomination?.toLowerCase().includes(searchLower) ||
+          metadata.email?.toLowerCase().includes(searchLower);
         const matchesStatus =
-          statusFilter === 'all' ||
-          church.status?.toLowerCase() === statusFilter.toLowerCase();
+          statusFilter === 'all' || metadata.status === statusFilter;
         const matchesPlan =
           planFilter === 'all' ||
-          church?.subscription?.plan?.toLowerCase() ===
-            planFilter.toLowerCase();
+          metadata?.subscriptionPlan === planFilter ||
+          metadata?.subscriptionPlan === planFilter;
         return matchesSearch && matchesStatus && matchesPlan;
       } catch (error) {
         console.error('Error filtering church:', error);
@@ -152,10 +127,38 @@ export default function ChurchesPage() {
       }
     });
   }, [churches, searchTerm, statusFilter, planFilter]);
-  // Badge helpers
+  // Calculate stats with error handling
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
+    const stats = useMemo(() => {
+    if (!churches) {
+      return {
+        totalChurches: 0,
+        totalMembers: 0,
+        totalBranches: 0,
+        totalRevenue: 0,
+      };
+    }
+    return churches.reduce(
+      (acc, church) => {
+        try {
+          const metadata = parseMetadata(church);
+          return {
+            totalChurches: acc.totalChurches + 1,
+            totalMembers: acc.totalMembers + (metadata.members || 0),
+            totalBranches:
+              acc.totalBranches +
+              (metadata.numberOfBranches || 0),
+            totalRevenue: acc.totalRevenue + (metadata.revenue || 0),
+          };
+        } catch {
+          return acc;
+        }
+      },
+      { totalChurches: 0, totalMembers: 0, totalBranches: 0, totalRevenue: 0 }
+    );
+  }, [churches]);
   const getStatusBadge = (status?: string) => {
-    const statusLower = status?.toLowerCase();
-    switch (statusLower) {
+    switch (status) {
       case 'active':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
       case 'pending':
@@ -167,114 +170,76 @@ export default function ChurchesPage() {
     }
   };
   const getPlanBadge = (plan?: string) => {
-    const planLower = plan?.toLowerCase();
-    switch (planLower) {
-      case 'CUSTOM':
-        return <Badge className="bg-purple-100 text-purple-800">Custom</Badge>;
-      case 'CATHEDRAL':
-        return <Badge className="bg-blue-100 text-blue-800">Cathedral</Badge>;
-      case 'MINISTRY':
-        return <Badge className="bg-gray-100 text-gray-800">Ministry</Badge>;
+    const planName = plan?.toLowerCase();
+    switch (planName) {
+      case 'premium':
+        return <Badge className="bg-purple-100 text-purple-800">Premium</Badge>;
+      case 'standard':
+        return <Badge className="bg-blue-100 text-blue-800">Standard</Badge>;
+      case 'basic':
+        return <Badge className="bg-gray-100 text-gray-800">Basic</Badge>;
       default:
         return <Badge variant="secondary">{plan || 'None'}</Badge>;
     }
   };
-  // Action handlers
-  const handleViewDetails = (church: ChurchListResponse) => {
+  const handleViewDetails = (church: IOrganizationWithMetadata) => {
     setSelectedChurch(church);
     setViewDialogOpen(true);
   };
-  const handleEditChurch = (church: ChurchListResponse) => {
+  const handleEditChurch = (church: IOrganizationWithMetadata) => {
     setSelectedChurch(church);
     setEditDialogOpen(true);
   };
-  const handleManageUsers = (church: ChurchListResponse) => {
+  const handleManageUsers = (church: IOrganizationWithMetadata) => {
     setSelectedChurch(church);
     setManageUsersDialogOpen(true);
   };
-  const handleSaveChurch = (updatedChurch: ChurchListResponse) => {
-    startTransition(async () => {
-      try {
-        const result = await updateChurchOrganization({
-          organizationId: updatedChurch.id,
-          name: updatedChurch.name,
-          slug: updatedChurch.slug,
+  const handleSaveChurch = async (updatedChurch: IOrganizationWithMetadata) => {
+    try {
+      const { data, error } = await authClient.organization.update({
+        data: {
+          name: updatedChurch.name || '',
+          slug: updatedChurch.slug || '',
           logo: updatedChurch.logo || undefined,
-          denomination: updatedChurch.denomination,
-          description: updatedChurch.description,
-          email: updatedChurch.email,
-          phoneNumber: updatedChurch.phoneNumber,
-          website: updatedChurch.website,
-          churchSize: updatedChurch.churchSize,
-          numberOfBranches: updatedChurch.numberOfBranches,
-          status: updatedChurch.status,
-          address: updatedChurch.address,
-        });
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to update church');
-        }
-        toast.success('Church updated successfully');
-        setEditDialogOpen(false);
-      } catch (error: any) {
-        console.error('Error updating church:', error);
-        toast.error(error.message || 'Failed to update church');
+          metadata: updatedChurch.metadata || {},
+        },
+        organizationId: updatedChurch.id,
+      });
+      if (error) {
+        throw new Error(error.message || 'Failed to update church');
       }
-    });
-  };
-  const handleSuspendChurch = (church: ChurchListResponse) => {
-    if (!confirm('Are you sure you want to suspend this church?')) {
-      return;
+      toast.success('Church updated successfully');
+      refetch();
+    } catch (error: any) {
+      console.error('Error updating church:', error);
+      toast.error(error.message || 'Failed to update church');
     }
-    startTransition(async () => {
-      try {
-        const result = await suspendChurchOrganization(church.id);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to suspend church');
-        }
-        toast.success('Church suspended successfully');
-      } catch (error: any) {
-        console.error('Error suspending church:', error);
-        toast.error(error.message || 'Failed to suspend church');
-      }
-    });
   };
-  const handleActivateChurch = (church: ChurchListResponse) => {
-    startTransition(async () => {
-      try {
-        const result = await activateChurchOrganization(church.id);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to activate church');
-        }
-        toast.success('Church activated successfully');
-      } catch (error: any) {
-        console.error('Error activating church:', error);
-        toast.error(error.message || 'Failed to activate church');
+  const handleSuspendChurch = async (church: IOrganizationWithMetadata) => {
+    try {
+      const metadata = parseMetadata(church);
+      const { data, error } = await authClient.organization.update({
+        data: {
+          metadata: {
+            ...metadata,
+            isSuspended: true,
+            status: 'suspended',
+          },
+        },
+        organizationId: church.id,
+      });
+      if (error) {
+        throw new Error(error.message || 'Failed to suspend church');
       }
-    });
-  };
-  const handleDeleteChurch = (church: ChurchListResponse) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this church? This action cannot be undone.'
-      )
-    ) {
-      return;
+      toast.success('Church suspended successfully');
+      refetch();
+    } catch (error: any) {
+      console.error('Error suspending church:', error);
+      toast.error(error.message || 'Failed to suspend church');
     }
-    startTransition(async () => {
-      try {
-        const result = await deleteChurchOrganization(church.id);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to delete church');
-        }
-        toast.success('Church deleted successfully');
-      } catch (error: any) {
-        console.error('Error deleting church:', error);
-        toast.error(error.message || 'Failed to delete church');
-      }
-    });
   };
   // Loading State
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -298,6 +263,26 @@ export default function ChurchesPage() {
             </Card>
           ))}
         </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-96" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-[180px]" />
+                <Skeleton className="h-10 w-[180px]" />
+              </div>
+              <div className="space-y-2">
+                {[...new Array(5)].map((_, i) => (
+                  <Skeleton className="h-16 w-full" key={i} />
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -324,10 +309,10 @@ export default function ChurchesPage() {
                 ? error.message
                 : 'Failed to load churches. Please try again.'}
             </span>
-            {/* <Button onClick={() => refetch()} size="sm" variant="outline">
+            <Button onClick={() => refetch()} size="sm" variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
-            </Button> */}
+            </Button>
           </AlertDescription>
         </Alert>
       </div>
@@ -380,6 +365,7 @@ export default function ChurchesPage() {
       </div>
     );
   }
+  // Main Content
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -420,9 +406,7 @@ export default function ChurchesPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">
-              {churchStats.totalChurches}
-            </div>
+            <div className="font-bold text-2xl">{stats.totalChurches}</div>
             <p className="text-muted-foreground text-xs">
               Active organizations
             </p>
@@ -435,7 +419,7 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              {(churchStats.totalMembers || 0).toLocaleString()}
+              {stats.totalMembers.toLocaleString()}
             </div>
             <p className="text-muted-foreground text-xs">Across all churches</p>
           </CardContent>
@@ -448,9 +432,7 @@ export default function ChurchesPage() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">
-              {churchStats.totalBranches}
-            </div>
+            <div className="font-bold text-2xl">{stats.totalBranches}</div>
             <p className="text-muted-foreground text-xs">Branch locations</p>
           </CardContent>
         </Card>
@@ -463,13 +445,13 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              ${(churchStats?.totalRevenue || 0).toLocaleString() || 0}
+              ${stats.totalRevenue.toLocaleString()}
             </div>
             <p className="text-muted-foreground text-xs">Total revenue</p>
           </CardContent>
         </Card>
       </div>
-      {/* Filters and Table */}
+      {/* Filters and Search */}
       <Card>
         <CardHeader>
           <CardTitle>Church Directory</CardTitle>
@@ -505,8 +487,8 @@ export default function ChurchesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Plans</SelectItem>
-                <SelectItem value="cathedral">Cathedral</SelectItem>
-                <SelectItem value="ministry">Ministry</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
                 <SelectItem value="basic">Basic</SelectItem>
               </SelectContent>
             </Select>
@@ -536,6 +518,8 @@ export default function ChurchesPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredChurches.map((church) => {
+                    const metadata = parseMetadata(church ?? null);
+                    const plan = metadata?.subscriptionPlan;
                     return (
                       <TableRow key={church.id}>
                         <TableCell>
@@ -559,32 +543,32 @@ export default function ChurchesPage() {
                               </div>
                               <div className="text-muted-foreground text-sm">
                                 {capitalizeFirstLetterOfEachWord(
-                                  church.denomination || 'Not Provided'
+                                  metadata.denomination || 'Not Provided'
                                 )}
-                                {church.establishedDate &&
-                                  ` • Est. ${new Date(church.establishedDate).getFullYear()}`}
+                                {metadata.establishedDate &&
+                                  ` • Est. ${new Date(metadata.establishedDate).getFullYear()}`}
                               </div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {church.email && (
+                            {metadata.email && (
                               <div className="flex items-center text-sm">
                                 <Mail className="mr-1 h-3 w-3" />
-                                {church.email}
+                                {metadata.email}
                               </div>
                             )}
-                            {church.phoneNumber && (
+                            {metadata.phoneNumber && (
                               <div className="flex items-center text-sm">
                                 <Phone className="mr-1 h-3 w-3" />
-                                {church.phoneNumber}
+                                {metadata.phoneNumber}
                               </div>
                             )}
-                            {church.website && (
+                            {metadata.website && (
                               <div className="flex items-center text-sm">
                                 <Globe className="mr-1 h-3 w-3" />
-                                {church.website}
+                                {metadata.website}
                               </div>
                             )}
                           </div>
@@ -592,27 +576,22 @@ export default function ChurchesPage() {
                         <TableCell>
                           <div className="flex items-center">
                             <Users className="mr-1 h-4 w-4 text-muted-foreground" />
-                            {(churchStats?.totalMembers || 0).toLocaleString()}
+                            {(metadata.members || 0).toLocaleString()}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
                             <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
-                            {church.numberOfBranches || 0}
+                            {metadata.numberOfBranches ||
+                              0}
                           </div>
                         </TableCell>
-                        <TableCell>{getStatusBadge(church?.status)}</TableCell>
-                        <TableCell>
-                          {getPlanBadge(church?.subscription?.plan)}
-                        </TableCell>
+                        <TableCell>{getStatusBadge(metadata?.status)}</TableCell>
+                        <TableCell>{getPlanBadge(plan)}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button
-                                className="h-8 w-8 p-0"
-                                disabled={isPending}
-                                variant="ghost"
-                              >
+                              <Button className="h-8 w-8 p-0" variant="ghost">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -637,29 +616,12 @@ export default function ChurchesPage() {
                                 Manage Users
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              {church?.status?.toLowerCase() === 'suspended' ? (
-                                <DropdownMenuItem
-                                  className="text-green-600"
-                                  onClick={() => handleActivateChurch(church)}
-                                >
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Activate Church
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  className="text-orange-600"
-                                  onClick={() => handleSuspendChurch(church)}
-                                >
-                                  <AlertCircle className="mr-2 h-4 w-4" />
-                                  Suspend Church
-                                </DropdownMenuItem>
-                              )}
                               <DropdownMenuItem
                                 className="text-red-600"
-                                onClick={() => handleDeleteChurch(church)}
+                                onClick={() => handleSuspendChurch(church)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Church
+                                Suspend Church
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

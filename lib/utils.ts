@@ -185,21 +185,11 @@ export const formatNotificationCount = (count: number) => {
   return count.toString();
 };
 
-export const ADMIN_ROLE_OPTIONS = [{ value: 'admin', label: 'Admin' }];
-
-export const MEMBER_ROLE_OPTIONS = [
+export const CHURCH_ROLE_OPTIONS = [
   { value: 'VISITOR', label: 'Visitor' },
   { value: 'MEMBER', label: 'Member' },
-  { value: 'PASTOR', label: 'Pastor' },
-  { value: 'BISHOP', label: 'Bishop' },
-  { value: 'ADMIN', label: 'Admin' },
-];
-
-export const ADMIN_MEMBER_ROLE_OPTIONS = [
-  { value: 'VISITOR', label: 'Visitor' },
-  { value: 'MEMBER', label: 'Member' },
-  { value: 'PASTOR', label: 'Pastor' },
-  { value: 'BISHOP', label: 'Bishop' },
+  { value: 'STAFF', label: 'Staff' },
+  { value: 'VOLUNTEER', label: 'Volunteer' },
   { value: 'ADMIN', label: 'Admin' },
 ];
 
@@ -637,6 +627,20 @@ export const GOAL_CATEGORY_OPTIONS = [
   { value: 'quality', label: 'Quality' },
   { value: 'financial', label: 'Financial' },
   { value: 'other', label: 'Other' },
+];
+
+export const CHURCH_POSITION_OPTIONS = [
+  { label: 'Bishop', value: 'Bishop' },
+  { label: 'Senior Pastor', value: 'Senior Pastor' },
+  { label: 'Reverent', value: 'Reverent' },
+  { label: 'Pastor', value: 'Pastor' },
+  { label: 'Elder', value: 'Elder' },
+  { label: 'Youth Leader', value: 'Youth Leader' },
+  { label: 'Church Administrator', value: 'Church Administrator' },
+  { label: 'Treasurer', value: 'Treasurer' },
+  { label: 'Secretary', value: 'Secretary' },
+  { label: 'Member', value: 'Member' },
+  { label: 'Visitor', value: 'Visitor' },
 ];
 
 export const getUserId = (userId: any): string => {

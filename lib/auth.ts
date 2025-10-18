@@ -445,6 +445,26 @@ export const auth = betterAuth({
             },
           },
         },
+        member: {
+          additionalFields: {
+            // Add custom fields to the member table
+            position: {
+              type: 'string',
+              input: true,
+              required: false,
+            },
+          },
+        },
+        team: {
+          additionalFields: {
+            // Add custom fields to the team table
+            description: {
+              type: 'string',
+              input: true,
+              required: false,
+            },
+          },
+        },
       },
       // Enable teams for departmental management within the church
       teams: {

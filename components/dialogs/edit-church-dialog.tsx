@@ -23,15 +23,16 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import type { IOrganizationWithMetadata } from '@/lib/auth';
+import type { ChurchListResponse } from '@/lib/types/church';
 import { Building2, Edit, MapPin, Upload } from 'lucide-react';
 import { useState } from 'react';
+import { CHURCH_DENOMINATION_OPTIONS } from '@/lib/utils';
 
 interface EditChurchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  church: IOrganizationWithMetadata | null;
-  onSave: (church: IOrganizationWithMetadata) => void;
+  church: ChurchListResponse | null;
+  onSave: (church: ChurchListResponse) => void;
 }
 
 export function EditChurchDialog({
@@ -44,22 +45,20 @@ export function EditChurchDialog({
   const [currentTab, setCurrentTab] = useState('basic');
   const [formData, setFormData] = useState({
     name: church?.name || '',
-    denomination: church?.metadata?.denomination || '',
+    denomination: church?.denomination || '',
     pastor: church?.metadata?.pastor || '',
-    email: church?.metadata?.email || '',
-    phone: church?.metadata?.phoneNumber || '',
-    website: church?.metadata?.website || '',
-    address: church?.metadata?.address || '',
-    status: church?.metadata?.status || 'active',
-    plan: church?.metadata?.subscriptionPlan || 'standard',
-    established: church?.metadata?.establishedDate || '',
+    email: church?.email || '',
+    phone: church?.phoneNumber || '',
+    website: church?.website || '',
+    address: church?.address || {},
+    status: church?.status || 'ACTIVE',
+    plan: church?.subscription?.plan || 'BASIC',
+    established: church?.establishedDate || '',
   });
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
       if (church) {
         onSave({
           ...church,
@@ -79,19 +78,6 @@ export function EditChurchDialog({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
   if (!church) return null;
-  const denominations = [
-    'Baptist',
-    'Methodist',
-    'Presbyterian',
-    'Pentecostal',
-    'Lutheran',
-    'Episcopal',
-    'Catholic',
-    'Non-denominational',
-    'Assembly of God',
-    'Church of Christ',
-    'Other',
-  ];
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
@@ -172,12 +158,12 @@ export function EditChurchDialog({
                           <SelectValue placeholder="Select denomination" />
                         </SelectTrigger>
                         <SelectContent>
-                          {denominations.map((denomination) => (
+                          {CHURCH_DENOMINATION_OPTIONS.map((denomination) => (
                             <SelectItem
-                              key={denomination}
-                              value={denomination.toLowerCase()}
+                              key={denomination?.value}
+                              value={denomination?.value.toLowerCase()}
                             >
-                              {denomination}
+                              {denomination?.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -189,12 +175,12 @@ export function EditChurchDialog({
                       <Label className="font-medium text-sm" htmlFor="pastor">
                         Lead Pastor *
                       </Label>
-                      <Input
+                      {/* <Input
                         onChange={(e) => handleChange('pastor', e.target.value)}
                         placeholder="Rev. John Smith"
                         required
-                        value={formData.pastor}
-                      />
+                        value={formData?.pastor}
+                      /> */}
                     </div>
                     <div>
                       <Label
@@ -203,14 +189,14 @@ export function EditChurchDialog({
                       >
                         Established Date *
                       </Label>
-                      <Input
+                      {/* <Input
                         onChange={(e) =>
                           handleChange('established', e.target.value)
                         }
                         required
                         type="date"
                         value={formData.established}
-                      />
+                      /> */}
                     </div>
                   </div>
                 </CardContent>
@@ -267,13 +253,13 @@ export function EditChurchDialog({
                     <Label className="font-medium text-sm" htmlFor="address">
                       Full Address *
                     </Label>
-                    <Textarea
+                    {/* <Textarea
                       className="min-h-[80px]"
                       onChange={(e) => handleChange('address', e.target.value)}
                       placeholder="123 Faith Street, Springfield, IL 62701"
                       required
                       value={formData?.address}
-                    />
+                    /> */}
                   </div>
                 </CardContent>
               </Card>
@@ -314,7 +300,7 @@ export function EditChurchDialog({
                         className="bg-gray-50"
                         disabled
                         type="number"
-                        value={church?.metadata?.numberOfBranches}
+                        value={church?.numberOfBranches}
                       />
                     </div>
                   </div>
@@ -322,12 +308,12 @@ export function EditChurchDialog({
                     <Label className="font-medium text-sm" htmlFor="members">
                       Total Members
                     </Label>
-                    <Input
+                    {/* <Input
                       className="bg-gray-50"
                       disabled
                       type="number"
                       value={church?.metadata.members || 0}
-                    />
+                    /> */}
                     <p className="mt-1 text-gray-500 text-xs">
                       This value is automatically calculated
                     </p>
@@ -381,22 +367,22 @@ export function EditChurchDialog({
                       <Label className="font-medium text-sm" htmlFor="income">
                         Monthly Revenue
                       </Label>
-                      <Input
+                      {/* <Input
                         className="bg-gray-50"
                         disabled
                         type="number"
                         value={church?.metadata.revenue || 0}
-                      />
+                      /> */}
                     </div>
                     <div>
                       <Label className="font-medium text-sm" htmlFor="growth">
                         Growth Rate
                       </Label>
-                      <Input
+                      {/* <Input
                         className="bg-gray-50"
                         disabled
                         value={`${church?.metadata.growth || 0}%`}
-                      />
+                      /> */}
                     </div>
                   </div>
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">

@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { createChurchOrganization } from '@/lib/actions/superadmin/create-church-organization';
+import { createChurchOrganization } from '@/lib/actions/superadmin/church-management';
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle, successToastStyle } from '@/lib/toast-styles';
 import {
@@ -41,9 +41,13 @@ import {
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
   SUBSCRIPTION_PLANS,
 } from '@/lib/utils';
-import { churchDataSchema, type ChurchPayload } from '@/lib/validations/church';
+import {
+  churchDataSchema,
+  type CreateChurchPayload,
+} from '@/lib/validations/church';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, Church, Loader2, MapPin, Upload, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -65,6 +69,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
     subscription: false,
   });
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const {
     upload,
     isUploading,
@@ -72,7 +77,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
     error: uploadError,
     clearError,
   } = useFileUpload('logo');
-  const form = useForm<ChurchPayload>({
+  const form = useForm<CreateChurchPayload>({
     resolver: zodResolver(churchDataSchema),
     mode: 'onTouched',
     reValidateMode: 'onChange',
@@ -202,7 +207,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
     }
   };
   // Handle form submission
-  const onSubmit = async (payload: ChurchPayload) => {
+  const onSubmit = async (payload: CreateChurchPayload) => {
     try {
       setIsSubmitting(true);
       setError(null);
@@ -241,8 +246,7 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       setLogoPreview(null);
       setCurrentTab('basic');
       onCloseDialog();
-      // Optional: Redirect to dashboard or organization page
-      // router.push(`/dashboard/${result.organizationId}`);
+      router.refresh();
     } catch (err: any) {
       const errorMessage =
         err.message || 'Failed to register church. Please try again.';

@@ -47,4 +47,4 @@ export const churchDataSchema = z.object({
   churchSize: z.string().min(1, 'Please select number of members'),
 });
 
-export type ChurchPayload = z.infer<typeof churchDataSchema>;
+export type CreateChurchPayload = z.infer<typeof churchDataSchema>;

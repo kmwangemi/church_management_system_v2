@@ -55,7 +55,7 @@ import {
   getFirstLetter,
   getRelativeYear,
   MARITAL_STATUS_OPTIONS,
-  MEMBER_ROLE_OPTIONS,
+  CHURCH_ROLE_OPTIONS,
   USER_STATUS_OPTIONS,
 } from '@/lib/utils';
 import {
@@ -1180,7 +1180,7 @@ export default function EditMemberPage({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-[400px] overflow-y-auto">
-                              {MEMBER_ROLE_OPTIONS.map((option) => (
+                              {CHURCH_ROLE_OPTIONS.map((option) => (
                                 <SelectItem
                                   className="cursor-pointer"
                                   key={option.value}

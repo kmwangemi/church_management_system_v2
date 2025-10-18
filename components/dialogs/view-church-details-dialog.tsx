@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { IOrganizationWithMetadata } from '@/lib/auth';
+import type { ChurchListResponse } from '@/lib/types/church';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   Activity,
   Building2,
@@ -31,7 +32,7 @@ import {
 interface ViewChurchDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  church: IOrganizationWithMetadata | null;
+  church: ChurchListResponse | null;
 }
 
 export function ViewChurchDetailsDialog({
@@ -52,16 +53,17 @@ export function ViewChurchDetailsDialog({
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
-  const getPlanBadge = (plan: string) => {
-    switch (plan) {
-      case 'premium':
-        return <Badge className="bg-purple-100 text-purple-800">Premium</Badge>;
-      case 'standard':
-        return <Badge className="bg-blue-100 text-blue-800">Standard</Badge>;
-      case 'basic':
-        return <Badge className="bg-gray-100 text-gray-800">Basic</Badge>;
+  const getPlanBadge = (plan?: string) => {
+    const planLower = plan?.toLowerCase();
+    switch (planLower) {
+      case 'CUSTOM':
+        return <Badge className="bg-purple-100 text-purple-800">Custom</Badge>;
+      case 'CATHEDRAL':
+        return <Badge className="bg-blue-100 text-blue-800">Cathedral</Badge>;
+      case 'MINISTRY':
+        return <Badge className="bg-gray-100 text-gray-800">Ministry</Badge>;
       default:
-        return <Badge variant="secondary">{plan}</Badge>;
+        return <Badge variant="secondary">{plan || 'None'}</Badge>;
     }
   };
   return (
@@ -105,15 +107,19 @@ export function ViewChurchDetailsDialog({
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1">
-                    <h3 className="font-bold text-2xl">{church.name}</h3>
+                    <h3 className="font-bold text-2xl">
+                      {capitalizeFirstLetterOfEachWord(
+                        church.name || 'Not Provided'
+                      )}
+                    </h3>
                     <p className="text-muted-foreground">
-                      {church?.metadata?.denomination}
+                      {capitalizeFirstLetterOfEachWord(
+                        church.denomination || 'Not Provided'
+                      )}
                     </p>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(church?.metadata?.status || 'Pending')}
-                      {getPlanBadge(
-                        church?.metadata?.subscriptionPlan || 'Basic'
-                      )}
+                      {getStatusBadge(church?.status || 'Pending')}
+                      {getPlanBadge(church?.subscription?.plan || 'Basic')}
                     </div>
                   </div>
                 </div>
@@ -125,9 +131,9 @@ export function ViewChurchDetailsDialog({
                     >
                       Lead Pastor
                     </Label>
-                    <p className="font-semibold text-sm">
-                      {church?.metadata?.pastor}
-                    </p>
+                    {/* <p className="font-semibold text-sm">
+                      {church?.metadata?.pastor || 'Not Provided'}
+                    </p> */}
                   </div>
                   <div>
                     <Label
@@ -137,7 +143,7 @@ export function ViewChurchDetailsDialog({
                       Established
                     </Label>
                     <p className="text-sm">
-                      {church?.metadata?.establishedDate}
+                      {church?.establishedDate?.toLocaleString()}
                     </p>
                   </div>
                   <div>
@@ -149,9 +155,9 @@ export function ViewChurchDetailsDialog({
                     </Label>
                     <div className="flex items-center gap-2">
                       <Activity className="h-4 w-4 text-green-500" />
-                      <p className="text-sm">
+                      {/* <p className="text-sm">
                         {church?.metadata?.lastActivity}
-                      </p>
+                      </p> */}
                     </div>
                   </div>
                   <div>
@@ -163,7 +169,7 @@ export function ViewChurchDetailsDialog({
                     </Label>
                     <p className="flex items-center gap-1 text-sm">
                       <MapPin className="h-4 w-4" />
-                      {church?.metadata?.numberOfBranches}
+                      {church?.numberOfBranches}
                     </p>
                   </div>
                 </div>
@@ -176,9 +182,7 @@ export function ViewChurchDetailsDialog({
                   </Label>
                   <div className="mt-1 flex items-start gap-2">
                     <MapPin className="mt-0.5 h-4 w-4 text-gray-400" />
-                    <p className="text-sm">
-                      {church?.metadata?.address?.street}
-                    </p>
+                    <p className="text-sm">{church?.address?.street}</p>
                   </div>
                 </div>
               </CardContent>
@@ -202,9 +206,9 @@ export function ViewChurchDetailsDialog({
                       <Mail className="h-4 w-4 text-gray-400" />
                       <a
                         className="text-blue-600 text-sm hover:underline"
-                        href={`mailto:${church?.metadata?.email}`}
+                        href={`mailto:${church?.email}`}
                       >
-                        {church?.metadata?.email}
+                        {church?.email}
                       </a>
                     </div>
                   </div>
@@ -219,9 +223,9 @@ export function ViewChurchDetailsDialog({
                       <Phone className="h-4 w-4 text-gray-400" />
                       <a
                         className="text-blue-600 text-sm hover:underline"
-                        href={`tel:${church?.metadata?.phoneNumber}`}
+                        href={`tel:${church?.phoneNumber}`}
                       >
-                        {church?.metadata?.phoneNumber}
+                        {church?.phoneNumber}
                       </a>
                     </div>
                   </div>
@@ -236,11 +240,11 @@ export function ViewChurchDetailsDialog({
                       <Globe className="h-4 w-4 text-gray-400" />
                       <a
                         className="text-blue-600 text-sm hover:underline"
-                        href={church?.metadata?.website}
+                        href={church?.website}
                         rel="noopener noreferrer"
                         target="_blank"
                       >
-                        {church?.metadata?.website}
+                        {church?.website}
                       </a>
                     </div>
                   </div>
@@ -276,7 +280,7 @@ export function ViewChurchDetailsDialog({
                 </CardHeader>
                 <CardContent>
                   <div className="font-bold text-2xl">
-                    {(church?.metadata?.members || 0).toLocaleString()}
+                    {(church?._count?.members || 0).toLocaleString()}
                   </div>
                   <p className="text-muted-foreground text-xs">
                     Active congregation members
@@ -324,7 +328,7 @@ export function ViewChurchDetailsDialog({
                 </CardHeader>
                 <CardContent>
                   <div className="font-bold text-2xl">
-                    {church?.metadata?.numberOfBranches}
+                    {church?.numberOfBranches}
                   </div>
                   <p className="text-muted-foreground text-xs">
                     Active church locations
@@ -395,9 +399,7 @@ export function ViewChurchDetailsDialog({
                       Current Plan
                     </Label>
                     <div className="mt-1">
-                      {getPlanBadge(
-                        church?.metadata?.subscriptionPlan || 'Basic'
-                      )}
+                      {getPlanBadge(church?.subscription?.plan || 'Basic')}
                     </div>
                   </div>
                   <div>
@@ -442,9 +444,9 @@ export function ViewChurchDetailsDialog({
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2 text-sm">
                       <div className="h-2 w-2 rounded-full bg-green-500" />
-                      {church?.metadata?.subscriptionPlan === 'CATHEDRAL'
+                      {church?.subscription?.plan === 'CATHEDRAL'
                         ? 'Unlimited members'
-                        : church?.metadata?.subscriptionPlan === 'MINISTRY'
+                        : church?.subscription?.plan === 'MINISTRY'
                           ? 'Up to 500 members'
                           : 'Up to 100 members'}
                     </li>

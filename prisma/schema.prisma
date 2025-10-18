@@ -634,13 +634,9 @@ model User {
   occupation        String?
   maritalStatus     MaritalStatus?
   skills            String[]
-  // position within church
-  position          String?
   notes             String?
   // Global role (SUPER_ADMIN, ADMIN or USER)
   globalRole        GlobalRole         @default(USER)
-  // Roles within the organization (church)
-  organizationRoles OrganizationRole[] @default([])
   status            AccountStatus      @default(ACTIVE)
   lastLogin         DateTime?
   // Flags
@@ -694,8 +690,11 @@ model User {
   // departmentActivitiesOrganized DepartmentActivity[]
   teammembers       TeamMember[]
 
+  position          String?
+  organizationRoles String[]
+
   @@index([email])
-  @@index([globalRole, organizationRoles, status])
+  @@index([globalRole, status])
   @@index([isDeleted])
   @@map("user")
 }
@@ -817,6 +816,8 @@ model Member {
   userId         String
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   role           OrganizationRole @default(MEMBER)
+  // position within church
+  position       String?          @default("member")
   createdAt      DateTime         @default(now())
 
   // Team (Branch) assignment within church

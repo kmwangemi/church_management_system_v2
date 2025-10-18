@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { useAdminAddMemberToOrganization } from '@/lib/hooks/admin/use-organization-member-mutations';
-import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
+import { CHURCH_ROLE_OPTIONS, GENDER_OPTIONS } from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, MapPin, User } from 'lucide-react';
@@ -73,7 +73,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
   });
   const { reset, watch, setValue } = form;
   const watchRole = watch('role');
-  console.log('form errors', JSON.stringify(form.formState.errors));
   // Handle role changes and update isMember accordingly
   useEffect(() => {
     if (watchRole === 'MEMBER') {
@@ -321,7 +320,7 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {MEMBER_ROLE_OPTIONS.map((option) => (
+                        {CHURCH_ROLE_OPTIONS.map((option) => (
                           <SelectItem
                             className="cursor-pointer"
                             key={option.value}
