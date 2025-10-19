@@ -28,7 +28,7 @@ interface AddMemberParams {
   maritalStatus?: MaritalStatus;
   occupation?: string;
   // Organization Info
-  organizationRole: OrganizationRole; // OWNER, ADMIN, MEMBER, STAFF, VOLUNTEER, VISITOR
+  role: OrganizationRole; // OWNER, ADMIN, MEMBER, STAFF, VOLUNTEER, VISITOR
   position?: string;
   teamId?: string; // Branch/Team assignment
   // Address
@@ -328,6 +328,7 @@ async function createNewMemberWithDetails(
           userId: user.id,
           organizationId: params.organizationId,
           position: params.position,
+          role: params.role,
         },
         include: {
           user: true,
@@ -1296,33 +1297,15 @@ export async function getMemberByUserId(
 // GET ALL MEMBERS OF AN ORGANIZATION
 // ============================================
 
-interface OrganizationMemberSummary {
-  userId: string;
-  name: string;
-  email: string;
-  image: string | null;
-  phoneNumber: string | null;
-  position: string | null;
-  organizationRoles: string[];
-  status: string;
-  memberSince: Date;
-  teamName: string | null;
-  hasAddress: boolean;
-  hasEmergencyContact: boolean;
-}
-
 export interface GetMembersParams {
   organizationId: string;
   role?: OrganizationRole;
   status?: string;
-  teamId?: string;
   search?: string;
   page?: number;
   pageSize?: number;
   sortBy?: 'name' | 'email' | 'createdAt' | 'status';
   sortOrder?: 'asc' | 'desc';
-  hasAddress?: boolean;
-  hasEmergencyContact?: boolean;
   gender?: Gender;
   maritalStatus?: MaritalStatus;
   dateFrom?: string; // Filter by memberSince date
@@ -1330,31 +1313,29 @@ export interface GetMembersParams {
 }
 
 interface PaginatedResponse<T> {
-  data: T[];
+  members: T[];
   pagination: {
     total: number;
     page: number;
     pageSize: number;
     totalPages: number;
+    hasMore: boolean;
   };
 }
 
 export async function getOrganizationMembers(
   params: GetMembersParams
-): Promise<ServerActionResponse<PaginatedResponse<OrganizationMemberSummary>>> {
+): Promise<ServerActionResponse<PaginatedResponse<any>>> {
   try {
     const {
       organizationId,
       role,
       status,
-      teamId,
       search,
       page = 1,
       pageSize = 10,
       sortBy = 'createdAt',
       sortOrder = 'desc',
-      hasAddress,
-      hasEmergencyContact,
       gender,
       maritalStatus,
       dateFrom,
@@ -1390,9 +1371,7 @@ export async function getOrganizationMembers(
     const userConditions: any = {};
     // Role filter
     if (role) {
-      userConditions.organizationRoles = {
-        has: role,
-      };
+      userConditions.role = role;
     }
     // Status filter
     if (status) {
@@ -1405,34 +1384,6 @@ export async function getOrganizationMembers(
     // Marital status filter
     if (maritalStatus) {
       userConditions.maritalStatus = maritalStatus;
-    }
-    // Team filter
-    if (teamId) {
-      userConditions.teammembers = {
-        some: {
-          teamId,
-        },
-      };
-    }
-    // Address filter
-    if (hasAddress !== undefined) {
-      if (hasAddress) {
-        userConditions.address = {
-          isNot: null,
-        };
-      } else {
-        userConditions.address = null;
-      }
-    }
-    // Emergency contact filter
-    if (hasEmergencyContact !== undefined) {
-      if (hasEmergencyContact) {
-        userConditions.emergencyContact = {
-          isNot: null,
-        };
-      } else {
-        userConditions.emergencyContact = null;
-      }
     }
     // Search filter
     if (search) {
@@ -1492,11 +1443,10 @@ export async function getOrganizationMembers(
             email: true,
             image: true,
             phoneNumber: true,
-            position: true,
             occupation: true,
             gender: true,
             maritalStatus: true,
-            organizationRoles: true,
+            globalRole: true,
             status: true,
             createdAt: true,
             address: {
@@ -1528,37 +1478,22 @@ export async function getOrganizationMembers(
       skip,
       take: pageSize,
     });
-    // Step 8: Format response
-    const membersSummary: OrganizationMemberSummary[] = members.map((m) => ({
-      userId: m.user.id,
-      name: m.user.name,
-      email: m.user.email,
-      image: m.user.image,
-      phoneNumber: m.user.phoneNumber,
-      position: m.user.position,
-      organizationRoles: m.user.organizationRoles as string[],
-      status: m.user.status as string,
-      memberSince: m.createdAt,
-      teamName: m.user.teammembers[0]?.team.name || null,
-      hasAddress: !!m.user.address,
-      hasEmergencyContact: !!m.user.emergencyContact,
-    }));
     // Step 9: Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / pageSize);
     return {
       success: true,
       data: {
-        data: membersSummary,
+        members,
         pagination: {
           total: totalCount,
           page,
           pageSize,
           totalPages,
+          hasMore: page < totalPages,
         },
       },
     };
   } catch (error: any) {
-    console.error('Error fetching organization members:', error);
     return {
       success: false,
       error: error.message || 'Failed to fetch organization members',

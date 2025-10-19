@@ -130,7 +130,6 @@ export function ManageChurchUsersDialog({
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, role, status, branchId, sortBy, sortOrder]);
-
   // Add mutation hooks
   const { mutate: removeMember, isPending: isRemoving } = useRemoveMember(
     church?.id || ''
@@ -139,17 +138,17 @@ export function ManageChurchUsersDialog({
   //   useToggleMemberStatus(church?.id || '');
   // Fetch members
   const { data, isLoading, error, refetch } = useOrganizationMembers({
-    organizationId: church?.id,
+    organizationId: church?.id ?? '',
     page,
     pageSize,
     search: debouncedSearch,
-    role,
-    status,
-    teamId: branchId,
-    sortBy,
+    // role,
+    // status,
+    // teamId: branchId,
+    // sortBy,
     sortOrder,
   });
-  console.log('organization members --->', JSON.stringify(data));
+  // console.log('organization members --->', JSON.stringify(data));
   const handlePreviousPage = () => {
     setPage((prev) => Math.max(1, prev - 1));
   };
@@ -163,8 +162,8 @@ export function ManageChurchUsersDialog({
     const roleColors: Record<string, string> = {
       OWNER: 'bg-purple-100 text-purple-800',
       ADMIN: 'bg-red-100 text-red-800',
-      PASTOR: 'bg-green-100 text-green-800',
-      BISHOP: 'bg-orange-100 text-orange-800',
+      STAFF: 'bg-green-100 text-green-800',
+      VOLUNTEER: 'bg-orange-100 text-orange-800',
       MEMBER: 'bg-blue-100 text-blue-800',
       VISITOR: 'bg-yellow-100 text-yellow-800',
     };
@@ -337,8 +336,8 @@ export function ManageChurchUsersDialog({
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="OWNER">Owner</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="PASTOR">Pastor</SelectItem>
-                <SelectItem value="BISHOP">Bishop</SelectItem>
+                <SelectItem value="STAFF">Staff</SelectItem>
+                <SelectItem value="VOLUNTEER">Volunteer</SelectItem>
                 <SelectItem value="MEMBER">Member</SelectItem>
                 <SelectItem value="VISITOR">Visitor</SelectItem>
               </SelectContent>

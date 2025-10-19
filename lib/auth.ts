@@ -80,11 +80,6 @@ export const auth = betterAuth({
         defaultValue: 'USER',
         input: false,
       },
-      organizationRoles: {
-        type: 'string[]',
-        required: false,
-        input: false,
-      },
       status: {
         type: 'string',
         required: false,
