@@ -3,6 +3,7 @@
 
 import type { OrganizationPlan } from '@/generated/prisma';
 import { auth } from '@/lib/auth';
+import { getServerSession } from '@/lib/get-session';
 import prisma from '@/lib/prisma';
 import type { CreateChurchPayload } from '@/lib/validations/church';
 import { revalidatePath } from 'next/cache';
@@ -51,9 +52,7 @@ export async function createChurchOrganization(
   let organizationId: string | null = null;
   try {
     // Step 1: Verify user session and permissions
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -211,9 +210,7 @@ export async function updateChurchOrganization(
 ): Promise<ActionResult<{ organizationId: string }>> {
   try {
     // Step 1: Verify user session
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -317,9 +314,7 @@ export async function suspendChurchOrganization(
 ): Promise<ActionResult> {
   try {
     // Step 1: Verify user session and permissions
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -381,9 +376,7 @@ export async function activateChurchOrganization(
 ): Promise<ActionResult> {
   try {
     // Step 1: Verify user session and permissions
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -468,9 +461,7 @@ export async function deleteChurchOrganization(
 ): Promise<ActionResult> {
   try {
     // Step 1: Verify user session and permissions
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -526,9 +517,7 @@ export async function getChurchStatistics(): Promise<
   }>
 > {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -598,9 +587,7 @@ export async function getChurchDetails(organizationId: string): Promise<
 > {
   try {
     // Step 1: Verify user session
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,
@@ -741,9 +728,7 @@ export async function getAllChurchesSummary(): Promise<
 > {
   try {
     // Step 1: Verify user session
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getServerSession();
     if (!session?.user) {
       return {
         success: false,

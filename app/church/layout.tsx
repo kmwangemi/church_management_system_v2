@@ -17,14 +17,14 @@ export default async function DashboardLayout({
     redirect('/auth/login');
   }
   // organizationRoles may be string[] | null | undefined — ensure ADMIN is present
-  if (
-    !(
-      Array.isArray(user.organizationRoles) &&
-      user.organizationRoles.includes('ADMIN')
-    )
-  ) {
-    redirect('/auth/login');
-  }
+  // if (
+  //   !(
+  //     Array.isArray(user.organizationRoles) &&
+  //     user.organizationRoles.includes('ADMIN')
+  //   )
+  // ) {
+  //   redirect('/auth/login');
+  // }
   return (
     <SessionLoader
       fallback={

@@ -49,12 +49,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  activateChurchOrganization,
-  deleteChurchOrganization,
-  getAllChurchesSummary,
-  suspendChurchOrganization,
-  updateChurchOrganization,
-} from '@/lib/actions/superadmin/church-management';
+  useAllChurches,
+  useChurchActions,
+  useUpdateChurch,
+} from '@/lib/hooks/superadmin/use-church-management';
 import type { ChurchListResponse } from '@/lib/types/church';
 import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
@@ -70,11 +68,12 @@ import {
   MoreHorizontal,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   Users,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function ChurchesPage() {
@@ -85,53 +84,23 @@ export default function ChurchesPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
-  const [churches, setChurches] = useState<ChurchListResponse[]>([]);
-  const [churchStats, setChurchStats] = useState<{
-    totalChurches: number;
-    totalMembers: number;
-    totalBranches: number;
-    activeSubscriptions: number;
-  }>({
-    totalChurches: 0,
-    totalMembers: 0,
-    totalBranches: 0,
-    activeSubscriptions: 0,
-  });
-  const [error, setError] = useState<Error | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedChurch, setSelectedChurch] =
     useState<ChurchListResponse | null>(null);
-  const [isPending, startTransition] = useTransition();
-  useEffect(() => {
-    const loadChurches = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const result = await getAllChurchesSummary();
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to load churche');
-        }
-        setChurches(result?.data?.churches || []);
-        setChurchStats(
-          result?.data?.stats || {
-            totalChurches: 0,
-            totalMembers: 0,
-            totalBranches: 0,
-            activeSubscriptions: 0,
-          }
-        );
-      } catch (err: any) {
-        setError(err.message || 'Failed to load churches');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadChurches();
-  }, []);
+  // Fetch all churches
+  const { data: churches, isLoading, error, refetch } = useAllChurches();
+  const {
+    mutate: updateChurch,
+  } = useUpdateChurch();
+  // Church actions
+  const {
+    suspend,
+    activate,
+    delete: deleteChurch,
+  } = useChurchActions();
   // Filter churches
   const filteredChurches = useMemo(() => {
     if (!churches) return [];
-    return churches.filter((church) => {
+    return churches?.churches.filter((church) => {
       try {
         const searchLower = searchTerm.toLowerCase();
         const matchesSearch =
@@ -193,85 +162,43 @@ export default function ChurchesPage() {
     setManageUsersDialogOpen(true);
   };
   const handleSaveChurch = (updatedChurch: ChurchListResponse) => {
-    startTransition(async () => {
-      try {
-        const result = await updateChurchOrganization({
-          organizationId: updatedChurch.id,
-          name: updatedChurch.name,
-          slug: updatedChurch.slug,
-          logo: updatedChurch.logo || undefined,
-          denomination: updatedChurch.denomination,
-          description: updatedChurch.description,
-          email: updatedChurch.email,
-          phoneNumber: updatedChurch.phoneNumber,
-          website: updatedChurch.website,
-          churchSize: updatedChurch.churchSize,
-          numberOfBranches: updatedChurch.numberOfBranches,
-          status: updatedChurch.status,
-          address: updatedChurch.address,
-        });
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to update church');
-        }
-        toast.success('Church updated successfully');
-        setEditDialogOpen(false);
-      } catch (error: any) {
-        console.error('Error updating church:', error);
-        toast.error(error.message || 'Failed to update church');
-      }
+    updateChurch({
+      organizationId: updatedChurch.id,
+      name: updatedChurch.name,
+      slug: updatedChurch.slug,
+      logo: updatedChurch.logo || undefined,
+      denomination: updatedChurch.denomination,
+      description: updatedChurch.description,
+      email: updatedChurch.email,
+      phoneNumber: updatedChurch.phoneNumber,
+      website: updatedChurch.website,
+      churchSize: updatedChurch.churchSize,
+      numberOfBranches: updatedChurch.numberOfBranches,
+      status: updatedChurch.status,
+      address: updatedChurch.address,
     });
+    toast.success('Church updated successfully');
+    setEditDialogOpen(false);
   };
   const handleSuspendChurch = (church: ChurchListResponse) => {
-    if (!confirm('Are you sure you want to suspend this church?')) {
-      return;
+    if (confirm('Are you sure you want to suspend this church?')) {
+      suspend.mutate(church.id);
+      toast.success('Church suspended successfully');
     }
-    startTransition(async () => {
-      try {
-        const result = await suspendChurchOrganization(church.id);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to suspend church');
-        }
-        toast.success('Church suspended successfully');
-      } catch (error: any) {
-        console.error('Error suspending church:', error);
-        toast.error(error.message || 'Failed to suspend church');
-      }
-    });
   };
   const handleActivateChurch = (church: ChurchListResponse) => {
-    startTransition(async () => {
-      try {
-        const result = await activateChurchOrganization(church.id);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to activate church');
-        }
-        toast.success('Church activated successfully');
-      } catch (error: any) {
-        console.error('Error activating church:', error);
-        toast.error(error.message || 'Failed to activate church');
-      }
-    });
+    activate.mutate(church.id);
+    toast.success('Church activated successfully');
   };
   const handleDeleteChurch = (church: ChurchListResponse) => {
     if (
-      !confirm(
+      confirm(
         'Are you sure you want to delete this church? This action cannot be undone.'
       )
     ) {
-      return;
+      deleteChurch.mutate(church.id);
+      toast.success('Church deleted successfully');
     }
-    startTransition(async () => {
-      try {
-        const result = await deleteChurchOrganization(church.id);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to delete church');
-        }
-        toast.success('Church deleted successfully');
-      } catch (error: any) {
-        console.error('Error deleting church:', error);
-        toast.error(error.message || 'Failed to delete church');
-      }
-    });
   };
   // Loading State
   if (isLoading) {
@@ -324,17 +251,17 @@ export default function ChurchesPage() {
                 ? error.message
                 : 'Failed to load churches. Please try again.'}
             </span>
-            {/* <Button onClick={() => refetch()} size="sm" variant="outline">
+            <Button onClick={() => refetch()} size="sm" variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
-            </Button> */}
+            </Button>
           </AlertDescription>
         </Alert>
       </div>
     );
   }
   // Empty State
-  if (!churches || churches.length === 0) {
+  if (!churches || churches?.churches.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -421,7 +348,7 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              {churchStats.totalChurches}
+              {churches?.stats?.totalChurches}
             </div>
             <p className="text-muted-foreground text-xs">
               Active organizations
@@ -435,7 +362,7 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              {(churchStats.totalMembers || 0).toLocaleString()}
+              {(churches?.stats?.totalMembers || 0).toLocaleString()}
             </div>
             <p className="text-muted-foreground text-xs">Across all churches</p>
           </CardContent>
@@ -449,7 +376,7 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              {churchStats.totalBranches}
+              {churches?.stats?.totalBranches}
             </div>
             <p className="text-muted-foreground text-xs">Branch locations</p>
           </CardContent>
@@ -463,7 +390,7 @@ export default function ChurchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              ${(churchStats?.totalRevenue || 0).toLocaleString() || 0}
+              ${(churches?.stats?.totalRevenue || 0).toLocaleString() || 0}
             </div>
             <p className="text-muted-foreground text-xs">Total revenue</p>
           </CardContent>
@@ -545,7 +472,7 @@ export default function ChurchesPage() {
                               <AvatarFallback>
                                 {church.name
                                   .split(' ')
-                                  .map((n) => n[0])
+                                  .map((n: string) => n[0])
                                   .join('')
                                   .slice(0, 2)
                                   .toUpperCase()}
@@ -592,7 +519,9 @@ export default function ChurchesPage() {
                         <TableCell>
                           <div className="flex items-center">
                             <Users className="mr-1 h-4 w-4 text-muted-foreground" />
-                            {(churchStats?.totalMembers || 0).toLocaleString()}
+                            {(
+                              churches?.stats?.totalMembers || 0
+                            ).toLocaleString()}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -610,7 +539,7 @@ export default function ChurchesPage() {
                             <DropdownMenuTrigger asChild>
                               <Button
                                 className="h-8 w-8 p-0"
-                                disabled={isPending}
+                                disabled={isLoading}
                                 variant="ghost"
                               >
                                 <MoreHorizontal className="h-4 w-4" />
