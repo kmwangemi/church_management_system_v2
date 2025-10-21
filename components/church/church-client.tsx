@@ -154,7 +154,7 @@ export function ChurchClient({
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="font-medium text-sm leading-none">
-                      {capitalizeFirstLetter(user?.role || 'Admin')}
+                      {capitalizeFirstLetter(user?.globalRole || 'Admin')}
                     </p>
                     <p className="text-muted-foreground text-xs leading-none">
                       {user.email}

@@ -15,7 +15,11 @@ import bcrypt from 'bcryptjs';
 import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { createAuthMiddleware, organization } from 'better-auth/plugins';
+import {
+  createAuthMiddleware,
+  organization,
+  customSession,
+} from 'better-auth/plugins';
 
 export const auth = betterAuth({
   appName: 'Church Management System',
@@ -45,77 +49,93 @@ export const auth = betterAuth({
       phoneNumber: {
         type: 'string',
         required: false,
+        returned: true,
       },
       dateOfBirth: {
         type: 'date',
         required: false,
+        returned: true,
       },
       gender: {
         type: 'string',
         required: false,
+        returned: true,
       },
       occupation: {
         type: 'string',
         required: false,
+        returned: true,
       },
       maritalStatus: {
         type: 'string',
         required: false,
+        returned: true,
       },
       skills: {
         type: 'string[]',
         required: false,
+        returned: true,
       },
       notes: {
         type: 'string',
         required: false,
+        returned: true,
       },
       position: {
         type: 'string',
         required: false,
+        returned: true,
       },
       globalRole: {
         type: 'string',
         required: false,
         defaultValue: 'USER',
         input: false,
+        returned: true,
       },
       status: {
         type: 'string',
         required: false,
         defaultValue: 'ACTIVE',
         input: false,
+        returned: true,
       },
       lastLogin: {
         type: 'date',
         required: false,
         input: false,
+        returned: true,
       },
       isPasswordUpdated: {
         type: 'boolean',
         required: false,
         defaultValue: false,
+        returned: true,
       },
       agreeToTerms: {
         type: 'boolean',
         required: false,
         defaultValue: true,
+        returned: true,
       },
       isDeleted: {
         type: 'boolean',
         required: false,
         defaultValue: false,
         input: false,
+        returned: true,
       },
       createdBy: {
         type: 'string',
         required: false,
         input: false,
+        returned: true,
       },
       updatedBy: {
         type: 'string',
         required: false,
         input: false,
+        returned: true,
       },
     },
   },
@@ -357,7 +377,7 @@ export const auth = betterAuth({
           const membership = await prisma.member.findFirst({
             where: { userId: session.userId },
             orderBy: { createdAt: 'asc' },
-            select: { organizationId: true },
+            select: { organizationId: true, role: true },
           });
           // Set active organization if found
           if (membership?.organizationId) {
@@ -365,6 +385,7 @@ export const auth = betterAuth({
               data: {
                 ...session,
                 activeOrganizationId: membership.organizationId,
+                activeMemberRole: membership.role,
               },
             };
           }
@@ -374,6 +395,34 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    customSession(async ({ session, user }) => {
+      // Get user's role in active organization
+      if (session.activeOrganizationId) {
+        const member = await prisma.member.findUnique({
+          where: {
+            organizationId_userId: {
+              organizationId: session.activeOrganizationId,
+              userId: user.id,
+            },
+          },
+          select: { role: true },
+        });
+        return {
+          session, // ← Add this
+          user,
+          memberRole: member?.role || null,
+          memberRoles: member?.role
+            ? member.role.split(',').map((r) => r.trim())
+            : [],
+        };
+      }
+      return {
+        session, // ← Add this
+        user,
+        memberRole: null,
+        memberRoles: [],
+      };
+    }),
     organization({
       schema: {
         organization: {

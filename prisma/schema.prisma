@@ -690,9 +690,6 @@ model User {
   // departmentActivitiesOrganized DepartmentActivity[]
   teammembers       TeamMember[]
 
-  position          String?
-  organizationRoles String[]
-
   @@index([email])
   @@index([globalRole, status])
   @@index([isDeleted])
@@ -710,8 +707,10 @@ model Session {
   userId               String
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Better Auth uses this to track active organization (church)
-  activeOrganizationId String?
-  activeTeamId         String?
+  activeOrganizationId String? // Current active church
+  activeTeamId         String? // Current active branch
+  // Add this to track member role in session
+  activeMemberRole     String? // Current member role in active org
 
   @@map("session")
 }
