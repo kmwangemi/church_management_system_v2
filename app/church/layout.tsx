@@ -12,9 +12,6 @@ export default async function DashboardLayout({
 }) {
   const session = await getServerSession();
   const user = session?.user;
-
-  const userMaritalstatus = session?.user?.maritalStatus;
-  console.log('userMaritalstatus--->', userMaritalstatus);
   // const user = session?.memberRole;
   // Redirect if no user
   if (!user) {
