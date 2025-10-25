@@ -7,6 +7,7 @@ import type {
 } from '@/generated/prisma';
 import { getServerSession } from '@/lib/get-session';
 import prisma from '@/lib/prisma';
+import type { Member } from '@/lib/types/member';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 
@@ -28,7 +29,7 @@ interface AdminAddMemberParams {
   maritalStatus?: MaritalStatus;
   occupation?: string;
   // Organization Info
-  role: OrganizationRole; // OWNER, ADMIN, MEMBER, STAFF, VOLUNTEER, VISITOR
+  organizationRoles: OrganizationRole[]; // OWNER, ADMIN, MEMBER, STAFF, VOLUNTEER, VISITOR
   position?: string;
   teamId?: string; // Branch/Team assignment
   // Address
@@ -82,11 +83,154 @@ interface AdminAddMemberParams {
   createUserSubscription?: boolean;
 }
 
+interface AdminUpdateMemberParams {
+  organizationId: string;
+  userId: string;
+  // Basic Info
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  // Personal Info
+  dateOfBirth?: string;
+  gender?: Gender;
+  maritalStatus?: MaritalStatus;
+  occupation?: string;
+  // Organization Info
+  organizationRoles?: OrganizationRole[];
+  position?: string;
+  teamId?: string | null; // null to remove from team
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  // Address
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  // Emergency Contact
+  emergencyContact?: {
+    fullName?: string;
+    phoneNumber?: string;
+    relationship?: string;
+    email?: string;
+    address?: string;
+  };
+  // Role-Specific Updates
+  memberDetails?: {
+    membershipDate?: string;
+    membershipStatus?: 'ACTIVE' | 'INACTIVE' | 'NEW' | 'TRANSFERRED';
+    baptismDate?: string;
+    departmentIds?: string[];
+    groupIds?: string[];
+  };
+  pastorDetails?: {
+    ordinationDate?: string;
+    qualifications?: string[];
+    specializations?: string[];
+    biography?: string;
+  };
+  staffDetails?: {
+    jobTitle?: string;
+    department?: string;
+    startDate?: string;
+    endDate?: string;
+    salary?: number;
+    employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'CONTRACT';
+    isActive?: boolean;
+  };
+  volunteerDetails?: {
+    volunteerStatus?: 'ACTIVE' | 'INACTIVE' | 'ON_HOLD' | 'SUSPENDED';
+    departments?: string[];
+    hoursContributed?: number;
+    availableDays?: string[];
+    preferredTimes?: string[];
+  };
+  visitorDetails?: {
+    howDidYouHear?: string;
+    followUpStatus?: 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'DECLINED';
+    followUpNotes?: string;
+    interestedInMembership?: boolean;
+  };
+  adminDetails?: {
+    accessLevel?: 'NATIONAL' | 'REGIONAL' | 'TEAM';
+    assignedTeams?: string[];
+  };
+}
+
+interface AdminMemberFullDetails {
+  user: any;
+  address: any;
+  emergencyContact: any;
+  memberDetails: any;
+  pastorDetails: any;
+  staffDetails: any;
+  volunteerDetails: any;
+  visitorDetails: any;
+  adminDetails: any;
+  organizations: any[];
+  teams: any[];
+  subscriptions: any[];
+}
+
 interface AdminServerActionResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+}
+
+export interface AdminGetMembersParams {
+  organizationId: string;
+  organizationRoles?: OrganizationRole;
+  status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'name' | 'email' | 'createdAt' | 'status';
+  sortOrder?: 'asc' | 'desc';
+  gender?: Gender;
+  maritalStatus?: MaritalStatus;
+  dateFrom?: string; // Filter by memberSince date
+  dateTo?: string;
+}
+
+interface AdminPaginatedResponse<T> {
+  members: T[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+interface AdminMemberStatistics {
+  totalMembers: number;
+  activeMembers: number;
+  inactiveMembers: number;
+  membersByRole?: number;
+  byRole: {
+    role: string;
+    count: number;
+  }[];
+  byTeam: {
+    teamId: string;
+    teamName: string;
+    count: number;
+  }[];
+  recentJoins: {
+    userId: string;
+    name: string;
+    joinedAt: Date;
+  }[];
+  missingInfo: {
+    missingAddress: number;
+    missingEmergencyContact: number;
+    missingPhone: number;
+  };
 }
 
 // ============================================
@@ -109,8 +253,8 @@ export async function adminAddMemberToOrganization(
       where: {
         organizationId: params.organizationId,
         userId: session.user.id,
-        role: {
-          in: ['OWNER', 'ADMIN'],
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
         },
       },
     });
@@ -146,7 +290,10 @@ export async function adminAddMemberToOrganization(
       );
     }
     // Step 4: Create new user with all details
-    const result = await adminCreateNewMemberWithDetails(params, session.user.id);
+    const result = await adminCreateNewMemberWithDetails(
+      params,
+      session.user.id
+    );
     if (!result.success) {
       throw new Error(result.error || 'Failed to create member');
     }
@@ -327,7 +474,7 @@ async function adminCreateNewMemberWithDetails(
           userId: user.id,
           organizationId: params.organizationId,
           position: params.position,
-          role: params.role,
+          organizationRoles: params.organizationRoles,
         },
         include: {
           user: true,
@@ -415,10 +562,10 @@ async function adminCreateRoleSpecificDetails(
   userId: string,
   params: AdminAddMemberParams
 ): Promise<void> {
-  const { role } = params;
+  const { organizationRoles, position } = params;
   try {
     // Create MemberDetails for MEMBER role
-    if (role === 'MEMBER' && params.memberDetails) {
+    if (organizationRoles?.includes('MEMBER') && params.memberDetails) {
       await tx.memberDetails.create({
         data: {
           userId,
@@ -436,7 +583,7 @@ async function adminCreateRoleSpecificDetails(
       });
     }
     // Create PastorDetails for pastors
-    if (role === 'STAFF' && params.pastorDetails) {
+    if (position === 'pastor' && params.pastorDetails) {
       await tx.pastorDetails.create({
         data: {
           userId,
@@ -451,7 +598,7 @@ async function adminCreateRoleSpecificDetails(
       });
     }
     // Create StaffDetails for STAFF role
-    if (role === 'STAFF' && params.staffDetails) {
+    if (organizationRoles?.includes('STAFF') && params.staffDetails) {
       await tx.staffDetails.create({
         data: {
           userId,
@@ -466,7 +613,7 @@ async function adminCreateRoleSpecificDetails(
       });
     }
     // Create VolunteerDetails for VOLUNTEER role
-    if (role === 'VOLUNTEER' && params.volunteerDetails) {
+    if (organizationRoles?.includes('VOLUNTEER') && params.volunteerDetails) {
       const volunteerDetails = await tx.volunteerDetails.create({
         data: {
           userId,
@@ -492,7 +639,7 @@ async function adminCreateRoleSpecificDetails(
       }
     }
     // Create VisitorDetails for VISITOR role
-    if (role === 'VISITOR' && params.visitorDetails) {
+    if (organizationRoles?.includes('VISITOR') && params.visitorDetails) {
       await tx.visitorDetails.create({
         data: {
           userId,
@@ -508,7 +655,7 @@ async function adminCreateRoleSpecificDetails(
       });
     }
     // Create AdminDetails for ADMIN role
-    if (role === 'ADMIN') {
+    if (organizationRoles?.includes('ADMIN')) {
       await tx.adminDetails.create({
         data: {
           userId,
@@ -528,82 +675,6 @@ async function adminCreateRoleSpecificDetails(
 // UPDATE MEMBER DETAILS (COMPREHENSIVE)
 // ============================================
 
-interface AdminUpdateMemberParams {
-  organizationId: string;
-  userId: string;
-  // Basic Info
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phoneNumber?: string;
-  // Personal Info
-  dateOfBirth?: string;
-  gender?: Gender;
-  maritalStatus?: MaritalStatus;
-  occupation?: string;
-  // Organization Info
-  organizationRole?: OrganizationRole;
-  position?: string;
-  teamId?: string | null; // null to remove from team
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  // Address
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-  // Emergency Contact
-  emergencyContact?: {
-    fullName?: string;
-    phoneNumber?: string;
-    relationship?: string;
-    email?: string;
-    address?: string;
-  };
-  // Role-Specific Updates
-  memberDetails?: {
-    membershipDate?: string;
-    membershipStatus?: 'ACTIVE' | 'INACTIVE' | 'NEW' | 'TRANSFERRED';
-    baptismDate?: string;
-    departmentIds?: string[];
-    groupIds?: string[];
-  };
-  pastorDetails?: {
-    ordinationDate?: string;
-    qualifications?: string[];
-    specializations?: string[];
-    biography?: string;
-  };
-  staffDetails?: {
-    jobTitle?: string;
-    department?: string;
-    startDate?: string;
-    endDate?: string;
-    salary?: number;
-    employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'CONTRACT';
-    isActive?: boolean;
-  };
-  volunteerDetails?: {
-    volunteerStatus?: 'ACTIVE' | 'INACTIVE' | 'ON_HOLD' | 'SUSPENDED';
-    departments?: string[];
-    hoursContributed?: number;
-    availableDays?: string[];
-    preferredTimes?: string[];
-  };
-  visitorDetails?: {
-    howDidYouHear?: string;
-    followUpStatus?: 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'DECLINED';
-    followUpNotes?: string;
-    interestedInMembership?: boolean;
-  };
-  adminDetails?: {
-    accessLevel?: 'NATIONAL' | 'REGIONAL' | 'TEAM';
-    assignedTeams?: string[];
-  };
-}
-
 export async function adminUpdateMemberDetails(
   params: AdminUpdateMemberParams
 ): Promise<AdminServerActionResponse> {
@@ -618,8 +689,8 @@ export async function adminUpdateMemberDetails(
       where: {
         organizationId: params.organizationId,
         userId: session.user.id,
-        role: {
-          in: ['OWNER', 'ADMIN'],
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
         },
       },
     });
@@ -657,8 +728,8 @@ export async function adminUpdateMemberDetails(
       if (params.position !== undefined)
         userUpdateData.position = params.position;
       if (params.status) userUpdateData.status = params.status;
-      if (params.organizationRole)
-        userUpdateData.organizationRoles = [params.organizationRole];
+      if (params.organizationRoles)
+        userUpdateData.organizationRoles = [params.organizationRoles];
       userUpdateData.updatedBy = session.user.id;
       if (Object.keys(userUpdateData).length > 0) {
         await tx.user.update({
@@ -766,9 +837,7 @@ export async function adminUpdateMemberDetails(
         },
       });
     });
-    revalidatePath(
-      `/church/users/${params.userId}`
-    );
+    revalidatePath(`/church/users/${params.userId}`);
     return {
       success: true,
       data: result,
@@ -1066,21 +1135,6 @@ async function adminUpdateRoleSpecificDetails(
 // ADMIN GET MEMBER DETAILS BY USER ID
 // ============================================
 
-interface AdminMemberFullDetails {
-  user: any;
-  address: any;
-  emergencyContact: any;
-  memberDetails: any;
-  pastorDetails: any;
-  staffDetails: any;
-  volunteerDetails: any;
-  visitorDetails: any;
-  adminDetails: any;
-  organizations: any[];
-  teams: any[];
-  subscriptions: any[];
-}
-
 export async function adminGetMemberByUserId(
   userId: string,
   organizationId?: string
@@ -1091,27 +1145,17 @@ export async function adminGetMemberByUserId(
     if (!session?.user) {
       return { success: false, error: 'Unauthorized' };
     }
-    // Step 2: Check permissions
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { globalRole: true },
-    });
-    // Check if user is viewing their own profile
-    const isSelf = session.user.id === userId;
-    // Check if user is admin/owner of organization
-    let hasOrgAccess = false;
-    if (organizationId) {
-      const member = await prisma.member.findFirst({
-        where: {
-          organizationId,
-          userId: session.user.id,
+    // Check if user has permission to update members
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
         },
-      });
-      hasOrgAccess = !!member;
-    }
-    const canView =
-      isSelf || currentUser?.globalRole === 'SUPER_ADMIN' || hasOrgAccess;
-    if (!canView) {
+      },
+    });
+    if (!hasPermission) {
       return {
         success: false,
         error: 'You do not have permission to view this member',
@@ -1293,39 +1337,13 @@ export async function adminGetMemberByUserId(
 // ADMIN GET ALL MEMBERS OF AN ORGANIZATION
 // ============================================
 
-export interface AdminGetMembersParams {
-  organizationId: string;
-  role?: OrganizationRole;
-  status?: string;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-  sortBy?: 'name' | 'email' | 'createdAt' | 'status';
-  sortOrder?: 'asc' | 'desc';
-  gender?: Gender;
-  maritalStatus?: MaritalStatus;
-  dateFrom?: string; // Filter by memberSince date
-  dateTo?: string;
-}
-
-interface AdminPaginatedResponse<T> {
-  members: T[];
-  pagination: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
-}
-
 export async function adminGetOrganizationMembers(
   params: AdminGetMembersParams
-): Promise<AdminServerActionResponse<AdminPaginatedResponse<any>>> {
+): Promise<AdminServerActionResponse<AdminPaginatedResponse<Member>>> {
   try {
     const {
       organizationId,
-      role,
+      organizationRoles,
       status,
       search,
       page = 1,
@@ -1340,23 +1358,22 @@ export async function adminGetOrganizationMembers(
     // Step 1: Verify session
     const session = await getServerSession();
     if (!session?.user) {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
-    // Step 2: Check permissions
-    const member = await prisma.member.findFirst({
+    // Check if user has permission to update members
+    const hasPermission = await prisma.member.findFirst({
       where: {
         organizationId,
         userId: session.user.id,
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
+        },
       },
     });
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { globalRole: true },
-    });
-    if (!member && currentUser?.globalRole !== 'SUPER_ADMIN') {
+    if (!hasPermission) {
       return {
         success: false,
-        error: 'You do not have access to this organization',
+        error: 'You do not have permission to access this organization',
       };
     }
     // Step 3: Build query conditions
@@ -1366,8 +1383,10 @@ export async function adminGetOrganizationMembers(
     // User-level filters
     const userConditions: any = {};
     // Role filter
-    if (role) {
-      userConditions.role = role;
+    if (organizationRoles) {
+      userConditions.role = {
+        has: organizationRoles, // ✅ checks if the array contains that role
+      };
     }
     // Status filter
     if (status) {
@@ -1426,11 +1445,33 @@ export async function adminGetOrganizationMembers(
     const skip = (page - 1) * pageSize;
     // Step 6: Fetch total count
     const totalCount = await prisma.member.count({
-      where: whereConditions,
+      // where: whereConditions,
+      where: {
+        ...whereConditions,
+        // role: {
+        //   not: 'OWNER', // or MemberRole.OWNER if using enum
+        // },
+        organizationRoles: {
+          not: {
+            has: 'OWNER', // ✅ exclude if array contains 'OWNER'
+          },
+        },
+      },
     });
     // Step 7: Fetch members with related data
     const members = await prisma.member.findMany({
-      where: whereConditions,
+      // where: whereConditions,
+      where: {
+        ...whereConditions,
+        // role: {
+        //   not: 'OWNER', // or MemberRole.OWNER if using enum
+        // },
+        organizationRoles: {
+          not: {
+            has: 'OWNER', // ✅ exclude if array contains 'OWNER'
+          },
+        },
+      },
       include: {
         user: {
           select: {
@@ -1465,7 +1506,7 @@ export async function adminGetOrganizationMembers(
                   },
                 },
               },
-              take: 1,
+              // take: 1,
             },
           },
         },
@@ -1497,56 +1538,30 @@ export async function adminGetOrganizationMembers(
   }
 }
 
-interface AdminMemberStatistics {
-  totalMembers: number;
-  activeMembers: number;
-  inactiveMembers: number;
-  byRole: {
-    role: string;
-    count: number;
-  }[];
-  byTeam: {
-    teamId: string;
-    teamName: string;
-    count: number;
-  }[];
-  recentJoins: {
-    userId: string;
-    name: string;
-    joinedAt: Date;
-  }[];
-  missingInfo: {
-    missingAddress: number;
-    missingEmergencyContact: number;
-    missingPhone: number;
-  };
-}
-
 export async function adminGetMemberStatistics(
   organizationId: string
 ): Promise<AdminServerActionResponse<AdminMemberStatistics>> {
   try {
-    // Verify session
+    // Step 1: Verify session
     const session = await getServerSession();
     if (!session?.user) {
       return { success: false, error: 'Unauthorized' };
     }
-    // Check permissions
-    const member = await prisma.member.findFirst({
+    // Check if user has permission to update members
+    const hasPermission = await prisma.member.findFirst({
       where: {
         organizationId,
         userId: session.user.id,
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
+        },
       },
     });
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { globalRole: true },
-    });
-    const canView = member || currentUser?.globalRole === 'SUPER_ADMIN';
-    if (!canView) {
+    if (!hasPermission) {
       return {
         success: false,
-        error: 'You do not have access to this organization',
+        error:
+          'You do not have permission to access member statistics from this organization',
       };
     }
     // Fetch statistics
@@ -1634,6 +1649,7 @@ export async function adminGetMemberStatistics(
       totalMembers: allMembers,
       activeMembers,
       inactiveMembers,
+      // membersByRole,
       byRole: Object.entries(roleCount).map(([role, count]) => ({
         role,
         count,
@@ -1676,39 +1692,26 @@ export async function adminRemoveMemberFromOrganization(
   userId: string
 ): Promise<AdminServerActionResponse> {
   try {
-    // Verify session
+    // Step 1: Verify session
     const session = await getServerSession();
     if (!session?.user) {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
-    // Check permission
+    // Check if user has permission to update members
     const hasPermission = await prisma.member.findFirst({
       where: {
         organizationId,
         userId: session.user.id,
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
+        },
       },
     });
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { globalRole: true },
-    });
-    const canRemove =
-      currentUser?.globalRole === 'SUPER_ADMIN';
-    if (!(hasPermission || canRemove)) {
+    if (!hasPermission) {
       return {
         success: false,
-        error: 'You do not have permission to remove members',
-      };
-    }
-    // Don't allow removing OWNER
-    const memberToRemove = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { globalRole: true },
-    });
-    if (memberToRemove?.globalRole?.includes('OWNER')) {
-      return {
-        success: false,
-        error: 'Cannot remove organization owner',
+        error:
+          'You do not have permission to remove members from this organization',
       };
     }
     // Remove member
@@ -1749,32 +1752,42 @@ export async function adminUpdateMemberRole(
   newRole: OrganizationRole
 ): Promise<AdminServerActionResponse> {
   try {
-    // Verify session
+    // Step 1: Verify session
     const session = await getServerSession();
-      if (!session?.user) {
-        throw new Error('Unauthorized');
-      }
-    // Check permission
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { globalRole: true },
-    });
-    const canUpdate =
-      currentUser?.globalRole === 'SUPER_ADMIN';
-    if (!canUpdate) {
-      return {
-        success: false,
-        error: 'Only owners can change member roles',
-      };
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
     }
-    // Update role
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        organizationRoles: [newRole],
-        updatedBy: session.user.id,
+    // Check if user has permission to update members
+    const hasPermission = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId: session.user.id,
+        organizationRoles: {
+          hasSome: ['OWNER', 'ADMIN'],
+        },
       },
     });
+    if (!hasPermission) {
+      return {
+        success: false,
+        error:
+          'You do not have permission to update members in this organization',
+      };
+    }
+    const member = await prisma.member.findFirst({
+      where: {
+        organizationId,
+        userId,
+      },
+    });
+    if (member) {
+      await prisma.member.update({
+        where: { id: member.id },
+        data: {
+          organizationRoles: [newRole],
+        },
+      });
+    }
     revalidatePath(`/church/users/${userId}`);
     return {
       success: true,

@@ -45,8 +45,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 import {
   useAdminOrganizationMembers,
-  useAdminRemoveMemberFromOrganization,
-} from '@/lib/hooks/admin/use-organization-member-mutations';
+  useAdminRemoveMember,
+} from '@/lib/hooks/admin/use-organization-member-mutation';
+import type { Member } from '@/lib/types/member';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
@@ -101,12 +102,13 @@ export default function UsersPage() {
     // sortBy: 'name',
     // sortOrder: 'asc',
   });
+  console.log('users--->', JSON.stringify(users));
   const {
     mutateAsync: deleteUserMutation,
     isPending: isPendingDeleteUser,
     isError: isErrorDeleteUser,
     error: errorDeleteUser,
-  } = useAdminRemoveMemberFromOrganization(organizationId);
+  } = useAdminRemoveMember(organizationId);
   // Filter users based on selected tab and status
   const filteredUsers = useMemo(() => {
     if (!users?.members) return [];
@@ -129,7 +131,7 @@ export default function UsersPage() {
           );
           break;
         case 'staff':
-          filtered = filtered.filter((user) => user.user.isStaff === true);
+          filtered = filtered.filter((user) => user.role === 'STAFF');
           break;
         default:
           break;
@@ -151,10 +153,10 @@ export default function UsersPage() {
     await deleteUserMutation({ memberId });
     setDeletingUser(null);
   };
-  const openDeleteDialog = (user: UserResponse) => {
+  const openDeleteDialog = (user: Member) => {
     setDeletingUser(user);
   };
-  const openEmailDialog = (user: UserResponse) => {
+  const openEmailDialog = (user: Member) => {
     setEmailingUser(user);
   };
   return (
@@ -367,11 +369,25 @@ export default function UsersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <span className="text-gray-900 text-sm">
-                              {capitalizeFirstLetterOfEachWord(
-                                user.branch?.branchName || 'Not Provided'
+                            <div className="flex flex-wrap gap-1">
+                              {user?.user?.teammembers &&
+                              user?.user?.teammembers.length > 0 ? (
+                                user?.user?.teammembers.map((tm) => (
+                                  <span
+                                    className="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 font-medium text-blue-800 text-xs"
+                                    key={tm.id}
+                                  >
+                                    {capitalizeFirstLetterOfEachWord(
+                                      tm.team.name
+                                    )}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-gray-500 text-sm">
+                                  Not Provided
+                                </span>
                               )}
-                            </span>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -386,7 +402,7 @@ export default function UsersPage() {
                           </TableCell>
                           <TableCell>
                             <span className="text-gray-900 text-sm">
-                              {formatToNewDate(user.createdAt)}
+                              {formatToNewDate(user?.createdAt)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -402,7 +418,7 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link href={`/church/users/${user._id}`}>
+                                  <Link href={`/church/users/${user?.id}`}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     View User
                                   </Link>
@@ -418,7 +434,7 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link href={`/church/users/edit/${user._id}`}>
+                                  <Link href={`/church/users/edit/${user?.id}`}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit User
                                   </Link>

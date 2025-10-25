@@ -127,8 +127,7 @@ export const userSchema = z.object({
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: optionalEmail,
   phoneNumber: z.string().min(8, 'Please enter a valid phone number'),
-  isMember: z.boolean(),
-  isStaff: z.boolean(),
+  position: z.string().min(1, 'Church position is required'),
   address: addressSchema,
   gender: z.enum(['MALE', 'FEMALE'], {
     error: 'Gender is required',
@@ -136,7 +135,7 @@ export const userSchema = z.object({
   role: z.enum(['MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR'], {
     error: 'Role is required',
   }),
-  branchId: z.string().min(1, 'Please select a branch'),
+  teamId: z.string().min(1, 'Please select a branch'),
   sendWelcomeEmail: z.boolean().optional(),
 });
 
@@ -152,7 +151,7 @@ export const adminDataSchema = z
     gender: z.enum(['MALE', 'FEMALE'], {
       error: 'Gender is required',
     }),
-    position: z.string().min(1, 'Church position is requird'),
+    position: z.string().min(1, 'Church position is required'),
     address: addressSchema,
     password: passwordSchema,
     confirmPassword: z.string(),

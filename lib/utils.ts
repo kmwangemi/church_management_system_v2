@@ -185,13 +185,96 @@ export const formatNotificationCount = (count: number) => {
   return count.toString();
 };
 
-export const CHURCH_ROLE_OPTIONS = [
-  { value: 'VISITOR', label: 'Visitor' },
-  { value: 'MEMBER', label: 'Member' },
-  { value: 'STAFF', label: 'Staff' },
-  { value: 'VOLUNTEER', label: 'Volunteer' },
-  { value: 'ADMIN', label: 'Admin' },
+export const CHURCH_POSITION_OPTIONS = [
+  { label: 'Bishop', value: 'bishop' },
+  { label: 'Senior Pastor', value: 'senior-pastor' },
+  { label: 'Reverent', value: 'reverent' },
+  { label: 'Pastor', value: 'pastor' },
+  { label: 'Elder', value: 'elder' },
+  { label: 'Church Administrator', value: 'church-administrator' },
+  { label: 'Treasurer', value: 'treasurer' },
+  { label: 'Secretary', value: 'secretary' },
+  { label: 'Member', value: 'member' },
+  { label: 'Visitor', value: 'visitor' },
 ];
+
+// export const CHURCH_ROLE_OPTIONS = [
+//   { value: 'VISITOR', label: 'Visitor' },
+//   { value: 'MEMBER', label: 'Member' },
+//   { value: 'STAFF', label: 'Staff' },
+//   { value: 'VOLUNTEER', label: 'Volunteer' },
+//   { value: 'ADMIN', label: 'Admin' },
+// ];
+
+// Staffs are paid while volunteers are not paid
+// Staffs are employed volunteers are not employed
+// This are system roles & permissions
+export const CHURCH_ROLE_BY_POSITION: Record<
+  string,
+  { value: string; label: string }[]
+> = {
+  bishop: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  'senior-pastor': [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  reverent: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  pastor: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  elder: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  'church-administrator': [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  treasurer: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  secretary: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  member: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  visitor: [
+    { value: 'VISITOR', label: 'Visitor' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+};
+
+export const getRolesForPosition = (position: string) =>
+  CHURCH_ROLE_BY_POSITION[position] || [];
 
 export const PRAYER_CATEGORY_OPTIONS = [
   { value: 'health', label: 'Health & Healing' },
@@ -627,20 +710,6 @@ export const GOAL_CATEGORY_OPTIONS = [
   { value: 'quality', label: 'Quality' },
   { value: 'financial', label: 'Financial' },
   { value: 'other', label: 'Other' },
-];
-
-export const CHURCH_POSITION_OPTIONS = [
-  { label: 'Bishop', value: 'Bishop' },
-  { label: 'Senior Pastor', value: 'Senior Pastor' },
-  { label: 'Reverent', value: 'Reverent' },
-  { label: 'Pastor', value: 'Pastor' },
-  { label: 'Elder', value: 'Elder' },
-  { label: 'Youth Leader', value: 'Youth Leader' },
-  { label: 'Church Administrator', value: 'Church Administrator' },
-  { label: 'Treasurer', value: 'Treasurer' },
-  { label: 'Secretary', value: 'Secretary' },
-  { label: 'Member', value: 'Member' },
-  { label: 'Visitor', value: 'Visitor' },
 ];
 
 export const getUserId = (userId: any): string => {

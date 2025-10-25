@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdminGetMembersParams } from '@/lib/actions/admin/member-management';
+import type { AdminGetMembersParams } from '@/lib/actions/admin/member-management-action';
 import {
   adminAddMemberToOrganization,
   adminGetMemberByUserId,
@@ -9,7 +9,7 @@ import {
   adminRemoveMemberFromOrganization,
   adminUpdateMemberDetails,
   adminUpdateMemberRole,
-} from '@/lib/actions/admin/member-management';
+} from '@/lib/actions/admin/member-management-action';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 /**
  * Hook to fetch organization members with filters and pagination
  */
-export function useOrganizationMembers(params: AdminGetMembersParams) {
+export function useAdminOrganizationMembers(params: AdminGetMembersParams) {
   return useQuery({
     queryKey: ['organization-members', params],
     queryFn: async () => {
@@ -39,7 +39,7 @@ export function useOrganizationMembers(params: AdminGetMembersParams) {
 /**
  * Hook to fetch a single member's full details
  */
-export function useMemberDetails(userId: string, organizationId?: string) {
+export function useAdminMemberDetails(userId: string, organizationId?: string) {
   return useQuery({
     queryKey: ['member-details', userId, organizationId],
     queryFn: async () => {
@@ -57,7 +57,7 @@ export function useMemberDetails(userId: string, organizationId?: string) {
 /**
  * Hook to fetch member statistics for an organization
  */
-export function useMemberStatistics(organizationId: string) {
+export function useAdminMemberStatistics(organizationId: string) {
   return useQuery({
     queryKey: ['member-statistics', organizationId],
     queryFn: async () => {
@@ -79,7 +79,7 @@ export function useMemberStatistics(organizationId: string) {
 /**
  * Hook to add a new member to an organization
  */
-export function useAddMember(organizationId: string) {
+export function useAdminAddMember(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: adminAddMemberToOrganization,
@@ -107,7 +107,7 @@ export function useAddMember(organizationId: string) {
 /**
  * Hook to update member details
  */
-export function useUpdateMember(organizationId: string) {
+export function useAdminUpdateMember(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: adminUpdateMemberDetails,
@@ -135,7 +135,7 @@ export function useUpdateMember(organizationId: string) {
 /**
  * Hook to remove a member from an organization
  */
-export function useRemoveMember(organizationId: string) {
+export function useAdminRemoveMember(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId }: { userId: string }) =>
@@ -194,6 +194,19 @@ export function useAdminUpdateMemberRole(organizationId: string) {
   });
 }
 
+// Helper function to generate random password
+// function generateRandomPassword(length = 12): string {
+//   const charset =
+//     'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+//   let password = '';
+//   for (let i = 0; i < length; i++) {
+//     password += charset.charAt(Math.floor(Math.random() * charset.length));
+//   }
+//   return password;
+// }
+
+// password: generateRandomPassword(), // Auto-generate password
+
 // ============================================
 // USAGE EXAMPLES IN COMPONENTS
 // ============================================
@@ -204,8 +217,7 @@ function MembersList({ organizationId }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-
-  const { data, isLoading, error } = useOrganizationMembers({
+  const { data, isLoading, error } = useAdminOrganizationMembers({
     organizationId,
     page,
     pageSize: 20,
@@ -214,10 +226,8 @@ function MembersList({ organizationId }) {
     sortBy: 'name',
     sortOrder: 'asc',
   });
-
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
-
   return (
     <div>
       <input
@@ -225,7 +235,6 @@ function MembersList({ organizationId }) {
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search members..."
       />
-      
       <select
         value={roleFilter}
         onChange={(e) => setRoleFilter(e.target.value)}
@@ -235,7 +244,6 @@ function MembersList({ organizationId }) {
         <option value="ADMIN">Admin</option>
         <option value="STAFF">Staff</option>
       </select>
-
       <table>
         <thead>
           <tr>
@@ -256,7 +264,6 @@ function MembersList({ organizationId }) {
           ))}
         </tbody>
       </table>
-
       <div>
         Page {data.pagination.page} of {data.pagination.totalPages}
         <button
@@ -278,17 +285,14 @@ function MembersList({ organizationId }) {
 
 // Example 2: View member details
 function MemberProfile({ userId, organizationId }) {
-  const { data: member, isLoading } = useMemberDetails(userId, organizationId);
-
+  const { data: member, isLoading } = useAdminMemberDetails(userId, organizationId);
   if (isLoading) return <div>Loading...</div>;
   if (!member) return <div>Member not found</div>;
-
   return (
     <div>
       <h1>{member.user.name}</h1>
       <p>Email: {member.user.email}</p>
       <p>Phone: {member.user.phoneNumber}</p>
-      
       {member.address && (
         <div>
           <h2>Address</h2>
@@ -296,7 +300,6 @@ function MemberProfile({ userId, organizationId }) {
           <p>{member.address.city}, {member.address.country}</p>
         </div>
       )}
-      
       {member.memberDetails && (
         <div>
           <h2>Membership</h2>
@@ -310,8 +313,7 @@ function MemberProfile({ userId, organizationId }) {
 
 // Example 3: Add member
 function AddMemberForm({ organizationId }) {
-  const addMember = useAddMember(organizationId);
-
+  const addMember = useAdminAddMember(organizationId);
   const handleSubmit = (formData) => {
     addMember.mutate({
       organizationId,
@@ -329,7 +331,6 @@ function AddMemberForm({ organizationId }) {
       sendWelcomeEmail: true,
     });
   };
-
   return (
     <form onSubmit={handleSubmit}>
       // Form fields
@@ -342,9 +343,8 @@ function AddMemberForm({ organizationId }) {
 
 // Example 4: Update member
 function EditMemberForm({ organizationId, userId }) {
-  const updateMember = useUpdateMember(organizationId);
-  const { data: member } = useMemberDetails(userId);
-
+  const updateMember = useAdminUpdateMember(organizationId);
+  const { data: member } = useAdminMemberDetails(userId);
   const handleSubmit = (formData) => {
     updateMember.mutate({
       organizationId,
@@ -360,7 +360,6 @@ function EditMemberForm({ organizationId, userId }) {
       },
     });
   };
-
   return (
     <form onSubmit={handleSubmit}>
       // Form fields pre-filled with member data
@@ -373,14 +372,12 @@ function EditMemberForm({ organizationId, userId }) {
 
 // Example 5: Remove member
 function RemoveMemberButton({ organizationId, userId }) {
-  const removeMember = useRemoveMember(organizationId);
-
+  const removeMember = useAdminRemoveMember(organizationId);
   const handleRemove = () => {
     if (confirm('Are you sure you want to remove this member?')) {
       removeMember.mutate({ userId });
     }
   };
-
   return (
     <button
       onClick={handleRemove}
@@ -393,11 +390,9 @@ function RemoveMemberButton({ organizationId, userId }) {
 
 // Example 6: Statistics dashboard
 function MemberStatistics({ organizationId }) {
-  const { data: stats, isLoading } = useMemberStatistics(organizationId);
-
+  const { data: stats, isLoading } = useAdminMemberStatistics(organizationId);
   if (isLoading) return <div>Loading...</div>;
   if (!stats) return <div>No statistics available</div>;
-
   return (
     <div>
       <h2>Member Statistics</h2>
@@ -415,7 +410,6 @@ function MemberStatistics({ organizationId }) {
           <p>{stats.inactiveMembers}</p>
         </div>
       </div>
-
       <h3>Members by Role</h3>
       <ul>
         {stats.byRole.map(({ role, count }) => (
@@ -424,7 +418,6 @@ function MemberStatistics({ organizationId }) {
           </li>
         ))}
       </ul>
-
       <h3>Recent Joins</h3>
       <ul>
         {stats.recentJoins.map((member) => (

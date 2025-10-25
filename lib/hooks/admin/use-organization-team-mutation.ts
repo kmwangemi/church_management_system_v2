@@ -15,7 +15,7 @@ import {
   type AdminCreateTeamParams,
   type AdminGetTeamsParams,
   type AdminUpdateTeamParams,
-} from '@/lib/actions/admin/team';
+} from '@/lib/actions/admin/team-management-action';
 import {
   useMutation,
   useQuery,

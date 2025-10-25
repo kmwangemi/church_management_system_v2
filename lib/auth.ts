@@ -27,6 +27,20 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
+  session: {
+    additionalFields: {
+      activeOrganizationId: {
+        type: 'string',
+        required: false,
+        returned: true,
+      },
+      activeMemberRole: {
+        type: 'string[]', // ← Changed to array
+        required: false,
+        returned: true,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     password: {
@@ -411,9 +425,7 @@ export const auth = betterAuth({
           session, // ← Add this
           user,
           memberRole: member?.role || null,
-          memberRoles: member?.role
-            ? member.role.split(',').map((r) => r.trim())
-            : [],
+          memberRoles: member?.role ?? [],
         };
       }
       return {

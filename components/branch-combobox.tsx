@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useAdminTeams } from '@/lib/hooks/admin/use-organization-team-mutations';
+import { useAdminTeams } from '@/lib/hooks/admin/use-organization-team-mutation';
 import type { Branch } from '@/lib/types/branch';
 import { capitalizeFirstLetter, cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, MapPin } from 'lucide-react';
@@ -47,9 +47,7 @@ export function BranchCombobox({
   // console.log('Branches:', JSON.stringify(data));
   const branches = data?.teams || [];
   // Find selected branch
-  const selectedBranch = branches.find(
-    (branch: Branch) => branch.id === value
-  );
+  const selectedBranch = branches.find((branch: Branch) => branch.id === value);
   const handleSelect = (branchId: string) => {
     const newValue = branchId === value ? null : branchId;
     onChange?.(newValue);

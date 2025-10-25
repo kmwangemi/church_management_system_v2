@@ -65,7 +65,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useAdminTeams } from '@/lib/hooks/admin/use-organization-team-mutations';
+import { useAdminTeams } from '@/lib/hooks/admin/use-organization-team-mutation';
 import { useDeleteBranchById } from '@/lib/hooks/church/branch/use-branch-queries';
 import type { Branch } from '@/lib/types/branch';
 import {
@@ -592,9 +592,9 @@ export default function BranchesPage() {
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {branch?.establishedDate ? formatToNewDate(
-                                  branch?.establishedDate
-                                ) : 'Not Provided'}
+                                {branch?.establishedDate
+                                  ? formatToNewDate(branch?.establishedDate)
+                                  : 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">

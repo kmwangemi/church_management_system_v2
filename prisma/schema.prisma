@@ -688,7 +688,7 @@ model User {
   // attendancesTaken       Attendance[]
   // expensesApproved       Expense[]
   // departmentActivitiesOrganized DepartmentActivity[]
-  teammembers       TeamMember[]
+  teammembers       TeamMember[] // all teams/branches the member is in
 
   @@index([email])
   @@index([globalRole, status])
@@ -809,15 +809,15 @@ model Organization {
 // ============================================
 
 model Member {
-  id             String           @id @default(cuid())
+  id             String             @id @default(cuid())
   organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role           OrganizationRole @default(MEMBER)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrganizationRole[] @default([MEMBER])
   // position within church
-  position       String?          @default("member")
-  createdAt      DateTime         @default(now())
+  position       String?            @default("member")
+  createdAt      DateTime           @default(now())
 
   // Team (Branch) assignment within church
   // teamId         String?

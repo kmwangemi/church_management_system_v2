@@ -18,14 +18,15 @@ export default async function DashboardLayout({
     redirect('/auth/login');
   }
   // organizationRoles may be string[] | null | undefined — ensure ADMIN is present
-  // if (
-  //   !(
-  //     Array.isArray(user.organizationRoles) &&
-  //     user.organizationRoles.includes('ADMIN')
-  //   )
-  // ) {
-  //   redirect('/auth/login');
-  // }
+  if (
+    !(
+      Array.isArray(session.memberRoles) &&
+      session.memberRoles.includes('ADMIN')
+    )
+  ) {
+    redirect('/auth/login');
+  }
+  console.log('session---->', session);
   return (
     <SessionLoader
       fallback={
