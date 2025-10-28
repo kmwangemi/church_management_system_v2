@@ -62,7 +62,7 @@ import {
   useOrganizationMembers,
   useRemoveMember,
   useUpdateMember,
-} from '@/lib/hooks/superadmin/use-organization-members';
+} from '@/lib/hooks/superadmin/use-organization-member-mutation';
 import type { ChurchListResponse } from '@/lib/types/church';
 import {
   capitalizeFirstLetterOfEachWord,

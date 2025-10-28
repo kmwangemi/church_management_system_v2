@@ -253,7 +253,7 @@ export async function adminAddMemberToOrganization(
       where: {
         organizationId: params.organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -474,7 +474,7 @@ async function adminCreateNewMemberWithDetails(
           userId: user.id,
           organizationId: params.organizationId,
           position: params.position,
-          organizationRoles: params.organizationRoles,
+          role: params.organizationRoles,
         },
         include: {
           user: true,
@@ -689,7 +689,7 @@ export async function adminUpdateMemberDetails(
       where: {
         organizationId: params.organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -1150,7 +1150,7 @@ export async function adminGetMemberByUserId(
       where: {
         organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -1365,7 +1365,7 @@ export async function adminGetOrganizationMembers(
       where: {
         organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -1552,7 +1552,7 @@ export async function adminGetMemberStatistics(
       where: {
         organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -1702,7 +1702,7 @@ export async function adminRemoveMemberFromOrganization(
       where: {
         organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -1762,7 +1762,7 @@ export async function adminUpdateMemberRole(
       where: {
         organizationId,
         userId: session.user.id,
-        organizationRoles: {
+        role: {
           hasSome: ['OWNER', 'ADMIN'],
         },
       },
@@ -1784,7 +1784,7 @@ export async function adminUpdateMemberRole(
       await prisma.member.update({
         where: { id: member.id },
         data: {
-          organizationRoles: [newRole],
+          role: [newRole],
         },
       });
     }

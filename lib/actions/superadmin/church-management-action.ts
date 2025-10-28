@@ -217,27 +217,20 @@ export async function updateChurchOrganization(
         error: 'Unauthorized: Please sign in to update organization',
       };
     }
-    // Step 2: Verify user has permission to update this organization
-    const member = await prisma.member.findUnique({
+    // Check if user has permission to update this organization
+    const hasPermission = await prisma.member.findFirst({
       where: {
-        organizationId_userId: {
-          organizationId: payload.organizationId,
-          userId: session.user.id,
+        organizationId: payload.organizationId,
+        userId: session.user.id,
+        role: {
+          hasSome: ['OWNER', 'ADMIN'],
         },
       },
     });
-    // Check if user is owner or admin of the organization
-    if (!member) {
+    if (!hasPermission) {
       return {
         success: false,
         error: 'You do not have permission to update this organization',
-      };
-    }
-    if (member.role !== 'OWNER' && member.role !== 'ADMIN') {
-      return {
-        success: false,
-        error:
-          'Only organization owners or admins can update this organization',
       };
     }
     // Step 3: Update organization using Better Auth
@@ -640,9 +633,8 @@ export async function getChurchDetails(organizationId: string): Promise<
                 email: true,
                 image: true,
                 phoneNumber: true,
-                position: true,
                 status: true,
-                organizationRoles: true,
+                globalRole: true,
                 createdAt: true,
               },
             },

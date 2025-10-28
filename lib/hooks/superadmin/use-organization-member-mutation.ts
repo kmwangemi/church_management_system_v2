@@ -1,7 +1,6 @@
-// hooks/use-organization-members.ts
 'use client';
 
-import type { GetMembersParams } from '@/lib/actions/superadmin/member-management';
+import type { GetMembersParams } from '@/lib/actions/superadmin/member-management-action';
 import {
   addMemberToOrganization,
   getMemberByUserId,
@@ -10,7 +9,7 @@ import {
   removeMemberFromOrganization,
   updateMemberDetails,
   updateMemberRole,
-} from '@/lib/actions/superadmin/member-management';
+} from '@/lib/actions/superadmin/member-management-action';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 

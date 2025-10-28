@@ -1,3 +1,4 @@
+import type { auth } from '@/lib/auth';
 import {
   inferAdditionalFields,
   inferOrgAdditionalFields,
@@ -5,15 +6,14 @@ import {
 } from 'better-auth/client/plugins';
 import { nextCookies } from 'better-auth/next-js';
 import { createAuthClient } from 'better-auth/react';
-import type { auth } from '@/lib/auth';
 import {
   ac,
   admin,
-  staff,
   member,
   owner,
-  volunteer,
+  staff,
   visitor,
+  volunteer,
 } from './auth/permissions';
 
 export const authClient = createAuthClient({
@@ -22,7 +22,6 @@ export const authClient = createAuthClient({
   plugins: [
     inferAdditionalFields<typeof auth>(),
     organizationClient({
-      $inferAuth: {} as typeof auth,
       schema: inferOrgAdditionalFields<typeof auth>(),
       teams: {
         enabled: true,
@@ -32,7 +31,7 @@ export const authClient = createAuthClient({
         OWNER: owner,
         ADMIN: admin,
         MEMBER: member,
-        VOvolunteer: volunteer,
+        VOLUNTEER: volunteer,
         VISITOR: visitor,
         STAFF: staff,
       },
@@ -40,3 +39,6 @@ export const authClient = createAuthClient({
     nextCookies(),
   ],
 });
+
+// ✅ Export typed client for better autocomplete
+export type AuthClient = typeof authClient;

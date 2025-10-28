@@ -33,9 +33,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { createChurchOrganization } from '@/lib/actions/superadmin/church-management';
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
-import { errorToastStyle, successToastStyle } from '@/lib/toast-styles';
+import { useCreateChurch } from '@/lib/hooks/superadmin/use-church-management-mutation';
+import { errorToastStyle } from '@/lib/toast-styles';
 import {
   CHURCH_DENOMINATION_OPTIONS,
   NUMBER_OF_CHURCH_MEMBERS_OPTIONS,
@@ -61,14 +61,12 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tabValidationState, setTabValidationState] = useState({
     basic: false,
     contact: false,
     subscription: false,
   });
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const {
     upload,
@@ -206,62 +204,47 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
       setCurrentTab(tabs[currentIndex - 1]);
     }
   };
+  const {
+    mutateAsync: registerChurchMutation,
+    isPending,
+    isError,
+    error,
+  } = useCreateChurch();
   // Handle form submission
   const onSubmit = async (payload: CreateChurchPayload) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      // Step 1: Upload logo if selected but not uploaded yet
-      if (logoFile && !payload.churchLogoUrl) {
-        try {
-          setLogoUploading(true);
-          const churchLogoUrl = await upload(logoFile);
-          payload.churchLogoUrl = churchLogoUrl || '';
-        } catch (_err) {
-          toast.error('Failed to upload logo');
-          return;
-        } finally {
-          setLogoUploading(false);
-        }
-      }
-      // Step 2: Validate payload
-      const validation = churchDataSchema.safeParse(payload);
-      if (!validation.success) {
-        toast.error('Please fix all validation errors');
+    // Step 1: Upload logo if selected but not uploaded yet
+    if (logoFile && !payload.churchLogoUrl) {
+      try {
+        setLogoUploading(true);
+        const churchLogoUrl = await upload(logoFile);
+        payload.churchLogoUrl = churchLogoUrl || '';
+      } catch (_err) {
+        toast.error('Failed to upload logo');
         return;
+      } finally {
+        setLogoUploading(false);
       }
-      // Step 3: Call server action to create organization
-      const result = await createChurchOrganization(payload);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create church');
-      }
-      // Step 4: Success - reset form and close dialog
-      toast.success('Church registered successfully! 🎉', {
-        description: 'Your 30-day trial has started.',
-        style: successToastStyle,
-      });
-      // Reset form state
-      reset();
-      setLogoFile(null);
-      setLogoPreview(null);
-      setCurrentTab('basic');
-      onCloseDialog();
-      router.refresh();
-    } catch (err: any) {
-      const errorMessage =
-        err.message || 'Failed to register church. Please try again.';
-      setError(errorMessage);
-      toast.error(errorMessage, {
-        description: 'Please check your information and try again.',
-        style: errorToastStyle,
-      });
-    } finally {
-      setIsSubmitting(false);
     }
+    // Step 2: Validate payload
+    const validation = churchDataSchema.safeParse(payload);
+    if (!validation.success) {
+      toast.error('Please fix all validation errors');
+      return;
+    }
+    // Step 3: Call mutation to create organization
+    await registerChurchMutation(payload);
+    // Step 4: Success - reset form and close dialog
+    // Reset form state
+    reset();
+    setLogoFile(null);
+    setLogoPreview(null);
+    setCurrentTab('basic');
+    onCloseDialog();
+    router.refresh();
   };
   return (
     <Form {...form}>
-      {error && <RenderApiError error={{ message: error }} />}
+      {isError && <RenderApiError error={error} />}
       <form className="mt-6 space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <Tabs onValueChange={setCurrentTab} value={currentTab}>
           <TabsList className="grid w-full grid-cols-3">
@@ -808,10 +791,8 @@ export function AddChurchForm({ onCloseDialog }: AddChurchFormProps) {
               Next
             </Button>
           ) : (
-            <Button disabled={isSubmitting || isUploading} type="submit">
-              {isSubmitting || isUploading
-                ? 'Registering...'
-                : 'Register Church'}
+            <Button disabled={isPending || isUploading} type="submit">
+              {isPending || isUploading ? 'Registering...' : 'Register Church'}
             </Button>
           )}
         </div>

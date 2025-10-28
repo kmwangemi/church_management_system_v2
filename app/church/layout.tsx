@@ -12,21 +12,18 @@ export default async function DashboardLayout({
 }) {
   const session = await getServerSession();
   const user = session?.user;
-  // const user = session?.memberRole;
   // Redirect if no user
   if (!user) {
     redirect('/auth/login');
   }
-  // organizationRoles may be string[] | null | undefined — ensure ADMIN is present
   if (
     !(
-      Array.isArray(session.memberRoles) &&
-      session.memberRoles.includes('ADMIN')
+      Array.isArray(session.session.activeMemberRole) &&
+      session.session.activeMemberRole.includes('ADMIN')
     )
   ) {
     redirect('/auth/login');
   }
-  console.log('session---->', session);
   return (
     <SessionLoader
       fallback={

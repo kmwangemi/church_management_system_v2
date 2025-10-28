@@ -52,7 +52,7 @@ import {
   useAllChurches,
   useChurchActions,
   useUpdateChurch,
-} from '@/lib/hooks/superadmin/use-church-management';
+} from '@/lib/hooks/superadmin/use-church-management-mutation';
 import type { ChurchListResponse } from '@/lib/types/church';
 import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {

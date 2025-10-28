@@ -10,7 +10,8 @@ import {
   getChurchStatistics,
   suspendChurchOrganization,
   updateChurchOrganization,
-} from '@/lib/actions/superadmin/church-management';
+} from '@/lib/actions/superadmin/church-management-action';
+import { successToastStyle } from '@/lib/toast-styles';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -88,15 +89,11 @@ export function useCreateChurch() {
         queryClient.invalidateQueries({
           queryKey: ['churches'],
         });
-        toast.success('Church created successfully! 🎉', {
-          description: 'The church has been registered with a 30-day trial.',
+        toast.success('Church registered successfully! 🎉', {
+          description: 'Your 30-day trial has started.',
+          style: successToastStyle,
         });
-      } else {
-        toast.error(data.error || 'Failed to create church');
       }
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create church');
     },
   });
 }

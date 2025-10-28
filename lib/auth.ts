@@ -15,11 +15,7 @@ import bcrypt from 'bcryptjs';
 import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import {
-  createAuthMiddleware,
-  organization,
-  customSession,
-} from 'better-auth/plugins';
+import { createAuthMiddleware, organization } from 'better-auth/plugins';
 
 export const auth = betterAuth({
   appName: 'Church Management System',
@@ -221,6 +217,7 @@ export const auth = betterAuth({
       // Log sign-in events
       if (path.startsWith('/sign-in')) {
         const newSession = ctx.context.newSession;
+        // console.log('newSession--->', JSON.stringify(newSession));
         if (newSession) {
           const organizationId = await getUserOrganizationId(
             newSession.user.id
@@ -399,7 +396,7 @@ export const auth = betterAuth({
               data: {
                 ...session,
                 activeOrganizationId: membership.organizationId,
-                activeMemberRole: membership.role,
+                activeMemberRole: membership.role, // ✅ This is already an array from Member model
               },
             };
           }
@@ -409,32 +406,6 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    customSession(async ({ session, user }) => {
-      // Get user's role in active organization
-      if (session.activeOrganizationId) {
-        const member = await prisma.member.findUnique({
-          where: {
-            organizationId_userId: {
-              organizationId: session.activeOrganizationId,
-              userId: user.id,
-            },
-          },
-          select: { role: true },
-        });
-        return {
-          session, // ← Add this
-          user,
-          memberRole: member?.role || null,
-          memberRoles: member?.role ?? [],
-        };
-      }
-      return {
-        session, // ← Add this
-        user,
-        memberRole: null,
-        memberRoles: [],
-      };
-    }),
     organization({
       schema: {
         organization: {
@@ -586,17 +557,17 @@ export const auth = betterAuth({
         //   await syncOrganizationToExternalSystems(organization);
         // },
         // Before a member is added to an organization
-        // beforeAddMember: async ({ member, user, organization }) => {
-        //   // Custom validation or modification
-        //   console.log(`Adding ${user.email} to ${organization.name}`);
-        //   // Optionally modify member data
-        //   return {
-        //     data: {
-        //       ...member,
-        //       role: 'custom-role', // Override the role
-        //     },
-        //   };
-        // },
+        beforeAddMember: async ({ member }) => {
+          // Custom validation or modification
+          // console.log(`Adding ${user.email} to ${organization.name}`);
+          // Optionally modify member data
+          return {
+            data: {
+              ...member,
+              role: ['OWNER'], // Override the role
+            },
+          };
+        },
         // After a member is added
         // afterAddMember: async ({ member, user, organization }) => {
         //   // Send welcome email, create default resources, etc.
