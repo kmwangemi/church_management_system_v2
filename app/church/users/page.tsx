@@ -322,7 +322,7 @@ export default function UsersPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((user) => (
-                        <TableRow className="hover:bg-gray-50" key={user._id}>
+                        <TableRow className="hover:bg-gray-50" key={user.id}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-10 w-10">

@@ -57,10 +57,12 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
     defaultValues: {
       firstName: '',
       lastName: '',
+      email: '',
       phoneNumber: '',
       gender: 'MALE',
+      position: '',
       role: undefined,
-      email: '',
+      teamId: '',
       address: {
         street: '',
         city: '',
@@ -68,8 +70,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
         zipCode: '',
         country: 'Kenya',
       },
-      position: '',
-      teamId: '',
     },
   });
   const { reset, watch } = form;

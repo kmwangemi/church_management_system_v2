@@ -67,8 +67,8 @@ import type { ChurchListResponse } from '@/lib/types/church';
 import {
   capitalizeFirstLetterOfEachWord,
   CHURCH_POSITION_OPTIONS,
-  CHURCH_ROLE_OPTIONS,
   GENDER_OPTIONS,
+  getRolesForPosition,
 } from '@/lib/utils';
 import { adminDataSchema, type AdminPayload } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -97,6 +97,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { BranchCombobox } from '../branch-combobox';
 import { CountrySelect } from '../country-list-input';
+import { MultiSelect } from '../multi-select';
 
 interface ManageChurchUsersDialogProps {
   open: boolean;
@@ -438,7 +439,13 @@ export function ManageChurchUsersDialog({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{getRoleBadge(member.role)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {member.role?.map((role: string) => (
+                            <span key={role}>{getRoleBadge(role)}</span>
+                          ))}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {getStatusBadge(member.user.status)}
                       </TableCell>
@@ -586,6 +593,7 @@ function AddUserDialog({
       phoneNumber: '',
       gender: 'MALE',
       position: '',
+      role: ['MEMBER'],
       teamId: '',
       address: {
         street: '',
@@ -596,9 +604,12 @@ function AddUserDialog({
       },
       password: '',
       confirmPassword: '',
-      role: 'MEMBER',
     },
   });
+  const { reset, watch } = form;
+  const watchPosition = watch('position');
+  const watchRole = watch('role');
+  const CHURCH_ROLE_OPTIONS = getRolesForPosition(watchPosition);
   const onSubmit = (payload: AdminPayload) => {
     addMember(
       {
@@ -618,7 +629,7 @@ function AddUserDialog({
       {
         onSuccess: (response) => {
           if (response.success) {
-            form.reset();
+            reset();
             onSuccess();
           }
         },
@@ -883,29 +894,17 @@ function AddUserDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Role <span className="text-red-500">*</span>
+                          Roles & Permissions{' '}
+                          <span className="text-red-500">*</span>
                         </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="cursor-pointer">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-[400px] overflow-y-auto">
-                            {CHURCH_ROLE_OPTIONS.map((option) => (
-                              <SelectItem
-                                className="cursor-pointer"
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <MultiSelect
+                            onChange={field.onChange}
+                            options={CHURCH_ROLE_OPTIONS}
+                            placeholder="Select roles & permissions"
+                            selected={field.value || []}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -28,7 +28,7 @@ interface AddMemberParams {
   maritalStatus?: MaritalStatus;
   occupation?: string;
   // Organization Info
-  role: OrganizationRole; // OWNER, ADMIN, MEMBER, STAFF, VOLUNTEER, VISITOR
+  role: OrganizationRole[]; // OWNER, ADMIN, MEMBER, STAFF, VOLUNTEER, VISITOR
   position?: string;
   teamId?: string; // Branch/Team assignment
   // Address
@@ -39,47 +39,8 @@ interface AddMemberParams {
     zipCode?: string;
     country?: string;
   };
-  // Emergency Contact
-  emergencyContact?: {
-    fullName: string;
-    phoneNumber: string;
-    relationship: string;
-    email?: string;
-    address?: string;
-  };
-  // Role-Specific Details
-  memberDetails?: {
-    membershipDate?: string;
-    baptismDate?: string;
-    departmentIds?: string[];
-    groupIds?: string[];
-  };
-  pastorDetails?: {
-    ordinationDate?: string;
-    qualifications?: string[];
-    specializations?: string[];
-    biography?: string;
-  };
-  staffDetails?: {
-    jobTitle: string;
-    department: string;
-    startDate: string;
-    salary?: number;
-    employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'CONTRACT';
-  };
-  volunteerDetails?: {
-    departments?: string[];
-    availableDays?: string[];
-    preferredTimes?: string[];
-  };
-  visitorDetails?: {
-    howDidYouHear?: string;
-    interestedInMembership?: boolean;
-    invitedBy?: string;
-  };
   // Settings
   sendWelcomeEmail?: boolean;
-  createUserSubscription?: boolean;
 }
 
 interface ServerActionResponse<T = any> {
@@ -110,7 +71,7 @@ export async function addMemberToOrganization(
         organizationId: params.organizationId,
         userId: session.user.id,
         role: {
-          in: ['OWNER', 'ADMIN'],
+          hasSome: ['OWNER', 'ADMIN'],
         },
       },
     });
@@ -118,6 +79,17 @@ export async function addMemberToOrganization(
       return {
         success: false,
         error: 'You do not have permission to add members in this organization',
+      };
+    }
+    // Step 2: Check if phone number already exists
+    const existingPhoneNumber = await prisma.user.findUnique({
+      where: { phoneNumber: params.phoneNumber },
+    });
+    if (existingPhoneNumber) {
+      return {
+        success: false,
+        error:
+          'A member with the phone number already exists in this organization',
       };
     }
     // Step 3: Check if email already exists
@@ -195,80 +167,65 @@ async function addExistingUserToOrganization(
   createdBy: string
 ): Promise<ServerActionResponse> {
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Member record with Better Auth
-      const member = await tx.member.create({
-        data: {
-          userId,
-          organizationId: params.organizationId,
-          position: params.position,
-        },
-        include: {
-          user: true,
-        },
-      });
-      // 2. Update user's created by
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          updatedBy: createdBy,
-        },
-      });
-      // 3. Add to Team if teamId provided
-      if (params.teamId) {
-        await tx.teamMember.create({
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // 1. Create Member record with Better Auth
+        const member = await tx.member.create({
           data: {
             userId,
-            teamId: params.teamId,
+            organizationId: params.organizationId,
+            position: params.position,
+          },
+          include: {
+            user: true,
           },
         });
-      }
-      // 4. Create or update Address if provided
-      if (params.address) {
-        await tx.address.upsert({
-          where: { userId },
-          create: {
-            userId,
-            street: params.address.street || '',
-            city: params.address.city || '',
-            state: params.address.state || '',
-            zipCode: params.address.zipCode || '',
-            country: params.address.country || 'Kenya',
-          },
-          update: {
-            street: params.address.street || '',
-            city: params.address.city || '',
-            state: params.address.state || '',
-            zipCode: params.address.zipCode || '',
-            country: params.address.country || 'Kenya',
+        // 2. Update user's created by
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            updatedBy: createdBy,
           },
         });
+        // 3. Add to Team if teamId provided
+        if (params.teamId) {
+          await tx.teamMember.create({
+            data: {
+              userId,
+              teamId: params.teamId,
+            },
+          });
+        }
+        // 4. Create or update Address if provided
+        if (params.address) {
+          await tx.address.upsert({
+            where: { userId },
+            create: {
+              userId,
+              street: params.address.street || '',
+              city: params.address.city || '',
+              state: params.address.state || '',
+              zipCode: params.address.zipCode || '',
+              country: params.address.country || 'Kenya',
+            },
+            update: {
+              street: params.address.street || '',
+              city: params.address.city || '',
+              state: params.address.state || '',
+              zipCode: params.address.zipCode || '',
+              country: params.address.country || 'Kenya',
+            },
+          });
+        }
+        // 6. Create role-specific details based on organization role
+        await createRoleSpecificDetails(tx, userId, params);
+        return member;
+      },
+      {
+        maxWait: 10_000, // Wait up to 10s to acquire transaction
+        timeout: 10_000, // Transaction can run for up to 10s
       }
-      // 5. Create or update Emergency Contact if provided
-      if (params.emergencyContact) {
-        await tx.emergencyContact.upsert({
-          where: { userId },
-          create: {
-            userId,
-            fullName: params.emergencyContact.fullName,
-            phoneNumber: params.emergencyContact.phoneNumber,
-            relationship: params.emergencyContact.relationship,
-            email: params.emergencyContact.email,
-            address: params.emergencyContact.address,
-          },
-          update: {
-            fullName: params.emergencyContact.fullName,
-            phoneNumber: params.emergencyContact.phoneNumber,
-            relationship: params.emergencyContact.relationship,
-            email: params.emergencyContact.email,
-            address: params.emergencyContact.address,
-          },
-        });
-      }
-      // 6. Create role-specific details based on organization role
-      await createRoleSpecificDetails(tx, userId, params);
-      return member;
-    });
+    );
     return {
       success: true,
       data: result,
@@ -294,85 +251,72 @@ async function createNewMemberWithDetails(
   try {
     // Hash password
     const hashedPassword = await bcrypt.hash(params.password, 10);
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create User
-      const user = await tx.user.create({
-        data: {
-          name: `${params.firstName} ${params.lastName}`,
-          email: params.email,
-          emailVerified: false,
-          phoneNumber: params.phoneNumber,
-          dateOfBirth: params.dateOfBirth
-            ? new Date(params.dateOfBirth)
-            : undefined,
-          gender: params.gender,
-          maritalStatus: params.maritalStatus,
-          occupation: params.occupation,
-          globalRole: 'USER',
-          status: 'ACTIVE',
-          createdBy,
-        },
-      });
-      // 2. Create Account with password
-      await tx.account.create({
-        data: {
-          userId: user.id,
-          accountId: user.id,
-          providerId: 'credential',
-          password: hashedPassword,
-        },
-      });
-      // 3. Create Member record
-      const member = await tx.member.create({
-        data: {
-          userId: user.id,
-          organizationId: params.organizationId,
-          position: params.position,
-          role: params.role,
-        },
-        include: {
-          user: true,
-        },
-      });
-      // 4. Add to Team if teamId provided
-      if (params.teamId) {
-        await tx.teamMember.create({
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // 1. Create User
+        const user = await tx.user.create({
           data: {
-            userId: user.id,
-            teamId: params.teamId,
+            name: `${params.firstName} ${params.lastName}`,
+            email: params.email,
+            emailVerified: false,
+            phoneNumber: params.phoneNumber,
+            dateOfBirth: params.dateOfBirth
+              ? new Date(params.dateOfBirth)
+              : undefined,
+            gender: params.gender,
+            maritalStatus: params.maritalStatus,
+            occupation: params.occupation,
+            globalRole: 'USER',
+            status: 'ACTIVE',
+            createdBy,
           },
         });
-      }
-      // 5. Create Address if provided
-      if (params.address) {
-        await tx.address.create({
+        // 2. Create Account with password
+        await tx.account.create({
           data: {
             userId: user.id,
-            street: params.address.street || '',
-            city: params.address.city || '',
-            state: params.address.state || '',
-            zipCode: params.address.zipCode || '',
-            country: params.address.country || 'Kenya',
+            accountId: user.id,
+            providerId: 'credential',
+            password: hashedPassword,
           },
         });
-      }
-      // 6. Create Emergency Contact if provided
-      if (params.emergencyContact) {
-        await tx.emergencyContact.create({
+        // 3. Create Member record
+        const member = await tx.member.create({
           data: {
             userId: user.id,
-            fullName: params.emergencyContact.fullName,
-            phoneNumber: params.emergencyContact.phoneNumber,
-            relationship: params.emergencyContact.relationship,
-            email: params.emergencyContact.email,
-            address: params.emergencyContact.address,
+            organizationId: params.organizationId,
+            position: params.position,
+            role: params.role,
+          },
+          include: {
+            user: true,
           },
         });
-      }
-      // 7. Create role-specific details
-      await createRoleSpecificDetails(tx, user.id, params);
-      // 8. Create User Subscription if requested
-      if (params.createUserSubscription) {
+        // 4. Add to Team if teamId provided
+        if (params.teamId) {
+          await tx.teamMember.create({
+            data: {
+              userId: user.id,
+              teamId: params.teamId,
+            },
+          });
+        }
+        // 5. Create Address if provided
+        if (params.address) {
+          await tx.address.create({
+            data: {
+              userId: user.id,
+              street: params.address.street || '',
+              city: params.address.city || '',
+              state: params.address.state || '',
+              zipCode: params.address.zipCode || '',
+              country: params.address.country || 'Kenya',
+            },
+          });
+        }
+        // 7. Create role-specific details
+        await createRoleSpecificDetails(tx, user.id, params);
+        // 8. Create User Subscription
         const trialEnd = new Date();
         trialEnd.setDate(trialEnd.getDate() + 30);
         await tx.userSubscription.create({
@@ -391,9 +335,13 @@ async function createNewMemberWithDetails(
             nextBillingDate: trialEnd,
           },
         });
+        return { user, member };
+      },
+      {
+        maxWait: 10_000, // Wait up to 10s to acquire transaction
+        timeout: 10_000, // Transaction can run for up to 10s
       }
-      return { user, member };
-    });
+    );
     return {
       success: true,
       data: result.member,
@@ -416,100 +364,74 @@ async function createRoleSpecificDetails(
   userId: string,
   params: AddMemberParams
 ): Promise<void> {
-  const { organizationRole } = params;
+  const { role } = params;
   try {
     // Create MemberDetails for MEMBER role
-    if (organizationRole === 'MEMBER' && params.memberDetails) {
+    if (role.includes('MEMBER')) {
       await tx.memberDetails.create({
         data: {
           userId,
           memberId: userId,
-          membershipDate: params.memberDetails.membershipDate
-            ? new Date(params.memberDetails.membershipDate)
-            : new Date(),
-          baptismDate: params.memberDetails.baptismDate
-            ? new Date(params.memberDetails.baptismDate)
-            : undefined,
+          membershipDate: new Date(),
+          baptismDate: undefined,
           membershipStatus: 'ACTIVE',
-          departmentIds: params.memberDetails.departmentIds || [],
-          groupIds: params.memberDetails.groupIds || [],
-        },
-      });
-    }
-    // Create PastorDetails for pastors
-    if (organizationRole === 'STAFF' && params.pastorDetails) {
-      await tx.pastorDetails.create({
-        data: {
-          userId,
-          pastorId: userId,
-          ordinationDate: params.pastorDetails.ordinationDate
-            ? new Date(params.pastorDetails.ordinationDate)
-            : undefined,
-          qualifications: params.pastorDetails.qualifications || [],
-          specializations: params.pastorDetails.specializations || [],
-          biography: params.pastorDetails.biography,
+          departmentIds: [],
+          groupIds: [],
         },
       });
     }
     // Create StaffDetails for STAFF role
-    if (organizationRole === 'STAFF' && params.staffDetails) {
+    if (role.includes('STAFF')) {
       await tx.staffDetails.create({
         data: {
           userId,
           staffId: userId,
-          jobTitle: params.staffDetails.jobTitle,
-          department: params.staffDetails.department,
-          startDate: new Date(params.staffDetails.startDate),
-          salary: params.staffDetails.salary,
-          employmentType: params.staffDetails.employmentType || 'CASUAL',
+          jobTitle: undefined,
+          department: undefined,
+          startDate: undefined,
+          salary: 0,
+          employmentType: 'CASUAL',
           isActive: true,
         },
       });
     }
     // Create VolunteerDetails for VOLUNTEER role
-    if (organizationRole === 'VOLUNTEER' && params.volunteerDetails) {
+    if (role.includes('VOLUNTEER')) {
       const volunteerDetails = await tx.volunteerDetails.create({
         data: {
           userId,
           volunteerId: userId,
           volunteerStatus: 'ACTIVE',
-          departments: params.volunteerDetails.departments || [],
+          departments: [],
           hoursContributed: 0,
         },
       });
-      // Create availability schedule if provided
-      if (
-        params.volunteerDetails.availableDays ||
-        params.volunteerDetails.preferredTimes
-      ) {
-        await tx.availabilitySchedule.create({
-          data: {
-            volunteerDetailsId: volunteerDetails.id,
-            days: params.volunteerDetails.availableDays || [],
-            timeSlots: [],
-            preferredTimes: params.volunteerDetails.preferredTimes || [],
-          },
-        });
-      }
+      await tx.availabilitySchedule.create({
+        data: {
+          volunteerDetailsId: volunteerDetails.id,
+          days: [],
+          timeSlots: [],
+          preferredTimes: [],
+        },
+      });
     }
     // Create VisitorDetails for VISITOR role
-    if (organizationRole === 'VISITOR' && params.visitorDetails) {
+    if (role.includes('VISITOR')) {
       await tx.visitorDetails.create({
         data: {
           userId,
           visitorId: userId,
           visitDate: new Date(),
-          howDidYouHear:
-            (params.visitorDetails.howDidYouHear as any) || 'OTHER',
+          howDidYouHear: 'OTHER',
           followUpStatus: 'PENDING',
-          interestedInMembership: params.visitorDetails.interestedInMembership,
-          invitedBy: params.visitorDetails.invitedBy,
+          interestedInMembership: false,
+          invitedBy: undefined,
           servicesAttended: [],
         },
       });
     }
     // Create AdminDetails for ADMIN role
-    if (organizationRole === 'ADMIN') {
+    if (role.includes('ADMIN')) {
       await tx.adminDetails.create({
         data: {
           userId,
@@ -519,6 +441,21 @@ async function createRoleSpecificDetails(
         },
       });
     }
+    // Create PastorDetails for pastors
+    // if (role.includes('STAFF') && params.staffDetails) {
+    //   await tx.pastorDetails.create({
+    //     data: {
+    //       userId,
+    //       pastorId: userId,
+    //       ordinationDate: params.pastorDetails.ordinationDate
+    //         ? new Date(params.pastorDetails.ordinationDate)
+    //         : undefined,
+    //       qualifications: params.pastorDetails.qualifications || [],
+    //       specializations: params.pastorDetails.specializations || [],
+    //       biography: params.pastorDetails.biography,
+    //     },
+    //   });
+    // }
   } catch (error) {
     console.error('Error creating role-specific details:', error);
     throw error;
@@ -543,7 +480,7 @@ interface UpdateMemberParams {
   maritalStatus?: MaritalStatus;
   occupation?: string;
   // Organization Info
-  organizationRole?: OrganizationRole;
+  role?: OrganizationRole;
   position?: string;
   teamId?: string | null; // null to remove from team
   status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
@@ -620,7 +557,7 @@ export async function updateMemberDetails(
         organizationId: params.organizationId,
         userId: session.user.id,
         role: {
-          in: ['OWNER', 'ADMIN'],
+          hasSome: ['OWNER', 'ADMIN'],
         },
       },
     });
@@ -632,141 +569,146 @@ export async function updateMemberDetails(
       };
     }
     // Step 3: Update member details in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Update User basic info
-      const userUpdateData: any = {};
-      if (params.firstName || params.lastName) {
-        const currentUser = await tx.user.findUnique({
-          where: { id: params.userId },
-          select: { name: true },
-        });
-        const [currentFirst, ...currentLastParts] =
-          currentUser?.name?.split(' ') || [];
-        const currentLast = currentLastParts.join(' ');
-        userUpdateData.name = `${params.firstName || currentFirst} ${params.lastName || currentLast}`;
-      }
-      if (params.email) userUpdateData.email = params.email;
-      if (params.phoneNumber !== undefined)
-        userUpdateData.phoneNumber = params.phoneNumber;
-      if (params.dateOfBirth)
-        userUpdateData.dateOfBirth = new Date(params.dateOfBirth);
-      if (params.gender) userUpdateData.gender = params.gender;
-      if (params.maritalStatus)
-        userUpdateData.maritalStatus = params.maritalStatus;
-      if (params.occupation !== undefined)
-        userUpdateData.occupation = params.occupation;
-      if (params.position !== undefined)
-        userUpdateData.position = params.position;
-      if (params.status) userUpdateData.status = params.status;
-      if (params.organizationRole)
-        userUpdateData.organizationRoles = [params.organizationRole];
-      userUpdateData.updatedBy = session.user.id;
-      if (Object.keys(userUpdateData).length > 0) {
-        await tx.user.update({
-          where: { id: params.userId },
-          data: userUpdateData,
-        });
-      }
-      // 2. Update or create Address
-      if (params.address) {
-        const existingAddress = await tx.address.findUnique({
-          where: { userId: params.userId },
-        });
-        if (existingAddress) {
-          await tx.address.update({
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // 1. Update User basic info
+        const userUpdateData: any = {};
+        if (params.firstName || params.lastName) {
+          const currentUser = await tx.user.findUnique({
+            where: { id: params.userId },
+            select: { name: true },
+          });
+          const [currentFirst, ...currentLastParts] =
+            currentUser?.name?.split(' ') || [];
+          const currentLast = currentLastParts.join(' ');
+          userUpdateData.name = `${params.firstName || currentFirst} ${params.lastName || currentLast}`;
+        }
+        if (params.email) userUpdateData.email = params.email;
+        if (params.phoneNumber !== undefined)
+          userUpdateData.phoneNumber = params.phoneNumber;
+        if (params.dateOfBirth)
+          userUpdateData.dateOfBirth = new Date(params.dateOfBirth);
+        if (params.gender) userUpdateData.gender = params.gender;
+        if (params.maritalStatus)
+          userUpdateData.maritalStatus = params.maritalStatus;
+        if (params.occupation !== undefined)
+          userUpdateData.occupation = params.occupation;
+        if (params.position !== undefined)
+          userUpdateData.position = params.position;
+        if (params.status) userUpdateData.status = params.status;
+        if (params.role) userUpdateData.organizationRoles = [params.role];
+        userUpdateData.updatedBy = session.user.id;
+        if (Object.keys(userUpdateData).length > 0) {
+          await tx.user.update({
+            where: { id: params.userId },
+            data: userUpdateData,
+          });
+        }
+        // 2. Update or create Address
+        if (params.address) {
+          const existingAddress = await tx.address.findUnique({
             where: { userId: params.userId },
-            data: {
-              street: params.address.street ?? existingAddress.street,
-              city: params.address.city ?? existingAddress.city,
-              state: params.address.state ?? existingAddress.state,
-              zipCode: params.address.zipCode ?? existingAddress.zipCode,
-              country: params.address.country ?? existingAddress.country,
-            },
           });
-        } else {
-          await tx.address.create({
-            data: {
-              userId: params.userId,
-              street: params.address.street || '',
-              city: params.address.city || '',
-              state: params.address.state || '',
-              zipCode: params.address.zipCode || '',
-              country: params.address.country || 'Kenya',
-            },
-          });
+          if (existingAddress) {
+            await tx.address.update({
+              where: { userId: params.userId },
+              data: {
+                street: params.address.street ?? existingAddress.street,
+                city: params.address.city ?? existingAddress.city,
+                state: params.address.state ?? existingAddress.state,
+                zipCode: params.address.zipCode ?? existingAddress.zipCode,
+                country: params.address.country ?? existingAddress.country,
+              },
+            });
+          } else {
+            await tx.address.create({
+              data: {
+                userId: params.userId,
+                street: params.address.street || '',
+                city: params.address.city || '',
+                state: params.address.state || '',
+                zipCode: params.address.zipCode || '',
+                country: params.address.country || 'Kenya',
+              },
+            });
+          }
         }
-      }
-      // 3. Update or create Emergency Contact
-      if (params.emergencyContact) {
-        const existingContact = await tx.emergencyContact.findUnique({
-          where: { userId: params.userId },
-        });
-        if (existingContact) {
-          await tx.emergencyContact.update({
+        // 3. Update or create Emergency Contact
+        if (params.emergencyContact) {
+          const existingContact = await tx.emergencyContact.findUnique({
             where: { userId: params.userId },
-            data: {
-              fullName:
-                params.emergencyContact.fullName ?? existingContact.fullName,
-              phoneNumber:
-                params.emergencyContact.phoneNumber ??
-                existingContact.phoneNumber,
-              relationship:
-                params.emergencyContact.relationship ??
-                existingContact.relationship,
-              email: params.emergencyContact.email ?? existingContact.email,
-              address:
-                params.emergencyContact.address ?? existingContact.address,
-            },
           });
-        } else if (
-          params.emergencyContact.fullName &&
-          params.emergencyContact.phoneNumber
-        ) {
-          await tx.emergencyContact.create({
-            data: {
-              userId: params.userId,
-              fullName: params.emergencyContact.fullName,
-              phoneNumber: params.emergencyContact.phoneNumber,
-              relationship: params.emergencyContact.relationship || 'Unknown',
-              email: params.emergencyContact.email,
-              address: params.emergencyContact.address,
-            },
-          });
+          if (existingContact) {
+            await tx.emergencyContact.update({
+              where: { userId: params.userId },
+              data: {
+                fullName:
+                  params.emergencyContact.fullName ?? existingContact.fullName,
+                phoneNumber:
+                  params.emergencyContact.phoneNumber ??
+                  existingContact.phoneNumber,
+                relationship:
+                  params.emergencyContact.relationship ??
+                  existingContact.relationship,
+                email: params.emergencyContact.email ?? existingContact.email,
+                address:
+                  params.emergencyContact.address ?? existingContact.address,
+              },
+            });
+          } else if (
+            params.emergencyContact.fullName &&
+            params.emergencyContact.phoneNumber
+          ) {
+            await tx.emergencyContact.create({
+              data: {
+                userId: params.userId,
+                fullName: params.emergencyContact.fullName,
+                phoneNumber: params.emergencyContact.phoneNumber,
+                relationship: params.emergencyContact.relationship || 'Unknown',
+                email: params.emergencyContact.email,
+                address: params.emergencyContact.address,
+              },
+            });
+          }
         }
-      }
-      // 4. Handle Team assignment
-      if (params.teamId !== undefined) {
-        // Remove from all teams first
-        await tx.teamMember.deleteMany({
-          where: { userId: params.userId },
+        // 4. Handle Team assignment
+        if (params.teamId !== undefined) {
+          // Remove from all teams first
+          await tx.teamMember.deleteMany({
+            where: { userId: params.userId },
+          });
+          // Add to new team if provided
+          if (params.teamId) {
+            await tx.teamMember.create({
+              data: {
+                userId: params.userId,
+                teamId: params.teamId,
+              },
+            });
+          }
+        }
+        // 5. Update role-specific details
+        await updateRoleSpecificDetails(tx, params.userId, params);
+        // Return updated user with all relations
+        return await tx.user.findUnique({
+          where: { id: params.userId },
+          include: {
+            address: true,
+            emergencyContact: true,
+            memberDetails: true,
+            pastorDetails: true,
+            staffDetails: true,
+            volunteerDetails: true,
+            visitorDetails: true,
+            adminDetails: true,
+          },
         });
-        // Add to new team if provided
-        if (params.teamId) {
-          await tx.teamMember.create({
-            data: {
-              userId: params.userId,
-              teamId: params.teamId,
-            },
-          });
-        }
+      },
+      {
+        maxWait: 10_000, // Wait up to 10s to acquire transaction
+        timeout: 10_000, // Transaction can run for up to 10s
       }
-      // 5. Update role-specific details
-      await updateRoleSpecificDetails(tx, params.userId, params);
-      // Return updated user with all relations
-      return await tx.user.findUnique({
-        where: { id: params.userId },
-        include: {
-          address: true,
-          emergencyContact: true,
-          memberDetails: true,
-          pastorDetails: true,
-          staffDetails: true,
-          volunteerDetails: true,
-          visitorDetails: true,
-          adminDetails: true,
-        },
-      });
-    });
+    );
     revalidatePath(
       `/superadmin/organizations/${params.organizationId}/members`
     );
@@ -1149,10 +1091,8 @@ export async function getMemberByUserId(
           occupation: true,
           maritalStatus: true,
           skills: true,
-          position: true,
           notes: true,
           globalRole: true,
-          organizationRoles: true,
           status: true,
           lastLogin: true,
           isPasswordUpdated: true,
@@ -1587,7 +1527,7 @@ export async function getMemberStatistics(
         where: { organizationId },
         include: {
           user: {
-            select: { organizationRoles: true },
+            select: { globalRole: true },
           },
         },
       }),
@@ -1636,7 +1576,7 @@ export async function getMemberStatistics(
     // Process role counts
     const roleCount: Record<string, number> = {};
     membersByRole.forEach((m) => {
-      m.user.organizationRoles?.forEach((role) => {
+      m.user.role?.forEach((role) => {
         roleCount[role] = (roleCount[role] || 0) + 1;
       });
     });
@@ -1702,8 +1642,7 @@ export async function removeMemberFromOrganization(
       where: { id: session.user.id },
       select: { globalRole: true },
     });
-    const canRemove =
-      currentUser?.globalRole === 'SUPER_ADMIN';
+    const canRemove = currentUser?.globalRole === 'SUPER_ADMIN';
     if (!(hasPermission || canRemove)) {
       return {
         success: false,
@@ -1713,42 +1652,34 @@ export async function removeMemberFromOrganization(
     // Don't allow removing OWNER
     const memberToRemove = await prisma.user.findUnique({
       where: { id: userId },
-      select: { organizationRoles: true },
+      select: { globalRole: true },
     });
-    if (memberToRemove?.organizationRoles?.includes('OWNER')) {
+    if (memberToRemove?.globalRole?.includes('OWNER')) {
       return {
         success: false,
         error: 'Cannot remove organization owner',
       };
     }
     // Remove member
-    await prisma.$transaction(async (tx) => {
-      // Remove from all teams
-      await tx.teamMember.deleteMany({
-        where: { userId },
-      });
-      // Remove member record
-      await tx.member.deleteMany({
-        where: {
-          userId,
-          organizationId,
-        },
-      });
-      // Update user's organization roles
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { organizationRoles: true },
-      });
-      if (user?.organizationRoles) {
-        const updatedRoles = user.organizationRoles.filter(
-          (role) => role !== memberToRemove?.organizationRoles?.[0]
-        );
-        await tx.user.update({
-          where: { id: userId },
-          data: { organizationRoles: updatedRoles },
+    await prisma.$transaction(
+      async (tx) => {
+        // Remove from all teams
+        await tx.teamMember.deleteMany({
+          where: { userId },
         });
+        // Remove member record
+        await tx.member.deleteMany({
+          where: {
+            userId,
+            organizationId,
+          },
+        });
+      },
+      {
+        maxWait: 10_000,
+        timeout: 10_000,
       }
-    });
+    );
     revalidatePath(`/superadmin/churches/${organizationId}/members`);
     revalidatePath(`/superadmin/churches/${organizationId}/members`);
     return {
@@ -1776,16 +1707,15 @@ export async function updateMemberRole(
   try {
     // Verify session
     const session = await getServerSession();
-      if (!session?.user) {
-        throw new Error('Unauthorized');
-      }
+    if (!session?.user) {
+      throw new Error('Unauthorized');
+    }
     // Check permission
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { globalRole: true },
     });
-    const canUpdate =
-      currentUser?.globalRole === 'SUPER_ADMIN';
+    const canUpdate = currentUser?.globalRole === 'SUPER_ADMIN';
     if (!canUpdate) {
       return {
         success: false,
@@ -1793,10 +1723,10 @@ export async function updateMemberRole(
       };
     }
     // Update role
-    await prisma.user.update({
+    await prisma.member.update({
       where: { id: userId },
       data: {
-        organizationRoles: [newRole],
+        role: [newRole],
         updatedBy: session.user.id,
       },
     });

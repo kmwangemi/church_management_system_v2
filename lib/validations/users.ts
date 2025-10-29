@@ -132,9 +132,12 @@ export const userSchema = z.object({
   gender: z.enum(['MALE', 'FEMALE'], {
     error: 'Gender is required',
   }),
-  role: z.enum(['MEMBER', 'PASTOR', 'BISHOP', 'ADMIN', 'VISITOR'], {
-    error: 'Role is required',
-  }),
+  role: z
+    .array(
+      z.enum(['OWNER', 'MEMBER', 'STAFF', 'VOLUNTEER', 'VISITOR', 'ADMIN'])
+    )
+    .min(1, 'At least one role is required')
+    .max(2, 'Only a maximum of 2 roles are allowed'),
   teamId: z.string().min(1, 'Please select a branch'),
   sendWelcomeEmail: z.boolean().optional(),
 });
@@ -158,7 +161,12 @@ export const adminDataSchema = z
     sendWelcomeEmail: z.boolean().optional(),
     teamId: z.string().min(1, 'Team ID is required'),
     // organizationId: z.string().min(1, 'Organization ID is required'),
-    role: z.enum(['OWNER', 'MEMBER', 'STAFF', 'VOLUNTEER', 'VISITOR', 'ADMIN']),
+    role: z
+      .array(
+        z.enum(['OWNER', 'MEMBER', 'STAFF', 'VOLUNTEER', 'VISITOR', 'ADMIN'])
+      )
+      .min(1, 'At least one role is required')
+      .max(2, 'Only a maximum of 2 roles are allowed'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

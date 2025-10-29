@@ -628,7 +628,7 @@ model User {
   members           Member[]
   invitations       Invitation[]
   // Extended profile fields
-  phoneNumber       String?
+  phoneNumber       String?            @unique
   dateOfBirth       DateTime?
   gender            Gender?
   occupation        String?
@@ -710,7 +710,7 @@ model Session {
   activeOrganizationId String? // Current active church
   activeTeamId         String? // Current active branch
   // Add this to track member role in session
-  activeMemberRole     String[]  @default([]) // ✅ Changed to array with default empty array
+  activeMemberRole     String[] @default([]) // ✅ Changed to array with default empty array
 
   @@map("session")
 }
