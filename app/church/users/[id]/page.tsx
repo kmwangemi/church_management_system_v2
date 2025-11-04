@@ -3,6 +3,7 @@
 import React from 'react';
 
 import RenderApiError from '@/components/api-error';
+import { getRoleBadge } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -22,12 +23,12 @@ import {
   RenderViewRoleSpecificFields,
   RenderVolunteerView,
 } from '@/components/view-role-specific';
-import { useFetchUserById } from '@/lib/hooks/church/user/use-user-queries';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useAdminMemberDetails } from '@/lib/hooks/admin/use-organization-member-mutation';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
   formatToNewDate,
-  getFirstLetter,
 } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -68,13 +69,14 @@ export default function MemberDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params); // 👈 unwrap the promise
+  const { organizationId } = useActiveOrganization();
   const {
     data: user,
     isLoading: isLoadingUser,
     isError: isErrorUser,
     error: errorUser,
-  } = useFetchUserById(id);
-
+  } = useAdminMemberDetails(id, organizationId);
+  console.log('user detail--->', JSON.stringify(user));
   const attendanceData = [
     { month: 'Jan', attendance: 4, services: 4 },
     { month: 'Feb', attendance: 3, services: 4 },
@@ -166,9 +168,9 @@ export default function MemberDetailsPage({
               </Link>
               <div>
                 <h1 className="font-bold text-3xl tracking-tight">
-                  {`${capitalizeFirstLetter(
-                    user?.firstName || 'N/A'
-                  )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                  {capitalizeFirstLetterOfEachWord(
+                    user?.user.name || 'Not Provided'
+                  )}
                 </h1>
                 <p className="text-muted-foreground">
                   User profile and analytics
@@ -176,7 +178,7 @@ export default function MemberDetailsPage({
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Link href={`/church/users/edit/${user?._id}`}>
+              <Link href={`/church/users/edit/${user?.user?.id}`}>
                 <Button>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Profile
@@ -190,20 +192,32 @@ export default function MemberDetailsPage({
               <CardContent className="flex flex-col items-center space-y-4 p-6">
                 <Avatar className="h-24 w-24">
                   <AvatarImage
-                    alt={user?.firstName || 'User'}
-                    src={user?.profilePictureUrl ?? ''}
+                    alt={user?.user.name || 'User'}
+                    src={user?.user.image ?? ''}
                   />
-                  <AvatarFallback className="text-lg">{`${getFirstLetter(
-                    user?.firstName || ''
-                  )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                    {user?.user.name
+                      .split(' ')
+                      .map((n: string) => n[0].toUpperCase())
+                      .join('')}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
-                  <h3 className="font-semibold text-lg">{`${capitalizeFirstLetter(
-                    user?.firstName || 'N/A'
-                  )} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}</h3>
-                  <p className="text-muted-foreground text-sm">
+                  <h3 className="font-semibold text-lg">
+                    {capitalizeFirstLetterOfEachWord(
+                      user?.user.name || 'Not Provided'
+                    )}
+                  </h3>
+                  {/* <p className="text-muted-foreground text-sm">
                     {capitalizeFirstLetter(user?.role || 'N/A')}
-                  </p>
+                  </p> */}
+
+                  <div className="flex flex-wrap gap-1">
+                    {user?.role?.map((role: string) => (
+                      <span key={role}>{getRoleBadge(role)}</span>
+                    ))}
+                  </div>
+
                   <Badge className="mt-2" variant="default">
                     {capitalizeFirstLetter(user?.status || 'N/A')}
                   </Badge>

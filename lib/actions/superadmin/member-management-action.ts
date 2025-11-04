@@ -43,11 +43,153 @@ interface AddMemberParams {
   sendWelcomeEmail?: boolean;
 }
 
+interface UpdateMemberParams {
+  organizationId: string;
+  userId: string;
+  // Basic Info
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  // Personal Info
+  dateOfBirth?: string;
+  gender?: Gender;
+  maritalStatus?: MaritalStatus;
+  occupation?: string;
+  // Organization Info
+  role?: OrganizationRole;
+  position?: string;
+  teamId?: string | null; // null to remove from team
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  // Address
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  // Emergency Contact
+  emergencyContact?: {
+    fullName?: string;
+    phoneNumber?: string;
+    relationship?: string;
+    email?: string;
+    address?: string;
+  };
+  // Role-Specific Updates
+  memberDetails?: {
+    membershipDate?: string;
+    membershipStatus?: 'ACTIVE' | 'INACTIVE' | 'NEW' | 'TRANSFERRED';
+    baptismDate?: string;
+    departmentIds?: string[];
+    groupIds?: string[];
+  };
+  pastorDetails?: {
+    ordinationDate?: string;
+    qualifications?: string[];
+    specializations?: string[];
+    biography?: string;
+  };
+  staffDetails?: {
+    jobTitle?: string;
+    department?: string;
+    startDate?: string;
+    endDate?: string;
+    salary?: number;
+    employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'CONTRACT';
+    isActive?: boolean;
+  };
+  volunteerDetails?: {
+    volunteerStatus?: 'ACTIVE' | 'INACTIVE' | 'ON_HOLD' | 'SUSPENDED';
+    departments?: string[];
+    hoursContributed?: number;
+    availableDays?: string[];
+    preferredTimes?: string[];
+  };
+  visitorDetails?: {
+    howDidYouHear?: string;
+    followUpStatus?: 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'DECLINED';
+    followUpNotes?: string;
+    interestedInMembership?: boolean;
+  };
+  adminDetails?: {
+    accessLevel?: 'NATIONAL' | 'REGIONAL' | 'TEAM';
+    assignedTeams?: string[];
+  };
+}
+
+interface MemberFullDetails {
+  user: any;
+  address: any;
+  emergencyContact: any;
+  memberDetails: any;
+  pastorDetails: any;
+  staffDetails: any;
+  volunteerDetails: any;
+  visitorDetails: any;
+  adminDetails: any;
+  organizations: any[];
+  teams: any[];
+  subscriptions: any[];
+}
+
 interface ServerActionResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+}
+
+export interface GetMembersParams {
+  organizationId: string;
+  role?: OrganizationRole;
+  status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'name' | 'email' | 'createdAt' | 'status';
+  sortOrder?: 'asc' | 'desc';
+  gender?: Gender;
+  maritalStatus?: MaritalStatus;
+  dateFrom?: string; // Filter by memberSince date
+  dateTo?: string;
+}
+
+interface PaginatedResponse<T> {
+  members: T[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+interface MemberStatistics {
+  totalMembers: number;
+  activeMembers: number;
+  inactiveMembers: number;
+  byRole: {
+    role: string;
+    count: number;
+  }[];
+  byTeam: {
+    teamId: string;
+    teamName: string;
+    count: number;
+  }[];
+  recentJoins: {
+    userId: string;
+    name: string;
+    joinedAt: Date;
+  }[];
+  missingInfo: {
+    missingAddress: number;
+    missingEmergencyContact: number;
+    missingPhone: number;
+  };
 }
 
 // ============================================
@@ -465,82 +607,6 @@ async function createRoleSpecificDetails(
 // ============================================
 // UPDATE MEMBER DETAILS (COMPREHENSIVE)
 // ============================================
-
-interface UpdateMemberParams {
-  organizationId: string;
-  userId: string;
-  // Basic Info
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phoneNumber?: string;
-  // Personal Info
-  dateOfBirth?: string;
-  gender?: Gender;
-  maritalStatus?: MaritalStatus;
-  occupation?: string;
-  // Organization Info
-  role?: OrganizationRole;
-  position?: string;
-  teamId?: string | null; // null to remove from team
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  // Address
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-  // Emergency Contact
-  emergencyContact?: {
-    fullName?: string;
-    phoneNumber?: string;
-    relationship?: string;
-    email?: string;
-    address?: string;
-  };
-  // Role-Specific Updates
-  memberDetails?: {
-    membershipDate?: string;
-    membershipStatus?: 'ACTIVE' | 'INACTIVE' | 'NEW' | 'TRANSFERRED';
-    baptismDate?: string;
-    departmentIds?: string[];
-    groupIds?: string[];
-  };
-  pastorDetails?: {
-    ordinationDate?: string;
-    qualifications?: string[];
-    specializations?: string[];
-    biography?: string;
-  };
-  staffDetails?: {
-    jobTitle?: string;
-    department?: string;
-    startDate?: string;
-    endDate?: string;
-    salary?: number;
-    employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'CONTRACT';
-    isActive?: boolean;
-  };
-  volunteerDetails?: {
-    volunteerStatus?: 'ACTIVE' | 'INACTIVE' | 'ON_HOLD' | 'SUSPENDED';
-    departments?: string[];
-    hoursContributed?: number;
-    availableDays?: string[];
-    preferredTimes?: string[];
-  };
-  visitorDetails?: {
-    howDidYouHear?: string;
-    followUpStatus?: 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'DECLINED';
-    followUpNotes?: string;
-    interestedInMembership?: boolean;
-  };
-  adminDetails?: {
-    accessLevel?: 'NATIONAL' | 'REGIONAL' | 'TEAM';
-    assignedTeams?: string[];
-  };
-}
 
 export async function updateMemberDetails(
   params: UpdateMemberParams
@@ -1010,21 +1076,6 @@ async function updateRoleSpecificDetails(
 // GET MEMBER DETAILS BY USER ID
 // ============================================
 
-interface MemberFullDetails {
-  user: any;
-  address: any;
-  emergencyContact: any;
-  memberDetails: any;
-  pastorDetails: any;
-  staffDetails: any;
-  volunteerDetails: any;
-  visitorDetails: any;
-  adminDetails: any;
-  organizations: any[];
-  teams: any[];
-  subscriptions: any[];
-}
-
 export async function getMemberByUserId(
   userId: string,
   organizationId?: string
@@ -1237,32 +1288,6 @@ export async function getMemberByUserId(
 // GET ALL MEMBERS OF AN ORGANIZATION
 // ============================================
 
-export interface GetMembersParams {
-  organizationId: string;
-  role?: OrganizationRole;
-  status?: string;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-  sortBy?: 'name' | 'email' | 'createdAt' | 'status';
-  sortOrder?: 'asc' | 'desc';
-  gender?: Gender;
-  maritalStatus?: MaritalStatus;
-  dateFrom?: string; // Filter by memberSince date
-  dateTo?: string;
-}
-
-interface PaginatedResponse<T> {
-  members: T[];
-  pagination: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
-}
-
 export async function getOrganizationMembers(
   params: GetMembersParams
 ): Promise<ServerActionResponse<PaginatedResponse<any>>> {
@@ -1309,9 +1334,11 @@ export async function getOrganizationMembers(
     };
     // User-level filters
     const userConditions: any = {};
-    // Role filter
+    // Role filter - THIS SHOULD BE AT MEMBER LEVEL, NOT USER LEVEL
     if (role) {
-      userConditions.role = role;
+      whereConditions.role = {
+        has: role, // checks if the array contains that role
+      };
     }
     // Status filter
     if (status) {
@@ -1328,12 +1355,23 @@ export async function getOrganizationMembers(
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      userConditions.OR = [
-        { name: { contains: searchLower, mode: 'insensitive' } },
-        { email: { contains: searchLower, mode: 'insensitive' } },
-        { phoneNumber: { contains: searchLower, mode: 'insensitive' } },
-        { position: { contains: searchLower, mode: 'insensitive' } },
-        { occupation: { contains: searchLower, mode: 'insensitive' } },
+      // Create an OR condition at the top level to search across both Member and User fields
+      whereConditions.OR = [
+        // Search in User fields
+        {
+          user: {
+            OR: [
+              { name: { contains: searchLower, mode: 'insensitive' } },
+              { email: { contains: searchLower, mode: 'insensitive' } },
+              { phoneNumber: { contains: searchLower, mode: 'insensitive' } },
+              { occupation: { contains: searchLower, mode: 'insensitive' } },
+            ],
+          },
+        },
+        // Search in Member fields
+        {
+          position: { contains: searchLower, mode: 'insensitive' },
+        },
       ];
     }
     // Apply user conditions
@@ -1439,31 +1477,6 @@ export async function getOrganizationMembers(
       error: error.message || 'Failed to fetch organization members',
     };
   }
-}
-
-interface MemberStatistics {
-  totalMembers: number;
-  activeMembers: number;
-  inactiveMembers: number;
-  byRole: {
-    role: string;
-    count: number;
-  }[];
-  byTeam: {
-    teamId: string;
-    teamName: string;
-    count: number;
-  }[];
-  recentJoins: {
-    userId: string;
-    name: string;
-    joinedAt: Date;
-  }[];
-  missingInfo: {
-    missingAddress: number;
-    missingEmergencyContact: number;
-    missingPhone: number;
-  };
 }
 
 export async function getMemberStatistics(

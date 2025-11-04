@@ -41,21 +41,20 @@ import {
   RenderUpdateRoleSpecificFields,
   RenderVolunteerUpdate,
 } from '@/components/update-role-specific';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useAdminMemberDetails } from '@/lib/hooks/admin/use-organization-member-mutation';
 import { useFetchDepartments } from '@/lib/hooks/church/department/use-department-queries';
 import { useFetchGroups } from '@/lib/hooks/church/group/use-group-queries';
-import {
-  useFetchUserById,
-  useUpdateUserById,
-} from '@/lib/hooks/church/user/use-user-queries';
+import { useUpdateUserById } from '@/lib/hooks/church/user/use-user-queries';
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
   capitalizeFirstLetter,
+  CHURCH_ROLE_OPTIONS,
   GENDER_OPTIONS,
   getFirstLetter,
   getRelativeYear,
   MARITAL_STATUS_OPTIONS,
-  CHURCH_ROLE_OPTIONS,
   USER_STATUS_OPTIONS,
 } from '@/lib/utils';
 import {
@@ -75,6 +74,7 @@ export default function EditMemberPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
+  const { organizationId } = useActiveOrganization();
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
     null
@@ -86,7 +86,7 @@ export default function EditMemberPage({
     isLoading: isLoadingUser,
     isError: isErrorUser,
     error: errorUser,
-  } = useFetchUserById(id);
+  } = useAdminMemberDetails(id, organizationId);
   const {
     upload,
     isUploading,

@@ -1,11 +1,14 @@
 'use client';
 
 import RenderApiError from '@/components/api-error';
+import { BranchCombobox } from '@/components/branch-combobox';
+import { CountrySelect } from '@/components/country-list-input';
+import { getRoleBadge, getStatusBadge } from '@/components/helpers';
+import { MultiSelect } from '@/components/multi-select';
 import { PasswordInput } from '@/components/password-input';
 import { PhoneInput } from '@/components/phone-number-input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -95,9 +98,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { BranchCombobox } from '../branch-combobox';
-import { CountrySelect } from '../country-list-input';
-import { MultiSelect } from '../multi-select';
 
 interface ManageChurchUsersDialogProps {
   open: boolean;
@@ -159,38 +159,7 @@ export function ManageChurchUsersDialog({
     }
   };
   const { members = [], pagination } = data || {};
-  const getRoleBadge = (role: string) => {
-    const roleColors: Record<string, string> = {
-      OWNER: 'bg-purple-100 text-purple-800',
-      ADMIN: 'bg-red-100 text-red-800',
-      STAFF: 'bg-green-100 text-green-800',
-      VOLUNTEER: 'bg-orange-100 text-orange-800',
-      MEMBER: 'bg-blue-100 text-blue-800',
-      VISITOR: 'bg-yellow-100 text-yellow-800',
-    };
-    return (
-      <Badge className={roleColors[role] || 'bg-gray-100 text-gray-800'}>
-        {role}
-      </Badge>
-    );
-  };
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      active: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      SUSPENDED: 'bg-red-100 text-red-800',
-      suspended: 'bg-red-100 text-red-800',
-      INACTIVE: 'bg-gray-100 text-gray-800',
-      inactive: 'bg-gray-100 text-gray-800',
-    };
-    return (
-      <Badge className={statusColors[status] || 'bg-gray-100 text-gray-800'}>
-        {status}
-      </Badge>
-    );
-  };
+
   // Updated delete handler
   const handleDeleteUser = (memberId: string, deleteUser = false) => {
     if (
@@ -407,7 +376,7 @@ export function ManageChurchUsersDialog({
                             <AvatarFallback>
                               {member.user.name
                                 ?.split(' ')
-                                .map((n) => n[0])
+                                .map((n: string) => n[0])
                                 .join('')
                                 .slice(0, 2)
                                 .toUpperCase() || 'U'}

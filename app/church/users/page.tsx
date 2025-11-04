@@ -3,11 +3,10 @@
 import RenderApiError from '@/components/api-error';
 import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
 import { AddUserForm } from '@/components/forms/add-user-form';
-import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
+import { getRoleBadge, getStatusBadge } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -97,6 +96,7 @@ export default function UsersPage() {
     organizationId,
     page,
     // pageSize: 20,
+    status: selectedStatus === 'all' ? '' : selectedStatus,
     search: searchQuery,
     // role: 'MEMBER',
     // sortBy: 'name',
@@ -131,7 +131,8 @@ export default function UsersPage() {
           );
           break;
         case 'staff':
-          filtered = filtered.filter((user) => user.role === 'STAFF');
+          // Fixed: Check if 'STAFF' exists in the role array
+          filtered = filtered.filter((user) => user.role?.includes('STAFF'));
           break;
         default:
           break;
@@ -146,7 +147,8 @@ export default function UsersPage() {
       total: allUsers.length,
       active: allUsers.filter((u) => u.user.status === 'ACTIVE').length,
       inactive: allUsers.filter((u) => u.user.status === 'INACTIVE').length,
-      staff: allUsers.filter((u) => u.user.isStaff === true).length,
+      // Fixed: Check if 'STAFF' exists in the role array
+      staff: allUsers.filter((u) => u.role?.includes('STAFF')).length,
     };
   }, [users]);
   const handleDeleteUser = async (memberId: string) => {
@@ -284,9 +286,10 @@ export default function UsersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="growing">Growing</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="SUSPENDED">Suspended</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -360,13 +363,11 @@ export default function UsersPage() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              className="flex w-fit items-center gap-1"
-                              variant={getRoleBadgeVariant(user.role)}
-                            >
-                              {getRoleIcon(user.role)}
-                              {user.role}
-                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {user.role?.map((role: string) => (
+                                <span key={role}>{getRoleBadge(role)}</span>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
@@ -390,15 +391,7 @@ export default function UsersPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={
-                                user?.user.status === 'ACTIVE'
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                            >
-                              {user?.user.status}
-                            </Badge>
+                            {getStatusBadge(user.user.status)}
                           </TableCell>
                           <TableCell>
                             <span className="text-gray-900 text-sm">
@@ -434,7 +427,9 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link href={`/church/users/edit/${user?.id}`}>
+                                  <Link
+                                    href={`/church/users/edit/${user?.id}`}
+                                  >
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit User
                                   </Link>

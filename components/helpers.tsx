@@ -1,27 +1,35 @@
-import { Crown, UserCheck, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-export const getRoleIcon = (role: string) => {
-  switch (role.toLowerCase()) {
-    case 'pastor':
-    case 'bishop':
-      return <Crown className="h-4 w-4" />;
-    case 'admin':
-      return <UserCheck className="h-4 w-4" />;
-    default:
-      return <Users className="h-4 w-4" />;
-  }
+export const getRoleBadge = (role: string) => {
+  const roleColors: Record<string, string> = {
+    OWNER: 'bg-purple-100 text-purple-800',
+    ADMIN: 'bg-red-100 text-red-800',
+    STAFF: 'bg-green-100 text-green-800',
+    VOLUNTEER: 'bg-orange-100 text-orange-800',
+    MEMBER: 'bg-blue-100 text-blue-800',
+    VISITOR: 'bg-yellow-100 text-yellow-800',
+  };
+  return (
+    <Badge className={roleColors[role] || 'bg-gray-100 text-gray-800'}>
+      {role}
+    </Badge>
+  );
 };
 
-export const getRoleBadgeVariant = (role: string) => {
-  switch (role.toLowerCase()) {
-    case 'pastor':
-    case 'bishop':
-      return 'default';
-    case 'admin':
-      return 'secondary';
-    case 'volunteer':
-      return 'outline';
-    default:
-      return 'secondary';
-  }
+export const getStatusBadge = (status: string) => {
+  const statusColors: Record<string, string> = {
+    ACTIVE: 'bg-green-100 text-green-800',
+    active: 'bg-green-100 text-green-800',
+    PENDING: 'bg-yellow-100 text-yellow-800',
+    pending: 'bg-yellow-100 text-yellow-800',
+    SUSPENDED: 'bg-red-100 text-red-800',
+    suspended: 'bg-red-100 text-red-800',
+    INACTIVE: 'bg-gray-100 text-gray-800',
+    inactive: 'bg-gray-100 text-gray-800',
+  };
+  return (
+    <Badge className={statusColors[status] || 'bg-gray-100 text-gray-800'}>
+      {status}
+    </Badge>
+  );
 };

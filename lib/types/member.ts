@@ -7,7 +7,7 @@ export interface Member {
   id: string;
   organizationId: string;
   userId: string;
-  role: string;
+  role: string[];
   position: string;
   createdAt: Date; // ISO date string
   user: User;
