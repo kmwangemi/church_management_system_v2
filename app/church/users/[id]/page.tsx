@@ -3,7 +3,7 @@
 import React from 'react';
 
 import RenderApiError from '@/components/api-error';
-import { getRoleBadge } from '@/components/helpers';
+import { getRoleBadge, getStatusBadge } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -148,7 +148,7 @@ export default function MemberDetailsPage({
     { value: 'activity', label: 'Activity' },
   ];
 
-  const currentRole = user?.role;
+  const roles = user?.member?.role;
 
   return (
     <div className="space-y-6">
@@ -208,28 +208,23 @@ export default function MemberDetailsPage({
                       user?.user.name || 'Not Provided'
                     )}
                   </h3>
-                  {/* <p className="text-muted-foreground text-sm">
-                    {capitalizeFirstLetter(user?.role || 'N/A')}
-                  </p> */}
-
                   <div className="flex flex-wrap gap-1">
-                    {user?.role?.map((role: string) => (
+                    {user?.member?.role?.map((role: string) => (
                       <span key={role}>{getRoleBadge(role)}</span>
                     ))}
                   </div>
-
-                  <Badge className="mt-2" variant="default">
-                    {capitalizeFirstLetter(user?.status || 'N/A')}
-                  </Badge>
+                  <div className="mt-2">
+                    {getStatusBadge(user?.user?.status || 'ACTIVE')}
+                  </div>
                 </div>
                 <div className="w-full space-y-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">{user?.email}</span>
+                    <span className="truncate">{user?.user?.email}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{user?.phoneNumber}</span>
+                    <span>{user?.user?.phoneNumber}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -326,10 +321,10 @@ export default function MemberDetailsPage({
                           Birth Date
                         </Label>
                         <p className="text-muted-foreground text-sm">
-                          {user?.dateOfBirth
-                            ? typeof user.dateOfBirth === 'string'
-                              ? formatToNewDate(user.dateOfBirth)
-                              : formatToNewDate(user.dateOfBirth)
+                          {user?.user?.dateOfBirth
+                            ? typeof user?.user?.dateOfBirth === 'string'
+                              ? formatToNewDate(user?.user?.dateOfBirth)
+                              : formatToNewDate(user?.user?.dateOfBirth)
                             : 'N/A'}
                         </p>
                       </div>
@@ -338,7 +333,9 @@ export default function MemberDetailsPage({
                           Marital Status
                         </Label>
                         <p className="text-muted-foreground text-sm">
-                          {capitalizeFirstLetter(user?.maritalStatus || 'N/A')}
+                          {capitalizeFirstLetter(
+                            user?.user?.maritalStatus || 'N/A'
+                          )}
                         </p>
                       </div>
                       <div>
@@ -346,7 +343,9 @@ export default function MemberDetailsPage({
                           Occupation
                         </Label>
                         <p className="text-muted-foreground text-sm">
-                          {capitalizeFirstLetter(user?.occupation || 'N/A')}
+                          {capitalizeFirstLetter(
+                            user?.user?.occupation || 'N/A'
+                          )}
                         </p>
                       </div>
                       <div>
@@ -354,7 +353,7 @@ export default function MemberDetailsPage({
                           Gender
                         </Label>
                         <p className="text-muted-foreground text-sm">
-                          {capitalizeFirstLetter(user?.gender || 'N/A')}
+                          {capitalizeFirstLetter(user?.user?.gender || 'N/A')}
                         </p>
                       </div>
                     </div>
@@ -366,11 +365,8 @@ export default function MemberDetailsPage({
                       >
                         Role-Specific Information
                       </Label>
-                      <RenderMemberView currentRole={currentRole} user={user} />
-                      <RenderViewRoleSpecificFields
-                        currentRole={currentRole}
-                        user={user}
-                      />
+                      <RenderMemberView roles={roles} user={user} />
+                      <RenderViewRoleSpecificFields roles={roles} user={user} />
                     </div>
                     <div>
                       <Label className="font-medium text-sm" htmlFor={''}>
@@ -381,7 +377,7 @@ export default function MemberDetailsPage({
                           Name:
                         </span>
                         {capitalizeFirstLetterOfEachWord(
-                          user?.emergencyDetails?.emergencyContactFullName ||
+                          user?.emergencyContact?.emergencyContactFullName ||
                             'N/A'
                         )}
                       </p>
@@ -389,13 +385,13 @@ export default function MemberDetailsPage({
                         <span className="mr-2 text-gray-900 text-sm">
                           Email:
                         </span>
-                        {user?.emergencyDetails?.emergencyContactEmail || 'N/A'}
+                        {user?.emergencyContact?.emergencyContactEmail || 'N/A'}
                       </p>
                       <p className="text-muted-foreground text-sm">
                         <span className="mr-2 text-gray-900 text-sm">
                           Phone Number:
                         </span>
-                        {user?.emergencyDetails?.emergencyContactPhoneNumber ||
+                        {user?.emergencyContact?.emergencyContactPhoneNumber ||
                           'N/A'}
                       </p>
                       <p className="text-muted-foreground text-sm">
@@ -403,7 +399,7 @@ export default function MemberDetailsPage({
                           Relationship:
                         </span>
                         {capitalizeFirstLetterOfEachWord(
-                          user?.emergencyDetails
+                          user?.emergencyContact
                             ?.emergencyContactRelationship || 'N/A'
                         )}
                       </p>
@@ -412,7 +408,7 @@ export default function MemberDetailsPage({
                           Address:
                         </span>
                         {capitalizeFirstLetterOfEachWord(
-                          user?.emergencyDetails?.emergencyContactAddress ||
+                          user?.emergencyContact?.emergencyContactAddress ||
                             'N/A'
                         )}
                       </p>
@@ -421,7 +417,7 @@ export default function MemberDetailsPage({
                           Notes:
                         </span>
                         {capitalizeFirstLetterOfEachWord(
-                          user?.emergencyDetails?.emergencyContactNotes || 'N/A'
+                          user?.emergencyContact?.emergencyContactNotes || 'N/A'
                         )}
                       </p>
                     </div>
@@ -485,8 +481,8 @@ export default function MemberDetailsPage({
               </div>
               {/* Staff and Volunteer Information */}
               <div className="grid gap-6 md:grid-cols-2">
-                <RenderStaffView user={user} />
-                <RenderVolunteerView user={user} />
+                <RenderStaffView roles={roles} user={user} />
+                <RenderVolunteerView roles={roles} user={user} />
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Ministry Involvement */}
@@ -542,7 +538,7 @@ export default function MemberDetailsPage({
                         Skills
                       </Label>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {user?.skills?.map((skill, index) => (
+                        {user?.user?.skills?.map((skill, index) => (
                           <Badge key={index} variant="secondary">
                             {capitalizeFirstLetter(skill || 'N/A')}
                           </Badge>
@@ -554,7 +550,7 @@ export default function MemberDetailsPage({
                         Notes
                       </Label>
                       <p className="text-muted-foreground text-sm">
-                        {capitalizeFirstLetter(user?.notes || 'N/A')}
+                        {capitalizeFirstLetter(user?.user?.notes || 'N/A')}
                       </p>
                     </div>
                   </CardContent>

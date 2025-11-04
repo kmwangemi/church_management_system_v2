@@ -901,7 +901,6 @@ model MemberDetails {
   memberId         String
   membershipDate   DateTime         @default(now())
   membershipStatus MembershipStatus @default(ACTIVE)
-  occupation       String?
   baptismDate      DateTime?
   joinedDate       DateTime         @default(now())
   createdAt        DateTime         @default(now())

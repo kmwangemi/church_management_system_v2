@@ -120,183 +120,6 @@ interface AdminUpdateMemberParams {
   };
 }
 
-export interface AdminMemberFullDetails {
-  user: User;
-  address: Address | null;
-  emergencyContact: EmergencyContact | null;
-  memberDetails: MemberDetails | null;
-  pastorDetails: PastorDetails | null;
-  staffDetails: StaffDetails | null;
-  volunteerDetails: VolunteerDetails | null;
-  visitorDetails: VisitorDetails | null;
-  adminDetails: AdminDetails | null;
-  organizations: Organization[];
-  teams: Team[];
-  subscriptions: Subscription[];
-}
-
-// ---------- USER ----------
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  image: string | null;
-  phoneNumber: string;
-  dateOfBirth: string | null;
-  gender: 'MALE' | 'FEMALE' | string | null;
-  occupation: string | null;
-  maritalStatus: string | null;
-  skills: string[];
-  notes: string | null;
-  globalRole: 'USER' | 'ADMIN' | 'SUPER_ADMIN' | string;
-  status: 'ACTIVE' | 'INACTIVE' | string;
-  lastLogin: string | null;
-  isPasswordUpdated: boolean;
-  agreeToTerms: boolean;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string | null;
-  updatedBy: string | null;
-}
-
-// ---------- ADDRESS ----------
-export interface Address {
-  id: string;
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-  organizationId: string | null;
-  teamId: string | null;
-}
-
-// ---------- EMERGENCY CONTACT ----------
-export interface EmergencyContact {
-  id: string;
-  name: string;
-  relationship: string;
-  phoneNumber: string;
-  email?: string | null;
-  address?: string | null;
-  userId?: string;
-}
-
-// ---------- MEMBER DETAILS ----------
-export interface MemberDetails {
-  id: string;
-  memberId: string;
-  membershipDate: string;
-  membershipStatus: 'ACTIVE' | 'INACTIVE' | string;
-  occupation: string | null;
-  baptismDate: string | null;
-  joinedDate: string;
-  createdAt: string;
-  updatedAt: string;
-  departmentIds: string[];
-  groupIds: string[];
-  userId: string;
-}
-
-// ---------- ADMIN DETAILS ----------
-export interface AdminDetails {
-  id: string;
-  adminId: string;
-  accessLevel: 'LOCAL' | 'REGIONAL' | 'NATIONAL' | string;
-  createdAt: string;
-  updatedAt: string;
-  assignedTeams: string[];
-  userId: string;
-}
-
-// ---------- ORGANIZATION ----------
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  logo: string | null;
-  denomination: string | null;
-  email: string | null;
-  phoneNumber: string | null;
-  status: 'ACTIVE' | 'INACTIVE' | string;
-  createdAt: string;
-  memberSince?: string;
-}
-
-// ---------- TEAM ----------
-export interface Team {
-  id: string;
-  name: string;
-  organizationId: string;
-  email: string | null;
-  phoneNumber: string | null;
-  description: string | null;
-  isActive: boolean;
-  address: string | null;
-  joinedAt: string;
-}
-
-// ---------- SUBSCRIPTION ----------
-export interface Subscription {
-  id: string;
-  plan: string;
-  status: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | string;
-  isPaid: boolean;
-  invoiceAmount: number;
-  paidAmount: number;
-  balAmount: number;
-  features: string[];
-  churchId: string | null;
-  maxSmallGroupsLead: number;
-  currentSmallGroupsLead: number;
-  maxEventsManage: number;
-  currentEventsManage: number;
-  startDate: string;
-  endDate: string;
-  isAutoRenew: boolean;
-  paymentMethod: 'M_PESA' | 'CREDIT_CARD' | string;
-  lastPaymentDate: string | null;
-  nextBillingDate: string | null;
-  canceledAt: string | null;
-  cancelReason: string | null;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-}
-
-// ---------- OPTIONAL ROLES ----------
-export interface PastorDetails {
-  id?: string;
-  userId?: string;
-  ordinationDate?: string;
-  ministryArea?: string;
-}
-
-export interface StaffDetails {
-  id?: string;
-  userId?: string;
-  position?: string;
-  departmentId?: string;
-}
-
-export interface VolunteerDetails {
-  id?: string;
-  userId?: string;
-  role?: string;
-  teamId?: string;
-}
-
-export interface VisitorDetails {
-  id?: string;
-  userId?: string;
-  firstVisitDate?: string;
-  invitedBy?: string;
-}
-
 interface AdminServerActionResponse<T = any> {
   success: boolean;
   data?: T;
@@ -354,6 +177,281 @@ interface AdminMemberStatistics {
     missingEmergencyContact: number;
     missingPhone: number;
   };
+}
+
+// ============================================
+// FULL MEMBER DETAILS INTERFACE
+// ============================================
+
+export interface AdminMemberFullDetails {
+  member: IMember; // ✅ ADD THIS - the member record with role and position
+  user: User;
+  address: Address | null;
+  emergencyContact: EmergencyContact | null;
+  memberDetails: MemberDetails | null;
+  pastorDetails: PastorDetails | null;
+  staffDetails: StaffDetails | null;
+  volunteerDetails: VolunteerDetails | null;
+  visitorDetails: VisitorDetails | null;
+  adminDetails: AdminDetails | null;
+  organizations: Organization[];
+  teams: Team[];
+  subscriptions: Subscription[];
+}
+
+// ---------- MEMBER ----------
+export interface IMember {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: ('OWNER' | 'ADMIN' | 'MEMBER' | 'STAFF' | 'VOLUNTEER' | 'VISITOR')[]; // ✅ Array of roles
+  position: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
+  organization?: Organization; // Optional if included
+}
+
+// ---------- USER ----------
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  phoneNumber: string | null; // ✅ CHANGED: Should be nullable
+  dateOfBirth: Date | null;
+  gender: 'MALE' | 'FEMALE' | null;
+  occupation: string | null;
+  maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | null; // ✅ More specific
+  skills: string[];
+  notes: string | null;
+  globalRole: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  lastLogin: string | null;
+  isPasswordUpdated: boolean;
+  agreeToTerms: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
+}
+
+// ---------- ADDRESS ----------
+export interface Address {
+  id: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  organizationId: string | null;
+  teamId: string | null;
+}
+
+// ---------- EMERGENCY CONTACT ----------
+export interface EmergencyContact {
+  id: string;
+  emergencyContactFullName: string; // ✅ CHANGED: Your schema uses 'fullName' not 'name'
+  emergencyContactRelationship: string;
+  emergencyContactPhoneNumber: string;
+  emergencyContactEmail: string | null;
+  emergencyContactAddress: string | null;
+  emergencyContactNotes: string | null;
+  userId: string;
+  createdAt: string; // ✅ ADD
+  updatedAt: string; // ✅ ADD
+}
+
+// ---------- MEMBER DETAILS ----------
+export interface MemberDetails {
+  id: string;
+  memberId: string;
+  membershipDate: string | null; // ✅ CHANGED: Can be null
+  membershipStatus: 'ACTIVE' | 'INACTIVE' | 'NEW' | 'TRANSFERRED';
+  baptismDate: string | null;
+  joinedDate: Date | null;
+  createdAt: string;
+  updatedAt: string;
+  departmentIds: string[];
+  groupIds: string[];
+  userId: string;
+}
+
+// ---------- ADMIN DETAILS ----------
+export interface AdminDetails {
+  id: string;
+  adminId: string;
+  accessLevel: 'TEAM' | 'REGIONAL' | 'NATIONAL'; // ✅ CHANGED: 'LOCAL' -> 'TEAM'
+  createdAt: string;
+  updatedAt: string;
+  assignedTeams: string[];
+  userId: string;
+}
+
+// ---------- ORGANIZATION ----------
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  denomination: string | null;
+  email: string | null;
+  phoneNumber: string | null;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  memberSince?: string;
+  role?: ('OWNER' | 'ADMIN' | 'MEMBER' | 'STAFF' | 'VOLUNTEER' | 'VISITOR')[]; // ✅ ADD: From mapping
+  position?: string | null; // ✅ ADD: From mapping
+}
+
+// ---------- TEAM ----------
+export interface Team {
+  id: string;
+  name: string;
+  organizationId: string;
+  email: string | null;
+  phoneNumber: string | null;
+  description: string | null;
+  isActive: boolean;
+  address: string | null;
+  joinedAt?: string; // ✅ ADD: From mapping
+}
+
+// ---------- SUBSCRIPTION ----------
+export interface Subscription {
+  id: string;
+  plan: 'CONNECT' | 'GROW' | 'ENTERPRISE' | string;
+  status: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED';
+  isPaid: boolean;
+  invoiceAmount: number;
+  paidAmount: number;
+  balAmount: number;
+  features: string[];
+  maxSmallGroupsLead: number | null; // ✅ ADD: nullable
+  currentSmallGroupsLead: number | null; // ✅ ADD: nullable
+  maxEventsManage: number | null; // ✅ ADD: nullable
+  currentEventsManage: number | null; // ✅ ADD: nullable
+  startDate: string;
+  endDate: string;
+  isAutoRenew: boolean;
+  paymentMethod: 'M_PESA' | 'CREDIT_CARD' | null;
+  lastPaymentDate: string | null;
+  nextBillingDate: string | null;
+  canceledAt: string | null;
+  cancelReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
+
+// ---------- PASTOR DETAILS ----------
+export interface PastorDetails {
+  id: string;
+  pastorId: string;
+  userId: string;
+  ordinationDate: string | null;
+  qualifications: string[];
+  specializations: string[];
+  biography: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignments?: PastorAssignment[]; // ✅ ADD: From your query
+}
+
+export interface PastorAssignment {
+  id: string;
+  pastorDetailsId: string;
+  teamId: string;
+  role: string;
+  startDate: string;
+  endDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------- STAFF DETAILS ----------
+export interface StaffDetails {
+  id: string;
+  staffId: string;
+  userId: string;
+  jobTitle: string | null;
+  department: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  salary: number | null;
+  employmentType: 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'CONTRACT';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------- VOLUNTEER DETAILS ----------
+export interface VolunteerDetails {
+  id: string;
+  volunteerId: string;
+  userId: string;
+  volunteerStatus: 'ACTIVE' | 'INACTIVE' | 'ON_HOLD' | 'SUSPENDED';
+  departments: string[];
+  hoursContributed: number;
+  createdAt: string;
+  updatedAt: string;
+  availabilitySchedule?: AvailabilitySchedule | null; // ✅ ADD: From your query
+  volunteerRoles?: VolunteerRole[]; // ✅ ADD: From your query
+  backgroundCheck?: BackgroundCheck | null; // ✅ ADD: From your query
+}
+
+export interface AvailabilitySchedule {
+  id: string;
+  volunteerDetailsId: string;
+  days: string[];
+  timeSlots: string[];
+  preferredTimes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VolunteerRole {
+  id: string;
+  volunteerDetailsId: string;
+  role: string;
+  departmentId: string | null;
+  startDate: string;
+  endDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BackgroundCheck {
+  id: string;
+  volunteerDetailsId: string;
+  checkDate: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------- VISITOR DETAILS ----------
+export interface VisitorDetails {
+  id: string;
+  visitorId: string;
+  userId: string;
+  visitDate: string;
+  howDidYouHear: string;
+  followUpStatus: 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'DECLINED';
+  followUpNotes: string | null;
+  interestedInMembership: boolean;
+  invitedBy: string | null;
+  servicesAttended: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============================================
@@ -1229,7 +1327,7 @@ async function adminUpdateRoleSpecificDetails(
 // ADMIN GET MEMBER DETAILS BY USER ID
 // ============================================
 
-export async function adminGetMemberByMemberId(
+export async function adminGetMemberByUserId(
   memberId: string,
   organizationId: string
 ): Promise<AdminServerActionResponse<AdminMemberFullDetails>> {

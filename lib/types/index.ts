@@ -128,9 +128,21 @@ export interface StaffUpdateFormProps {
 
 export interface UserViewProps {
   user: UserResponse | undefined;
+  roles?: OrganizationRole[]; // Add roles array
 }
 
 export interface RoleViewProps {
   currentRole: string | undefined;
   user: UserResponse | undefined;
+  roles?: OrganizationRole[]; // Add roles array
 }
+
+export type OrganizationRole =
+  | 'OWNER'
+  | 'ADMIN'
+  | 'MEMBER'
+  | 'STAFF'
+  | 'VOLUNTEER'
+  | 'VISITOR'
+  | 'PASTOR'
+  | 'BISHOP';
