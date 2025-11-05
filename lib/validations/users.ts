@@ -37,7 +37,7 @@ const emergencyDetailsSchema = z.object({
 const memberDetailsSchema = z.object({
   memberId: optionalString,
   membershipDate: optionalString,
-  membershipStatus: z.enum(['active', 'inactive', 'transferred', 'deceased']),
+  membershipStatus: z.enum(['ACTIVE', 'INACTIVE', 'TRANSFERRED', 'DECEASED']),
   departmentIds: z.array(z.string()).optional(),
   groupIds: z.array(z.string()).optional(),
   occupation: optionalString,
@@ -74,7 +74,7 @@ const staffDetailsSchema = z.object({
   startDate: optionalString,
   salary: z.number().optional(),
   employmentType: z
-    .enum(['full-time', 'part-time', 'contract', 'casual'])
+    .enum(['FULL_TIME', 'PART_TIME', 'CASUAL', 'CONTRACT'])
     .optional(),
   isActive: z.boolean(),
 });
@@ -82,7 +82,7 @@ const staffDetailsSchema = z.object({
 const volunteerDetailsSchema = z.object({
   volunteerId: optionalString,
   volunteerStatus: z
-    .enum(['active', 'inactive', 'on_hold', 'suspended'])
+    .enum(['ACTIVE', 'INACTIVE', 'ON_HOLD', 'SUSPENDED'])
     .optional(),
   availabilitySchedule: z.record(z.string(), z.any()).optional(),
   departments: z.array(z.string()).optional(),
@@ -93,13 +93,13 @@ const volunteerDetailsSchema = z.object({
 
 const adminDetailsSchema = z.object({
   adminId: optionalString,
-  accessLevel: z.enum(['branch', 'regional', 'national', 'global']).optional(),
+  accessLevel: z.enum(['GLOBAL', 'NATIONAL', 'REGIONAL', 'TEAM']).optional(),
   assignedBranches: z.array(z.string()).optional(),
 });
 
 const superAdminDetailsSchema = z.object({
   superAdminId: optionalString,
-  accessLevel: z.enum(['global', 'system']).optional(),
+  accessLevel: z.enum(['GLOBAL', 'SYSTEM']).optional(),
   systemSettings: z.record(z.string(), z.any()).optional(),
   companyInfo: z.record(z.string(), z.any()).optional(),
 });
@@ -109,10 +109,18 @@ const visitorDetailsSchema = z.object({
   visitDate: optionalString,
   invitedBy: optionalString,
   howDidYouHear: z
-    .enum(['friend', 'family', 'online', 'flyer', 'other'])
+    .enum([
+      'FRIEND',
+      'WEBSITE',
+      'ADVERTISEMENT',
+      'FAMILY',
+      'ONLINE',
+      'FLYER',
+      'OTHER',
+    ])
     .optional(),
   followUpStatus: z
-    .enum(['pending', 'contacted', 'interested', 'not_interested'])
+    .enum(['PENDING', 'CONTACTED', 'CONVERTED', 'DECLINED'])
     .optional(),
   followUpDate: optionalString,
   followUpNotes: optionalString,
@@ -181,27 +189,22 @@ export const userUpdateSchema = z.object({
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: optionalEmail,
   phoneNumber: z.string().min(10, 'Please enter a valid phone number'),
+  position: z.string().min(1, 'Church position is required'),
   address: addressSchema,
   dateOfBirth: optionalString,
-  gender: z.enum(['male', 'female']),
+  gender: z.enum(['MALE', 'FEMALE']),
   profilePictureUrl: optionalString,
   occupation: optionalString,
   branchId: optionalString,
-  isMember: z.boolean(),
-  role: z.enum([
-    'member',
-    'pastor',
-    'bishop',
-    'admin',
-    'superadmin',
-    'visitor',
-    'staff',
-  ]),
-  isStaff: z.boolean(),
-  isVolunteer: z.boolean(),
-  status: z.enum(['active', 'inactive', 'suspended', 'pending']),
+  role: z
+    .array(
+      z.enum(['OWNER', 'MEMBER', 'STAFF', 'VOLUNTEER', 'VISITOR', 'ADMIN'])
+    )
+    .min(1, 'At least one role is required')
+    .max(2, 'Only a maximum of 2 roles are allowed'),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING']),
   lastLogin: optionalString,
-  maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed']),
+  maritalStatus: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED']),
   emergencyDetails: emergencyDetailsSchema, // ✅ Using the fixed schema
   notes: optionalString,
   skills: z.array(z.string()).optional(),

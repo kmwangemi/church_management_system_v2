@@ -185,6 +185,17 @@ export const formatNotificationCount = (count: number) => {
   return count.toString();
 };
 
+export const splitFullName = (
+  fullName?: string
+): { firstName: string; lastName: string } => {
+  if (!fullName) return { firstName: '', lastName: '' };
+  // biome-ignore lint/performance/useTopLevelRegex: ignore
+  const parts = fullName.trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.length > 1 ? parts.slice(-1).join(' ') : '';
+  return { firstName, lastName };
+};
+
 export const CHURCH_POSITION_OPTIONS = [
   { label: 'Bishop', value: 'bishop' },
   { label: 'Senior Pastor', value: 'senior-pastor' },

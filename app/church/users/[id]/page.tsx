@@ -178,7 +178,7 @@ export default function MemberDetailsPage({
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Link href={`/church/users/edit/${user?.user?.id}`}>
+              <Link href={`/church/users/edit/${user?.member?.id}`}>
                 <Button>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Profile

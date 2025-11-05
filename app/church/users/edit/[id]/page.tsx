@@ -50,11 +50,11 @@ import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
   capitalizeFirstLetter,
-  CHURCH_ROLE_OPTIONS,
   GENDER_OPTIONS,
-  getFirstLetter,
   getRelativeYear,
+  getRolesForPosition,
   MARITAL_STATUS_OPTIONS,
+  splitFullName,
   USER_STATUS_OPTIONS,
 } from '@/lib/utils';
 import {
@@ -113,6 +113,7 @@ export default function EditMemberPage({
       lastName: '',
       email: '',
       phoneNumber: '',
+      position: '',
       address: {
         street: '',
         city: '',
@@ -215,13 +216,15 @@ export default function EditMemberPage({
       },
     },
   });
+  console.log('user detail--->', JSON.stringify(user));
   useEffect(() => {
     if (user) {
+      const { firstName, lastName } = splitFullName(user?.user?.name);
       const formData: any = {
-        firstName: capitalizeFirstLetter(user?.firstName || ''),
-        lastName: capitalizeFirstLetter(user?.lastName || ''),
-        email: user?.email || undefined, // undefined instead of empty string
-        phoneNumber: user?.phoneNumber || '',
+        firstName: capitalizeFirstLetter(firstName || ''),
+        lastName: capitalizeFirstLetter(lastName || ''),
+        email: user?.user?.email || undefined, // undefined instead of empty string
+        phoneNumber: user?.user?.phoneNumber || '',
         address: {
           street: user?.address?.street
             ? capitalizeFirstLetter(user.address.street)
@@ -235,35 +238,32 @@ export default function EditMemberPage({
           zipCode: user?.address?.zipCode || undefined,
           country: user?.address?.country || undefined,
         },
-        dateOfBirth: user?.dateOfBirth || undefined,
-        gender: user?.gender || 'male',
-        profilePictureUrl: user?.profilePictureUrl || undefined,
-        occupation: user?.occupation
-          ? capitalizeFirstLetter(user.occupation)
+        dateOfBirth: user?.user?.dateOfBirth || undefined,
+        gender: user?.user?.gender || 'male',
+        image: user?.user?.image || undefined,
+        occupation: user?.user?.occupation
+          ? capitalizeFirstLetter(user?.user?.occupation)
           : undefined,
         branchId: user?.branchId?._id || undefined,
-        isMember: user?.isMember,
-        role: user?.role || 'member',
-        isStaff: user?.isStaff,
-        isVolunteer: user?.isVolunteer,
-        status: user?.status || 'active',
-        maritalStatus: user?.maritalStatus || 'single',
+        role: user?.member?.role,
+        status: user?.user?.status || 'ACTIVE',
+        maritalStatus: user?.user?.maritalStatus || 'SINGLE',
         emergencyDetails: {
           emergencyContactFullName:
-            user?.emergencyDetails?.emergencyContactFullName || undefined,
+            user?.emergencyContact?.emergencyContactFullName || undefined,
           emergencyContactEmail:
-            user?.emergencyDetails?.emergencyContactEmail || undefined,
+            user?.emergencyContact?.emergencyContactEmail || undefined,
           emergencyContactPhoneNumber:
-            user?.emergencyDetails?.emergencyContactPhoneNumber || undefined,
+            user?.emergencyContact?.emergencyContactPhoneNumber || undefined,
           emergencyContactRelationship:
-            user?.emergencyDetails?.emergencyContactRelationship || undefined,
+            user?.emergencyContact?.emergencyContactRelationship || undefined,
           emergencyContactAddress:
-            user?.emergencyDetails?.emergencyContactAddress || undefined,
+            user?.emergencyContact?.emergencyContactAddress || undefined,
           emergencyContactNotes:
-            user?.emergencyDetails?.emergencyContactNotes || undefined,
+            user?.emergencyContact?.emergencyContactNotes || undefined,
         },
-        notes: user?.notes || undefined,
-        skills: user?.skills || [],
+        notes: user?.user?.notes || undefined,
+        skills: user?.user?.skills || [],
       };
       // Only add role-specific details that actually exist
       // Member details
@@ -307,24 +307,6 @@ export default function EditMemberPage({
           assignedBranches: user?.adminDetails?.assignedBranches || [],
         };
       }
-      // Super admin details
-      if (user?.superAdminDetails) {
-        formData.superAdminDetails = {
-          superAdminId: user?.superAdminDetails?.superAdminId || '',
-          accessLevel: user?.superAdminDetails?.accessLevel || 'global',
-          systemSettings: user?.superAdminDetails?.systemSettings || {},
-          companyInfo: user?.superAdminDetails?.companyInfo || {},
-        };
-      }
-      // Super admin details
-      if (user?.superAdminDetails) {
-        formData.superAdminDetails = {
-          superAdminId: user?.superAdminDetails?.superAdminId || '',
-          accessLevel: user?.superAdminDetails?.accessLevel || 'global',
-          systemSettings: user?.superAdminDetails?.systemSettings || {},
-          companyInfo: user?.superAdminDetails?.companyInfo || {},
-        };
-      }
       // Visitor details
       if (user?.visitorDetails) {
         formData.visitorDetails = {
@@ -339,9 +321,8 @@ export default function EditMemberPage({
           servicesAttended: user?.visitorDetails?.servicesAttended || [],
         };
       }
-      // Only add secondary role details if the flags are true
       // staff details
-      if (user?.isStaff && user?.staffDetails) {
+      if (user?.member?.role.includes('STAFF') && user?.staffDetails) {
         formData.staffDetails = {
           staffId: user?.staffDetails?.staffId || '',
           jobTitle: capitalizeFirstLetter(user?.staffDetails?.jobTitle || ''),
@@ -355,7 +336,7 @@ export default function EditMemberPage({
         };
       }
       // volunteer details
-      if (user?.isVolunteer && user?.volunteerDetails) {
+      if (user?.member?.role.includes('VOLUNTEER') && user?.volunteerDetails) {
         formData.volunteerDetails = {
           volunteerId: user?.volunteerDetails?.volunteerId || '',
           volunteerStatus: user?.volunteerDetails?.volunteerStatus || 'active',
@@ -377,6 +358,9 @@ export default function EditMemberPage({
     error,
   } = useUpdateUserById(id);
   const { reset, watch, setValue } = form;
+  const watchPosition = watch('position');
+  const CHURCH_ROLE_OPTIONS = getRolesForPosition(watchPosition);
+
   // Handle profile picture file selection
   const handleProfilePictureSelect = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -528,16 +512,19 @@ export default function EditMemberPage({
                       <CardContent className="flex flex-col items-center space-y-4">
                         <Avatar className="h-24 w-24">
                           <AvatarImage
-                            alt={user?.firstName || 'User'}
+                            alt={user?.user.name || 'User'}
                             src={
                               profilePicPreview ||
                               watch('profilePictureUrl') ||
                               ''
                             }
                           />
-                          <AvatarFallback className="text-lg">{`${getFirstLetter(
-                            user?.firstName || ''
-                          )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                          <AvatarFallback className="bg-blue-100 text-blue-600">
+                            {user?.user.name
+                              .split(' ')
+                              .map((n: string) => n[0].toUpperCase())
+                              .join('')}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <input

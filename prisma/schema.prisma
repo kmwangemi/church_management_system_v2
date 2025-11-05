@@ -53,9 +53,8 @@ enum OrganizationRole {
 enum MembershipStatus {
   ACTIVE
   INACTIVE
-  NEW
   TRANSFERRED
-  TRANSFER
+  DECEASED
 }
 
 enum PastorAssignmentStatus {
@@ -85,6 +84,7 @@ enum ClearanceLevel {
 }
 
 enum AdminAccessLevel {
+  GLOBAL
   NATIONAL
   REGIONAL
   TEAM
