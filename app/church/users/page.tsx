@@ -45,7 +45,7 @@ import { useActiveOrganization } from '@/hooks/use-active-organization';
 import {
   useAdminOrganizationMembers,
   useAdminRemoveMember,
-} from '@/lib/hooks/admin/use-organization-member-mutation';
+} from '@/lib/hooks/shared/use-organization-member-mutation';
 import type { Member } from '@/lib/types/member';
 import type { UserResponse } from '@/lib/types/user';
 import {
@@ -427,9 +427,7 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link
-                                    href={`/church/users/edit/${user?.id}`}
-                                  >
+                                  <Link href={`/church/users/edit/${user?.id}`}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit User
                                   </Link>

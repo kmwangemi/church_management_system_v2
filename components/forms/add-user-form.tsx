@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useAdminAddMember } from '@/lib/hooks/admin/use-organization-member-mutation';
+import { useAdminAddMember } from '@/lib/hooks/shared/use-organization-member-mutation';
 import {
   CHURCH_POSITION_OPTIONS,
   GENDER_OPTIONS,
@@ -39,6 +39,7 @@ import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, MapPin, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { MultiSelect } from '../multi-select';
 
 interface AddUserFormProps {
   onCloseDialog: () => void;
@@ -327,30 +328,17 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Permissions & Roles{' '}
+                        Roles & Permissions{' '}
                         <span className="text-red-500">*</span>
                       </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="cursor-pointer">
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[400px] overflow-y-auto">
-                          {CHURCH_ROLE_OPTIONS.map((option) => (
-                            <SelectItem
-                              className="cursor-pointer"
-                              key={option.value}
-                              value={option.value}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <MultiSelect
+                          onChange={field.onChange}
+                          options={CHURCH_ROLE_OPTIONS}
+                          placeholder="Select roles & permissions"
+                          selected={field.value || []}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

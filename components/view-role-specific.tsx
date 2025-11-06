@@ -3,11 +3,8 @@ import { BishopViewCard } from '@/components/cards/usercard/viewcard/bishop-view
 import { MemberViewCard } from '@/components/cards/usercard/viewcard/member-view-card';
 import { PastorViewCard } from '@/components/cards/usercard/viewcard/pastor-view-card';
 import { VisitorViewCard } from '@/components/cards/usercard/viewcard/visitor-view-card';
-import type {
-  OrganizationRole,
-  RoleViewProps,
-  UserViewProps,
-} from '@/lib/types/index';
+import type { OrganizationRole } from '@/generated/prisma';
+import type { RoleViewProps, UserViewProps } from '@/lib/types/index';
 import { StaffViewCard } from './cards/usercard/viewcard/staff-view-card';
 import { VolunteerViewCard } from './cards/usercard/viewcard/volunteer-view-card';
 
@@ -21,6 +18,7 @@ const hasRole = (
 
 export const RenderViewRoleSpecificFields: React.FC<RoleViewProps> = ({
   user,
+  position,
   roles, // Use roles array instead of currentRole
 }) => {
   if (!roles || roles.length === 0) return null;
@@ -29,8 +27,8 @@ export const RenderViewRoleSpecificFields: React.FC<RoleViewProps> = ({
   // You can render multiple cards if user has multiple roles
   return (
     <>
-      {hasRole(roles, 'PASTOR') && <PastorViewCard user={user} />}
-      {hasRole(roles, 'BISHOP') && <BishopViewCard user={user} />}
+      {position === 'PASTOR' && <PastorViewCard user={user} />}
+      {position === 'BISHOP' && <BishopViewCard user={user} />}
       {hasRole(roles, 'ADMIN') && <AdminViewCard user={user} />}
       {hasRole(roles, 'VISITOR') && <VisitorViewCard user={user} />}
     </>

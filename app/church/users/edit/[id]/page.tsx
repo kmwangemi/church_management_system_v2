@@ -16,7 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -42,14 +41,15 @@ import {
   RenderVolunteerUpdate,
 } from '@/components/update-role-specific';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useAdminMemberDetails } from '@/lib/hooks/admin/use-organization-member-mutation';
 import { useFetchDepartments } from '@/lib/hooks/church/department/use-department-queries';
 import { useFetchGroups } from '@/lib/hooks/church/group/use-group-queries';
 import { useUpdateUserById } from '@/lib/hooks/church/user/use-user-queries';
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
+import { useAdminMemberDetails } from '@/lib/hooks/shared/use-organization-member-mutation';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
   capitalizeFirstLetter,
+  CHURCH_POSITION_OPTIONS,
   GENDER_OPTIONS,
   getRelativeYear,
   getRolesForPosition,
@@ -122,17 +122,14 @@ export default function EditMemberPage({
         country: '',
       },
       dateOfBirth: undefined,
-      gender: 'male',
+      gender: 'MALE',
       profilePictureUrl: undefined,
       occupation: '',
       branchId: undefined,
-      isMember: false,
-      role: 'member',
-      isStaff: false,
-      isVolunteer: false,
-      status: 'active',
+      role: undefined,
+      status: 'ACTIVE',
       lastLogin: undefined,
-      maritalStatus: 'single',
+      maritalStatus: 'SINGLE',
       emergencyDetails: {
         emergencyContactFullName: '',
         emergencyContactEmail: '',
@@ -147,7 +144,7 @@ export default function EditMemberPage({
       memberDetails: {
         memberId: '',
         membershipDate: undefined,
-        membershipStatus: 'active',
+        membershipStatus: 'ACTIVE',
         departmentIds: [],
         groupIds: [],
         occupation: '',
@@ -179,12 +176,12 @@ export default function EditMemberPage({
         department: '',
         startDate: undefined,
         salary: 0,
-        employmentType: 'full-time',
+        employmentType: 'FULL_TIME',
         isActive: false,
       },
       volunteerDetails: {
         volunteerId: '',
-        volunteerStatus: 'active',
+        volunteerStatus: 'ACTIVE',
         availabilitySchedule: {},
         departments: [],
         volunteerRoles: [],
@@ -193,21 +190,15 @@ export default function EditMemberPage({
       },
       adminDetails: {
         adminId: '',
-        accessLevel: 'national',
+        accessLevel: 'NATIONAL',
         assignedBranches: [],
-      },
-      superAdminDetails: {
-        superAdminId: '',
-        accessLevel: 'global',
-        systemSettings: {},
-        companyInfo: {},
       },
       visitorDetails: {
         visitorId: '',
         visitDate: undefined,
         invitedBy: '',
-        howDidYouHear: 'friend',
-        followUpStatus: 'pending',
+        howDidYouHear: 'FRIEND',
+        followUpStatus: 'PENDING',
         followUpDate: undefined,
         followUpNotes: '',
         interestedInMembership: false,
@@ -244,7 +235,7 @@ export default function EditMemberPage({
         occupation: user?.user?.occupation
           ? capitalizeFirstLetter(user?.user?.occupation)
           : undefined,
-        branchId: user?.branchId?._id || undefined,
+        branchId: user?.teams?.map((team) => team.id) || undefined,
         role: user?.member?.role,
         status: user?.user?.status || 'ACTIVE',
         maritalStatus: user?.user?.maritalStatus || 'SINGLE',
@@ -441,20 +432,8 @@ export default function EditMemberPage({
     setProfilePicFile(null);
     setProfilePicPreview(null);
   };
-  const currentRole = form.watch('role');
-  // Helper function to determine if isMember checkbox should be shown
-  const shouldShowIsMemberCheckbox = () => {
-    return currentRole && currentRole !== 'member' && currentRole !== 'visitor';
-  };
-  // Handle role changes and update isMember accordingly
-  useEffect(() => {
-    if (currentRole === 'member') {
-      setValue('isMember', true);
-    }
-    // else {
-    //   setValue('isMember', false);
-    // }
-  }, [currentRole, setValue]);
+  const roles = form.watch('role');
+  const position = form.watch('position');
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1133,43 +1112,25 @@ export default function EditMemberPage({
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField
                       control={form.control}
-                      name="branchId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Branch</FormLabel>
-                          <FormControl>
-                            <BranchCombobox
-                              className="w-full"
-                              onChange={field.onChange}
-                              placeholder="Search and select a branch"
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="role"
+                      name="position"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Role <span className="text-red-500">*</span>
+                            Church Position{' '}
+                            <span className="text-red-500">*</span>
                           </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="cursor-pointer">
-                                <SelectValue placeholder="Select role" />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select church position" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-[400px] overflow-y-auto">
-                              {CHURCH_ROLE_OPTIONS.map((option) => (
+                            <SelectContent>
+                              {CHURCH_POSITION_OPTIONS.map((option) => (
                                 <SelectItem
-                                  className="cursor-pointer"
                                   key={option.value}
                                   value={option.value}
                                 >
@@ -1182,88 +1143,58 @@ export default function EditMemberPage({
                         </FormItem>
                       )}
                     />
-                  </div>
-                  {/* Conditionally show isMember checkbox */}
-                  {shouldShowIsMemberCheckbox() && (
                     <FormField
                       control={form.control}
-                      name="isMember"
+                      name="role"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormItem>
+                          <FormLabel>
+                            Roles & Permissions{' '}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
                           <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
+                            <MultiSelect
+                              onChange={field.onChange}
+                              options={CHURCH_ROLE_OPTIONS}
+                              placeholder="Select roles & permissions"
+                              selected={field.value || []}
                             />
                           </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Church Member</FormLabel>
-                            <p className="text-gray-500 text-sm">
-                              This person is also a church member
-                            </p>
-                          </div>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                  )}
-                  <RenderMemberUpdate
-                    currentRole={currentRole}
-                    form={form}
-                    user={user}
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="branchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branch</FormLabel>
+                        <FormControl>
+                          <BranchCombobox
+                            className="w-full"
+                            onChange={field.onChange}
+                            placeholder="Search and select a branch"
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
+                  <RenderMemberUpdate form={form} roles={roles} />
                   <RenderUpdateRoleSpecificFields
-                    currentRole={currentRole}
                     form={form}
+                    position={position}
+                    roles={roles}
                   />
                 </TabsContent>
                 <TabsContent className="space-y-6" value="staff">
-                  {/* Secondary role flag */}
-                  <FormField
-                    control={form.control}
-                    name="isStaff"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Staff Member</FormLabel>
-                          <p className="text-gray-500 text-sm">
-                            This person is also a paid staff member
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <RenderStaffUpdate form={form} user={user} />
+                  <RenderStaffUpdate form={form} roles={roles} />
                 </TabsContent>
                 <TabsContent className="space-y-6" value="volunteer">
-                  {/* Secondary role flag */}
-                  <FormField
-                    control={form.control}
-                    name="isVolunteer"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            // disabled
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Volunteer</FormLabel>
-                          <p className="text-gray-500 text-sm">
-                            This person also volunteers in church activities
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <RenderVolunteerUpdate form={form} user={user} />
+                  <RenderVolunteerUpdate form={form} roles={roles} />
                 </TabsContent>
               </Tabs>
             </form>

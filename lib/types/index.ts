@@ -1,3 +1,4 @@
+import type { OrganizationRole } from '@/generated/prisma';
 import type { UserResponse } from '@/lib/types/user';
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -111,18 +112,18 @@ export interface VolunteerUpdateCardProps {
 }
 
 export interface RestSpecificFormProps {
-  currentRole: string | undefined;
-  user: UserResponse | undefined;
+  roles: OrganizationRole[];
   form: UseFormReturn<UserFormData | any>;
 }
 
 export interface RoleSpecificFormProps {
-  currentRole: string | undefined;
+  roles: OrganizationRole[];
+  position: string | undefined;
   form: UseFormReturn<UserFormData | any>;
 }
 
 export interface StaffUpdateFormProps {
-  user: UserResponse | undefined;
+  roles: OrganizationRole[];
   form: UseFormReturn<UserFormData | any>;
 }
 
@@ -132,17 +133,7 @@ export interface UserViewProps {
 }
 
 export interface RoleViewProps {
-  currentRole: string | undefined;
+  position: string | undefined;
   user: UserResponse | undefined;
   roles?: OrganizationRole[]; // Add roles array
 }
-
-export type OrganizationRole =
-  | 'OWNER'
-  | 'ADMIN'
-  | 'MEMBER'
-  | 'STAFF'
-  | 'VOLUNTEER'
-  | 'VISITOR'
-  | 'PASTOR'
-  | 'BISHOP';

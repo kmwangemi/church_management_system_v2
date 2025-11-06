@@ -24,7 +24,7 @@ import {
   RenderVolunteerView,
 } from '@/components/view-role-specific';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useAdminMemberDetails } from '@/lib/hooks/admin/use-organization-member-mutation';
+import { useAdminMemberDetails } from '@/lib/hooks/shared/use-organization-member-mutation';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
