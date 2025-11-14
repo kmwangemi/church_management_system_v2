@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -59,13 +58,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { IMemberWithUser, IOrganization } from '@/lib/auth';
-import { useDebounce } from '@/lib/hooks/shared/usedebounce/use-debounce';
 import {
-  useAddMember,
-  useOrganizationMembers,
-  useRemoveMember,
-  useUpdateMember,
-} from '@/lib/hooks/superadmin/use-organization-member-mutation';
+  useAdminAddMember,
+  useAdminOrganizationMembers,
+  useAdminRemoveMember,
+  useAdminUpdateMember,
+} from '@/lib/hooks/shared/use-organization-member-mutation';
+import { useDebounce } from '@/lib/hooks/shared/usedebounce/use-debounce';
 import type { ChurchListResponse } from '@/lib/types/church';
 import {
   capitalizeFirstLetterOfEachWord,
@@ -132,13 +131,13 @@ export function ManageChurchUsersDialog({
     setPage(1);
   }, [debouncedSearch, role, status, branchId, sortBy, sortOrder]);
   // Add mutation hooks
-  const { mutate: removeMember, isPending: isRemoving } = useRemoveMember(
+  const { mutate: removeMember, isPending: isRemoving } = useAdminRemoveMember(
     church?.id || ''
   );
   // const { mutate: toggleStatus, isPending: isTogglingStatus } =
   //   useToggleMemberStatus(church?.id || '');
   // Fetch members
-  const { data, isLoading, error, refetch } = useOrganizationMembers({
+  const { data, isLoading, error, refetch } = useAdminOrganizationMembers({
     organizationId: church?.id ?? '',
     page,
     pageSize,
@@ -161,7 +160,7 @@ export function ManageChurchUsersDialog({
   const { members = [], pagination } = data || {};
 
   // Updated delete handler
-  const handleDeleteUser = (memberId: string, deleteUser = false) => {
+  const handleDeleteUser = (userId: string, deleteUser = false) => {
     if (
       !confirm(
         deleteUser
@@ -170,7 +169,7 @@ export function ManageChurchUsersDialog({
       )
     )
       return;
-    removeMember({ memberId, deleteUser });
+    removeMember({ userId });
   };
   // Updated toggle status handler
   const handleToggleStatus = (member: IMemberWithUser) => {
@@ -269,7 +268,7 @@ export function ManageChurchUsersDialog({
               </CardHeader>
               <CardContent>
                 <div className="font-bold text-2xl">
-                  {members.filter((u) => u.role === 'ADMIN').length}
+                  {members.filter((u) => u.role?.includes('ADMIN')).length}
                 </div>
               </CardContent>
             </Card>
@@ -304,7 +303,6 @@ export function ManageChurchUsersDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="OWNER">Owner</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
                 <SelectItem value="STAFF">Staff</SelectItem>
                 <SelectItem value="VOLUNTEER">Volunteer</SelectItem>
@@ -552,7 +550,7 @@ function AddUserDialog({
     isPending: isLoading,
     isError,
     error,
-  } = useAddMember(church.id);
+  } = useAdminAddMember(church.id);
   const form = useForm<AdminPayload>({
     resolver: zodResolver(adminDataSchema),
     defaultValues: {
@@ -562,7 +560,7 @@ function AddUserDialog({
       phoneNumber: '',
       gender: 'MALE',
       position: '',
-      role: ['MEMBER'],
+      role: undefined,
       teamId: '',
       address: {
         street: '',
@@ -577,7 +575,6 @@ function AddUserDialog({
   });
   const { reset, watch } = form;
   const watchPosition = watch('position');
-  const watchRole = watch('role');
   const CHURCH_ROLE_OPTIONS = getRolesForPosition(watchPosition);
   const onSubmit = (payload: AdminPayload) => {
     addMember(
@@ -981,7 +978,7 @@ function EditUserDialog({
   member,
   onSuccess,
 }: EditUserDialogProps) {
-  const { mutate: updateMember, isPending: isLoading } = useUpdateMember(
+  const { mutate: updateMember, isPending: isLoading } = useAdminUpdateMember(
     member?.organizationId || ''
   );
   const form = useForm<Partial<AdminPayload>>({
@@ -992,23 +989,31 @@ function EditUserDialog({
       email: '',
       phoneNumber: '',
       gender: 'MALE',
-      role: 'MEMBER',
+      position: '',
+      role: undefined,
       status: 'ACTIVE',
     },
   });
+  const { reset, watch } = form;
+  const watchPosition = watch('position');
+  const CHURCH_ROLE_OPTIONS = getRolesForPosition(watchPosition);
   // Update form when member changes
   useEffect(() => {
     if (member) {
       const [firstName = '', lastName = ''] =
         member.user.name?.split(' ') || [];
+      const genderValue =
+        (member.user.gender as 'MALE' | 'FEMALE' | undefined) || 'MALE';
       form.reset({
         firstName,
         lastName,
         email: member.user.email,
         phoneNumber: member.user.phoneNumber || '',
-        gender: member.user.gender || 'male',
-        isMember: member.user.isMember,
-        role: member.role,
+        gender: genderValue,
+        position: member.position || '',
+        role: Array.isArray(member.role)
+          ? member.role
+          : [member.role].filter(Boolean),
         status: member.user.status,
       });
     }
@@ -1017,16 +1022,15 @@ function EditUserDialog({
     if (!member) return;
     updateMember(
       {
-        memberId: member.id,
+        userId: member.id,
         organizationId: member.organizationId,
         firstName: payload.firstName,
         lastName: payload.lastName,
         email: payload.email,
         phoneNumber: payload.phoneNumber,
         gender: payload.gender,
-        role: payload.role,
+        role: Array.isArray(payload.role) ? payload.role[0] : payload.role,
         status: payload.status,
-        isMember: payload.isMember,
       },
       {
         onSuccess: (response) => {
@@ -1149,44 +1153,24 @@ function EditUserDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="isMember"
-                render={({ field }) => (
-                  <FormItem className="mt-8 flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Church Member</FormLabel>
-                      <p className="text-gray-500 text-sm">
-                        This person is also a church member
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
-                name="role"
+                name="position"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Role <span className="text-red-500">*</span>
+                      Church Position <span className="text-red-500">*</span>
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select user role" />
+                          <SelectValue placeholder="Select church position" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {CHURCH_ROLE_OPTIONS.map((option) => (
+                        {CHURCH_POSITION_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -1199,30 +1183,51 @@ function EditUserDialog({
               />
               <FormField
                 control={form.control}
-                name="status"
+                name="role"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Status <span className="text-red-500">*</span>
+                      Roles & Permissions{' '}
+                      <span className="text-red-500">*</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">Active</SelectItem>
-                        <SelectItem value="PENDING">Pending</SelectItem>
-                        <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                        <SelectItem value="INACTIVE">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <MultiSelect
+                        onChange={field.onChange}
+                        options={CHURCH_ROLE_OPTIONS}
+                        placeholder="Select roles & permissions"
+                        selected={field.value || []}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Status <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="flex justify-end gap-2 border-t pt-4">
               <Button
                 onClick={() => onOpenChange(false)}

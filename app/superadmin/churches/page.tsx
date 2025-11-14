@@ -88,15 +88,9 @@ export default function ChurchesPage() {
     useState<ChurchListResponse | null>(null);
   // Fetch all churches
   const { data: churches, isLoading, error, refetch } = useAllChurches();
-  const {
-    mutate: updateChurch,
-  } = useUpdateChurch();
+  const { mutate: updateChurch } = useUpdateChurch();
   // Church actions
-  const {
-    suspend,
-    activate,
-    delete: deleteChurch,
-  } = useChurchActions();
+  const { suspend, activate, delete: deleteChurch } = useChurchActions();
   // Filter churches
   const filteredChurches = useMemo(() => {
     if (!churches) return [];
@@ -548,18 +542,21 @@ export default function ChurchesPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem
+                                className="cursor-pointer"
                                 onClick={() => handleViewDetails(church)}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem
+                                className="cursor-pointer"
                                 onClick={() => handleEditChurch(church)}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Church
                               </DropdownMenuItem>
                               <DropdownMenuItem
+                                className="cursor-pointer"
                                 onClick={() => handleManageUsers(church)}
                               >
                                 <Users className="mr-2 h-4 w-4" />
@@ -568,7 +565,7 @@ export default function ChurchesPage() {
                               <DropdownMenuSeparator />
                               {church?.status?.toLowerCase() === 'suspended' ? (
                                 <DropdownMenuItem
-                                  className="text-green-600"
+                                  className="cursor-pointer text-green-600"
                                   onClick={() => handleActivateChurch(church)}
                                 >
                                   <CheckCircle className="mr-2 h-4 w-4" />
@@ -576,7 +573,7 @@ export default function ChurchesPage() {
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem
-                                  className="text-orange-600"
+                                  className="cursor-pointer text-orange-600"
                                   onClick={() => handleSuspendChurch(church)}
                                 >
                                   <AlertCircle className="mr-2 h-4 w-4" />
@@ -584,7 +581,7 @@ export default function ChurchesPage() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
-                                className="text-red-600"
+                                className="cursor-pointer text-red-600"
                                 onClick={() => handleDeleteChurch(church)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />

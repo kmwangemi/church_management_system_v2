@@ -521,7 +521,15 @@ export async function getChurchStatistics(): Promise<
       prisma.organization.count({
         where: { isDeleted: false },
       }),
-      prisma.member.count(),
+      prisma.member.count({
+        where: {
+          NOT: {
+            role: {
+              has: 'OWNER',
+            },
+          },
+        },
+      }),
       prisma.organizationSubscription.findMany({
         where: {
           isActive: true,
@@ -624,7 +632,14 @@ export async function getChurchDetails(organizationId: string): Promise<
         }),
         // Members with user details
         prisma.member.findMany({
-          where: { organizationId },
+          where: {
+            organizationId,
+            NOT: {
+              role: {
+                has: 'OWNER',
+              },
+            },
+          },
           include: {
             user: {
               select: {
@@ -754,7 +769,15 @@ export async function getAllChurchesSummary(): Promise<
       orderBy: { createdAt: 'desc' },
     });
     // Step 4: Calculate global statistics
-    const totalMembers = await prisma.member.count();
+    const totalMembers = await prisma.member.count({
+      where: {
+        NOT: {
+          role: {
+            has: 'OWNER',
+          },
+        },
+      },
+    });
     const activeSubscriptions = await prisma.organizationSubscription.count({
       where: { isActive: true },
     });

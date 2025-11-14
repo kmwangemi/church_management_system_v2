@@ -1329,7 +1329,7 @@ async function adminUpdateRoleSpecificDetails(
 
 export async function adminGetMemberByUserId(
   memberId: string,
-  organizationId: string
+  organizationId: string | undefined
 ): Promise<AdminServerActionResponse<AdminMemberFullDetails>> {
   try {
     // Step 1: Verify session
