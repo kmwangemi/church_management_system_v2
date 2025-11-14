@@ -113,7 +113,6 @@ export default function EditMemberPage({
       lastName: '',
       email: '',
       phoneNumber: '',
-      position: '',
       address: {
         street: '',
         city: '',
@@ -126,6 +125,7 @@ export default function EditMemberPage({
       profilePictureUrl: undefined,
       occupation: '',
       branchId: undefined,
+      position: '',
       role: undefined,
       status: 'ACTIVE',
       lastLogin: undefined,
@@ -236,6 +236,7 @@ export default function EditMemberPage({
           ? capitalizeFirstLetter(user?.user?.occupation)
           : undefined,
         branchId: user?.teams?.map((team) => team.id) || undefined,
+        position: user?.member?.position || '',
         role: user?.member?.role,
         status: user?.user?.status || 'ACTIVE',
         maritalStatus: user?.user?.maritalStatus || 'SINGLE',

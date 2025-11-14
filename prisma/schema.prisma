@@ -820,8 +820,9 @@ model Member {
   createdAt      DateTime           @default(now())
 
   // Team (Branch) assignment within church
-  // teamId         String?
-  // team           Team?                @relation("TeamMembers", fields: [teamId], references: [id])
+  teamId String?
+  team   Team?   @relation("TeamMembers", fields: [teamId], references: [id])
+
   // Composite unique constraint required by Better Auth
   // @@index([teamId])
   @@unique([organizationId, userId])
@@ -1079,6 +1080,7 @@ model Team {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime?    @updatedAt
   teammembers     TeamMember[]
+  members         Member[]     @relation("TeamMembers")
   address         Address?
   // Extended team fields
   email           String?

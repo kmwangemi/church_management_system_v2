@@ -570,6 +570,8 @@ async function adminAddExistingUserToOrganization(
             userId,
             organizationId: params.organizationId,
             position: params.position,
+            role: params.role,
+            teamId: params.teamId || null,
           },
           include: {
             user: true,
@@ -682,6 +684,7 @@ async function adminCreateNewMemberWithDetails(
             organizationId: params.organizationId,
             position: params.position,
             role: params.role,
+            teamId: params.teamId || null,
           },
           include: {
             user: true,

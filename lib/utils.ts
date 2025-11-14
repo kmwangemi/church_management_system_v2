@@ -197,25 +197,17 @@ export const splitFullName = (
 };
 
 export const CHURCH_POSITION_OPTIONS = [
-  { label: 'Bishop', value: 'bishop' },
-  { label: 'Senior Pastor', value: 'senior-pastor' },
-  { label: 'Reverent', value: 'reverent' },
-  { label: 'Pastor', value: 'pastor' },
-  { label: 'Elder', value: 'elder' },
-  { label: 'Church Administrator', value: 'church-administrator' },
-  { label: 'Treasurer', value: 'treasurer' },
-  { label: 'Secretary', value: 'secretary' },
-  { label: 'Member', value: 'member' },
-  { label: 'Visitor', value: 'visitor' },
+  { value: 'bishop', label: 'Bishop' },
+  { value: 'senior-pastor', label: 'Senior Pastor' },
+  { value: 'reverent', label: 'Reverent' },
+  { value: 'pastor', label: 'Pastor' },
+  { value: 'elder', label: 'Elder' },
+  { value: 'church-administrator', label: 'Church Administrator' },
+  { value: 'treasurer', label: 'Treasurer' },
+  { value: 'secretary', label: 'Secretary' },
+  { value: 'member', label: 'Member' },
+  { value: 'visitor', label: 'Visitor' },
 ];
-
-// export const CHURCH_ROLE_OPTIONS = [
-//   { value: 'VISITOR', label: 'Visitor' },
-//   { value: 'MEMBER', label: 'Member' },
-//   { value: 'STAFF', label: 'Staff' },
-//   { value: 'VOLUNTEER', label: 'Volunteer' },
-//   { value: 'ADMIN', label: 'Admin' },
-// ];
 
 // Staffs are paid while volunteers are not paid
 // Staffs are employed volunteers are not employed
