@@ -235,7 +235,7 @@ export default function EditMemberPage({
         occupation: user?.user?.occupation
           ? capitalizeFirstLetter(user?.user?.occupation)
           : undefined,
-        branchId: user?.teams?.map((team) => team.id) || undefined,
+        branchId: user?.member?.teamId || undefined,
         position: user?.member?.position || '',
         role: user?.member?.role,
         status: user?.user?.status || 'ACTIVE',

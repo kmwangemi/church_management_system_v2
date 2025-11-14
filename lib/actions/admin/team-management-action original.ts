@@ -23,22 +23,15 @@ export interface AdminGetTeamsParams {
   sortOrder?: 'asc' | 'desc';
 }
 
-// export interface AdminGetTeamsResponse {
-//   teams: any[];
-//   pagination: {
-//     total: number;
-//     page: number;
-//     pageSize: number;
-//     totalPages: number;
-//     hasMore: boolean;
-//   };
-// }
-
-interface AdminGetTeamsResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+export interface AdminGetTeamsResponse {
+  teams: any[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
 }
 
 export interface AdminCreateTeamParams {
@@ -103,6 +96,16 @@ export async function adminGetOrganizationTeams(
     sortOrder = 'desc',
   } = params;
   // Check if user has access to this organization
+  // const hasAccess = await prisma.member.findFirst({
+  //   where: {
+  //     organizationId,
+  //     userId: session.user.id,
+  //   },
+  // });
+  // if (!hasAccess) {
+  //   throw new Error('You do not have access to this organization');
+  // }
+
   const hasPermission = await prisma.member.findFirst({
     where: {
       organizationId,
@@ -115,10 +118,10 @@ export async function adminGetOrganizationTeams(
   if (!hasPermission) {
     return {
       success: false,
-      error:
-        'You do not have permission to add members in this organization team',
+      error: 'You do not have permission to add members in this organization',
     };
   }
+
   const where: Prisma.TeamWhereInput = {
     organizationId,
     isDeleted: false,
@@ -192,17 +195,13 @@ export async function adminGetOrganizationTeams(
   ]);
   const totalPages = Math.ceil(total / pageSize);
   return {
-    success: true,
-    message: 'Team added successfully',
-    data: {
-      teams,
-      pagination: {
-        total,
-        page,
-        pageSize,
-        totalPages,
-        hasMore: page < totalPages,
-      },
+    teams,
+    pagination: {
+      total,
+      page,
+      pageSize,
+      totalPages,
+      hasMore: page < totalPages,
     },
   };
 }

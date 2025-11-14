@@ -204,6 +204,7 @@ export interface IMember {
   id: string;
   userId: string;
   organizationId: string;
+  teamId: string | null;
   role: ('OWNER' | 'ADMIN' | 'MEMBER' | 'STAFF' | 'VOLUNTEER' | 'VISITOR')[]; // ✅ Array of roles
   position: string | null;
   createdAt: string;
