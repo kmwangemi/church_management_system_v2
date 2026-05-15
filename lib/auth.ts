@@ -15,7 +15,10 @@ import bcrypt from 'bcryptjs';
 import { APIError, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { createAuthMiddleware, organization } from 'better-auth/plugins';
+// import { createAuthMiddleware, organization } from 'better-auth/plugins';
+
+import { createAuthMiddleware } from 'better-auth/api';
+import { organization } from 'better-auth/plugins';
 
 export const auth = betterAuth({
   appName: 'Church Management System',
