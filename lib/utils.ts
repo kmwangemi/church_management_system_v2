@@ -185,14 +185,99 @@ export const formatNotificationCount = (count: number) => {
   return count.toString();
 };
 
-export const ADMIN_ROLE_OPTIONS = [{ value: 'admin', label: 'Admin' }];
+export const splitFullName = (
+  fullName?: string
+): { firstName: string; lastName: string } => {
+  if (!fullName) return { firstName: '', lastName: '' };
+  // biome-ignore lint/performance/useTopLevelRegex: ignore
+  const parts = fullName.trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.length > 1 ? parts.slice(-1).join(' ') : '';
+  return { firstName, lastName };
+};
 
-export const MEMBER_ROLE_OPTIONS = [
-  { value: 'visitor', label: 'Visitor' },
-  { value: 'member', label: 'Member' },
-  { value: 'pastor', label: 'Pastor' },
+export const CHURCH_POSITION_OPTIONS = [
   { value: 'bishop', label: 'Bishop' },
+  { value: 'senior-pastor', label: 'Senior Pastor' },
+  { value: 'reverent', label: 'Reverent' },
+  { value: 'pastor', label: 'Pastor' },
+  { value: 'elder', label: 'Elder' },
+  { value: 'church-administrator', label: 'Church Administrator' },
+  { value: 'treasurer', label: 'Treasurer' },
+  { value: 'secretary', label: 'Secretary' },
+  { value: 'member', label: 'Member' },
+  { value: 'visitor', label: 'Visitor' },
 ];
+
+// Staffs are paid while volunteers are not paid
+// Staffs are employed volunteers are not employed
+// This are system roles & permissions
+export const CHURCH_ROLE_BY_POSITION: Record<
+  string,
+  { value: string; label: string }[]
+> = {
+  bishop: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  'senior-pastor': [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  reverent: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  pastor: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  elder: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  'church-administrator': [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  treasurer: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  secretary: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  member: [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+  visitor: [
+    { value: 'VISITOR', label: 'Visitor' },
+    { value: 'VOLUNTEER', label: 'Volunteer' },
+  ],
+};
+
+export const getRolesForPosition = (position: string) =>
+  CHURCH_ROLE_BY_POSITION[position] || [];
 
 export const PRAYER_CATEGORY_OPTIONS = [
   { value: 'health', label: 'Health & Healing' },
@@ -225,8 +310,8 @@ export const DISCIPLE_LEVEL_OPTIONS = [
 ];
 
 export const GENDER_OPTIONS = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
+  { value: 'MALE', label: 'Male' },
+  { value: 'FEMALE', label: 'Female' },
 ];
 
 export const MARITAL_STATUS_OPTIONS = [
@@ -261,22 +346,22 @@ export const NUMBER_OF_CHURCH_MEMBERS_OPTIONS = [
 
 export const SUBSCRIPTION_PLANS = [
   {
-    value: 'basic',
-    label: 'Basic - KES 5,000/Month',
+    value: 'BASIC',
+    label: 'Basic - KES 2,999/Month',
     description: 'Up to 100 members, basic features',
   },
   {
-    value: 'standard',
-    label: 'Standard - KES 10,000/Month',
+    value: 'MINISTRY',
+    label: 'Ministry - KES 4,999/Month',
     description: 'Up to 500 members, advanced features',
   },
   {
-    value: 'premium',
-    label: 'Premium - KES 15,000/Month',
+    value: 'CATHEDRAL',
+    label: 'Cathedral - KES 9,999/Month',
     description: 'Unlimited members, all features',
   },
   {
-    value: 'enterprise',
+    value: 'CUSTOM',
     label: 'Enterprise - Custom',
     description: 'Custom solution for large churches',
   },

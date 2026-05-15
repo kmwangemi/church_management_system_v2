@@ -3,11 +3,10 @@
 import RenderApiError from '@/components/api-error';
 import { DeleteUserDialog } from '@/components/dialogs/delete-user-dialog';
 import { AddUserForm } from '@/components/forms/add-user-form';
-import { getRoleBadgeVariant, getRoleIcon } from '@/components/helpers';
+import { getRoleBadge, getStatusBadge } from '@/components/helpers';
 import { SpinnerLoader } from '@/components/loaders/spinnerloader';
 import SearchInput from '@/components/search-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -42,16 +41,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 import {
-  useDeleteUserById,
-  useFetchUsers,
-} from '@/lib/hooks/church/user/use-user-queries';
+  useAdminOrganizationMembers,
+  useAdminRemoveMember,
+} from '@/lib/hooks/shared/use-organization-member-mutation';
+import type { Member } from '@/lib/types/member';
 import type { UserResponse } from '@/lib/types/user';
 import {
   capitalizeFirstLetter,
   capitalizeFirstLetterOfEachWord,
   formatToNewDate,
-  getFirstLetter,
 } from '@/lib/utils';
 import {
   Crown,
@@ -81,6 +81,7 @@ export default function UsersPage() {
   const searchParams = useSearchParams();
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
+  const { organizationId } = useActiveOrganization();
   const { register, handleSubmit } = useForm({
     defaultValues: {
       query: searchQuery,
@@ -91,61 +92,73 @@ export default function UsersPage() {
     isLoading: isLoadingUsers,
     isError: isErrorUsers,
     error: errorUsers,
-  } = useFetchUsers(page, searchQuery);
+  } = useAdminOrganizationMembers({
+    organizationId,
+    page,
+    // pageSize: 20,
+    status: selectedStatus === 'all' ? '' : selectedStatus,
+    search: searchQuery,
+    // role: 'MEMBER',
+    // sortBy: 'name',
+    // sortOrder: 'asc',
+  });
+  console.log('users--->', JSON.stringify(users));
   const {
     mutateAsync: deleteUserMutation,
     isPending: isPendingDeleteUser,
     isError: isErrorDeleteUser,
     error: errorDeleteUser,
-  } = useDeleteUserById();
+  } = useAdminRemoveMember(organizationId);
   // Filter users based on selected tab and status
   const filteredUsers = useMemo(() => {
-    if (!users?.users) return [];
-    let filtered = users.users;
+    if (!users?.members) return [];
+    let filtered = users.members;
     // Filter by status
     if (selectedStatus !== 'all') {
-      filtered = filtered.filter((user) => user.status === selectedStatus);
+      filtered = filtered.filter(
+        (user) => user?.user.status === selectedStatus
+      );
     }
     // Filter by tab
     if (selectedTab !== 'all') {
       switch (selectedTab) {
         case 'active':
-          filtered = filtered.filter((user) => user.status === 'active');
+          filtered = filtered.filter((user) => user?.user.status === 'ACTIVE');
           break;
         case 'inactive':
-          filtered = filtered.filter((user) => user.status === 'inactive');
+          filtered = filtered.filter(
+            (user) => user?.user.status === 'INACTIVE'
+          );
           break;
         case 'staff':
-          filtered = filtered.filter((user) =>
-            ['pastor', 'bishop', 'admin'].includes(user.role?.toLowerCase())
-          );
+          // Fixed: Check if 'STAFF' exists in the role array
+          filtered = filtered.filter((user) => user.role?.includes('STAFF'));
           break;
         default:
           break;
       }
     }
     return filtered;
-  }, [users?.users, selectedStatus, selectedTab]);
+  }, [users?.members, selectedStatus, selectedTab]);
   // Calculate stats
   const stats = useMemo(() => {
-    const allUsers = users?.users || [];
+    const allUsers = users?.members || [];
     return {
       total: allUsers.length,
-      active: allUsers.filter((u) => u.status === 'active').length,
-      inactive: allUsers.filter((u) => u.status === 'inactive').length,
-      staff: allUsers.filter((u) =>
-        ['pastor', 'bishop', 'admin'].includes(u.role?.toLowerCase())
-      ).length,
+      active: allUsers.filter((u) => u.user.status === 'ACTIVE').length,
+      inactive: allUsers.filter((u) => u.user.status === 'INACTIVE').length,
+      // Fixed: Check if 'STAFF' exists in the role array
+      staff: allUsers.filter((u) => u.role?.includes('STAFF')).length,
     };
   }, [users]);
-  const handleDeleteUser = async (userId: string) => {
-    await deleteUserMutation(userId);
+  const handleDeleteUser = async (memberId: string) => {
+    await deleteUserMutation({ memberId });
     setDeletingUser(null);
   };
-  const openDeleteDialog = (user: UserResponse) => {
+  const openDeleteDialog = (user: Member) => {
     setDeletingUser(user);
   };
-  const openEmailDialog = (user: UserResponse) => {
+  const openEmailDialog = (user: Member) => {
     setEmailingUser(user);
   };
   return (
@@ -273,9 +286,10 @@ export default function UsersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="growing">Growing</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="SUSPENDED">Suspended</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -311,66 +325,77 @@ export default function UsersPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((user) => (
-                        <TableRow className="hover:bg-gray-50" key={user._id}>
+                        <TableRow className="hover:bg-gray-50" key={user.id}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-10 w-10">
                                 <AvatarImage
-                                  alt={user?.firstName || 'User'}
-                                  src={user?.profilePictureUrl ?? ''}
+                                  alt={user?.user.name || 'User'}
+                                  src={user?.user.image ?? ''}
                                 />
                                 <AvatarFallback className="bg-blue-100 text-blue-600">
-                                  {`${getFirstLetter(user?.firstName || '')}${getFirstLetter(user?.lastName || '')}`}
+                                  {user?.user.name
+                                    .split(' ')
+                                    .map((n: string) => n[0].toUpperCase())
+                                    .join('')}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-medium text-gray-900">
-                                  {`${capitalizeFirstLetter(user?.firstName || 'N/A')} ${capitalizeFirstLetter(user?.lastName || 'N/A')}`}
+                                  {capitalizeFirstLetterOfEachWord(
+                                    user?.user.name || 'Not Provided'
+                                  )}
                                 </div>
                                 <div className="text-gray-500 text-sm">
-                                  {user.email || 'N/A'}
+                                  {user?.user.email || 'Not Provided'}
                                 </div>
                                 <div className="text-gray-500 text-sm">
-                                  {user.phoneNumber || 'N/A'}
+                                  {user?.user.phoneNumber || 'Not Provided'}
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <span className="text-gray-900 text-sm">
-                              {capitalizeFirstLetter(user.gender || 'N/A')}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className="flex w-fit items-center gap-1"
-                              variant={getRoleBadgeVariant(user.role)}
-                            >
-                              {getRoleIcon(user.role)}
-                              {user.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-gray-900 text-sm">
-                              {capitalizeFirstLetterOfEachWord(
-                                user.branchId?.branchName || 'N/A'
+                              {capitalizeFirstLetter(
+                                user?.user.gender || 'Not Provided'
                               )}
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={
-                                user.status === 'active'
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                            >
-                              {user.status}
-                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {user.role?.map((role: string) => (
+                                <span key={role}>{getRoleBadge(role)}</span>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {user?.user?.teammembers &&
+                              user?.user?.teammembers.length > 0 ? (
+                                user?.user?.teammembers.map((tm) => (
+                                  <span
+                                    className="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 font-medium text-blue-800 text-xs"
+                                    key={tm.id}
+                                  >
+                                    {capitalizeFirstLetterOfEachWord(
+                                      tm.team.name
+                                    )}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-gray-500 text-sm">
+                                  Not Provided
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(user.user.status)}
                           </TableCell>
                           <TableCell>
                             <span className="text-gray-900 text-sm">
-                              {formatToNewDate(user.createdAt)}
+                              {formatToNewDate(user?.createdAt)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -386,7 +411,7 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link href={`/church/users/${user._id}`}>
+                                  <Link href={`/church/users/${user?.id}`}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     View User
                                   </Link>
@@ -402,9 +427,7 @@ export default function UsersPage() {
                                   asChild
                                   className="cursor-pointer"
                                 >
-                                  <Link
-                                    href={`/church/users/edit/${user._id}`}
-                                  >
+                                  <Link href={`/church/users/edit/${user?.id}`}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit User
                                   </Link>

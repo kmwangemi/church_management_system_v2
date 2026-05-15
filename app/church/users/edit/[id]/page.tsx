@@ -16,7 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -41,21 +40,21 @@ import {
   RenderUpdateRoleSpecificFields,
   RenderVolunteerUpdate,
 } from '@/components/update-role-specific';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { useFetchDepartments } from '@/lib/hooks/church/department/use-department-queries';
 import { useFetchGroups } from '@/lib/hooks/church/group/use-group-queries';
-import {
-  useFetchUserById,
-  useUpdateUserById,
-} from '@/lib/hooks/church/user/use-user-queries';
+import { useUpdateUserById } from '@/lib/hooks/church/user/use-user-queries';
 import { useFileUpload } from '@/lib/hooks/shared/upload/use-file-upload';
+import { useAdminMemberDetails } from '@/lib/hooks/shared/use-organization-member-mutation';
 import { errorToastStyle } from '@/lib/toast-styles';
 import {
   capitalizeFirstLetter,
+  CHURCH_POSITION_OPTIONS,
   GENDER_OPTIONS,
-  getFirstLetter,
   getRelativeYear,
+  getRolesForPosition,
   MARITAL_STATUS_OPTIONS,
-  MEMBER_ROLE_OPTIONS,
+  splitFullName,
   USER_STATUS_OPTIONS,
 } from '@/lib/utils';
 import {
@@ -75,6 +74,7 @@ export default function EditMemberPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
+  const { organizationId } = useActiveOrganization();
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
     null
@@ -86,7 +86,7 @@ export default function EditMemberPage({
     isLoading: isLoadingUser,
     isError: isErrorUser,
     error: errorUser,
-  } = useFetchUserById(id);
+  } = useAdminMemberDetails(id, organizationId);
   const {
     upload,
     isUploading,
@@ -121,17 +121,15 @@ export default function EditMemberPage({
         country: '',
       },
       dateOfBirth: undefined,
-      gender: 'male',
+      gender: 'MALE',
       profilePictureUrl: undefined,
       occupation: '',
       branchId: undefined,
-      isMember: false,
-      role: 'member',
-      isStaff: false,
-      isVolunteer: false,
-      status: 'active',
+      position: '',
+      role: undefined,
+      status: 'ACTIVE',
       lastLogin: undefined,
-      maritalStatus: 'single',
+      maritalStatus: 'SINGLE',
       emergencyDetails: {
         emergencyContactFullName: '',
         emergencyContactEmail: '',
@@ -146,7 +144,7 @@ export default function EditMemberPage({
       memberDetails: {
         memberId: '',
         membershipDate: undefined,
-        membershipStatus: 'active',
+        membershipStatus: 'ACTIVE',
         departmentIds: [],
         groupIds: [],
         occupation: '',
@@ -178,12 +176,12 @@ export default function EditMemberPage({
         department: '',
         startDate: undefined,
         salary: 0,
-        employmentType: 'full-time',
+        employmentType: 'FULL_TIME',
         isActive: false,
       },
       volunteerDetails: {
         volunteerId: '',
-        volunteerStatus: 'active',
+        volunteerStatus: 'ACTIVE',
         availabilitySchedule: {},
         departments: [],
         volunteerRoles: [],
@@ -192,21 +190,15 @@ export default function EditMemberPage({
       },
       adminDetails: {
         adminId: '',
-        accessLevel: 'national',
+        accessLevel: 'NATIONAL',
         assignedBranches: [],
-      },
-      superAdminDetails: {
-        superAdminId: '',
-        accessLevel: 'global',
-        systemSettings: {},
-        companyInfo: {},
       },
       visitorDetails: {
         visitorId: '',
         visitDate: undefined,
         invitedBy: '',
-        howDidYouHear: 'friend',
-        followUpStatus: 'pending',
+        howDidYouHear: 'FRIEND',
+        followUpStatus: 'PENDING',
         followUpDate: undefined,
         followUpNotes: '',
         interestedInMembership: false,
@@ -215,13 +207,15 @@ export default function EditMemberPage({
       },
     },
   });
+  console.log('user detail--->', JSON.stringify(user));
   useEffect(() => {
     if (user) {
+      const { firstName, lastName } = splitFullName(user?.user?.name);
       const formData: any = {
-        firstName: capitalizeFirstLetter(user?.firstName || ''),
-        lastName: capitalizeFirstLetter(user?.lastName || ''),
-        email: user?.email || undefined, // undefined instead of empty string
-        phoneNumber: user?.phoneNumber || '',
+        firstName: capitalizeFirstLetter(firstName || ''),
+        lastName: capitalizeFirstLetter(lastName || ''),
+        email: user?.user?.email || undefined, // undefined instead of empty string
+        phoneNumber: user?.user?.phoneNumber || '',
         address: {
           street: user?.address?.street
             ? capitalizeFirstLetter(user.address.street)
@@ -235,35 +229,33 @@ export default function EditMemberPage({
           zipCode: user?.address?.zipCode || undefined,
           country: user?.address?.country || undefined,
         },
-        dateOfBirth: user?.dateOfBirth || undefined,
-        gender: user?.gender || 'male',
-        profilePictureUrl: user?.profilePictureUrl || undefined,
-        occupation: user?.occupation
-          ? capitalizeFirstLetter(user.occupation)
+        dateOfBirth: user?.user?.dateOfBirth || undefined,
+        gender: user?.user?.gender || 'male',
+        image: user?.user?.image || undefined,
+        occupation: user?.user?.occupation
+          ? capitalizeFirstLetter(user?.user?.occupation)
           : undefined,
-        branchId: user?.branchId?._id || undefined,
-        isMember: user?.isMember,
-        role: user?.role || 'member',
-        isStaff: user?.isStaff,
-        isVolunteer: user?.isVolunteer,
-        status: user?.status || 'active',
-        maritalStatus: user?.maritalStatus || 'single',
+        branchId: user?.member?.teamId || undefined,
+        position: user?.member?.position || '',
+        role: user?.member?.role,
+        status: user?.user?.status || 'ACTIVE',
+        maritalStatus: user?.user?.maritalStatus || 'SINGLE',
         emergencyDetails: {
           emergencyContactFullName:
-            user?.emergencyDetails?.emergencyContactFullName || undefined,
+            user?.emergencyContact?.emergencyContactFullName || undefined,
           emergencyContactEmail:
-            user?.emergencyDetails?.emergencyContactEmail || undefined,
+            user?.emergencyContact?.emergencyContactEmail || undefined,
           emergencyContactPhoneNumber:
-            user?.emergencyDetails?.emergencyContactPhoneNumber || undefined,
+            user?.emergencyContact?.emergencyContactPhoneNumber || undefined,
           emergencyContactRelationship:
-            user?.emergencyDetails?.emergencyContactRelationship || undefined,
+            user?.emergencyContact?.emergencyContactRelationship || undefined,
           emergencyContactAddress:
-            user?.emergencyDetails?.emergencyContactAddress || undefined,
+            user?.emergencyContact?.emergencyContactAddress || undefined,
           emergencyContactNotes:
-            user?.emergencyDetails?.emergencyContactNotes || undefined,
+            user?.emergencyContact?.emergencyContactNotes || undefined,
         },
-        notes: user?.notes || undefined,
-        skills: user?.skills || [],
+        notes: user?.user?.notes || undefined,
+        skills: user?.user?.skills || [],
       };
       // Only add role-specific details that actually exist
       // Member details
@@ -307,24 +299,6 @@ export default function EditMemberPage({
           assignedBranches: user?.adminDetails?.assignedBranches || [],
         };
       }
-      // Super admin details
-      if (user?.superAdminDetails) {
-        formData.superAdminDetails = {
-          superAdminId: user?.superAdminDetails?.superAdminId || '',
-          accessLevel: user?.superAdminDetails?.accessLevel || 'global',
-          systemSettings: user?.superAdminDetails?.systemSettings || {},
-          companyInfo: user?.superAdminDetails?.companyInfo || {},
-        };
-      }
-      // Super admin details
-      if (user?.superAdminDetails) {
-        formData.superAdminDetails = {
-          superAdminId: user?.superAdminDetails?.superAdminId || '',
-          accessLevel: user?.superAdminDetails?.accessLevel || 'global',
-          systemSettings: user?.superAdminDetails?.systemSettings || {},
-          companyInfo: user?.superAdminDetails?.companyInfo || {},
-        };
-      }
       // Visitor details
       if (user?.visitorDetails) {
         formData.visitorDetails = {
@@ -339,9 +313,8 @@ export default function EditMemberPage({
           servicesAttended: user?.visitorDetails?.servicesAttended || [],
         };
       }
-      // Only add secondary role details if the flags are true
       // staff details
-      if (user?.isStaff && user?.staffDetails) {
+      if (user?.member?.role.includes('STAFF') && user?.staffDetails) {
         formData.staffDetails = {
           staffId: user?.staffDetails?.staffId || '',
           jobTitle: capitalizeFirstLetter(user?.staffDetails?.jobTitle || ''),
@@ -355,7 +328,7 @@ export default function EditMemberPage({
         };
       }
       // volunteer details
-      if (user?.isVolunteer && user?.volunteerDetails) {
+      if (user?.member?.role.includes('VOLUNTEER') && user?.volunteerDetails) {
         formData.volunteerDetails = {
           volunteerId: user?.volunteerDetails?.volunteerId || '',
           volunteerStatus: user?.volunteerDetails?.volunteerStatus || 'active',
@@ -377,6 +350,9 @@ export default function EditMemberPage({
     error,
   } = useUpdateUserById(id);
   const { reset, watch, setValue } = form;
+  const watchPosition = watch('position');
+  const CHURCH_ROLE_OPTIONS = getRolesForPosition(watchPosition);
+
   // Handle profile picture file selection
   const handleProfilePictureSelect = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -457,20 +433,8 @@ export default function EditMemberPage({
     setProfilePicFile(null);
     setProfilePicPreview(null);
   };
-  const currentRole = form.watch('role');
-  // Helper function to determine if isMember checkbox should be shown
-  const shouldShowIsMemberCheckbox = () => {
-    return currentRole && currentRole !== 'member' && currentRole !== 'visitor';
-  };
-  // Handle role changes and update isMember accordingly
-  useEffect(() => {
-    if (currentRole === 'member') {
-      setValue('isMember', true);
-    }
-    // else {
-    //   setValue('isMember', false);
-    // }
-  }, [currentRole, setValue]);
+  const roles = form.watch('role');
+  const position = form.watch('position');
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -528,16 +492,19 @@ export default function EditMemberPage({
                       <CardContent className="flex flex-col items-center space-y-4">
                         <Avatar className="h-24 w-24">
                           <AvatarImage
-                            alt={user?.firstName || 'User'}
+                            alt={user?.user.name || 'User'}
                             src={
                               profilePicPreview ||
                               watch('profilePictureUrl') ||
                               ''
                             }
                           />
-                          <AvatarFallback className="text-lg">{`${getFirstLetter(
-                            user?.firstName || ''
-                          )}${getFirstLetter(user?.lastName || '')}`}</AvatarFallback>
+                          <AvatarFallback className="bg-blue-100 text-blue-600">
+                            {user?.user.name
+                              .split(' ')
+                              .map((n: string) => n[0].toUpperCase())
+                              .join('')}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <input
@@ -1146,43 +1113,25 @@ export default function EditMemberPage({
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField
                       control={form.control}
-                      name="branchId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Branch</FormLabel>
-                          <FormControl>
-                            <BranchCombobox
-                              className="w-full"
-                              onChange={field.onChange}
-                              placeholder="Search and select a branch"
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="role"
+                      name="position"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Role <span className="text-red-500">*</span>
+                            Church Position{' '}
+                            <span className="text-red-500">*</span>
                           </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="cursor-pointer">
-                                <SelectValue placeholder="Select role" />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select church position" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-[400px] overflow-y-auto">
-                              {MEMBER_ROLE_OPTIONS.map((option) => (
+                            <SelectContent>
+                              {CHURCH_POSITION_OPTIONS.map((option) => (
                                 <SelectItem
-                                  className="cursor-pointer"
                                   key={option.value}
                                   value={option.value}
                                 >
@@ -1195,88 +1144,58 @@ export default function EditMemberPage({
                         </FormItem>
                       )}
                     />
-                  </div>
-                  {/* Conditionally show isMember checkbox */}
-                  {shouldShowIsMemberCheckbox() && (
                     <FormField
                       control={form.control}
-                      name="isMember"
+                      name="role"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormItem>
+                          <FormLabel>
+                            Roles & Permissions{' '}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
                           <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
+                            <MultiSelect
+                              onChange={field.onChange}
+                              options={CHURCH_ROLE_OPTIONS}
+                              placeholder="Select roles & permissions"
+                              selected={field.value || []}
                             />
                           </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Church Member</FormLabel>
-                            <p className="text-gray-500 text-sm">
-                              This person is also a church member
-                            </p>
-                          </div>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                  )}
-                  <RenderMemberUpdate
-                    currentRole={currentRole}
-                    form={form}
-                    user={user}
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="branchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branch</FormLabel>
+                        <FormControl>
+                          <BranchCombobox
+                            className="w-full"
+                            onChange={field.onChange}
+                            placeholder="Search and select a branch"
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
+                  <RenderMemberUpdate form={form} roles={roles} />
                   <RenderUpdateRoleSpecificFields
-                    currentRole={currentRole}
                     form={form}
+                    position={position}
+                    roles={roles}
                   />
                 </TabsContent>
                 <TabsContent className="space-y-6" value="staff">
-                  {/* Secondary role flag */}
-                  <FormField
-                    control={form.control}
-                    name="isStaff"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Staff Member</FormLabel>
-                          <p className="text-gray-500 text-sm">
-                            This person is also a paid staff member
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <RenderStaffUpdate form={form} user={user} />
+                  <RenderStaffUpdate form={form} roles={roles} />
                 </TabsContent>
                 <TabsContent className="space-y-6" value="volunteer">
-                  {/* Secondary role flag */}
-                  <FormField
-                    control={form.control}
-                    name="isVolunteer"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            // disabled
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Volunteer</FormLabel>
-                          <p className="text-gray-500 text-sm">
-                            This person also volunteers in church activities
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <RenderVolunteerUpdate form={form} user={user} />
+                  <RenderVolunteerUpdate form={form} roles={roles} />
                 </TabsContent>
               </Tabs>
             </form>

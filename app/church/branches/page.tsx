@@ -64,10 +64,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  useDeleteBranchById,
-  useFetchBranches,
-} from '@/lib/hooks/church/branch/use-branch-queries';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useAdminTeams } from '@/lib/hooks/admin/use-organization-team-mutation';
+import { useDeleteBranchById } from '@/lib/hooks/church/branch/use-branch-queries';
 import type { Branch } from '@/lib/types/branch';
 import {
   capitalizeFirstLetter,
@@ -175,6 +174,7 @@ export default function BranchesPage() {
   const [deletingBranch, setDeletingBranch] = useState<Branch | null>(null);
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('query') || '';
+  const { organizationId } = useActiveOrganization();
   const {
     register,
     // reset: resetSearchInput,
@@ -184,18 +184,42 @@ export default function BranchesPage() {
       query: searchQuery,
     },
   });
+  // const {
+  //   data: branches,
+  //   isLoading: isLoadingBranches,
+  //   isError: isErrorBranches,
+  //   error: errorBranches,
+  // } = useFetchBranches(page, searchQuery);
+  // const {
+  //   mutateAsync: deleteBranchMutation,
+  //   isPending: isPendingDeleteBranch,
+  //   isError: isErrorDeleteBranch,
+  //   error: errorDeleteBranch,
+  // } = useDeleteBranchById();
   const {
     data: branches,
     isLoading: isLoadingBranches,
     isError: isErrorBranches,
     error: errorBranches,
-  } = useFetchBranches(page, searchQuery);
+  } = useAdminTeams({
+    organizationId,
+    page,
+    pageSize: 10,
+    search: searchQuery,
+    // isActive: '',
+    // sortBy: 'name',
+    // sortOrder: 'desc',
+  });
+
+  console.log('Branches:', JSON.stringify(branches));
+
   const {
     mutateAsync: deleteBranchMutation,
     isPending: isPendingDeleteBranch,
     isError: isErrorDeleteBranch,
     error: errorDeleteBranch,
   } = useDeleteBranchById();
+
   const handleDeleteBranch = async (branchId: string) => {
     await deleteBranchMutation(branchId);
     setDeletingBranch(null);
@@ -256,9 +280,7 @@ export default function BranchesPage() {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">
-              {branches?.branches.length}
-            </div>
+            <div className="font-bold text-2xl">{branches?.teams.length}</div>
             <p className="text-muted-foreground text-xs">Active locations</p>
           </CardContent>
         </Card>
@@ -269,7 +291,7 @@ export default function BranchesPage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">
-              {/* {totalMembers.toLocaleString()} */}
+              {branches?.teams[0]?._count?.teammembers.toLocaleString()}
               {0}
             </div>
             <p className="text-muted-foreground text-xs">Across all branches</p>
@@ -430,7 +452,7 @@ export default function BranchesPage() {
                   }}
                 >
                   <ResponsiveContainer height="100%" width="100%">
-                    <BarChart data={branches?.branches}>
+                    <BarChart data={branches?.teams}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
@@ -522,7 +544,7 @@ export default function BranchesPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {branches?.branches?.map((branch) => (
+                        {branches?.teams?.map((branch) => (
                           <TableRow
                             className="hover:bg-gray-50"
                             key={branch._id}
@@ -532,7 +554,7 @@ export default function BranchesPage() {
                                 <div>
                                   <div className="font-medium text-gray-900">
                                     {capitalizeFirstLetterOfEachWord(
-                                      branch?.branchName || 'Not Provided'
+                                      branch?.name || 'Not Provided'
                                     )}
                                   </div>
                                   <div className="text-gray-500 text-sm">
@@ -551,7 +573,7 @@ export default function BranchesPage() {
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {branch?.members || 'Not Provided'}
+                                {branch?._count?.teammembers || 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -570,7 +592,9 @@ export default function BranchesPage() {
                             </TableCell>
                             <TableCell>
                               <span className="text-gray-900 text-sm">
-                                {formatToNewDate(branch?.establishedDate)}
+                                {branch?.establishedDate
+                                  ? formatToNewDate(branch?.establishedDate)
+                                  : 'Not Provided'}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
@@ -612,7 +636,7 @@ export default function BranchesPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  {branches?.branches?.length === 0 && (
+                  {branches?.teams?.length === 0 && (
                     <div className="py-12 text-center">
                       <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                       <h3 className="mb-2 font-medium text-gray-900 text-lg">
