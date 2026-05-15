@@ -9,7 +9,7 @@ export const uploadFile = async (
   const formData = new FormData();
   formData.append('file', file);
   try {
-    const response = await axios.post(`/api/upload?type=${type}`, formData, {
+    const response = await axios.post(`/api/shared/upload?type=${type}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

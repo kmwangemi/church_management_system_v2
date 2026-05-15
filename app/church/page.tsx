@@ -10,11 +10,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useAuthContext } from '@/contexts/auth-context';
-import {
-  capitalizeFirstLetter,
-  capitalizeFirstLetterOfEachWord,
-} from '@/lib/utils';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { authClient } from '@/lib/auth-client';
+import { capitalizeFirstLetterOfEachWord } from '@/lib/utils';
 import {
   Building,
   Calendar,
@@ -31,7 +29,13 @@ import {
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { user } = useAuthContext();
+  const { organizationName } = useActiveOrganization();
+  const {
+    data: session,
+    // isPending, //loading state
+    // error, //error object
+    // refetch, //refetch the session
+  } = authClient.useSession();
 
   const stats = [
     {
@@ -186,13 +190,13 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="mb-2 font-bold text-3xl">
-              Welcome back, {capitalizeFirstLetter(user?.firstName || 'user')}!
+              Welcome back,{' '}
+              {capitalizeFirstLetterOfEachWord(session?.user.name || 'user')}!
               👋
             </h1>
             <p className="text-blue-100 text-lg">
               Here's what's happening at{' '}
-              {/* {capitalizeFirstLetterOfEachWord(user?.churchId || 'your church')} today. */}
-              {capitalizeFirstLetterOfEachWord('acem church')} today.
+              {capitalizeFirstLetterOfEachWord(organizationName)} today.
             </p>
           </div>
           <div className="mt-4 md:mt-0">

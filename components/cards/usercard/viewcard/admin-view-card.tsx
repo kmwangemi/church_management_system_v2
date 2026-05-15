@@ -18,7 +18,7 @@ export const AdminViewCard: React.FC<UserViewProps> = ({ user }) => {
         </p>
       </div>
       <div>
-        <Label className="font-medium text-sm" htmlFor={''}>
+        <Label className="mr-2 font-medium text-sm" htmlFor={''}>
           Access Level
         </Label>
         <Badge variant="outline">{user.adminDetails.accessLevel}</Badge>

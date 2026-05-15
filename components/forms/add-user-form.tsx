@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -29,34 +28,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useRegisterUser } from '@/lib/hooks/church/user/use-user-queries';
-import { GENDER_OPTIONS, MEMBER_ROLE_OPTIONS } from '@/lib/utils';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useAdminAddMember } from '@/lib/hooks/shared/use-organization-member-mutation';
+import {
+  CHURCH_POSITION_OPTIONS,
+  GENDER_OPTIONS,
+  getRolesForPosition,
+} from '@/lib/utils';
 import { type AddUserPayload, userSchema } from '@/lib/validations/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Church, Loader2, MapPin, User } from 'lucide-react';
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { MultiSelect } from '../multi-select';
 
 interface AddUserFormProps {
   onCloseDialog: () => void;
 }
 
 export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
+  const { organizationId } = useActiveOrganization();
   const {
     mutateAsync: registerUserMutation,
     isPending,
     isError,
     error,
-  } = useRegisterUser();
+  } = useAdminAddMember(organizationId);
   const form = useForm<AddUserPayload>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
-      phoneNumber: '',
-      gender: 'male',
-      role: '',
       email: '',
+      phoneNumber: '',
+      gender: 'MALE',
+      position: '',
+      role: undefined,
+      teamId: '',
       address: {
         street: '',
         city: '',
@@ -64,21 +71,11 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
         zipCode: '',
         country: 'Kenya',
       },
-      isMember: false,
-      isStaff: false,
-      branchId: '',
     },
   });
-  const { reset, watch, setValue } = form;
-  const watchRole = watch('role');
-  // Handle role changes and update isMember accordingly
-  useEffect(() => {
-    if (watchRole === 'member') {
-      setValue('isMember', true);
-    } else {
-      setValue('isMember', false);
-    }
-  }, [watchRole, setValue]);
+  const { reset, watch } = form;
+  const watchPosition = watch('position');
+  const CHURCH_ROLE_OPTIONS = getRolesForPosition(watchPosition);
   // Handle form submission
   const onSubmit = async (payload: AddUserPayload) => {
     await registerUserMutation(payload);
@@ -88,14 +85,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
   const handleCancelDialog = () => {
     onCloseDialog();
     reset();
-  };
-  // Helper function to determine if isMember checkbox should be shown
-  const shouldShowIsMemberCheckbox = () => {
-    return watchRole && watchRole !== 'member' && watchRole !== 'visitor';
-  };
-  // Helper function to determine if isStaff checkbox should be shown
-  const shouldShowIsStaffCheckbox = () => {
-    return watchRole && watchRole !== null;
   };
   return (
     <>
@@ -303,39 +292,61 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
               <CardDescription>Role and branch assignments</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Role <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="position"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Church Position <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select church position" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CHURCH_POSITION_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Roles & Permissions{' '}
+                        <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger className="cursor-pointer">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
+                        <MultiSelect
+                          onChange={field.onChange}
+                          options={CHURCH_ROLE_OPTIONS}
+                          placeholder="Select roles & permissions"
+                          selected={field.value || []}
+                        />
                       </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
-                        {MEMBER_ROLE_OPTIONS.map((option) => (
-                          <SelectItem
-                            className="cursor-pointer"
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="branchId"
+                name="teamId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
@@ -353,51 +364,6 @@ export function AddUserForm({ onCloseDialog }: AddUserFormProps) {
                   </FormItem>
                 )}
               />
-              {/* Conditionally show isMember checkbox */}
-              {shouldShowIsMemberCheckbox() && (
-                <FormField
-                  control={form.control}
-                  name="isMember"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Church Member</FormLabel>
-                        <p className="text-gray-500 text-sm">
-                          This person is also a church member
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              )}
-              {shouldShowIsStaffCheckbox() && (
-                <FormField
-                  control={form.control}
-                  name="isStaff"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Staff Church Member</FormLabel>
-                        <p className="text-gray-500 text-sm">
-                          This person is also a paid church staff member
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              )}
             </CardContent>
           </Card>
           <div className="flex justify-end space-x-4 pt-6">

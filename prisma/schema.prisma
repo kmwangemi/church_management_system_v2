@@ -1,0 +1,1262 @@
+// Complete Prisma Schema for Church Management System
+// Aligned with Better Auth Organization Plugin
+// Organization = Church, Team = Branch
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum GlobalRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum OrganizationRole {
+  OWNER
+  MEMBER
+  STAFF
+  VOLUNTEER
+  ADMIN
+  VISITOR
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  TRANSFERRED
+  DECEASED
+}
+
+enum PastorAssignmentStatus {
+  ACTIVE
+  INACTIVE
+  TRANSFERRED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CASUAL
+  CONTRACT
+}
+
+enum VolunteerStatus {
+  ACTIVE
+  INACTIVE
+  ON_HOLD
+  SUSPENDED
+}
+
+enum ClearanceLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AdminAccessLevel {
+  GLOBAL
+  NATIONAL
+  REGIONAL
+  TEAM
+}
+
+enum HowDidYouHear {
+  FRIEND
+  WEBSITE
+  ADVERTISEMENT
+  FAMILY
+  ONLINE
+  FLYER
+  OTHER
+}
+
+enum FollowUpStatus {
+  PENDING
+  CONTACTED
+  CONVERTED
+  DECLINED
+}
+
+enum DepartmentCategory {
+  MINISTRY
+  ADMINISTRATION
+  OPERATIONS
+  EDUCATION
+  OUTREACH
+  SUPPORT
+  FINANCE
+  FACILITIES
+  TECHNOLOGY
+  COMMUNICATIONS
+  PASTORAL_CARE
+  MISSIONS
+  YOUTH
+  CHILDREN
+  WORSHIP
+  DISCIPLESHIP
+  COMMUNITY
+  EVENTS
+  SECURITY
+  VOLUNTEER_COORDINATION
+}
+
+enum ExpenseCategory {
+  SALARIES
+  RENT
+  MAINTENANCE
+  MISSIONS
+  OTHER
+  EQUIPMENT
+  MATERIALS
+  TRAINING
+  EVENTS
+  UTILITIES
+  TRANSPORTATION
+  REFRESHMENTS
+  MISCELLANEOUS
+}
+
+enum ActivityType {
+  MEETING
+  EVENT
+  TRAINING
+  OUTREACH
+  OTHER
+  BIBLE_STUDY
+  PRAYER_MEETING
+  SOCIAL_EVENT
+  DISCUSSION
+  RETREAT
+  WORSHIP
+  FELLOWSHIP
+  SERVICE
+}
+
+enum GoalStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MemberRole {
+  LEADER
+  ASSISTANT_LEADER
+  COORDINATOR
+  MEMBER
+  VOLUNTEER
+}
+
+enum GroupCategory {
+  SMALL_GROUP
+  MINISTRY
+  BIBLE_STUDY
+  SUPPORT
+  YOUTH
+  PRAYER
+  FELLOWSHIP
+  CHILDREN
+  MARRIAGE
+  WORSHIP
+  CONTRIBUTION
+  OTHERS
+}
+
+enum GroupActivityType {
+  FELLOWSHIP
+  STUDY
+  SERVICE
+  OUTREACH
+  BIBLE_STUDY
+  PRAYER_MEETING
+  SOCIAL_EVENT
+  DISCUSSION
+  RETREAT
+  MEETING
+  TRAINING
+  EVENT
+  WORSHIP
+  OTHER
+}
+
+enum GroupGoalStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EventStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum OfferingType {
+  TITHE
+  OFFERING
+  BUILDING_FUND
+  MISSIONS
+  SPECIAL_GIVING
+  SPECIAL_OFFERING
+  THANKSGIVING
+  PARTNERSHIP
+  DONATION
+  MISSION
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  M_PESA
+  BANK_TRANSFER
+  CHEQUE
+  OTHER
+  CARD
+  ONLINE
+}
+
+enum PledgePurpose {
+  BUILDING
+  MISSIONS
+  GENERAL
+  OTHER
+  YOUTH_PROGRAM
+  EQUIPMENT
+  OUTREACH
+  EDUCATION
+}
+
+enum PaymentSchedule {
+  ONE_TIME
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum PledgeStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum PrayerCategory {
+  PERSONAL
+  CHURCH
+  COMMUNITY
+  GLOBAL
+  THANKSGIVING
+  HEALTH
+  FAMILY
+  CAREER
+  FINANCIAL
+  SPIRITUAL
+  GUIDANCE
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PrayerStatus {
+  ACTIVE
+  ANSWERED
+  CLOSED
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum ServiceType {
+  WORSHIP
+  PRAYER
+  STUDY
+  FELLOWSHIP
+  BIBLE_STUDY
+  YOUTH
+  CHILDREN
+  SPECIAL
+}
+
+enum AssetStatus {
+  ACTIVE
+  MAINTENANCE
+  DISPOSED
+  SOLD
+  DONATED
+  LOST
+  STOLEN
+}
+
+enum AnnouncementTarget {
+  ALL
+  TEAM
+  DEPARTMENT
+  GROUP
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ReportType {
+  FINANCE
+  MEMBERSHIP
+  ATTENDANCE
+  EVENTS
+  GOALS
+  FINANCIAL
+  GIVING
+  ACTIVITIES
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  FAILED
+  READ
+  DRAFT
+  SCHEDULED
+  CANCELLED
+}
+
+enum ContentCategory {
+  SPIRITUAL
+  EDUCATIONAL
+  ADMINISTRATIVE
+  WORSHIP
+  YOUTH
+  CHILDREN
+  MISSIONS
+  FELLOWSHIP
+  OUTREACH
+  DISCIPLESHIP
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  PRIVATE
+}
+
+enum ContentType {
+  SERMON
+  BIBLE_STUDY
+  PRAYER
+  WORSHIP
+  ANNOUNCEMENT
+  EVENT
+  DEVOTIONAL
+  TESTIMONY
+  MUSIC
+  VIDEO
+  DOCUMENT
+  IMAGE
+  AUDIO
+}
+
+enum DiscipleLevel {
+  NEW_CONVERT
+  GROWING
+  MATURE
+  LEADER
+}
+
+enum DiscipleStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  DISCONTINUED
+}
+
+enum ProgressStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MessageType {
+  SMS
+  EMAIL
+}
+
+enum TemplateCategory {
+  SERVICE_REMINDER
+  EVENT_REGISTRATION
+  WELCOME_MEMBER
+  ANNOUNCEMENT
+  CUSTOM
+}
+
+enum ScheduleType {
+  NOW
+  SCHEDULED
+  DRAFT
+}
+
+enum OrganizationPlan {
+  BASIC
+  MINISTRY
+  CATHEDRAL
+  CUSTOM
+}
+
+enum MaintenanceSchedule {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum AssetCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum AssetType {
+  VEHICLE
+  PROPERTY
+  EQUIPMENT
+  FURNITURE
+  TECHNOLOGY
+  MUSICAL
+}
+
+enum ActivityTypeEnum {
+  SERVICE
+  MEETING
+  EVENT
+  PROGRAM
+  MINISTRY
+  SOCIAL
+  OUTREACH
+}
+
+enum ActivityStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum UserPlan {
+  CONNECT
+  ENGAGE
+  SERVE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+  TRIAL
+}
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  PAYPAL
+  STRIPE
+  M_PESA
+}
+
+enum DateRange {
+  LAST_7_DAYS
+  LAST_30_DAYS
+  LAST_3_MONTHS
+  LAST_6_MONTHS
+  LAST_YEAR
+  CUSTOM
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+enum ReportStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum RecipientType {
+  ALL_USERS
+  ACTIVE_USERS
+  DEPARTMENT
+  GROUP
+  CUSTOM
+}
+
+enum TargetModel {
+  USER
+  DEPARTMENT
+  GROUP
+}
+
+enum AnnouncementCategory {
+  GENERAL
+  SERVICE
+  EVENT
+  PRAYER
+  MINISTRY
+  YOUTH
+  CHILDREN
+  FINANCE
+  VOLUNTEER
+  EMERGENCY
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  EXPIRED
+}
+
+enum LogLevel {
+  ERROR
+  WARN
+  INFO
+  DEBUG
+}
+
+enum LogSource {
+  API
+  CLIENT
+  SERVER
+  DATABASE
+  AUTH
+  PAYMENT
+  EMAIL
+}
+
+enum Environment {
+  DEVELOPMENT
+  STAGING
+  PRODUCTION
+  TEST
+}
+
+enum MilestoneCategory {
+  SPIRITUAL_GROWTH
+  BIBLE_STUDY
+  PRAYER
+  SERVICE
+  LEADERSHIP
+  EVANGELISM
+  FELLOWSHIP
+  WORSHIP
+  DISCIPLESHIP
+}
+
+// ============================================
+// BETTER AUTH MODELS
+// ============================================
+
+model User {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  emailVerified     Boolean            @default(false)
+  image             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  // Better Auth relations
+  sessions          Session[]
+  accounts          Account[]
+  // Organization membership (church membership)
+  members           Member[]
+  invitations       Invitation[]
+  // Extended profile fields
+  phoneNumber       String?            @unique
+  dateOfBirth       DateTime?
+  gender            Gender?
+  occupation        String?
+  maritalStatus     MaritalStatus?
+  skills            String[]
+  notes             String?
+  // Global role (SUPER_ADMIN, ADMIN or USER)
+  globalRole        GlobalRole         @default(USER)
+  status            AccountStatus      @default(ACTIVE)
+  lastLogin         DateTime?
+  // Flags
+  isPasswordUpdated Boolean            @default(false)
+  agreeToTerms      Boolean            @default(true)
+  isDeleted         Boolean            @default(false)
+  // Normalized relations
+  address           Address?
+  emergencyContact  EmergencyContact?
+  // Role-specific details
+  memberDetails     MemberDetails?
+  pastorDetails     PastorDetails?
+  bishopDetails     BishopDetails?
+  staffDetails      StaffDetails?
+  volunteerDetails  VolunteerDetails?
+  adminDetails      AdminDetails?
+  visitorDetails    VisitorDetails?
+  // Self-referential relations
+  createdBy         String?
+  createdByUser     User?              @relation("UserCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersCreated      User[]             @relation("UserCreatedBy")
+  updatedBy         String?
+  updatedByUser     User?              @relation("UserUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usersUpdated      User[]             @relation("UserUpdatedBy")
+  // Team leadership (for pastors/team leaders)
+  // teamsPastored       Team[]               @relation("TeamPastor")
+  // Department and Group leadership
+  // departmentsLed         Department[]         @relation("DepartmentLeader")
+  // groupsLed              Group[]              @relation("GroupLeader")
+  // Activity relations
+  // offerings              Offering[]
+  // pledges                Pledge[]
+  // reports                Report[]
+  // messageTemplates       MessageTemplate[]
+  // messages               Message[]
+  // messageRecipients      MessageRecipient[]
+  // disciplesAsMember      Disciple[]           @relation("DiscipleMember")
+  // disciplesAsMentor      Disciple[]           @relation("DiscipleMentor")
+  // prayerRequestsSubmitted PrayerRequest[]     @relation("PrayerRequestSubmitter")
+  userSubscriptions UserSubscription[]
+  // departmentMemberships  DepartmentMember[]
+  // groupMemberships       GroupMember[]
+  // attendanceRecords      AttendanceRecord[]
+  // activitiesOrganized    GroupActivity[]
+  // goalsCreated           GroupGoal[]
+  // departmentGoalsCreated DepartmentGoal[]
+  // announcementsCreated   Announcement[]
+  logsGenerated     Log[]
+  // attendancesTaken       Attendance[]
+  // expensesApproved       Expense[]
+  // departmentActivitiesOrganized DepartmentActivity[]
+  teammembers       TeamMember[] // all teams/branches the member is in
+
+  @@index([email])
+  @@index([globalRole, status])
+  @@index([isDeleted])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id @default(cuid())
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Better Auth uses this to track active organization (church)
+  activeOrganizationId String? // Current active church
+  activeTeamId         String? // Current active branch
+  // Add this to track member role in session
+  activeMemberRole     String[] @default([]) // ✅ Changed to array with default empty array
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ============================================
+// ORGANIZATION (CHURCH) MODEL
+// ============================================
+
+model Organization {
+  id               String                    @id @default(cuid())
+  name             String
+  slug             String                    @unique
+  logo             String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  // Extended organization fields
+  denomination     String?
+  description      String?
+  establishedDate  DateTime                  @default(now())
+  email            String?
+  phoneNumber      String?
+  website          String?
+  address          Address?
+  churchSize       String?
+  numberOfBranches Int?
+  status           String?                   @default("Active")
+  mission          String?
+  vision           String?
+  values           String[]
+  isActive         Boolean                   @default(true)
+  isSuspended      Boolean                   @default(false)
+  isDeleted        Boolean                   @default(false)
+  metadata         Json? // flexible extras - store church-specific info
+  // Better Auth requires these relations
+  members          Member[]
+  invitations      Invitation[]
+  teams            Team[] // Branches are teams in Better Auth
+  // Relations
+  // departments      Department[]
+  // groups           Group[]
+  // events           Event[]
+  // offerings        Offering[]
+  // pledges          Pledge[]
+  // prayerRequests   PrayerRequest[]
+  // serviceSchedules ServiceSchedule[]
+  // activities       Activity[]
+  // assets           Asset[]
+  // announcements    Announcement[]
+  // attendances      Attendance[]
+  subscription     OrganizationSubscription?
+  logs             Log[]
+  // payments         Payment[]
+  // reports          Report[]
+  // milestones       Milestone[]
+  // messageTemplates MessageTemplate[]
+  // messages         Message[]
+  // messageRecipients MessageRecipient[]
+  // disciples        Disciple[]
+  // content          Content[]
+
+  @@map("organization")
+}
+
+// ============================================
+// MEMBER MODEL (CHURCH MEMBERSHIP)
+// ============================================
+
+model Member {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrganizationRole[] @default([MEMBER])
+  // position within church
+  position       String?            @default("member")
+  createdAt      DateTime           @default(now())
+
+  // Team (Branch) assignment within church
+  teamId String?
+  team   Team?   @relation("TeamMembers", fields: [teamId], references: [id])
+
+  // Composite unique constraint required by Better Auth
+  // @@index([teamId])
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("member")
+}
+
+// ============================================
+// INVITATION MODEL
+// ============================================
+
+model Invitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  // Optional team assignment for invitation
+  teamId         String? // Invite to specific team/branch
+
+  // Unique constraint for email per organization
+  @@unique([organizationId, email])
+  @@index([email])
+  @@map("invitation")
+}
+
+// ============================================
+// NORMALIZED MODELS
+// ============================================
+
+model Address {
+  id             String        @id @default(cuid())
+  street         String?
+  city           String?
+  state          String?
+  zipCode        String?
+  country        String        @default("Kenya")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  userId         String?       @unique
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?       @unique
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teamId         String?       @unique
+  team           Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("address")
+}
+
+model EmergencyContact {
+  id           String   @id @default(cuid())
+  fullName     String
+  email        String?
+  phoneNumber  String
+  relationship String
+  address      String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contact")
+}
+
+// ============================================
+// USER ROLE-SPECIFIC DETAILS
+// ============================================
+
+model MemberDetails {
+  id               String           @id @default(cuid())
+  memberId         String
+  membershipDate   DateTime         @default(now())
+  membershipStatus MembershipStatus @default(ACTIVE)
+  baptismDate      DateTime?
+  joinedDate       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  departmentIds    String[]
+  groupIds         String[]
+  userId           String           @unique
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("member_details")
+}
+
+model PastorDetails {
+  id                 String             @id @default(cuid())
+  pastorId           String
+  ordinationDate     DateTime?
+  qualifications     String[]
+  specializations    String[]
+  sermonCount        Int                @default(0)
+  counselingSessions Int                @default(0)
+  biography          String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  assignments        PastorAssignment[]
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pastor_details")
+}
+
+model PastorAssignment {
+  id              String        @id @default(cuid())
+  position        String
+  startDate       DateTime
+  endDate         DateTime?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  teamId          String? // Reference to branch/team
+  pastorDetailsId String
+  pastorDetails   PastorDetails @relation(fields: [pastorDetailsId], references: [id], onDelete: Cascade)
+
+  @@map("pastor_assignment")
+}
+
+model BishopDetails {
+  id               String    @id @default(cuid())
+  bishopId         String
+  appointmentDate  DateTime?
+  jurisdictionArea String?
+  qualifications   String[]
+  achievements     String[]
+  biography        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  teamIds          String[] // Team IDs the bishop oversees
+  pastorIds        String[]
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bishop_details")
+}
+
+model StaffDetails {
+  id             String         @id @default(cuid())
+  staffId        String
+  jobTitle       String
+  department     String
+  startDate      DateTime
+  endDate        DateTime?
+  salary         Float?
+  employmentType EmploymentType @default(CASUAL)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("staff_details")
+}
+
+model VolunteerDetails {
+  id                   String                @id @default(cuid())
+  volunteerId          String
+  volunteerStatus      VolunteerStatus       @default(ACTIVE)
+  hoursContributed     Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  departments          String[]
+  availabilitySchedule AvailabilitySchedule?
+  volunteerRoles       VolunteerRole[]
+  backgroundCheck      BackgroundCheck?
+  userId               String                @unique
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("volunteer_details")
+}
+
+model AvailabilitySchedule {
+  id                 String           @id @default(cuid())
+  days               String[]
+  timeSlots          String[]
+  preferredTimes     String[]
+  volunteerDetailsId String           @unique
+  volunteerDetails   VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+
+  @@map("availability_schedule")
+}
+
+model VolunteerRole {
+  id                 String           @id @default(cuid())
+  role               String
+  department         String?
+  startDate          DateTime         @default(now())
+  endDate            DateTime?
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  volunteerDetailsId String
+  volunteerDetails   VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+
+  @@map("volunteer_role")
+}
+
+model BackgroundCheck {
+  id                 String           @id @default(cuid())
+  completed          Boolean          @default(false)
+  completedDate      DateTime?
+  expiryDate         DateTime?
+  clearanceLevel     ClearanceLevel?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  volunteerDetailsId String           @unique
+  volunteerDetails   VolunteerDetails @relation(fields: [volunteerDetailsId], references: [id], onDelete: Cascade)
+
+  @@map("background_check")
+}
+
+model AdminDetails {
+  id            String           @id @default(cuid())
+  adminId       String
+  accessLevel   AdminAccessLevel @default(NATIONAL)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  assignedTeams String[] // Team IDs assigned to this admin
+  userId        String           @unique
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_details")
+}
+
+model VisitorDetails {
+  id                     String         @id @default(cuid())
+  visitorId              String
+  visitDate              DateTime       @default(now())
+  howDidYouHear          HowDidYouHear  @default(OTHER)
+  followUpStatus         FollowUpStatus @default(PENDING)
+  followUpDate           DateTime?
+  followUpNotes          String?
+  interestedInMembership Boolean        @default(false)
+  servicesAttended       String[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  invitedBy              String?
+  userId                 String         @unique
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("visitor_details")
+}
+
+model Team {
+  id              String       @id @default(cuid())
+  name            String
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime?    @updatedAt
+  teammembers     TeamMember[]
+  members         Member[]     @relation("TeamMembers")
+  address         Address?
+  // Extended team fields
+  email           String?
+  phoneNumber     String?
+  capacity        Int?
+  memberCount     Int          @default(0)
+  establishedDate DateTime?
+  description     String?
+  isActive        Boolean      @default(true)
+  isDeleted       Boolean      @default(false)
+  metadata        Json? // Store additional team info
+
+  @@map("team")
+}
+
+model TeamMember {
+  id        String    @id @default(cuid())
+  teamId    String
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime? @default(now())
+
+  @@map("teamMember")
+}
+
+// ============================================
+// TEAM MODEL (BRANCH IN BETTER AUTH)
+// ============================================
+
+// model Team {
+//   id             String       @id @default(cuid())
+//   name           String       // Team name
+//   organizationId String
+//   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+//   createdAt      DateTime     @default(now())
+//   updatedAt      DateTime     @updatedAt
+//   // Extended team fields
+//   email           String?
+//   phoneNumber     String?
+//   capacity        Int?
+//   memberCount     Int          @default(0)
+//   establishedDate DateTime?
+//   description     String?
+//   isActive        Boolean      @default(true)
+//   isDeleted       Boolean      @default(false)
+//   metadata        Json?        // Store additional team info
+//   // Team leadership
+//   pastorId        String?
+//   pastor          User?        @relation("TeamPastor", fields: [pastorId], references: [id])
+//   // Relations - Members assigned to this branch/team
+//   members         Member[]     @relation("TeamMembers")
+//   // Departments and Groups belong to teams/branches
+//   departments     Department[] @relation("TeamDepartments")
+//   groups          Group[]      @relation("TeamGroups")
+//   // Other team-specific relations
+//   serviceSchedules    ServiceSchedule[]
+//   prayerRequests      PrayerRequest[]
+//   activities          Activity[]
+//   assets              Asset[]
+//   address             Address[]
+//   announcements       Announcement[]
+//   attendances         Attendance[]
+//   events              Event[]
+//   reports             Report[]
+//   milestones          Milestone[]
+//   offerings           Offering[]
+//   disciples           Disciple[]
+//   pledges             Pledge[]
+//   discipleProgress    DiscipleProgress[]
+//   content             Content[]
+//   messageRecipients   MessageRecipient[]
+//   messages            Message[]
+//   @@index([organizationId, isActive])
+//   @@index([organizationId, isDeleted])
+//   @@index([pastorId])
+//   @@map("team")
+// }
+
+// ============================================
+// SUBSCRIPTIONS
+// ============================================
+
+model OrganizationSubscription {
+  id                 String             @id @default(cuid())
+  plan               OrganizationPlan   @default(BASIC)
+  status             SubscriptionStatus @default(TRIAL)
+  isPaid             Boolean            @default(false)
+  isActive           Boolean            @default(false)
+  invoiceAmount      Float              @default(0)
+  paidAmount         Float              @default(0)
+  balAmount          Float              @default(0)
+  maxUsers           Int?
+  maxTeams           Int?               @default(1)
+  maxSmallGroups     Int?
+  currentUsers       Int                @default(0)
+  currentTeams       Int                @default(0)
+  currentSmallGroups Int                @default(0)
+  features           String[]
+  startDate          DateTime
+  endDate            DateTime
+  isAutoRenew        Boolean            @default(true)
+  paymentMethod      PaymentMethodType? @default(M_PESA)
+  lastPaymentDate    DateTime?
+  nextBillingDate    DateTime?
+  canceledAt         DateTime?
+  cancelReason       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  organizationId     String             @unique
+  organization       Organization       @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([status, endDate])
+  @@index([plan, status])
+  @@map("organization_subscription")
+}
+
+model UserSubscription {
+  id                     String             @id @default(cuid())
+  plan                   UserPlan
+  status                 SubscriptionStatus @default(TRIAL)
+  isPaid                 Boolean            @default(false)
+  invoiceAmount          Float              @default(0)
+  paidAmount             Float              @default(0)
+  balAmount              Float              @default(0)
+  features               String[]
+  churchId               String?
+  maxSmallGroupsLead     Int?               @default(0)
+  currentSmallGroupsLead Int?               @default(0)
+  maxEventsManage        Int?               @default(0)
+  currentEventsManage    Int?               @default(0)
+  startDate              DateTime
+  endDate                DateTime
+  isAutoRenew            Boolean            @default(true)
+  paymentMethod          PaymentMethodType? @default(M_PESA)
+  lastPaymentDate        DateTime?
+  nextBillingDate        DateTime?
+  canceledAt             DateTime?
+  cancelReason           String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  userId                 String
+  user                   User               @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, endDate])
+  @@index([plan, status])
+  @@map("user_subscription")
+}
+
+// ============================================
+// LOGGING
+// ============================================
+
+model Log {
+  id             String        @id @default(cuid())
+  level          LogLevel
+  message        String
+  errorName      String?
+  errorMessage   String?
+  errorStack     String?
+  errorCode      String?
+  metadata       Json?
+  timestamp      DateTime      @default(now())
+  source         LogSource
+  environment    Environment
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  organizationId String? // Made nullable to allow logs without org context
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([level, timestamp])
+  @@index([source, level, timestamp])
+  @@index([environment, timestamp])
+  @@map("log")
+}

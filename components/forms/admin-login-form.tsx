@@ -1,6 +1,6 @@
 'use client';
 
-import RenderApiError from '@/components/api-error';
+import RenderBetterAuthError from '@/components/better-auth-error';
 import { PasswordInput } from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,20 +12,19 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useLogin } from '@/lib/hooks/auth/use-login-queries';
-import { errorToastStyle } from '@/lib/toast-styles';
+import { authClient } from '@/lib/auth-client';
+import { successToastStyle } from '@/lib/toast-styles';
 import { type LoginPayload, loginSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 export default function AdminLoginForm() {
-  const searchParams = useSearchParams();
-  const reason = searchParams.get('reason');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const form = useForm<LoginPayload>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -33,34 +32,41 @@ export default function AdminLoginForm() {
       password: '',
     },
   });
-  const { mutateAsync: loginMutation, isPending, isError, error } = useLogin();
-  const { reset } = form;
   const onSubmit = async (payload: LoginPayload) => {
-    const result = await loginMutation(payload);
-    if (!result) return; // Handle case where login fails
-    // Reset form before navigation
-    reset();
-    // Determine redirect path
-    let redirectPath = '/church'; // default
-    if (result.user.role === 'superadmin') {
-      redirectPath = '/superadmin';
-    } else if (result.user.role === 'admin') {
-      redirectPath = '/church';
-    }
-    // Use window.location for a hard redirect instead of router.push
-    // This ensures a fresh page load and clears any cached state
-    window.location.href = redirectPath;
-  };
-  useEffect(() => {
-    if (reason === 'expired') {
-      toast.error('Your session has expired. Please log in again.', {
-        style: errorToastStyle,
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { error } = await authClient.signIn.email({
+        email: payload.email,
+        password: payload.password,
+        callbackURL: '/church', // Default redirect
       });
+      if (error) {
+        // Check for errors in the response
+        setError(
+          error.message || 'Login failed. Please check your credentials.'
+        );
+      } else {
+        form.reset();
+        toast.success('Signed in successfully!', {
+          style: successToastStyle,
+        });
+      }
+    } catch (err) {
+      // Handle unexpected errors
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred. Please try again.';
+      setError(errorMessage);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
-  }, [reason]);
+  };
   return (
     <>
-      {isError && <RenderApiError error={error} />}
+      {error && <RenderBetterAuthError error={error} />}
       <Form {...form}>
         <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
           <FormField
@@ -96,10 +102,10 @@ export default function AdminLoginForm() {
           />
           <Button
             className="h-11 w-full"
-            disabled={!form.formState.isValid || isPending}
+            disabled={!form.formState.isValid || isLoading}
             type="submit"
           >
-            {isPending ? (
+            {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Signing in...
